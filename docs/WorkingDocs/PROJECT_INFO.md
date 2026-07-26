@@ -4,9 +4,9 @@ This is the living implementation map for Industri Clicker. Keep it factual and 
 
 ## Current Status
 
-- Project stage: foundation; documentation conventions are established.
+- Project stage: foundation; Expo application scaffold and counter proof of concept are implemented.
 - Product: single-player, mobile-first industrial clicker for Android.
-- No application source, routes, persistence schema, or game systems are implemented yet.
+- No persistence schema or game systems are implemented yet.
 
 ## Repository Size At 0.000d
 
@@ -35,15 +35,24 @@ skills/                           Router and local specialist skills
 olditerations/                    Archived predecessor reference material
 ```
 
-Update this map after the Expo project is scaffolded; do not invent `src/`, routes, scripts, or database folders before then.
+```text
+app/                              Expo Router screens and root provider
+stores/                           Zustand runtime state
+assets/                           Expo application icons and splash asset
+app.json                          Expo application configuration
+package.json                      Dependencies and development commands
+```
 
 ## Current App Routes
 
-Planned. Record actual Expo Router routes only after implementation.
+- `/` â€” counter proof-of-concept screen.
 
 ## Available Commands
 
-Planned. Record actual package scripts and Expo commands after scaffolding.
+- `npm run start` â€” start Expo development server.
+- `npm run android` â€” start Expo and open Android preview.
+- `npm run web` â€” start browser development preview.
+- `npm run typecheck` â€” TypeScript validation without emitting files.
 
 ## Documentation Map
 
@@ -78,7 +87,7 @@ Planned: an industrial clicker with explicit progression, economy, and time-cont
 
 ## Implemented Systems
 
-None yet. Add entries only after code and relevant verification exist.
+- **Counter proof of concept** â€” Implemented. The `/` route renders a React Native Paper button that increments Zustand-managed in-memory state. Verified with `npm run typecheck` and `npx expo export --platform web`.
 
 ## Maintenance Notes
 

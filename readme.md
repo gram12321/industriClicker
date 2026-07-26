@@ -28,6 +28,15 @@ Industri Clicker is an early-stage, single-player industrial clicker game for An
 
 Exact package versions are intentionally not fixed here. The selected Expo SDK determines compatible versions when the project is scaffolded.
 
+## Local Setup
+
+```bash
+npm install
+npm run web
+```
+
+The web command is a local browser preview for development and layout inspection; Android remains the product target. Use `npm run android` to open the native Android preview when an emulator is available.
+
 ## Why This Stack
 
 Expo and React Native provide a native Android application rather than a browser application, while retaining TypeScript and React's component model. This gives coding agents a familiar, well-supported way to produce native mobile UI.
@@ -82,6 +91,4 @@ Do not start a development server, create a release build, or commit changes unl
 - `docs/WorkingDocs/versionlog.md` — change history after commits exist.
 - `skills/mobilegamedev-gram/SKILL.md` — repository router and agent conventions.
 
-## Imported Reference Material
 
-The files in `olditerations/` are archived predecessor references. Their project-specific terms, implemented-feature claims, frameworks, commands, routes, and persistence choices are not current Industri Clicker documentation.
