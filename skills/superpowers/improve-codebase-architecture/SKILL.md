@@ -18,7 +18,7 @@ Use this skill only for an explicit architecture/refactor review. It is not a ma
 
 ## Workflow
 
-1. Read the relevant current modules, `README.md`, and domain glossary.
+1. Read the relevant current modules, `readme.md`, and domain glossary.
 2. Identify concrete friction with file references: unclear ownership, duplicate rules, UI-owned logic, persistence leakage, stale abstractions, or mobile-performance risk.
 3. Present only focused candidates with the problem, smallest change, benefits, and risk.
 4. Wait for user direction before making a broad refactor.

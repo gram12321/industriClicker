@@ -1,3 +1,7 @@
+# Archived Predecessor Reference: Mixed Office/Hack-and-Slash Notes
+
+> This file is retained only as historical reference material. It contains conflicting predecessor content and does not describe Industri Clicker. Do not use its domain, implementation claims, commands, file paths, framework, persistence, or AI workflow as project guidance.
+
 # Industri Clicker Tycoon
 
 Industri Clicker Tycoon is an early-stage single-player clicker game.

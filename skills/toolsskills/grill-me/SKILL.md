@@ -26,7 +26,7 @@ Drive a rigorous design interview until the plan is precise enough to act on. Th
 
 Default repo router: `../../mobilegamedev-gram/SKILL.md`.
 
-In this project, this is non-default. Use it only when the user explicitly requests grilling or when the request is clearly a design interrogation. Prefer this skill over `grill-with-docs` unless there is a specific reason to update docs during the grilling session.
+In this project, this is non-default. Use it only when the user explicitly requests grilling or when the request is clearly a design interrogation. Keep conclusions aligned with `CONTEXT.md`, `design.md`, `gameflow.md`, and `VariableRelationshipMap.md`.
 
 ## Workflow
 

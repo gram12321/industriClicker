@@ -17,7 +17,7 @@ best-practices/supabase-best-practices/
 
 ## Role In This Project
 
-Use this skill after `../../mobilegamedev-gram/SKILL.md` establishes repo boundaries. It applies Supabase/Postgres guidance to this project's persistence boundaries, database modules, SQL migrations, and service/database ownership split.
+Use this skill only after `../../mobilegamedev-gram/SKILL.md` establishes that the user has approved a concrete cloud requirement. It then applies Supabase/Postgres guidance to the approved cloud boundary; it does not apply to normal local saves or game progression.
 
 ## Rule Categories
 
@@ -39,8 +39,7 @@ Use this skill after `../../mobilegamedev-gram/SKILL.md` establishes repo bounda
 3. When adding a reference, copy `references/_template.md` to `references/<prefix>-<name>.md`.
 4. Use impact levels from `references/_sections.md`.
 5. Keep `README.md` and `AGENTS.md` as navigation files, not duplicated rule bodies.
-6. Preserve Supabase/Postgres source guidance and adapt repo-specific workflow in `SKILL.md`.
-7. If package build tooling is present, use the original source-package flow: `npm run validate` and `npm run build`.
+6. Keep the references conditional on approved Supabase work and adapt repo-specific workflow in `SKILL.md`.
 
 ## Original References
 

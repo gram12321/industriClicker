@@ -1,109 +1,31 @@
 ---
 name: requesting-code-review
-description: Use when completing tasks, implementing major features, or before merging to verify work meets requirements
+description: Use when the user explicitly requests a review of an Industri Clicker change, feature slice, branch, pull request, or implementation plan.
 ---
 
 # Requesting Code Review
 
-## Project Routing Note
+Review the actual diff and requirements. This is an explicit quality workflow, not a mandatory subagent or merge gate.
 
-Default repo router: `../../mobilegamedev-gram/SKILL.md`
+## Workflow
 
-In this project, use this skill for meaningful feature slices, risk-heavy refactors, and before merge readiness checks.
+1. Establish the review target: working tree, commit range, branch, pull request, or plan.
+2. Read the relevant requirements and the actual changed files before reaching conclusions.
+3. Check player-visible behavior, deterministic game rules, UI/game-state/persistence ownership, touch/mobile constraints, tests, and documentation claims.
+4. Categorize findings as **Critical**, **Important**, or **Minor**. Every finding needs a file reference, evidence, impact, and a practical correction.
+5. State any verification gaps separately from defects.
 
-Dispatch a code reviewer subagent to catch issues before they cascade. The reviewer gets precisely crafted context for evaluation — never your session's history. This keeps the reviewer focused on the work product, not your thought process, and preserves your own context for continued work.
+## Project Checks
 
-**Core principle:** Review early, review often.
+- React Native UI must not own gameplay calculations or SQLite access.
+- Game rules, time progression, and catch-up behavior must be deterministic and testable outside UI.
+- Zustand is runtime state; Expo SQLite is deliberate local persistence. Supabase must not appear without an approved cloud requirement.
+- Player-facing UI must remain portrait-phone and touch-first.
+- Do not treat archived predecessor material as implementation evidence.
 
-## When to Request Review
+## Constraints
 
-**Mandatory:**
-- After each task in subagent-driven development
-- After completing major feature
-- Before merge to main
+- Do not modify code, create a commit, push, open a pull request, or dispatch a reviewer agent unless the user separately asks.
+- A second reviewer or parallel review is allowed only when the user explicitly requests delegation and scopes do not overlap.
 
-**Optional but valuable:**
-- When stuck (fresh perspective)
-- Before refactoring (baseline check)
-- After fixing complex bug
-
-## How to Request
-
-**1. Get git SHAs:**
-```bash
-BASE_SHA=$(git rev-parse HEAD~1)  # or origin/main
-HEAD_SHA=$(git rev-parse HEAD)
-```
-
-**2. Dispatch code reviewer subagent:**
-
-Use Task tool with `general-purpose` type, fill template at `code-reviewer.md`
-
-**Placeholders:**
-- `{DESCRIPTION}` - Brief summary of what you built
-- `{PLAN_OR_REQUIREMENTS}` - What it should do
-- `{BASE_SHA}` - Starting commit
-- `{HEAD_SHA}` - Ending commit
-
-**3. Act on feedback:**
-- Fix Critical issues immediately
-- Fix Important issues before proceeding
-- Note Minor issues for later
-- Push back if reviewer is wrong (with reasoning)
-
-## Example
-
-```
-[Just completed Task 2: Add verification function]
-
-You: Let me request code review before proceeding.
-
-BASE_SHA=$(git log --oneline | grep "Task 1" | head -1 | awk '{print $1}')
-HEAD_SHA=$(git rev-parse HEAD)
-
-[Dispatch code reviewer subagent]
-  DESCRIPTION: Added verifyIndex() and repairIndex() with 4 issue types
-  PLAN_OR_REQUIREMENTS: Task 2 from docs/superpowers/plans/deployment-plan.md
-  BASE_SHA: a7981ec
-  HEAD_SHA: 3df7661
-
-[Subagent returns]:
-  Strengths: Clean architecture, real tests
-  Issues:
-    Important: Missing progress indicators
-    Minor: Magic number (100) for reporting interval
-  Assessment: Ready to proceed
-
-You: [Fix progress indicators]
-[Continue to Task 3]
-```
-
-## Integration with Workflows
-
-**Subagent-Driven Development:**
-- Review after EACH task
-- Catch issues before they compound
-- Fix before moving to next task
-
-**Executing Plans:**
-- Review after each task or at natural checkpoints
-- Get feedback, apply, continue
-
-**Ad-Hoc Development:**
-- Review before merge
-- Review when stuck
-
-## Red Flags
-
-**Never:**
-- Skip review because "it's simple"
-- Ignore Critical issues
-- Proceed with unfixed Important issues
-- Argue with valid technical feedback
-
-**If reviewer wrong:**
-- Push back with technical reasoning
-- Show code/tests that prove it works
-- Request clarification
-
-See template at: requesting-code-review/code-reviewer.md
+Use `code-reviewer.md` as the review-output template.

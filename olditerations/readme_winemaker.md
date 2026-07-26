@@ -1,3 +1,7 @@
+# Archived Predecessor Reference: Winery Management Game
+
+> This file is retained only as historical reference material. It does not describe Industri Clicker. Do not use its domain, implementation claims, commands, file paths, framework, persistence, or AI workflow as project guidance.
+
 # Winery Management Game
 
 Turn-based single-player winery simulation built with React, TypeScript, Vite, Tailwind, ShadCN UI, and Supabase. Core rules live in services/features; React components handle presentation and interaction.

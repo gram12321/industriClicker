@@ -53,6 +53,28 @@ Write clear, factual release notes that explain what changed, where, and why it 
 
 ---
 
+## Version 0.0001c - Variable relationship map template
+**Date:** 2026-07-26 | **Commit(s):** 78b81969cc4cdbb8a78248e7b58213931c86d4ee | **Stats:** +133 / -91
+
+### Summary
+
+- Restored the variable relationship map as a generic Industri Clicker template rather than retaining predecessor-specific mechanics.
+- Split variable-level ownership and dependencies from the broader gameflow document.
+- Replaced the imported version history with the first three factual Industri Clicker entries and retained the reusable logging rules.
+
+### Changes
+
+- **NEW FILE:** `VariableRelationshipMap.md` (68 lines) - Added a template for variable registers, dependency formulas, command effects, time/catch-up effects, and persistence ownership.
+- `docs/WorkingDocs/gameflow.md` - Redirected variable-level ownership and dependency tracking to the restored root map while retaining system flow, formulas, tick rules, and persistence boundaries.
+- `docs/WorkingDocs/PROJECT_INFO.md` - Added the relationship map to the canonical documentation map.
+- `docs/WorkingDocs/versionlog.md` - Renamed the log for Industri Clicker, retained the entry-writing rules, and replaced imported predecessor release entries with the actual `0.0001` through `0.0001b` commit history.
+
+### Notes
+
+- This commit established documentation templates only; it did not scaffold the Expo app or implement gameplay.
+
+---
+
 ## Version 0.0001b - Documentation and skill consolidation
 **Date:** 2026-07-26 | **Commit(s):** e2079e518e0635921fba73e99acb37c8b9e47186 | **Stats:** +635 / -11729
 

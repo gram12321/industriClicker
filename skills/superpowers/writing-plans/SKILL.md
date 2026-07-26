@@ -1,126 +1,31 @@
 ---
 name: writing-plans
-description: Use when a multi-step task needs a concrete implementation plan before code changes, with explicit file targets, tests, and checkpoints.
+description: Use when an approved Industri Clicker goal needs a written multi-step implementation plan before code changes.
 ---
 
 # Writing Plans
 
-## Overview
+Write a concrete plan only when the work is large, risky, cross-cutting, or the user explicitly requests one. Routine work uses the router's small-steps workflow instead.
 
-Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, testing, docs they might need to check, how to test it. Give them the whole plan as bite-sized tasks. DRY. TDD.
+## Before Writing
 
-Assume they are a skilled developer, but know almost nothing about our toolset or problem domain. Assume they don't know good test design very well.
+1. Read the approved goal and the smallest relevant context: `readme.md`, `CONTEXT.md`, `design.md`, `gameflow.md`, `PROJECT_INFO.md`, and current code where it exists.
+2. Confirm that the plan uses the locked stack: Expo, React Native, TypeScript, Expo Router, React Native Paper, Zustand, and Expo SQLite; Supabase requires separate explicit approval.
+3. List only real existing files and required new files. Do not invent `src/`, routes, package scripts, schemas, or test frameworks before the Expo project is scaffolded.
 
-**Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
+## Plan Shape
 
-**Save plans to:** `docs/superpowers/plans/YYYY-MM-DD-<feature-name>.md`
-- (User preferences for plan location override this default)
+Use a short header with goal, scope, constraints, architecture, files, and verification. Then write ordered tasks that each contain:
 
-## Scope Check
+- exact file targets;
+- the intended behavior and ownership boundary;
+- focused tests or manual Android-emulator verification where applicable;
+- documentation updates when a durable decision changes.
 
-If the spec covers multiple independent subsystems, it should have been broken into sub-project specs during brainstorming. If it wasn't, suggest breaking this into separate plans — one per subsystem. Each plan should produce working, testable software on its own.
+Keep tasks small enough to review independently. Include commands only when the scaffold confirms they exist. Do not include a commit, branch, PR, worktree, subagent, migration, or cloud step unless the user has approved it.
 
-## File Structure
+## Storage And Handoff
 
-Before defining tasks, map out which files will be created or modified and what each one is responsible for. This is where decomposition decisions get locked in.
+Present the plan in the conversation by default. Save it only when the user asks for a durable plan; use `docs/WorkingDocs/plans/YYYY-MM-DD-<topic>.md` unless the user names another location.
 
-- Design units with clear boundaries and well-defined interfaces. Each file should have one clear responsibility.
-- You reason best about code you can hold in context at once, and your edits are more reliable when files are focused. Prefer smaller, focused files over large ones that do too much.
-- Files that change together should live together. Split by responsibility, not by technical layer.
-- In existing codebases, follow established patterns. If the codebase uses large files, don't unilaterally restructure - but if a file you're modifying has grown unwieldy, including a split in the plan is reasonable.
-
-This structure informs the task decomposition. Each task should produce self-contained changes that make sense independently.
-
-## Bite-Sized Task Granularity
-
-**Each step is one action (2-5 minutes):**
-- "Write the failing test" - step
-- "Run it to make sure it fails" - step
-- "Implement the minimal code to make the test pass" - step
-- "Run the tests and make sure they pass" - step
-- "Commit" - step
-
-## Plan Document Header
-
-**Every plan MUST start with this header:**
-
-```markdown
-# [Feature Name] Implementation Plan
-
-> **For agentic workers:** Use the router's matching implementation workflow after the user approves the plan. Dispatch parallel agents only when the user explicitly requests delegation and `dispatching-parallel-agents` applies.
-
-**Goal:** [One sentence describing what this builds]
-
-**Architecture:** [2-3 sentences about approach]
-
-**Tech Stack:** [Key technologies/libraries]
-
----
-```
-
-## Task Structure
-
-````markdown
-### Task N: [Component Name]
-
-**Files:**
-- Create: `exact/path/to/file.py`
-- Modify: `exact/path/to/existing.py:123-145`
-- Test: `tests/exact/path/to/test.py`
-
-- [ ] **Step 1: Write the failing test**
-
-```python
-def test_specific_behavior():
-    result = function(input)
-    assert result == expected
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `pytest tests/path/test.py::test_name -v`
-Expected: FAIL with "function not defined"
-
-- [ ] **Step 3: Write minimal implementation**
-
-```python
-def function(input):
-    return expected
-```
-
-- [ ] **Step 4: Run test to verify it passes**
-
-Run: `pytest tests/path/test.py::test_name -v`
-Expected: PASS
-
-- [ ] **Step 5: Commit**
-
-```bash
-# Do not commit unless the user explicitly asks.
-```
-````
-
-
-## Remember
-- Exact file paths always
-- Complete code in every step — if a step changes code, show the code
-- Exact commands with expected output
-
-## Self-Review
-
-After writing the complete plan, look at the spec with fresh eyes and check the plan against it. This is a checklist you run yourself — not a subagent dispatch.
-
-**1. Spec coverage:** Skim each section/requirement in the spec. Can you point to a task that implements it? List any gaps.
-
-**2. Placeholder scan:** Search your plan for red flags — any of the patterns from the "No Placeholders" section above. Fix them.
-
-**3. Type consistency:** Do the types, method signatures, and property names you used in later tasks match what you defined in earlier tasks? A function called `clearLayers()` in Task 3 but `clearFullLayers()` in Task 7 is a bug.
-
-If you find issues, fix them inline. No need to re-review — just fix and move on. If you find a spec requirement with no task, add the task.
-
-## Execution Handoff
-
-After saving the plan, offer execution choice:
-
-**"Plan complete and saved to `docs/superpowers/plans/<filename>.md`. 
-
+Review the plan against the approved goal for missing requirements, ambiguity, stack conflicts, and unowned persistence or time behavior before presenting it.

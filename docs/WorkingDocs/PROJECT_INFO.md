@@ -4,7 +4,7 @@ This is the living implementation map for Industri Clicker. Keep it factual and 
 
 ## Current Status
 
-- Project stage: foundation and documentation consolidation.
+- Project stage: foundation; documentation conventions are established.
 - Product: single-player, mobile-first industrial clicker for Android.
 - No application source, routes, persistence schema, or game systems are implemented yet.
 
@@ -18,9 +18,11 @@ This is the living implementation map for Industri Clicker. Keep it factual and 
 ## Current Repository Shape
 
 ```text
-README.md                         Project overview and stack decision
+readme.md                         Project overview and stack decision
+VariableRelationshipMap.md        Variable dependency template
 docs/WorkingDocs/                 Canonical working documentation
 skills/                           Router and local specialist skills
+olditerations/                    Archived predecessor reference material
 ```
 
 Update this map after the Expo project is scaffolded; do not invent `src/`, routes, scripts, or database folders before then.

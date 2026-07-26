@@ -74,13 +74,14 @@ Do not start a development server, create a release build, or commit changes unl
 
 ## Documentation
 
-- `docs/WorkingDocs/CONTEXT.md` — canonical Industri Clicker terminology once consolidated.
+- `docs/WorkingDocs/CONTEXT.md` — canonical Industri Clicker terminology.
 - `docs/WorkingDocs/design.md` — durable game and product direction.
 - `docs/WorkingDocs/PROJECT_INFO.md` — verified repository map, commands, and implementation status.
 - `docs/WorkingDocs/gameflow.md` — mechanics, tick order, formulas, state ownership, and persistence flow.
+- `VariableRelationshipMap.md` — variable ownership, dependencies, commands, and persistence relationships.
 - `docs/WorkingDocs/versionlog.md` — change history after commits exist.
 - `skills/mobilegamedev-gram/SKILL.md` — repository router and agent conventions.
 
 ## Imported Reference Material
 
-`readmeOffice.md`, `readme_winemaker.md`, and `Readme_hackandslash.md` are preserved as imported references during consolidation. Their project-specific terms, implemented-feature claims, frameworks, commands, and routes are not current Industri Clicker documentation.
+The files in `olditerations/` are archived predecessor references. Their project-specific terms, implemented-feature claims, frameworks, commands, routes, and persistence choices are not current Industri Clicker documentation.

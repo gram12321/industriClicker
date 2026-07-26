@@ -1,6 +1,6 @@
 # Core Game Mechanics
 
-This is the concise, code-verified status guide. Use `CONTEXT.md` for vocabulary, `design.md` for direction, and `gameflow.md` for detailed relationships.
+This is the concise, code-verified status guide. Use `CONTEXT.md` for vocabulary, `design.md` for direction, `gameflow.md` for system flow, and `../../VariableRelationshipMap.md` for detailed variable relationships.
 
 ## Runtime and Player Surfaces
 

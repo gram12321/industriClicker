@@ -62,11 +62,11 @@ These are working definitions, not confirmation that every system will be used.
 
 ## Relationships
 
-The planned relationship is: UI issues commands, pure game logic applies rules, Zustand holds runtime state, and Expo SQLite stores deliberate snapshots. `gameflow.md` records the specific variables, formulas, tick order, and save boundaries once they are designed.
+The planned relationship is: UI issues commands, pure game logic applies rules, Zustand holds runtime state, and Expo SQLite stores deliberate snapshots. `gameflow.md` records system flow, formulas, tick order, and save boundaries; `../../VariableRelationshipMap.md` records concrete variables and their dependencies.
 
 ## Current Implementation Notes
 
-- The project is in foundation and documentation-consolidation stage.
+- The project is in foundation stage with documentation conventions established.
 - No concrete industrial resources, facilities, currencies, production chains, or progression rules are implemented.
 - Supabase is deferred and is not part of the current game-state vocabulary.
 

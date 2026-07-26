@@ -31,12 +31,10 @@ Suggest relevant next-session skills when useful, especially `../../mobilegamede
 ## Workflow
 
 1. Determine what the next session is meant to do. If the user passed arguments, treat them as that focus.
-2. Create a temporary markdown file. Prefer `mktemp -t handoff-XXXXXX.md`; if unavailable, use a clear temp path such as `C:/tmp/handoff-<topic>.md`.
-3. Read the empty file/path before writing to avoid overwriting something unexpected.
-4. Write only the context needed to resume.
-5. Reference existing artifacts by path or URL instead of duplicating them.
-6. Include verification status, blockers, and exact next steps.
-7. Report the handoff path to the user.
+2. Write only the context needed to resume; reference existing artifacts by path instead of duplicating them.
+3. Include verification status, blockers, and exact next steps.
+4. Present the handoff in the response by default. Create `docs/WorkingDocs/handoffs/<topic>.md` only when the user requests a durable file.
+5. Report the handoff location when a file was requested.
 
 ## Handoff Shape
 

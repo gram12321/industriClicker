@@ -20,4 +20,4 @@ Use `skills/toolsskills/small-steps/SKILL.md` as the default working style. Sele
 
 ## Documentation
 
-Read the smallest relevant context from `README.md` and `docs/WorkingDocs/`. `CONTEXT.md` is the canonical domain glossary.
+Read the smallest relevant context from `readme.md` and `docs/WorkingDocs/`. `CONTEXT.md` is the canonical domain glossary.

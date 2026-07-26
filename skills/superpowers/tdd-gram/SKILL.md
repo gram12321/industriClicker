@@ -1,6 +1,6 @@
 ---
 name: tdd-gram
-description: Enforces practical TDD with red-green-refactor cycles, behavior-first tests, and disciplined mocking. Use when implementing behavior, fixing bugs, refactoring under tests, or when the user asks for TDD/test-first.
+description: Use for approved Industri Clicker behavior changes, bug fixes, or refactors when the user requests TDD or a fail-first test cycle is practical.
 ---
 
 # TDD Gram
@@ -9,7 +9,7 @@ description: Enforces practical TDD with red-green-refactor cycles, behavior-fir
 
 Test first. Watch it fail for the expected reason. Implement only enough code to pass. Refactor only while green.
 
-Use for features, bug fixes, refactors, and behavior changes. Ask the human before skipping for throwaway prototypes, generated code, config-only changes, or truly untestable setup. Exploration is allowed, but throw it away before starting TDD.
+Use for game-engine, tick, persistence, state, and behavior changes when a focused test seam exists. Ask the human before applying it to throwaway prototypes, generated code, config-only changes, or truly untestable native setup. Exploration is allowed, but throw it away before starting TDD.
 
 Iron law: no production behavior without a failing test first. Code written first is not trusted; delete it and reimplement from tests.
 
@@ -43,7 +43,7 @@ Good tests read like specifications:
 - Clear name, one logical assertion, stable under internal refactor.
 - Bug fixes start with a regression test.
 
-Example: "rejects empty email" calls public `submitForm({ email: "" })` and asserts the returned error.
+Example: "does not apply an action when its resource cost is unavailable" calls the public game command and asserts unchanged state plus the expected result.
 
 Bad tests reveal implementation:
 
@@ -76,7 +76,7 @@ Hard-to-test code is design feedback:
 Before claiming done:
 
 - Each new public function, changed behavior, edge case, and error path has a test that failed first.
-- All tests pass with clean output.
+- The focused tests and the relevant existing suite pass with clean output.
 - Tests exercise real behavior, not mocks.
 - Refactors stayed green after each step.
 - No test-only production API or over-complex mock remains.

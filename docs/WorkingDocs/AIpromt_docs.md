@@ -6,10 +6,11 @@ Use this guide when updating Industri Clicker documentation.
 
 | File | Role |
 |---|---|
-| `README.md` | Project overview, locked stack, and entry points. |
+| `readme.md` | Project overview, locked stack, and entry points. |
 | `CONTEXT.md` | Stable domain vocabulary and naming policy. |
 | `design.md` | Durable game direction and product decisions. |
-| `gameflow.md` | Mechanics, variables, tick order, state, and persistence flow. |
+| `gameflow.md` | Mechanics, tick order, state, and persistence flow. |
+| `../../VariableRelationshipMap.md` | Variable ownership, dependencies, commands, and persistence relationships. |
 | `PROJECT_INFO.md` | Verified layout, commands, and implementation map. |
 | `AIDescriptions_coregame.md` | Current verified systems and deferred areas. |
 | `AI_AGENT_INSTRUCTIONS.md` | Agent boundaries and workflow. |

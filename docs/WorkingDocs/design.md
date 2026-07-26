@@ -6,7 +6,7 @@ This document holds durable player-facing design decisions. It is a template at 
 
 - Record a decision when it changes what the player sees, does, earns, unlocks, or understands.
 - State the player effect, the rule, and any known trade-off.
-- Put exact variables, formulas, tick order, and save boundaries in `gameflow.md`.
+- Put exact formulas, tick order, and save boundaries in `gameflow.md`; put variable dependencies in `../../VariableRelationshipMap.md`.
 - Keep verified implementation facts in `PROJECT_INFO.md`.
 
 ## Game Direction
@@ -54,7 +54,7 @@ Questions to settle:
 - Use named balance values and deterministic formulas.
 - Show costs, gains, requirements, and blocked states clearly to the player.
 - Avoid hidden losses or unclear time calculations.
-- Record actual resource relationships, rates, caps, and formula examples in `gameflow.md`.
+- Record actual resource relationships, rates, and caps in `../../VariableRelationshipMap.md`; record formula examples in `gameflow.md`.
 
 ## Time-Controlled Progression
 
@@ -127,5 +127,6 @@ UI renders state and requests actions. Pure TypeScript game logic owns validatio
 ## References
 
 - `CONTEXT.md` for canonical terminology.
-- `gameflow.md` for mechanics, variables, formulas, and state flow.
+- `gameflow.md` for mechanics, formulas, and state flow.
+- `../../VariableRelationshipMap.md` for concrete variable relationships.
 - `PROJECT_INFO.md` for verified implementation facts and repository shape.

@@ -1,3 +1,7 @@
+# Archived Predecessor Reference: Hack and Slash
+
+> This file is retained only as historical reference material. It does not describe Industri Clicker. Do not use its domain, implementation claims, commands, file paths, framework, persistence, or AI workflow as project guidance.
+
 # Hack and Slash Game
 
 ## About

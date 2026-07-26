@@ -38,7 +38,7 @@ The project needs a native mobile delivery path without bespoke visual design an
 ## Project State
 
 - The game is mobile-first. Design the portrait-phone experience first, then adapt it deliberately for larger screens.
-- Until the documentation consolidation is complete, treat the user-approved Industri Clicker direction and current repository files as authoritative. Mark inherited material as legacy when it conflicts.
+- Treat the user-approved Industri Clicker direction and current repository files as authoritative. Archived predecessor material is not implementation evidence and must not override current project documents.
 - Do not invent detailed industrial terminology, currencies, production chains, progression loops, or monetization rules before the design establishes them.
 
 ## Default Execution Style
@@ -49,10 +49,10 @@ Escalate to another specialist skill only when the user explicitly asks for it o
 
 ## Session Start And Context
 
-For a change, read at least the following docs for relevant context. Large read of codebase is encouraged before starting on a task. The order of reading is:
+For a change, read the smallest relevant context before starting. Use this order when the listed documents apply:
 
-1. `README.md` when it exists; otherwise inspect the root project overview files.
-2. `docs/WorkingDocs/CONTEXT.md` after it has been rewritten for Industri Clicker.
+1. `readme.md` when it exists; otherwise inspect the root project overview files.
+2. `docs/WorkingDocs/CONTEXT.md` for canonical game terminology.
 3. `docs/WorkingDocs/design.md` for product or mechanic direction.
 4. `docs/WorkingDocs/PROJECT_INFO.md` for the selected stack, repository map, commands, and current implementation facts.
 5. `docs/WorkingDocs/gameflow.md` for a change to mechanics, economy, tick order, state flow, or persistence.
@@ -63,7 +63,7 @@ Read the code and tests before treating an inherited document as proof that some
 
 - Keep services, database CRUD operation and UI separated in different files. Do not put business logic, validation, calculations, or persistence orchestration in UI components.
 - Keep source-of-truth state explicit. Persist primary state, derive display values where practical, and document save boundaries.
-- Prefer the smallest change that serves the current stage of the project. Do not introduce change to backend  unless the user asks for them.
+- Prefer the smallest change that serves the current stage of the project. Do not introduce backend changes unless the user explicitly approves them.
 - Do not preserve legacy data shapes, database tables, or persistence keys unless the user explicitly requests it. Do not create compatibility branches or wrappers for old names; correct consumers to use the new names.
 - Do not commit, push, launch a development server, or run broad validation by default. The human owns commits unless they explicitly delegate them.
 
@@ -109,7 +109,7 @@ When the relevant documents exist and are current:
 - Update `design.md` for durable player-facing direction and decisions.
 - Update `PROJECT_INFO.md` for the chosen stack, commands, source layout, and verified implementation status.
 - Update `gameflow.md` for mechanics, tick order, variables, formulas, state ownership, or persistence changes.
-- Keep `README.md` concise: project purpose, setup, and documentation entry points.
+- Keep `readme.md` concise: project purpose, setup, and documentation entry points.
 - Record version-log entries only after the corresponding commit exists and only from the reviewed commit diff.
 
 ## Verification
