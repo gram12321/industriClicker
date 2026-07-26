@@ -13,7 +13,7 @@ metadata:
 
 ## Purpose
 
-Apply Supabase and Postgres query, schema, indexing, RLS, and migration guidance to this project's database work. Use `../../webgamedev-gram/SKILL.md` as the default repo router; this skill owns database-specific decisions after repo boundaries are clear.
+Apply Supabase and Postgres query, schema, indexing, RLS, and migration guidance to this project's database work. Use `../../mobilegamedev-gram/SKILL.md` as the default repo router; this skill owns database-specific decisions after repo boundaries are clear.
 
 ## Use When
 

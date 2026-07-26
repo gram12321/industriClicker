@@ -10,7 +10,7 @@ Read `SKILL.md` first. This directory is intentionally small: it provides langua
 | React performance or render behavior | `../react-best-practices/SKILL.md` |
 | ShadCN/Radix UI composition | `../shadcn-best-practices/SKILL.md` |
 | Supabase/Postgres query or schema work | `../supabase-best-practices/SKILL.md` |
-| Repo-wide routing and completion rules | `../../webgamedev-gram/SKILL.md` |
+| Repo-wide routing and completion rules | `../../mobilegamedev-gram/SKILL.md` |
 
 ## Current Repo Bias
 

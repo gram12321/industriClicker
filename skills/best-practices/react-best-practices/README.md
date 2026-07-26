@@ -17,7 +17,7 @@ best-practices/react-best-practices/
 
 ## Role In This Project
 
-Use this skill after `../../webgamedev-gram/SKILL.md` establishes repo boundaries. The rules are performance guidance for React and Next.js, adapted here for a Vite SPA. Next.js-specific rules remain preserved as reference material, but current project work should prioritize React component behavior, hooks, async flow, bundle impact, and UI responsiveness.
+Use this skill after `../../mobilegamedev-gram/SKILL.md` establishes repo boundaries. The rules are performance guidance for React and Next.js, adapted here for a Vite SPA. Next.js-specific rules remain preserved as reference material, but current project work should prioritize React component behavior, hooks, async flow, bundle impact, and UI responsiveness.
 
 ## Rule Categories
 

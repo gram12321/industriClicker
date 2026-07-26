@@ -24,7 +24,7 @@ Drive a rigorous design interview until the plan is precise enough to act on. Th
 
 ## Repo Fit
 
-Default repo router: `../../webgamedev-gram/SKILL.md`.
+Default repo router: `../../mobilegamedev-gram/SKILL.md`.
 
 In this project, this is non-default. Use it only when the user explicitly requests grilling or when the request is clearly a design interrogation. Prefer this skill over `grill-with-docs` unless there is a specific reason to update docs during the grilling session.
 

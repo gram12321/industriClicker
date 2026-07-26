@@ -7,7 +7,7 @@ description: Use for ShadCN/Radix component composition and fixes in this projec
 
 ## Purpose
 
-Apply ShadCN/Radix UI composition, styling, and CLI guidance to this project's UI work. Use `../../webgamedev-gram/SKILL.md` as the default repo router; this skill owns component-level UI conventions after repo boundaries are clear.
+Apply ShadCN/Radix UI composition, styling, and CLI guidance to this project's UI work. Use `../../mobilegamedev-gram/SKILL.md` as the default repo router; this skill owns component-level UI conventions after repo boundaries are clear.
 
 ## Use When
 

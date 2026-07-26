@@ -24,7 +24,7 @@ Use this as an optional response-style mode for ultra-compressed communication. 
 
 ## Repo Fit
 
-Default repo router: `../../webgamedev-gram/SKILL.md`.
+Default repo router: `../../mobilegamedev-gram/SKILL.md`.
 
 In this project, this is not a task-routing skill. Use normal repo skills for the work; use Caveman only for response style when explicitly requested or clearly appropriate.
 

@@ -7,7 +7,7 @@ description: Find deepening opportunities and run architecture-level sanitation 
 
 ## Project Routing Note
 
-Default repo router: `../../webgamedev-gram/SKILL.md`
+Default repo router: `../../mobilegamedev-gram/SKILL.md`
 
 In this project, this skill is used both for architecture deepening and as the default subskill for completion sanitation sweeps.
 

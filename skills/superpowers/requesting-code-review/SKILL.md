@@ -7,7 +7,7 @@ description: Use when completing tasks, implementing major features, or before m
 
 ## Project Routing Note
 
-Default repo router: `../../webgamedev-gram/SKILL.md`
+Default repo router: `../../mobilegamedev-gram/SKILL.md`
 
 In this project, use this skill for meaningful feature slices, risk-heavy refactors, and before merge readiness checks.
 

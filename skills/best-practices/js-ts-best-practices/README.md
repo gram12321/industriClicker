@@ -12,7 +12,7 @@ best-practices/js-ts-best-practices/
 
 ## Role In This Project
 
-Use this skill for implementation mechanics after `../../webgamedev-gram/SKILL.md` has established repo boundaries. It complements the more specialized skills:
+Use this skill for implementation mechanics after `../../mobilegamedev-gram/SKILL.md` has established repo boundaries. It complements the more specialized skills:
 
 - `../react-best-practices/SKILL.md` for render behavior and React performance.
 - `../shadcn-best-practices/SKILL.md` for ShadCN/Radix component composition.

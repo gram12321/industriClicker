@@ -18,7 +18,7 @@ best-practices/shadcn-best-practices/
 
 ## Role In This Project
 
-Use this skill for UI composition after `../../webgamedev-gram/SKILL.md` establishes repo boundaries. It complements:
+Use this skill for UI composition after `../../mobilegamedev-gram/SKILL.md` establishes repo boundaries. It complements:
 
 - `../js-ts-best-practices/SKILL.md` for TypeScript and module organization.
 - `../react-best-practices/SKILL.md` for render behavior and hooks.

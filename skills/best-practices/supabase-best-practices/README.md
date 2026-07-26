@@ -17,7 +17,7 @@ best-practices/supabase-best-practices/
 
 ## Role In This Project
 
-Use this skill after `../../webgamedev-gram/SKILL.md` establishes repo boundaries. It applies Supabase/Postgres guidance to the project's company-scoped persistence model, database modules, SQL migrations, and service/database ownership split.
+Use this skill after `../../mobilegamedev-gram/SKILL.md` establishes repo boundaries. It applies Supabase/Postgres guidance to this project's persistence boundaries, database modules, SQL migrations, and service/database ownership split.
 
 ## Rule Categories
 

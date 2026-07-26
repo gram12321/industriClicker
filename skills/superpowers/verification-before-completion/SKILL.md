@@ -7,7 +7,7 @@ description: Use in this project before claiming a fix or completion state, to r
 
 ## Routing Note
 
-Default repo router: `../../webgamedev-gram/SKILL.md`
+Default repo router: `../../mobilegamedev-gram/SKILL.md`
 
 Use this skill before any completion claim.
 

@@ -7,7 +7,7 @@ description: "Use whenever user ask for creative work, brainstorming, feature cr
 
 ## Project Routing Note
 
-Default repo router: `../../webgamedev-gram/SKILL.md`
+Default repo router: `../../mobilegamedev-gram/SKILL.md`
 
 In this project, this skill is not mandatory for every code change. Use it when design exploration is explicitly requested or genuinely needed due to unclear requirements.
 

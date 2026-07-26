@@ -25,7 +25,7 @@ Create or improve reusable agent skills. A skill is guidance for a technique, pa
 
 ## Repo Fit
 
-Default repo router: `../../webgamedev-gram/SKILL.md`.
+Default repo router: `../../mobilegamedev-gram/SKILL.md`.
 
 For project skill work, preserve existing repo routing, keep specialist skills one level deep when practical, and avoid duplicating large content already held in sibling rule/reference files.
 

@@ -9,7 +9,7 @@ license: MIT
 
 ## Purpose
 
-Apply practical TypeScript, React, and module-organization guidance for this codebase. Use `../../webgamedev-gram/SKILL.md` as the default repo router; this skill owns language and implementation details after the repo boundaries are clear.
+Apply practical TypeScript, React, and module-organization guidance for this codebase. Use `../../mobilegamedev-gram/SKILL.md` as the default repo router; this skill owns language and implementation details after the repo boundaries are clear.
 
 ## Use When
 
@@ -71,7 +71,7 @@ Current stack: React 19, TypeScript 5, Vite 7, Tailwind 3, ShadCN/Radix UI, Supa
 
 | Need | Start here |
 |---|---|
-| Repo routing and architecture boundaries | `../../webgamedev-gram/SKILL.md` |
+| Repo routing and architecture boundaries | `../../mobilegamedev-gram/SKILL.md` |
 | React performance and render behavior | `../react-best-practices/SKILL.md` |
 | ShadCN component composition | `../shadcn-best-practices/SKILL.md` |
 | Supabase/Postgres work | `../supabase-best-practices/SKILL.md` |

@@ -24,9 +24,9 @@ Create a compact continuation document for a fresh agent. The handoff should pre
 
 ## Repo Fit
 
-Default repo router: `../../webgamedev-gram/SKILL.md`.
+Default repo router: `../../mobilegamedev-gram/SKILL.md`.
 
-Suggest relevant next-session skills when useful, especially `../../webgamedev-gram/SKILL.md`, `../writeskills-gram/SKILL.md`, or the applicable specialist skill.
+Suggest relevant next-session skills when useful, especially `../../mobilegamedev-gram/SKILL.md`, `../writeskills-gram/SKILL.md`, or the applicable specialist skill.
 
 ## Workflow
 

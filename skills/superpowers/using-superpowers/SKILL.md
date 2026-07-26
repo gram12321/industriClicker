@@ -7,7 +7,7 @@ description: Use only when the user explicitly asks for Superpowers-style govern
 
 ## Repository Routing
 
-The default Office Tycoon router is `../../webgamedev-gram/SKILL.md`. Start routine repository work there.
+The default Industri Clicker router is `../../mobilegamedev-gram/SKILL.md`. Start routine repository work there.
 
 This is a supporting skill. Use it only when the user explicitly requests Superpowers-style governance, asks to use Superpowers, or asks which Superpowers workflow applies. Do not invoke it merely because a task is broad, complex, or multi-step.
 

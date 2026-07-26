@@ -10,7 +10,7 @@ metadata:
 
 ## Purpose
 
-Apply React performance and data-flow guidance to this project's UI work. Use `../../webgamedev-gram/SKILL.md` as the default repo router; this skill is advisory and repo conventions win when there is a conflict.
+Apply React performance and data-flow guidance to this project's UI work. Use `../../mobilegamedev-gram/SKILL.md` as the default repo router; this skill is advisory and repo conventions win when there is a conflict.
 
 ## Use When
 

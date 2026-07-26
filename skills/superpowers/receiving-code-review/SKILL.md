@@ -7,7 +7,7 @@ description: Use when receiving code review feedback, before implementing sugges
 
 ## Project Routing Note
 
-Default repo router: `../../webgamedev-gram/SKILL.md`
+Default repo router: `../../mobilegamedev-gram/SKILL.md`
 
 Use this skill when actively addressing review comments in this project.
 

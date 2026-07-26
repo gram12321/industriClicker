@@ -7,7 +7,7 @@ description: Use when the user explicitly asks to finish a branch, decide merge 
 
 ## Project Routing Note
 
-Default repo router: `../../webgamedev-gram/SKILL.md`
+Default repo router: `../../mobilegamedev-gram/SKILL.md`
 
 In this project, use this as an explicit end-of-workflow helper, not a default per-task behavior.
 
