@@ -1,11 +1,11 @@
 # Industri Clicker Gameflow And Variable Relationship Map
 
-This document is the canonical home for mechanics flow, variables, formulas, state ownership, tick order, and persistence boundaries. It replaces the imported root `VariableRelationshipMap.md`.
+This document is the canonical home for mechanics flow, formulas, state ownership, tick order, and persistence boundaries. Use the companion root `VariableRelationshipMap.md` for the variable-by-variable dependency map.
 
 ## How To Use This Document
 
 - Add concrete mechanics only after they are agreed in `design.md`.
-- For each variable, record ownership, type/unit, source of truth, update triggers, persistence status, and derived relationships.
+- Keep the variable-by-variable ownership, type/unit, source of truth, update triggers, persistence status, and derived relationships in `VariableRelationshipMap.md`.
 - Keep formulas deterministic and write down rounding, minimum/maximum, and invalid-input behavior.
 - Update this document with any change to a game command, tick, save boundary, or resource relationship.
 
@@ -43,14 +43,9 @@ Elapsed time (only when designed)
 | Durable progress snapshot | Expo SQLite adapter | Yes, at deliberate boundaries | Exact shape is not designed. |
 | Cloud state | None | No | Supabase remains deferred. |
 
-## Variable Map Template
+## Variable Relationship Map
 
-Use one row for each concrete variable once it exists.
-
-| Variable | Meaning and unit | Source of truth | Changed by | Used by | Persisted? | Status |
-|---|---|---|---|---|---|---|
-| `exampleResourceAmount` | Example only; replace with a real resource and unit | To be designed | To be designed | To be designed | To be designed | Placeholder |
-| `exampleLastSavedAt` | Example timestamp for a deliberate save boundary | To be designed | Save flow | Restore/catch-up flow | To be designed | Placeholder |
+Maintain concrete variables and their dependencies in the root `VariableRelationshipMap.md`. Keep this document focused on system-level flow, formulas, ticks, and persistence boundaries.
 
 ## Production Relationship Template
 
@@ -106,5 +101,5 @@ Tests/examples:
 
 - Add or update the canonical terms in `CONTEXT.md`.
 - Record the player-facing decision in `design.md`.
-- Add variables, ownership, formula, command, tick, and save impacts here.
+- Add variables and dependency details to `VariableRelationshipMap.md`; add formula, command, tick, and save impacts here.
 - Add implementation facts and verification to `PROJECT_INFO.md` only after they exist.

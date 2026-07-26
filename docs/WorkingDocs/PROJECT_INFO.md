@@ -37,7 +37,8 @@ Planned. Record actual package scripts and Expo commands after scaffolding.
 
 - `CONTEXT.md` — canonical domain language.
 - `design.md` — durable product direction.
-- `gameflow.md` — mechanics, tick order, formulas, state, persistence flow, and the variable relationship map.
+- `gameflow.md` — mechanics, tick order, formulas, state, and persistence flow.
+- `../../VariableRelationshipMap.md` — variable ownership, dependencies, command effects, and persistence relationships.
 - `AIDescriptions_coregame.md` — verified implementation status and deferred areas.
 - `AI_AGENT_INSTRUCTIONS.md` — concise AI working rules.
 - `AIpromt_codecleaning.md` — cleanup workflow.
