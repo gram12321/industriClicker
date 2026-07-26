@@ -8,6 +8,7 @@ Industri Clicker is an early-stage, single-player industrial clicker game for An
 - Keep gameplay, economy, progression, and time-controlled tick processing deterministic, explicit, and testable outside the UI.
 - Keep the first release local-first and single-player. Cloud services are a later product decision, not a foundation requirement.
 - Use established, code-acquirable UI primitives instead of custom artwork or manually designed visual assets.
+- Keep shared visual tokens and the React Native Paper theme in `theme.ts`; keep screen-specific layout rules in a sibling styles file such as `app/index.styles.ts`.
 - Treat predecessor-project documents as references only. They do not define Industri Clicker's domain, implementation status, routes, or persistence.
 
 ## Locked Technology Stack
@@ -54,6 +55,8 @@ React Native UI -> hooks/view models -> game commands/services -> state and pers
 ```
 
 - UI components render state and collect player input. They do not own business rules, calculations, or database access.
+- Expo Router `_layout.tsx` owns shared providers and navigation configuration; route screens own their rendering and interaction logic.
+- Shared colors and Paper theme configuration belong in `theme.ts`; screen-specific `StyleSheet` objects belong beside their screen. Avoid a global catch-all stylesheet.
 - Pure TypeScript engine/service modules own gameplay formulas, progression, tick order, validation, and derived values.
 - Zustand holds active source-of-truth runtime state. Derive view data instead of persisting every display value.
 - Expo SQLite adapters own durable local reads and writes. Save deliberately at meaningful checkpoints or batched intervals.
