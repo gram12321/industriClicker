@@ -1,18 +1,18 @@
 ---
 name: small-steps
-description: Use when the user wants minimal changes, low-scope implementation, small safe steps, terse feedback, or asks to avoid broad plans, design docs, refactors, schemas, migrations, or new abstractions.
+description: Default workflow for routine work when no specialist skill clearly matches. Use for minimal changes, low-scope implementation, small safe steps, and avoiding broad plans, refactors, schemas, migrations, or new abstractions.
 ---
 
 # Small Steps
 
 ## Purpose
 
-Make the smallest useful change that satisfies the user's request. Prefer direct implementation, minimal feedback, and explicit permission before broadening scope.
+Make the smallest useful change that satisfies the user's request. This is the default repository workflow unless the user requests, or the task clearly requires, a more specific specialist skill.
 
-This pairs well with `../caveman/SKILL.md` when the user also wants compressed responses.
 
 ## Use When
 
+- No other local specialist skill clearly matches the task.
 - The user asks for "small steps", "minimal change", "keep it simple", "no big refactor", or similar.
 - The requested work can be fulfilled without new architecture, new schemas, broad plans, or design docs.
 - The repo is early-stage and the safest progress is a narrow edit.
@@ -44,7 +44,7 @@ If the minimum implementation appears to require any of these, stop and ask perm
 - New dependency, framework, build tool, or generated project structure.
 - Broad refactor across unrelated modules.
 - Several new types, interfaces, classes, or abstractions.
-- A design document, implementation plan, PRD, ADR, or issue breakdown.
+- A design document, implementation plan, or formal work breakdown.
 
 When asking, give the minimum viable suggestion:
 
@@ -83,7 +83,6 @@ Ask first when:
 - Do not narrate obvious steps.
 - Do not produce long alternatives unless permission is needed.
 - Prefer "I found X; changing Y" over broad planning language.
-- If combined with Caveman, use Caveman's compressed style for wording while preserving this skill's scope rules.
 
 ## Red Flags
 

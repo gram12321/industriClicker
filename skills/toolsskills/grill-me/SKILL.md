@@ -1,6 +1,6 @@
 ---
 name: grill-me
-description: Use when the user explicitly asks to be grilled, challenged, or interviewed about a plan, design, domain model, terminology, boundaries, ADRs, or major update before implementation.
+description: Use when the user explicitly asks to be grilled, challenged, or interviewed about a plan, design, domain model, terminology, boundaries, or major update before implementation.
 ---
 
 # Grill Me
@@ -13,7 +13,7 @@ Drive a rigorous design interview until the plan is precise enough to act on. Th
 
 - The user explicitly asks for `grill-me`, grilling, relentless questions, or a design challenge.
 - A major update needs terminology, domain boundaries, dependencies, or tradeoffs sharpened.
-- Existing docs, ADRs, code, or domain models need to be reconciled before implementation.
+- Existing docs, code, or domain models need to be reconciled before implementation.
 - Ambiguity or disagreement would make direct implementation risky.
 
 ## Do Not Use When
@@ -53,4 +53,4 @@ End the session with a compact decision summary when the user has answered enoug
 - settled decisions
 - open decisions
 - risks or contradictions
-- next artifact to create, such as implementation plan, ADR, issue, or code change
+- next artifact to create, such as an implementation plan or code change

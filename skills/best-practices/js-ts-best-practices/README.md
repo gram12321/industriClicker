@@ -12,15 +12,11 @@ best-practices/js-ts-best-practices/
 
 ## Role In This Project
 
-Use this skill for implementation mechanics after `../../mobilegamedev-gram/SKILL.md` has established repo boundaries. It complements the more specialized skills:
-
-- `../react-best-practices/SKILL.md` for render behavior and React performance.
-- `../shadcn-best-practices/SKILL.md` for ShadCN/Radix component composition.
-- `../supabase-best-practices/SKILL.md` for Supabase/Postgres work.
+Use this skill for implementation mechanics after `../../mobilegamedev-gram/SKILL.md` has established repo boundaries. It complements `../supabase-best-practices/SKILL.md` only when an approved backend task requires Supabase/Postgres work.
 
 ## Maintenance Notes
 
 - Keep `SKILL.md` concise and behavior-focused.
 - Add heavier examples or deterministic helpers as separate files only when they become reusable.
-- Keep examples aligned with the current stack: React, TypeScript, Vite, Tailwind, ShadCN/Radix, Supabase, and Vitest.
-- Do not duplicate full React, ShadCN, or Supabase rules here; link to those skills instead.
+- Keep examples aligned with the current stack: Expo, React Native, TypeScript, Zustand, Expo SQLite, and deferred Supabase.
+- Do not duplicate full Supabase rules here; link to that skill only for approved backend work.

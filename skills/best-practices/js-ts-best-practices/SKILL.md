@@ -1,90 +1,38 @@
 ---
 name: js-ts-best-practices
-description: Use for day-to-day JavaScript and TypeScript implementation in this project, including React component code, service logic, shared typing, module organization, and safe refactors aligned to repo conventions.
-source: wshobson/agents
-license: MIT
+description: Use for TypeScript game-engine, Expo/React Native, Zustand, Expo SQLite, shared-type, and safe-refactor work in Industri Clicker.
 ---
 
-# JS and TS Best Practices
+# TypeScript Best Practices
 
-## Purpose
-
-Apply practical TypeScript, React, and module-organization guidance for this codebase. Use `../../mobilegamedev-gram/SKILL.md` as the default repo router; this skill owns language and implementation details after the repo boundaries are clear.
+Use this skill for TypeScript implementation after `../../mobilegamedev-gram/SKILL.md` establishes scope. Follow the actual Expo project layout once scaffolded; do not import assumptions from prior web projects.
 
 ## Use When
 
-- Writing or refactoring TypeScript in `src/`, `server/`, or `tests/`.
-- Updating React component logic, hooks, props, or UI state.
-- Moving logic between components, services, database modules, utilities, constants, or types.
-- Tightening types, removing `any`, or stabilizing module boundaries.
-- Reviewing implementation quality before completion.
+- Writing or refactoring game rules, tick logic, services, types, constants, Zustand state, or Expo SQLite adapters.
+- Updating React Native component props, hooks, selectors, or view models.
+- Moving code between UI, game logic, state, persistence, constants, and tests.
+- Tightening types or reviewing a TypeScript change for safe ownership boundaries.
 
-## Repo Fit
+## Rules
 
-Current stack: React 19, TypeScript 5, Vite 7, Tailwind 3, ShadCN/Radix UI, Supabase JS 2, and Vitest.
-
-- Keep business logic in `src/lib/services/`.
-- Keep database reads and writes in `src/lib/database/`.
-- Keep pages/components presentation-focused.
-- Prefer existing barrel imports from `@/components/ui`, `@/hooks`, `@/lib/services`, `@/lib/utils`, and `@/lib/constants`.
-- Use shared types from `src/lib/types/` and `src/components/UItypes.ts`.
-- Use domain language from `docs/WorkingDocs/CONTEXT.md` once defined.
-- Preserve company-scoped persistence and the existing global/topic update flow.
-- Do not add legacy data-shape compatibility unless the user explicitly asks.
+- Keep engine calculations deterministic and independent from React Native, Zustand, SQLite, and display formatting.
+- Keep UI components focused on rendering and commands; hooks/selectors adapt state to the UI.
+- Keep Zustand state explicit and local persistence behind dedicated Expo SQLite adapters.
+- Use explicit domain types, narrow unions, exhaustive handling, and type guards; avoid `any`.
+- Put tunable gameplay values in named constants or structured balance data.
+- Update shared types before consumers when a domain shape changes. Do not add legacy aliases, wrappers, or compatibility data shapes.
+- Avoid unnecessary exports and abstractions. Follow existing module boundaries instead of inventing barrels or folder conventions.
+- Supabase is not available by default. Use `../supabase-best-practices/SKILL.md` only after an approved backend task introduces it.
 
 ## Workflow
 
-1. Classify the change by ownership: UI, hook, service, database, constants, types, tests, or docs.
-2. Read the smallest relevant local files before editing.
-3. Update shared types first when the domain shape changes.
-4. Put tunable gameplay numbers in named constants before using them in services or UI.
-5. Keep imports named and at the top of the module.
-6. Add or update targeted tests when behavior changes.
-
-## Core Rules
-
-### Types
-
-1. Prefer explicit domain types over ad hoc inline object types.
-2. Extend existing shared interfaces before creating parallel shapes.
-3. Use narrow union types for domain states.
-4. Avoid `any`; use type guards and helper functions instead.
-5. Keep function signatures stable at module boundaries.
-
-### React
-
-1. Keep page components orchestration-only.
-2. Move calculations and business rules to service functions.
-3. Reuse existing hooks when possible (`useLoadingState()`, `useGameStateWithData()`, `useGameState()`).
-4. Avoid direct Supabase calls in components.
-5. Keep state updates aligned with existing reactive/global update flows.
-
-### Services And Utilities
-
-1. Add constants for tunable values before adding new magic numbers.
-2. Keep multi-step calculations in focused service modules.
-3. Use domain naming from `docs/WorkingDocs/CONTEXT.md` once defined.
-4. Preserve company-scoped behavior for persisted state.
-5. Keep utility helpers small and shared only when there is real reuse.
-
-## Reference Map
-
-| Need | Start here |
-|---|---|
-| Repo routing and architecture boundaries | `../../mobilegamedev-gram/SKILL.md` |
-| React performance and render behavior | `../react-best-practices/SKILL.md` |
-| ShadCN component composition | `../shadcn-best-practices/SKILL.md` |
-| Supabase/Postgres work | `../supabase-best-practices/SKILL.md` |
-| Stable domain terms | `../../../../docs/WorkingDocs/CONTEXT.md` |
-| Current implementation status | `../../../../docs/WorkingDocs/PROJECT_INFO.md` |
+1. Identify the smallest ownership area: UI, engine, state, persistence, constants, types, tests, or docs.
+2. Read only the affected modules and their direct contracts.
+3. Make the smallest typed change that preserves the engine/UI/persistence separation.
+4. Add or update focused tests for player-visible behavior when mechanics change.
+5. Run the smallest relevant verification supplied by the scaffolded project.
 
 ## Verification
 
-Use the smallest useful checks for the change. For finished code work, default to:
-
-```bash
-npm test
-git diff --check
-```
-
-For large-risk refactors, expand verification based on the impacted domain.
+Do not assume scripts before the Expo project exists. Once it does, run the focused type, unit, or UI check appropriate to the change; use `git diff --check` at handoff.

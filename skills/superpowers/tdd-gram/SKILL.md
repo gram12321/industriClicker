@@ -18,7 +18,7 @@ Iron law: no production behavior without a failing test first. Code written firs
 Before coding:
 
 - Confirm the public interface and priority behaviors with the human.
-- Use the project's domain language, glossary, docs, and ADRs.
+- Use the project's domain language, glossary, and current docs.
 - List observable behaviors, not implementation steps.
 - Design small, deep interfaces: few methods, simple params, complexity hidden inside.
 - Do not write all tests first. Work in vertical slices: one test, one implementation, repeat.

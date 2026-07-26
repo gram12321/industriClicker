@@ -19,7 +19,7 @@ Create a compact continuation document for a fresh agent. The handoff should pre
 ## Do Not Use When
 
 - A short final response is enough.
-- The needed context already exists in a plan, PRD, ADR, issue, commit, diff, or doc.
+- The needed context already exists in a plan, commit, diff, or doc.
 - The user asks for a user-facing summary rather than an agent continuation document.
 
 ## Repo Fit

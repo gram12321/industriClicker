@@ -47,7 +47,7 @@ This structure informs the task decomposition. Each task should produce self-con
 ```markdown
 # [Feature Name] Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** Use the router's matching implementation workflow after the user approves the plan. Dispatch parallel agents only when the user explicitly requests delegation and `dispatching-parallel-agents` applies.
 
 **Goal:** [One sentence describing what this builds]
 
@@ -96,8 +96,7 @@ Expected: PASS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add tests/path/test.py src/path/file.py
-git commit -m "feat: add specific feature"
+# Do not commit unless the user explicitly asks.
 ```
 ````
 

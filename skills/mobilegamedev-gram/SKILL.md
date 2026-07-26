@@ -11,12 +11,41 @@ This is the repository router for Industri Clicker, an early-stage single-player
 
 The repository is being consolidated from prior projects. Their documentation and skills are reference material, not permission to import their domains, architecture, technology, persistence keys, routes, or implementation claims.
 
+## Locked Stack
+
+| Area | Decision |
+|---|---|
+| Product target | Native Android app first |
+| App framework | Expo + React Native |
+| Language and navigation | TypeScript + Expo Router |
+| UI | React Native Paper + React Native core components |
+| Runtime and durable state | Zustand in memory + Expo SQLite for deliberate saves |
+| Cloud/backend | None initially; Supabase only for an approved need |
+| Development and release | Android Emulator/Fast Refresh; native Android build; no PWA/web release |
+
+- The game is a native Android app first, built with Expo, React Native, TypeScript, and Expo Router.
+- Use React Native Paper and React Native core components for the code-defined Material UI. Do not use browser DOM components for native screens.
+- Keep current game state in Zustand and durable local data in Expo SQLite. Do not write persistent data on every tap.
+- Keep game rules in pure TypeScript engine/service modules. UI components issue commands and render state; persistence adapters own SQLite access.
+- Supabase is deferred. Add it only for an explicitly approved cloud requirement, such as backup, cross-device sync, accounts, or server-owned features.
+- Expo web is a desktop development aid for fast layout inspection and browser DevTools. It is not a PWA or web-release target.
+- Use the Android Emulator as the primary desktop preview and Fast Refresh for ordinary TypeScript/UI edits. Verify on a physical Android device at meaningful interaction or release checkpoints.
+
+## Stack Rationale
+
+The project needs a native mobile delivery path without bespoke visual design and is maintained entirely by coding agents. Expo and React Native provide native Android UI while preserving the TypeScript and React component model that agents handle well. React Native Paper supplies reusable Material components, and Expo SQLite supports deliberate local saves without introducing a backend.
+
 ## Project State
 
 - The game is mobile-first. Design the portrait-phone experience first, then adapt it deliberately for larger screens.
-- The technology stack and final architecture have not yet been selected. Do not infer React, Flutter, Supabase, Hive, shadcn, Tailwind, or any other framework from imported files.
 - Until the documentation consolidation is complete, treat the user-approved Industri Clicker direction and current repository files as authoritative. Mark inherited material as legacy when it conflicts.
 - Do not invent detailed industrial terminology, currencies, production chains, progression loops, or monetization rules before the design establishes them.
+
+## Default Execution Style
+
+Use `../toolsskills/small-steps/SKILL.md` as the default for routine work. Start with the smallest safe change, inspect only the relevant context, and avoid creating a broad design, plan, refactor, or new abstraction by default.
+
+Escalate to another specialist skill only when the user explicitly asks for it or the task clearly requires its discipline: for example, material product choices need brainstorming, an approved plan needs execution guidance, a defect needs debugging, or a schema/backend change needs explicit review.
 
 ## Session Start And Context
 
@@ -61,16 +90,16 @@ Apply these rules to any player-facing UI or interaction work:
 | Bugs, regressions, unexpected behavior, or failed tests | `../superpowers/systematic-debugging/SKILL.md` | Diagnosing or fixing a defect |
 | Deep, intermittent, or performance-heavy defect | `../superpowers/diagnose/SKILL.md` | Baseline debugging has not found the cause |
 | Test-first implementation or a user request for TDD | `../superpowers/tdd-gram/SKILL.md` | Behavior is changing under tests |
-| JavaScript or TypeScript implementation | `../best-practices/js-ts-best-practices/SKILL.md` | That stack is selected and the task uses it |
-| React rendering or performance work | `../best-practices/react-best-practices/SKILL.md` | React is selected |
-| shadcn/Radix UI work | `../best-practices/shadcn-best-practices/SKILL.md` | That UI system is selected |
-| Supabase/Postgres schema, query, RLS, or migration work | `../best-practices/supabase-best-practices/SKILL.md` | Supabase/Postgres is selected |
-| Explicitly minimal, narrowly scoped work | `../toolsskills/small-steps/SKILL.md` | The user requests this working style |
+| Explicit user request for parallel research or development | `../superpowers/dispatching-parallel-agents/SKILL.md` | The tasks are independent and have non-overlapping file ownership |
+| Expo or React Native implementation | This router and the current official Expo/React Native documentation | The task affects native app code, Android tooling, or mobile UI; a local Expo specialist skill has not yet been created |
+| JavaScript or TypeScript engine implementation | `../best-practices/js-ts-best-practices/SKILL.md` | Game-engine, TypeScript, Zustand, or Expo SQLite work |
+| Supabase/Postgres schema, query, RLS, or migration work | `../best-practices/supabase-best-practices/SKILL.md` | Supabase has been explicitly introduced for an approved backend need |
+| Routine task with no stronger specialist match | `../toolsskills/small-steps/SKILL.md` | Default working style |
 | Architecture review or focused cleanup | `../superpowers/improve-codebase-architecture/SKILL.md` | The task is an architecture/refactor review |
 | Branch completion, PR preparation, or review feedback | Matching `superpowers` review/branch skill | The user explicitly requests that workflow |
 | Handoff for a later session | `../toolsskills/handoff/SKILL.md` | A durable continuation note is requested |
 
-The `superpowers` group is supporting, not a mandatory session entrypoint. Do not use `using-superpowers` as a general wrapper. Use one matching specialist skill, not several overlapping workflows, unless the task genuinely needs both.
+The `superpowers` group is supporting, not a mandatory session entrypoint. Use one matching specialist skill, not several overlapping workflows, unless the task genuinely needs both.
 
 ## Documentation Maintenance
 

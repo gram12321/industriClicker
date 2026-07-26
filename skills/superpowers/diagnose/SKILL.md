@@ -18,7 +18,7 @@ Use this skill when:
 
 A discipline for hard bugs. Skip phases only when the user explicitly states a reason in the conversation, and acknowledge the skip with a one-sentence rationale in your response.
 
-When exploring the codebase, use the project's domain glossary to get a clear mental model of the relevant modules, and check Architecture Decision Records (ADRs), typically in `docs/adr/` or `docs/decisions/`. If no ADR directory exists, skip this step.
+When exploring the codebase, use the project's domain glossary and current implementation docs to build a clear mental model of the relevant modules.
 
 ## Phase 1 — Build a feedback loop
 

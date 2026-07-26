@@ -20,4 +20,4 @@ Read `SKILL.md` first. This directory contains Supabase/Postgres performance, sc
 
 ## Current Repo Bias
 
-Keep Supabase access in `src/lib/database/`, business logic in `src/lib/services/`, schema changes in `migrations/`, and all persisted gameplay reads/writes company-scoped.
+Supabase is deferred. When approved, keep cloud access in dedicated adapters, keep game logic/UI independent from it, and define explicit player/save ownership rather than importing prior-project terminology.
