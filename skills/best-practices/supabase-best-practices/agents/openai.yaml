@@ -1,0 +1,3 @@
+interface:
+  display_name: "Supabase Best Practices"
+  short_description: "Optimize Supabase/Postgres queries, schema design, RLS, migrations, and company-scoped persistence."

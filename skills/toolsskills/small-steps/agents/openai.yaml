@@ -1,0 +1,3 @@
+interface:
+  display_name: "Small Steps"
+  short_description: "Keep implementation narrow, avoid plans and major changes, and ask before DB or abstraction expansion."
