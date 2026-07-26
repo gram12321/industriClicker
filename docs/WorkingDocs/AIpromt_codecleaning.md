@@ -15,12 +15,15 @@ Use this guide for behavior-preserving cleanup of Industri Clicker.
 - Zustand state: source-of-truth data, selectors, and update boundaries.
 - Expo SQLite adapters: durable reads, writes, and save timing.
 - React Native UI: duplicated layouts, large components, and leaked business logic.
+- UI styling: styles mixed into oversized screens, duplicated visual tokens, or screen styles incorrectly promoted into shared theme values.
 - Types, constants, and tests.
 
 ## Cleanup Goals
 
 - Improve clarity, mobile responsiveness, and ownership without changing gameplay.
 - Keep rules out of UI and persistence out of game logic.
+- Keep shared colors, spacing, typography, and Paper theme configuration in the shared theme module; keep screen-specific `StyleSheet` rules in a styles file beside each screen.
+- Do not create a global catch-all stylesheet or move a style into shared theme code unless more than one screen genuinely uses it.
 - Prefer deletion and simplification over new abstractions.
 - Preserve behavior unless the task explicitly includes a behavior change.
 

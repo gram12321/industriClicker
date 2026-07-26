@@ -4,7 +4,7 @@ This is the living implementation map for Industri Clicker. Keep it factual and 
 
 ## Current Status
 
-- Project stage: foundation; Expo application scaffold and counter proof of concept are implemented.
+- Project stage: foundation; Expo application scaffold and first dashboard UI shell are implemented.
 - Product: single-player, mobile-first industrial clicker for Android.
 - No persistence schema or game systems are implemented yet.
 
@@ -37,6 +37,8 @@ olditerations/                    Archived predecessor reference material
 
 ```text
 app/                              Expo Router screens and root provider
+app/index.styles.ts               Dashboard screen-specific styles
+theme.ts                          Shared visual tokens and React Native Paper theme
 stores/                           Zustand runtime state
 assets/                           Expo application icons and splash asset
 app.json                          Expo application configuration
@@ -45,7 +47,7 @@ package.json                      Dependencies and development commands
 
 ## Current App Routes
 
-- `/` â€” counter proof-of-concept screen.
+- `/` â€” dashboard UI shell with Company, Production, and Finance views.
 
 ## Available Commands
 
@@ -87,7 +89,7 @@ Planned: an industrial clicker with explicit progression, economy, and time-cont
 
 ## Implemented Systems
 
-- **Counter proof of concept** â€” Implemented. The `/` route renders a React Native Paper button that increments Zustand-managed in-memory state. Verified with `npm run typecheck` and `npx expo export --platform web`.
+- **Dashboard UI shell** â€” Implemented. The `/` route renders a safe-area-aware top bar, placeholder balance overview, profile menu, notification control, and locally switched Company, Production, and Finance tabs. Shared visual tokens live in `theme.ts`; dashboard layout rules live in `app/index.styles.ts`. It has no game-state, economy, or persistence integration. Verified with `npm run typecheck`.
 
 ## Maintenance Notes
 
