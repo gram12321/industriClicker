@@ -8,6 +8,16 @@ This is the living implementation map for Industri Clicker. Keep it factual and 
 - Product: single-player, mobile-first industrial clicker for Android.
 - No application source, routes, persistence schema, or game systems are implemented yet.
 
+## Repository Size At 0.000d
+
+Measured from the committed `0.000d` tree (`96c190e534516e5410de01fb2624d36eb946fb2d`):
+
+- Tracked files: **91** (`77` Markdown, `13` YAML, and `1` JSON file).
+- Estimated repository lines: **~3,155 non-empty text lines** (`4,314` total text lines including blank lines).
+- Code-like/configuration lines: **45 non-empty lines** across YAML and JSON; there were no TypeScript, React Native, or application source files yet.
+
+This is a repository-content estimate that includes documentation and agent skills. It is not an estimate of implemented game code; implemented application LOC is currently zero.
+
 ## Locked Stack
 
 - Expo + React Native + TypeScript + Expo Router.

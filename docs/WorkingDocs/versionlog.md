@@ -53,6 +53,33 @@ Write clear, factual release notes that explain what changed, where, and why it 
 
 ---
 
+## Version 0.0001d - Initial project consistency review
+**Date:** 2026-07-26 | **Commit(s):** 96c190e534516e5410de01fb2624d36eb946fb2d | **Stats:** +279 / -3534
+
+### Summary
+
+- Reviewed the initial project documentation, AI instructions, skills, and supporting files against the locked Industri Clicker conventions.
+- Removed obsolete setup artifacts and inherited workflow support, and aligned active guidance with Android-first Expo development.
+- Marked predecessor readmes as archives and updated the version log with the newly established documentation history.
+
+### Changes
+
+- `readme.md`, `AGENTS.md`, `CLAUDE.md`, and `docs/WorkingDocs/` - Corrected active documentation links, clarified ownership of the variable relationship map, and aligned current project-stage language.
+- `olditerations/Readme_hackandslash.md`, `olditerations/readmeOffice.md`, and `olditerations/readme_winemaker.md` - Added explicit archive notices so predecessor content cannot be mistaken for current implementation guidance.
+- `skills/mobilegamedev-gram/SKILL.md` and `skills/best-practices/supabase-best-practices/README.md` - Removed stale workflow assumptions and clarified current stack and deferred-cloud boundaries.
+- `skills/superpowers/brainstorming/`, `diagnose/`, `executing-plans/`, `finishing-a-development-branch/`, `requesting-code-review/`, `systematic-debugging/`, `verification-before-completion/`, and `writing-plans/` - Reworked active workflows for explicit user control, native Android verification, and project-specific ownership boundaries.
+- `skills/superpowers/improve-codebase-architecture/` and supporting specialist skills - Replaced generic or predecessor-oriented architecture language with Expo, React Native, TypeScript, Zustand, and Expo SQLite guidance.
+- **REMOVED:** `.cursor/mcp.json.example` and `.cursor/worktrees.json` - Removed deferred Supabase setup and pre-scaffold worktree commands that were not valid for the current foundation stage.
+- **REMOVED:** obsolete brainstorming visual-server files, generic debugging appendices, and plan-review prompt files - Removed unused browser, shell, and inherited workflow support.
+- `docs/WorkingDocs/versionlog.md` - Added the `0.0001c` history entry and preserved the required evidence-based entry format.
+
+### Notes
+
+- No Expo application, game mechanics, persistence schema, or native build was added in this documentation and skill review.
+- Supabase guidance remains available only for an explicitly approved future cloud requirement.
+
+---
+
 ## Version 0.0001c - Variable relationship map template
 **Date:** 2026-07-26 | **Commit(s):** 78b81969cc4cdbb8a78248e7b58213931c86d4ee | **Stats:** +133 / -91
 
