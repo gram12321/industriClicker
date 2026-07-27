@@ -33,6 +33,56 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     output: { resourceType: ResourceType.Electricity, amount: 1 },
     workAmount: 5,
   },
+  [RecipeName.GrowSugar]: {
+    name: RecipeName.GrowSugar,
+    inputs: [{ resourceType: ResourceType.Water, amount: 4 }],
+    output: { resourceType: ResourceType.Sugar, amount: 1 },
+    workAmount: 3,
+  },
+  [RecipeName.MineCoal]: {
+    name: RecipeName.MineCoal,
+    inputs: [{ resourceType: ResourceType.Electricity, amount: 3 }],
+    output: { resourceType: ResourceType.Coal, amount: 1 },
+    workAmount: 3,
+  },
+  [RecipeName.BakeCake]: {
+    name: RecipeName.BakeCake,
+    inputs: [
+      { resourceType: ResourceType.Grain, amount: 1 },
+      { resourceType: ResourceType.Sugar, amount: 0.5 },
+      { resourceType: ResourceType.Electricity, amount: 2 },
+      { resourceType: ResourceType.Water, amount: 2 },
+    ],
+    output: { resourceType: ResourceType.Cake, amount: 1 },
+    workAmount: 15,
+  },
+  [RecipeName.ManualPumping]: {
+    name: RecipeName.ManualPumping,
+    inputs: [],
+    output: { resourceType: ResourceType.Water, amount: 1 },
+    workAmount: 1,
+  },
+  [RecipeName.ElectricPumping]: {
+    name: RecipeName.ElectricPumping,
+    inputs: [{ resourceType: ResourceType.Electricity, amount: 1 }],
+    output: { resourceType: ResourceType.Water, amount: 5 },
+    workAmount: 0.5,
+  },
+  [RecipeName.CoalPower]: {
+    name: RecipeName.CoalPower,
+    inputs: [
+      { resourceType: ResourceType.Coal, amount: 1 },
+      { resourceType: ResourceType.Water, amount: 2 },
+    ],
+    output: { resourceType: ResourceType.Electricity, amount: 10 },
+    workAmount: 5,
+  },
+  [RecipeName.SolarPower]: {
+    name: RecipeName.SolarPower,
+    inputs: [],
+    output: { resourceType: ResourceType.Electricity, amount: 1 },
+    workAmount: 10,
+  },
 };
 
 export function getRecipe(recipeName: RecipeName): Recipe {

@@ -9,6 +9,9 @@ export enum ResourceType {
   Bread = 'bread',
   Water = 'water',
   Electricity = 'electricity',
+  Sugar = 'sugar',
+  Coal = 'coal',
+  Cake = 'cake',
 }
 
 export const RESOURCE_TYPES = [
@@ -16,4 +19,7 @@ export const RESOURCE_TYPES = [
   ResourceType.Bread,
   ResourceType.Water,
   ResourceType.Electricity,
+  ResourceType.Sugar,
+  ResourceType.Coal,
+  ResourceType.Cake,
 ] as const;

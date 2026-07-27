@@ -20,13 +20,19 @@ This is the canonical glossary for Industri Clicker. Use it for stable game, UI,
 | Bread | The first processed resource type. | Implemented definition |
 | Water | A utility resource produced by Small Utility Works and consumed by production recipes. | Implemented definition |
 | Electricity | A utility resource produced by Small Utility Works and consumed by production recipes. | Implemented definition |
+| Sugar | A farm-grown ingredient for cake production. | Implemented definition |
+| Coal | A mined fuel used by the coal power recipe. | Implemented definition |
+| Cake | A baked product made from Grain, Sugar, Water, and Electricity. | Implemented definition |
 | Inventory | Player-owned quantities and associated quality, owned together by the `Inventory` game-domain class. | Implemented model |
 | Resource quality | A property of one inventory entry. Its current value is a placeholder until quality rules are designed. | Placeholder |
 | Recipe | A named production transformation with typed inputs, output, and work amount. | Implemented definition |
-| Facility | A player-owned production unit. The initial catalogue contains Farm, Bakery, and Small Utility Works. | Implemented foundation |
+| Facility | A player-owned production unit. The catalogue contains Farm, Bakery, Small Utility Works, Mine, Water Well, and Power Plant. | Implemented foundation |
 | Farm | The facility type assigned to the Grow Grain recipe. | Implemented definition |
 | Bakery | The facility type assigned to the Bake Bread recipe. | Implemented definition |
 | Small Utility Works | The facility type assigned to the Produce Water and Produce Electricity recipes. | Implemented definition |
+| Mine | The facility type assigned to the Mine Coal recipe. | Implemented definition |
+| Water Well | The facility type assigned to the Manual Pumping and Electric Pumping recipes. | Implemented definition |
+| Power Plant | The facility type assigned to the Coal Power and Solar Power recipes. | Implemented definition |
 | Euro (€) | The initial player currency. | Implemented foundation |
 | Finance | Player balance plus an append-only record of balance-changing transactions. | Implemented model |
 | Progression | A durable increase in available options, capacity, efficiency, or player reach. | Generic term |

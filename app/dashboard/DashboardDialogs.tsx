@@ -1,4 +1,4 @@
-import { ScrollView, View } from 'react-native';
+import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { Button, Card, Dialog, List, Portal, Text } from 'react-native-paper';
 import { colors } from '@/theme';
 import type { Finance } from '@/game/finance/finance';
@@ -42,18 +42,27 @@ export function ConstructionYardDialog({
   onSelectFacility: (facilityType: FacilityType) => void;
   visible: boolean;
 }) {
+  const { height } = useWindowDimensions();
+  const facilityListMaxHeight = Math.max(160, Math.min(480, height - 280));
+
   return (
     <Portal>
       <Dialog dismissable onDismiss={onDismiss} style={styles.constructionYardDialog} visible={visible}>
         <Dialog.Title>Build facility</Dialog.Title>
-        <Dialog.Content>
+        <Dialog.Content style={styles.constructionYardDialogContent}>
           <Text style={styles.dialogDescription}>
             Choose an available facility. Its recipes and final cost are shown before construction.
           </Text>
           <Text style={styles.constructionYardFunds}>
             Available funds: {formatCurrency(finance.getBalance())}
           </Text>
-          <ScrollView contentContainerStyle={styles.constructionYardList} showsVerticalScrollIndicator>
+          <ScrollView
+            contentContainerStyle={styles.constructionYardList}
+            keyboardShouldPersistTaps="handled"
+            nestedScrollEnabled
+            showsVerticalScrollIndicator
+            style={[styles.constructionYardListViewport, { maxHeight: facilityListMaxHeight }]}
+          >
             {FACILITY_TYPES.map((facilityType) => {
               const definition = getFacilityDefinition(facilityType);
               const isBuilt = facilities.has(facilityType);

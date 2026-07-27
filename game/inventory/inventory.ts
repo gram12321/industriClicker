@@ -20,6 +20,9 @@ function createEmptyEntries(): Record<ResourceType, InventoryEntry> {
     [ResourceType.Bread]: { quantity: 0, quality: DEFAULT_RESOURCE_QUALITY },
     [ResourceType.Water]: { quantity: 0, quality: DEFAULT_RESOURCE_QUALITY },
     [ResourceType.Electricity]: { quantity: 0, quality: DEFAULT_RESOURCE_QUALITY },
+    [ResourceType.Sugar]: { quantity: 0, quality: DEFAULT_RESOURCE_QUALITY },
+    [ResourceType.Coal]: { quantity: 0, quality: DEFAULT_RESOURCE_QUALITY },
+    [ResourceType.Cake]: { quantity: 0, quality: DEFAULT_RESOURCE_QUALITY },
   };
 }
 

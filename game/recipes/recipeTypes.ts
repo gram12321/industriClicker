@@ -6,6 +6,13 @@ export enum RecipeName {
   BakeBread = 'bake-bread',
   ProduceWater = 'produce-water',
   ProduceElectricity = 'produce-electricity',
+  GrowSugar = 'grow-sugar',
+  MineCoal = 'mine-coal',
+  BakeCake = 'bake-cake',
+  ManualPumping = 'manual-pumping',
+  ElectricPumping = 'electric-pumping',
+  CoalPower = 'coal-power',
+  SolarPower = 'solar-power',
 }
 
 export type RecipeInput = {
