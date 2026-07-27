@@ -1,86 +1,66 @@
-# Industri Clicker Gameflow And Variable Relationship Map
+# Industri Clicker Gameflow
 
-This document is the canonical home for mechanics flow, formulas, state ownership, tick order, and persistence boundaries. Use the companion root `VariableRelationshipMap.md` for the variable-by-variable dependency map.
+This is the canonical home for system mechanics, formulas, tick order, state ownership, and persistence boundaries. `VariableRelationshipMap.md` holds the detailed variable-by-variable map.
 
 ## How To Use This Document
 
-- Add concrete mechanics only after they are agreed in `design.md`.
-- Keep the variable-by-variable ownership, type/unit, source of truth, update triggers, persistence status, and derived relationships in `VariableRelationshipMap.md`.
-- Keep formulas deterministic and write down rounding, minimum/maximum, and invalid-input behavior.
-- Update this document with any change to a game command, tick, save boundary, or resource relationship.
+- Add mechanics only after they are agreed in `design.md`.
+- Keep concrete variables, types, units, dependencies, update triggers, and save mappings in `VariableRelationshipMap.md`.
+- Keep formulas deterministic and specify rounding, limits, and invalid-input behavior.
+- Keep repository and verification facts in `PROJECT_INFO.md`.
 
-## Current Status
-
-Resource, inventory, facility, finance, recipe, foreground realtime-production, and local-save foundations are implemented. The closed catalogue contains Grain, Bread, Water, and Electricity; Farm, Bakery, and Small Utility Works execute their selected recipe definitions. A Zustand store owns the live `Finance`, `Inventory`, `FacilityCollection`, and foreground clock anchor. One versioned `GameSnapshot` record persists player progress in Expo SQLite on Android and web; web support uses the required WebAssembly and cross-origin-isolation configuration. Market and offline catch-up remain deferred.
-
-## Planned Gameflow
+## System Flow
 
 ```text
 Player input or system event
         -> typed game command
         -> pure game-rule evaluation
         -> updated Zustand runtime state
-        -> derived UI view model and player feedback
+        -> derived UI view model and feedback
 
 Approved save boundary
         -> Expo SQLite snapshot
         -> restore on later launch or resume
 
-Elapsed time (only when designed)
-        -> validated catch-up calculation
-        -> same game-rule evaluation path
+Elapsed time
+        -> validated foreground elapsed-time calculation
+        -> same production rule path
 ```
 
 ## State Ownership
 
-| Concern | Planned owner | Persisted? | Notes |
-|---|---|---|---|
-| Game configuration and balance values | Typed TypeScript game configuration | No | Versioned with the app; use named constants. |
-| Runtime game state | Zustand | Not directly | Holds the active in-memory session. |
-| Foreground clock anchor | Zustand `lastProcessedAtMs` | No | Runtime-only wall-clock anchor; reset on resume so inactive time grants no work. Offline catch-up is planned separately. |
-| Player finance | `Finance` class in the Zustand game store | Yes | Starts at €10,000 and records accepted balance changes. |
-| Player resource inventory | `Inventory` class in the Zustand game store | Yes | Quantity and placeholder quality are one inventory entry per `ResourceType`. |
-| Constructed facilities | `FacilityCollection` class in the Zustand game store | Yes | Holds at most one of each facility type, with selected recipe, active state, and per-recipe work progress. |
-| Facility catalogue | Typed facility registry | No | Farm, Bakery, and Small Utility Works definitions are code-owned and must not be stored in a future player save. |
-| Resource catalogue | `Resource` instances in the resource registry | No | Grain and Bread definitions are code-owned and must not be stored in a future player save. |
-| Recipe catalogue | Typed code-owned recipe definitions | No | Execution and production scheduling are deferred. |
-| Player command | UI or system event, passed to game logic | No | UI must not directly mutate rules-owned values. |
-| Rule result | Pure TypeScript game logic | No | Validates inputs and returns deterministic changes. |
-| Derived display values | Selectors/view-model helpers | No | Recalculate from source-of-truth state where practical. |
-| Durable progress snapshot | `gameSaveRepository` Expo SQLite adapter | Yes | One current-version `GameSnapshot` record. |
-| Cloud state | None | No | Supabase remains deferred. |
+| Concern | Owner | Persisted? |
+|---|---|---|
+| Game configuration and balance values | Typed TypeScript configuration | No |
+| Runtime game state | Zustand | Through a snapshot |
+| Foreground clock anchor | Zustand `lastProcessedAtMs` | No |
+| Player finance | `Finance` in the Zustand store | Yes |
+| Player inventory | `Inventory` in the Zustand store | Yes |
+| Constructed facilities | `FacilityCollection` in the Zustand store | Yes |
+| Resource, recipe, and facility catalogues | Typed code-owned definitions | No |
+| Player commands and rule results | UI/system event plus pure TypeScript game logic | No |
+| Derived display values | Selectors/view-model helpers | No |
+| Durable progress snapshot | `gameSaveRepository` Expo SQLite adapter | Yes |
+| Cloud state | None | No |
 
-## Variable Relationship Map
+## Production Rule
 
-Maintain concrete variables and their dependencies in the root `VariableRelationshipMap.md`. Keep this document focused on system-level flow, formulas, ticks, and persistence boundaries.
-
-## Production Relationship Template
-
-For every approved production step, specify:
+For each approved production step:
 
 ```text
-Inputs + valid player/system action + applicable time
+inputs + valid action + applicable time
     -> validation and cost calculation
-    -> output calculation (with caps, rounding, and modifiers)
+    -> output calculation with limits and rounding
     -> updated source-of-truth state
-    -> derived UI feedback and any unlock checks
+    -> derived feedback and unlock checks
 ```
 
-Record the concrete inputs, outputs, modifiers, limits, and unlock dependencies in a table here. Do not assume a facility, currency, or automation system until the design adopts it.
+Current foundation rules:
 
-## Current Resource And Inventory Rules
-
-- `ResourceType` is a closed enum: `grain`, `bread`, `water`, and `electricity` currently exist.
-- An `Inventory` owns one `{ quantity, quality }` entry for every resource type.
-- Inventory `add` accepts only finite positive amounts. `remove` succeeds only when the player holds a finite positive requested amount.
-- Quality is stored as `1` by default and does not yet affect any calculation.
-- `Inventory.toSnapshot()` returns plain enum-keyed data for a future Expo SQLite adapter. No save or restore boundary has been introduced yet.
-- `GrowGrain` consumes one Water and one Electricity to output one Grain after five work units. `BakeBread` consumes two Grain, one Water, and one Electricity to output one Bread after ten work units. `ProduceWater` and `ProduceElectricity` each output one utility resource after five work units.
-- `FacilityType` is a closed enum: Farm, Bakery, and Small Utility Works currently exist. A Farm accepts `GrowGrain`; a Bakery accepts `BakeBread`; Small Utility Works accepts `ProduceWater` or `ProduceElectricity`.
-- Farm construction costs €60; Bakery construction costs €300. `buildFacility` accepts the command only if the type is unconstructed and `Finance` can afford its code-defined cost.
-- Construction writes one negative finance transaction using the facility name and cost. The UI exposes touch-friendly build controls and disables unaffordable choices.
-- `destroyFacility` removes a constructed facility without changing Finance. The UI requires a second explicit confirmation tap before it calls this command.
-- `FacilitySnapshot` preserves active state plus per-recipe work progress. `GameSnapshot` joins `FinanceSnapshot`, `InventorySnapshot`, and `FacilityCollectionSnapshot` for the future Expo SQLite adapter.
+- `GrowGrain` consumes 1 Water and 1 Electricity and produces 1 Grain after 5 work units.
+- `BakeBread` consumes 2 Grain, 1 Water, and 1 Electricity and produces 1 Bread after 10 work units.
+- `ProduceWater` and `ProduceElectricity` each produce 1 utility resource after 5 work units.
+- Inputs are paid at cycle start. If inputs are missing, the facility stalls and does not bank work.
 
 ## Finance Formula
 
@@ -90,36 +70,31 @@ Inputs and units: Current balance (€), facility construction cost (€)
 
 Formula: `newBalance = currentBalance - constructionCost`
 
-Rounding and limits: Facility costs are whole euros. Construction is rejected when `currentBalance < constructionCost`; balance cannot become negative.
+Rounding and limits: Costs are whole euros. Reject construction when the current balance is less than the cost; balance cannot become negative.
 
-Invalid-input behavior: Non-finite transaction amounts and empty descriptions are rejected.
+Invalid-input behavior: Reject non-finite transaction amounts and empty descriptions.
 
-## Tick And Catch-Up Flow
+## Tick Order and Foreground Time
 
-1. While React Native reports the app as active, a lightweight runtime timer reads `Date.now()`.
-2. `TimeManager` calculates whole elapsed minutes and retains partial-minute remainder to avoid timer-drift loss.
-3. For each elapsed minute, every active facility receives one work unit in fixed order: Small Utility Works, Farm, Bakery.
-4. A recipe pays all inputs at the beginning of a cycle, advances its stored progress, and grants output on completion. A missing input stalls that facility and does not bank work.
-5. The temporary Fast-forward 1 minute UI action invokes this identical production path once.
-6. On background or resume, the runtime clock anchor resets. This first implementation deliberately awards no background/offline work.
+1. While the app is active, the runtime timer reads `Date.now()`.
+2. `TimeManager` calculates whole elapsed minutes and retains the partial-minute remainder.
+3. For each elapsed minute, active facilities receive one work unit in fixed order: Small Utility Works, Farm, Bakery.
+4. The Fast-forward 1 minute control invokes the same production path once.
+5. On background or resume, the runtime clock anchor resets; inactive time awards no work.
 
-The Production view renders active-recipe progress as a percentage and estimated time remaining. A facility with no selected recipe reports that production has not started; a facility stalled at the beginning of a cycle identifies the missing input resources.
-
-Planned offline catch-up: persist a timestamp with the eventual SQLite snapshot, validate elapsed time, apply an approved cap and device-clock policy, then invoke the same production path. Those policy details are not implemented.
+Offline catch-up is not part of this flow yet. When designed, it must validate elapsed time and use the same production rule path.
 
 ## Persistence Boundaries
 
-| Event | Planned behavior | Status |
+| Event | Behavior | Status |
 |---|---|---|
-| Normal tap/action | Update runtime state; batch the current snapshot for one second | Implemented |
-| Meaningful checkpoint | Write the current single-record snapshot | Implemented |
-| App background/resume | Flush the current snapshot, reset the foreground clock, and award no background work. Offline catch-up is planned separately. | Implemented foreground-only |
-| App launch | Read the current-version valid single-row snapshot before the game becomes interactive; no catch-up is applied. | Implemented |
-| Invalid/corrupt saved data | Ignore it and start a fresh runtime state; it remains untouched until a later successful save. | Implemented |
+| Normal action | Update runtime state; batch the current snapshot for one second. | Implemented |
+| Meaningful checkpoint | Write the current single-record snapshot. | Implemented |
+| App background/resume | Flush the snapshot, reset the foreground clock, and award no background work. | Implemented foreground-only |
+| App launch | Restore a valid current-version snapshot before interaction; apply no catch-up. | Implemented |
+| Invalid/corrupt save | Ignore it and start fresh; leave it untouched until a successful save. | Implemented |
 
 ## Formula Template
-
-Document each formula in this format:
 
 ```text
 Name:
@@ -132,7 +107,7 @@ Tests/examples:
 
 ## Mechanics Update Checklist
 
-- Add or update the canonical terms in `CONTEXT.md`.
+- Add or update canonical terms in `CONTEXT.md`.
 - Record the player-facing decision in `design.md`.
-- Add variables and dependency details to `VariableRelationshipMap.md`; add formula, command, tick, and save impacts here.
-- Add implementation facts and verification to `PROJECT_INFO.md` only after they exist.
+- Add concrete dependencies and command effects to `VariableRelationshipMap.md`.
+- Add verified implementation facts to `PROJECT_INFO.md` only after they exist.

@@ -1,13 +1,13 @@
 # Industri Clicker Variable Relationship Map
 
-Use this document to map the concrete game variables and their dependencies once a mechanic is designed. It intentionally contains examples, not approved game content.
+This document maps concrete variables, commands, dependencies, time effects, and persistence representations. Player-facing rationale belongs in `design.md`; system flow and formulas belong in `gameflow.md`.
 
-## How To Use This Template
+## How To Use This Map
 
 - Add a variable when it becomes part of an approved mechanic, formula, save, or player-facing display.
-- Record the source of truth instead of duplicating values without a reason.
-- Mark values as **stored** only when they are primary state; mark calculated values as **derived**.
-- Update this map alongside `docs/WorkingDocs/gameflow.md` whenever an action, tick, formula, or save boundary changes.
+- Record the source of truth rather than duplicating values without a reason.
+- Mark primary state as **stored** and calculated values as **derived**.
+- Update this map with `gameflow.md` whenever an action, tick, formula, or save boundary changes.
 
 ## Relationship Overview
 
@@ -17,68 +17,63 @@ Player action or time event
     -> game-rule calculation
     -> source-of-truth state
     -> derived values and UI feedback
-    -> deliberate local save when a save boundary is reached
+    -> deliberate local save at a save boundary
 ```
 
 ## Variable Register
 
 | Variable | Meaning and unit | Kind | Source of truth | Changes when | Used by | Saved? | Status |
 |---|---|---|---|---|---|---|---|
-| `inventory.entries[ResourceType.Grain].quantity` | Grain held by the player | Stored | `Inventory` in Zustand | Future resource command | Inventory and UI | Not yet | Implemented foundation |
-| `inventory.entries[ResourceType.Bread].quantity` | Bread held by the player | Stored | `Inventory` in Zustand | Future resource command | Inventory and UI | Not yet | Implemented foundation |
-| `inventory.entries[*].quality` | Quality associated with a held resource | Stored | `Inventory` in Zustand | Inventory initialization; future quality rules | Inventory and UI | Not yet | Placeholder value `1` |
-| `InventorySnapshot.entries` | Plain enum-keyed inventory data | Stored snapshot shape | `Inventory.toSnapshot()` | Batched runtime change or app background | SQLite game-save record | Yes | Implemented |
-| `finance.balance` | Available company funds in euros | Stored | `Finance` in Zustand | Accepted finance transaction | Header, finance view, construction validation | Not yet | Implemented foundation |
-| `finance.transactions` | Immutable record of accepted balance changes | Stored | `Finance` in Zustand | Accepted finance transaction | Finance view and future SQLite save | Not yet | Implemented foundation |
-| `FinanceSnapshot` | Plain balance and transaction data | Stored snapshot shape | `Finance.toSnapshot()` | Batched runtime change or app background | SQLite game-save record | Yes | Implemented |
-| `facilities[FacilityType]` | Player-constructed Farm, Bakery, or Small Utility Works state | Stored | `FacilityCollection` in Zustand | Construction, recipe change, or production advance | Facility UI and production rules | Not yet | Implemented runtime model |
-| `FacilitySnapshot` | Facility type, selected recipe, active state, and progress | Stored snapshot shape | `Facility.toSnapshot()` | Batched runtime change or app background | SQLite game-save record | Yes | Implemented |
-| `facility.recipeProgress[RecipeName]` | Work completed on a facility recipe | Stored | `Facility` in Zustand | Foreground elapsed minute or fast-forward | Production view and recipe completion | Designed, not written | Implemented runtime rule |
-| `lastProcessedAtMs` | Runtime wall-clock anchor in epoch milliseconds | Stored runtime state | Zustand game store | Foreground timer or lifecycle transition | `TimeManager` | No | Foreground-only implementation |
+| `inventory.entries[ResourceType].quantity` | Amount of a resource held by the player | Stored | `Inventory` in Zustand | Resource command or production completion | Inventory and UI | Yes, via `InventorySnapshot` | Implemented |
+| `inventory.entries[ResourceType].quality` | Quality associated with a held resource | Stored | `Inventory` in Zustand | Inventory initialization; future quality rules | Inventory and UI | Yes, via `InventorySnapshot` | Placeholder `1` |
+| `finance.balance` | Available company funds in euros | Stored | `Finance` in Zustand | Accepted finance transaction | Header, finance view, construction validation | Yes, via `FinanceSnapshot` | Implemented |
+| `finance.transactions` | Accepted balance changes | Stored | `Finance` in Zustand | Accepted finance transaction | Finance view | Yes, via `FinanceSnapshot` | Implemented |
+| `facilities[FacilityType]` | Player-constructed facility state | Stored | `FacilityCollection` in Zustand | Construction, recipe change, or production advance | Facility UI and production rules | Yes, via `FacilityCollectionSnapshot` | Implemented |
+| `facility.recipeProgress[RecipeName]` | Work completed on a facility recipe | Stored | `Facility` in Zustand | Foreground elapsed minute or fast-forward | Production view and recipe completion | Yes, via facility snapshot | Implemented |
+| `lastProcessedAtMs` | Foreground wall-clock anchor in epoch milliseconds | Runtime state | Zustand game store | Foreground timer or lifecycle transition | `TimeManager` | No | Foreground-only |
 
-## Relationship Table
+## Dependency Table
 
-Use this table to make each dependency explicit.
-
-| Output variable | Depends on | Relationship/formula | Limits and rounding | Update trigger | Notes |
-|---|---|---|---|---|---|
-| Inventory entry quality | Resource type | Fixed at `1` until quality rules are approved | Must be finite and greater than zero when restored | Inventory construction or restore | Placeholder only |
-| Company balance | Prior balance, signed transaction amount | `balanceAfter = balance + amount` | Must remain finite and at least €0 | Accepted transaction | Construction is an amount equal to the negative facility cost |
+| Output variable | Depends on | Relationship/formula | Limits and rounding | Update trigger |
+|---|---|---|---|---|
+| Inventory quantity | Resource command or completed recipe | Add/remove the requested finite amount | Removal requires sufficient quantity | Command or production completion |
+| Inventory entry quality | Resource type | Placeholder value `1` | Must be finite and greater than zero when restored | Inventory construction or restore |
+| Company balance | Prior balance, signed transaction amount | `balanceAfter = balance + amount` | Balance must remain finite and at least €0 | Accepted transaction |
+| Recipe progress | Prior progress, work units, recipe work amount | Progress advances by one work unit per eligible tick | Completion resets progress and grants output | Production tick |
+| Production output | Recipe inputs and completion state | Recipe-specific output after required work | Inputs are paid at cycle start; missing inputs stall | Cycle start or completion |
 
 ## Command Effects
 
-Record every game command after it is approved.
-
 | Command | Preconditions | Reads | Writes | Derived effects | Save boundary | Status |
 |---|---|---|---|---|---|---|
-| `addResource` | Resource amount must be finite and positive | Resource type, requested amount | A cloned `Inventory` in Zustand | UI can render the new entry | No immediate save | Implemented runtime command |
-| `removeResource` | Resource amount must be finite and positive; player must hold enough | Resource type, requested amount | A cloned `Inventory` in Zustand | UI can render the new entry | No immediate save | Implemented runtime command |
-| `buildFacility` | Facility type is unconstructed and balance covers its code-defined cost | Facility type, facility cost, balance | Cloned `FacilityCollection` and `Finance` in Zustand | Construction transaction; UI updates balance and facility state | No immediate save | Implemented |
-| `destroyFacility` | Facility type is constructed | Facility type | Cloned `FacilityCollection` in Zustand | Removes facility; balance is unchanged | No immediate save | Implemented |
-| `setFacilityRecipe` | Facility must be constructed and recipe must belong to its definition | Facility type, recipe name | A cloned `FacilityCollection` in Zustand | Future production UI can render recipe state | No immediate save | Implemented foundation |
-| `recordTransaction` | Amount is finite, description and timestamp are non-empty, resulting balance is non-negative | Signed amount, description | Cloned `Finance` in Zustand | UI updates balance and transaction list | No immediate save | Implemented |
-| `advanceRealtime` | Finite foreground clock input | Last processed time, facilities, inventory | Cloned facilities/inventory and runtime clock anchor | Advances eligible active-facility production by whole elapsed minutes | No immediate save | Implemented foreground-only |
-| `fastForwardOneMinute` | None | Facilities, inventory | Cloned facilities/inventory | Invokes the same production path once | No immediate save | Implemented temporary developer action |
+| `addResource` | Amount finite and positive | Resource type, amount | Inventory | UI renders new quantity | No immediate save | Implemented |
+| `removeResource` | Amount finite and positive; sufficient quantity | Resource type, amount | Inventory | UI renders new quantity | No immediate save | Implemented |
+| `buildFacility` | Type unconstructed; balance covers code-defined cost | Facility type, cost, balance | Facilities and Finance | Construction transaction and UI update | No immediate save | Implemented |
+| `destroyFacility` | Facility is constructed | Facility type | Facilities | Facility disappears; no refund | No immediate save | Implemented |
+| `setFacilityRecipe` | Facility constructed; recipe belongs to definition | Facility type, recipe | Facilities | Production UI updates | No immediate save | Implemented |
+| `recordTransaction` | Valid amount, description, timestamp, and non-negative result | Transaction data | Finance | Balance and ledger update | No immediate save | Implemented |
+| `advanceRealtime` | Finite foreground clock input | Clock anchor, facilities, inventory | Facilities, inventory, clock anchor | Advances eligible production by whole minutes | Batched save | Implemented |
+| `fastForwardOneMinute` | None | Facilities, inventory | Facilities, inventory | Runs one production minute | Batched save | Implemented |
 
-## Time And Catch-Up Effects
+## Time Effects
 
-| Event | Time input | Variables affected | Limits | Player feedback | Status |
-|---|---|---|---|---|---|
-| Foreground elapsed minute | `Date.now()` compared with `lastProcessedAtMs` | Active facility progress and inventory | Whole completed minutes only; partial minute retained | Facility progress and inventory update | Implemented |
-| Resume catch-up | No approved input yet | None | Clock resets; background/offline minutes produce no work | None | Offline progress planned |
+| Event | Time input | Variables affected | Limits | Status |
+|---|---|---|---|---|
+| Foreground elapsed minute | `Date.now()` compared with `lastProcessedAtMs` | Facility progress and inventory | Whole minutes only; partial minute retained | Implemented |
+| Resume/background transition | Lifecycle event | Clock anchor and save snapshot | Background minutes produce no work | Implemented foreground-only |
+| Offline catch-up | Not approved | None yet | Cap and device-clock policy required | Deferred |
 
 ## Persistence Map
 
 | State group | Runtime owner | Local-save representation | Save trigger | Restore behavior | Status |
 |---|---|---|---|---|---|
-| Active resource inventory | Zustand game store | `InventorySnapshot` | Batched after runtime changes; immediate on app background | Restore from valid current-version snapshot | Implemented |
-| Active finance | Zustand game store | `FinanceSnapshot` inside `GameSnapshot` | Batched after runtime changes; immediate on app background | Restore from valid current-version snapshot | Implemented |
-| Constructed facilities | Zustand game store | `FacilityCollectionSnapshot` inside `GameSnapshot` | Batched after runtime changes; immediate on app background | Restore from valid current-version snapshot | Implemented |
-| Balance configuration | Typed TypeScript configuration | Not saved | App version | Loaded with app | Confirmed direction |
+| Resource inventory | Zustand game store | `InventorySnapshot` inside `GameSnapshot` | Batched after changes; immediate on background | Restore valid current-version snapshot | Implemented |
+| Finance | Zustand game store | `FinanceSnapshot` inside `GameSnapshot` | Batched after changes; immediate on background | Restore valid current-version snapshot | Implemented |
+| Constructed facilities | Zustand game store | `FacilityCollectionSnapshot` inside `GameSnapshot` | Batched after changes; immediate on background | Restore valid current-version snapshot | Implemented |
+| Code-owned catalogues | Typed TypeScript definitions | Not saved | App version | Loaded from code | Implemented |
 
-## Rules And Open Questions
+## Map Rules
 
-- All production, economy, and progression formulas must be deterministic and specify rounding and boundary behavior.
-- UI components issue commands; they do not own calculations or directly mutate rules-owned state.
-- Zustand holds runtime state and Expo SQLite holds deliberate local saves.
-- Concrete resources, production steps, tick cadence, offline eligibility, and save timing remain open until the game design defines them.
+- UI issues commands; it does not directly mutate rules-owned state.
+- Derived display values should be recalculated from source-of-truth state where practical.
+- Persistence rows contain snapshots, not live class instances or code-owned catalogues.

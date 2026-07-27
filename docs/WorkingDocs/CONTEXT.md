@@ -1,40 +1,39 @@
 # Industri Clicker Context
 
-This is the canonical glossary for Industri Clicker. Use it to keep game, UI, state, and persistence language consistent across design documents and code.
+This is the canonical glossary for Industri Clicker. Use it for stable game, UI, state, and persistence language.
 
 ## How To Use This Document
 
 - Add a term once its meaning is agreed and durable.
-- Define the player-facing meaning first, then add an implementation note only when it prevents ambiguity.
-- Mark examples as examples; do not treat them as confirmed game content.
-- Prefer these terms in code, tests, UI copy, and other working documents once they are defined.
+- Define the player-facing meaning first; add a short implementation note only when it prevents ambiguity.
+- Mark examples as examples and do not treat them as confirmed game content.
+- Put decisions in `design.md`, system rules in `gameflow.md`, variable dependencies in `VariableRelationshipMap.md`, and verified code facts in `PROJECT_INFO.md`.
 
 ## Core Game Concepts
 
 | Term | Meaning | Status |
 |---|---|---|
 | Industrial clicker | The planned single-player game genre and setting direction. | Confirmed direction |
-| Player action | A deliberate player input, such as a tap or a selected command. | Generic term |
+| Player action | A deliberate player input, such as a tap or selected command. | Generic term |
 | Resource | A code-defined resource type that the player can gain, spend, transform, and track in inventory. | Confirmed direction |
-| Grain | The first raw resource type. | Implemented resource definition |
-| Bread | The first processed resource type. | Implemented resource definition |
-| Water | A utility resource produced by Small Utility Works and consumed by production recipes. | Implemented resource definition |
-| Electricity | A utility resource produced by Small Utility Works and consumed by production recipes. | Implemented resource definition |
-| Inventory | Player-owned quantities and their associated quality, owned together by the `Inventory` game-domain class. | Implemented runtime model |
-| Resource quality | A property of one inventory entry. It currently uses the placeholder value `1` until quality rules are designed. | Implemented placeholder |
-| Recipe | A named production transformation with typed inputs, output, and work amount. | Definitions implemented; execution deferred |
-| Production step | A rule that turns inputs, time, or player actions into outputs. | Example placeholder |
+| Grain | The first raw resource type. | Implemented definition |
+| Bread | The first processed resource type. | Implemented definition |
+| Water | A utility resource produced by Small Utility Works and consumed by production recipes. | Implemented definition |
+| Electricity | A utility resource produced by Small Utility Works and consumed by production recipes. | Implemented definition |
+| Inventory | Player-owned quantities and associated quality, owned together by the `Inventory` game-domain class. | Implemented model |
+| Resource quality | A property of one inventory entry. Its current value is a placeholder until quality rules are designed. | Placeholder |
+| Recipe | A named production transformation with typed inputs, output, and work amount. | Implemented definition |
 | Facility | A player-owned production unit. The initial catalogue contains Farm, Bakery, and Small Utility Works. | Implemented foundation |
 | Farm | The facility type assigned to the Grow Grain recipe. | Implemented definition |
 | Bakery | The facility type assigned to the Bake Bread recipe. | Implemented definition |
 | Small Utility Works | The facility type assigned to the Produce Water and Produce Electricity recipes. | Implemented definition |
-| Euro (€) | The initial player currency. A new company starts with €10,000. | Implemented foundation |
-| Finance | Player balance plus an append-only record of balance-changing transactions. | Implemented runtime model |
+| Euro (€) | The initial player currency. | Implemented foundation |
+| Finance | Player balance plus an append-only record of balance-changing transactions. | Implemented model |
 | Progression | A durable increase in available options, capacity, efficiency, or player reach. | Generic term |
 
-## Production And Economy Language
+## Economy Language
 
-Define the following before they appear as concrete mechanics:
+These are working definitions, not confirmation that every system will be used:
 
 - **Currency:** a resource used to pay for an action or unlock.
 - **Cost:** the amount removed to perform an action.
@@ -44,54 +43,34 @@ Define the following before they appear as concrete mechanics:
 - **Unlock:** a requirement that makes new content or an option available.
 - **Balance value:** a named, tunable value that controls an economy formula.
 
-These are working definitions, not confirmation that every system will be used.
-
-## Time And Tick Language
+## Time, State, and Persistence Language
 
 | Term | Meaning |
 |---|---|
-| Runtime state | The current in-memory game state while the app is open. |
+| Runtime state | Current in-memory game state while the app is open. |
 | Tick | One controlled advancement of game time or a time-based rule. |
 | Elapsed-time catch-up | Applying approved progression for time passed while the app was inactive. |
-| Save boundary | The intentional point at which runtime state is written to durable storage. |
+| Save boundary | An intentional point at which runtime state is written to durable storage. |
 | Resume | Restoring a saved game and applying any approved catch-up rules. |
-| Foreground realtime progression | The initial implemented time rule: every active facility receives one work unit per completed real minute while the app is active. Background and offline time do not yet produce work. |
+| Foreground realtime progression | Progression awarded while the app is active according to the implemented real-time rule. |
+| Source of truth | The authoritative value from which other values are derived. |
+| Derived value | A display or convenience value calculated from source-of-truth state. |
+| Command | A typed request from UI or a system event to change game state. |
+| Snapshot | The deliberate local-save representation of durable game state. |
+| Runtime store | Zustand-managed in-memory state. |
+| Local save | The device-local Expo SQLite record used to restore a current-version game snapshot. |
 
-## State And Persistence Language
-
-- **Source of truth:** the authoritative value from which other values are derived.
-- **Derived value:** a display or convenience value calculated from source-of-truth state.
-- **Command:** a typed request from UI or a system event to change game state.
-- **Snapshot:** the deliberate local-save representation of durable game state.
-- **Runtime store:** Zustand-managed in-memory state.
-- **Local save:** The single Expo SQLite record containing the current-version `GameSnapshot`, used to restore approved durable progress.
-
-## UI And Mobile Language
+## UI and Mobile Language
 
 - **Primary action:** the most important action on the current screen, designed for easy touch input.
 - **Feedback:** visible, readable response to a tap, state change, completion, or blocked action.
-- **Portrait baseline:** the narrow phone layout that player-facing screens must support first.
+- **Portrait baseline:** the narrow phone layout that player-facing screens support first.
 - **View model:** UI-ready data derived from game state; it does not own game rules.
 
-## Relationships
+## Open Terminology Questions
 
-The planned relationship is: UI issues commands, pure game logic applies rules, Zustand holds runtime state, and Expo SQLite stores deliberate snapshots. `gameflow.md` records system flow, formulas, tick order, and save boundaries; `../../VariableRelationshipMap.md` records concrete variables and their dependencies.
-
-## Current Implementation Notes
-
-- The project is in foundation stage with documentation conventions established.
-- Grain and Bread are the first concrete resource definitions. Their runtime quantities and placeholder quality are held in the Zustand-owned `Inventory` instance.
-- Farm and Bakery have code-owned definitions and can be represented as player-constructed facilities in the runtime store.
-- Finance starts every new company with €10,000. Facility construction deducts its approved cost and records a transaction.
-- Foreground realtime production and the single-record Expo SQLite save are implemented. Offline/background catch-up and markets remain deferred.
-- Supabase is deferred and is not part of the current game-state vocabulary.
-
-## Flagged Ambiguities
-
-Add unresolved terminology here before agents create competing names.
-
-| Question | Owner/decision | Status |
-|---|---|---|
-| What is the first player-controlled production activity? | To be designed | Open |
-| Which resources and currencies exist? | To be designed | Open |
-| Which catch-up limits and device-clock rules apply while the app is closed? | Offline progress is planned; detailed policy remains to be designed | Open |
+| Question | Status |
+|---|---|
+| What is the first player-controlled production activity? | Open |
+| Which resources and currencies exist beyond the current foundation? | Open |
+| Which catch-up limits and device-clock rules apply while the app is closed? | Open |

@@ -1,31 +1,29 @@
 # Documentation Maintenance Prompt
 
-Use this guide when updating Industri Clicker documentation.
+Use this guide when updating the canonical Industri Clicker working documents.
 
-## Documentation Roles
+## Documentation Boundaries
 
-| File | Role |
-|---|---|
-| `readme.md` | Project overview, locked stack, and entry points. |
-| `CONTEXT.md` | Stable domain vocabulary and naming policy. |
-| `design.md` | Durable game direction and product decisions. |
-| `gameflow.md` | Mechanics, tick order, state, and persistence flow. |
-| `../../VariableRelationshipMap.md` | Variable ownership, dependencies, commands, and persistence relationships. |
-| `PROJECT_INFO.md` | Layout, commands, and implementation map. |
-| `AIDescriptions_coregame.md` | Current verified systems and deferred areas. |
-| `AI_AGENT_INSTRUCTIONS.md` | Agent boundaries and workflow. |
-| `AIpromt_codecleaning.md` | Cleanup workflow. |
-| `versionlog.md` | Commit-backed history. |
+| File | Owns | Does not own |
+|---|---|---|
+| `CONTEXT.md` | Stable domain vocabulary and naming policy. | Product decisions, formulas, implementation status, or repository details. |
+| `design.md` | Durable player-facing direction, decisions, and deferred product scope. | Exact formulas, tick order, persistence mechanics, or verified code facts. |
+| `gameflow.md` | System mechanics, formulas, commands at flow level, tick order, state ownership, and save boundaries. | The full variable register or repository status. |
+| `VariableRelationshipMap.md` | Concrete variables, dependencies, command effects, time effects, and persistence mappings. | Player-facing rationale or general repository information. |
+| `PROJECT_INFO.md` | Verified repository layout, commands, routes, stack, and implementation status. | Design authority or detailed mechanics. |
+| `readme.md` | Short project overview, setup, and documentation entry points. | Working-document detail. |
+
+Supporting documents such as `AIDescriptions_coregame.md`, `AI_AGENT_INSTRUCTIONS.md`, and `versionlog.md` keep their own narrower roles; do not copy their content into these six documents.
 
 ## Update Rules
 
-- Keep README concise.
-- Mark planned work as planned; do not inherit implementation claims from prior projects.
 - Update the smallest document that owns the changed fact.
-- Keep stack references aligned with Expo, React Native, TypeScript, Zustand, Expo SQLite, and deferred Supabase.
-- Keep UI structure references aligned with Expo Router: `_layout.tsx` owns shared providers/navigation layout, screen files own rendering and interaction, `theme.ts` owns shared visual tokens and the Paper theme, and screen-specific styles live beside their screen (for example `app/index.styles.ts`).
-- Remove stale names rather than documenting compatibility aliases.
+- If one decision affects several documents, record the player-facing decision in `design.md`, the system rule in `gameflow.md`, concrete dependencies in `VariableRelationshipMap.md`, and verified implementation facts in `PROJECT_INFO.md`.
+- Add canonical terms to `CONTEXT.md` only when their meaning is stable and needed across documents or code.
+- Keep planned, deferred, and implemented claims distinct. `PROJECT_INFO.md` may call something implemented only when the repository supports that claim.
+- Use repository-relative links that resolve from the document containing them.
+- Remove stale names and obsolete claims instead of documenting compatibility aliases.
 
 ## Verification
 
-Review links, terminology, and implementation claims. For documentation-only work, run `git diff --check` before handoff.
+For documentation-only changes, review links, terminology, and status claims, then run `git diff --check` before handoff.

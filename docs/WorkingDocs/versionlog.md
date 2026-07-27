@@ -53,6 +53,218 @@ Write clear, factual release notes that explain what changed, where, and why it 
 
 ---
 
+## Version 0.0006a - Realtime manager fixes
+**Date:** 2026-07-27 | **Commit(s):** 84d1189409f70caf731050642d7cb8b1a2dc4680 | **Stats:** +1511 / -90
+
+### Summary
+
+- Moved the time manager into the core game module and corrected realtime progression and lifecycle handling.
+- Added local snapshot persistence and wired app startup, background changes, and store updates to deliberate saves.
+- Updated the facility and resource code to use the reorganized game modules and refreshed the web inspection export.
+
+### Changes
+
+- `app/_layout.tsx`, `stores/gameStore.ts`, and `game/core/time/timeManager.ts` - Added realtime ticking, lifecycle handling, and local snapshot load/save integration.
+- `game/core/persistence/gameSaveRepository.ts`, `game/core/state/gameSnapshot.ts` - Added the local save repository and shared game snapshot shape.
+- `game/facilities/`, `game/finance/`, `game/inventory/`, and `game/resources/` - Updated imports and state integration for the reorganized core modules.
+- `app.json`, `metro.config.js`, `.tmp-web-export/`, and working documents - Updated runtime configuration, generated web inspection output, and current implementation documentation.
+
+### Notes
+
+- Commits are also accepted on the `facilities.foundation` branch.
+
+---
+
+## Version 0.0006 - TimeManager
+**Date:** 2026-07-27 | **Commit(s):** b606869f1d15e49a30e0674ca2355d12e92e8f9a | **Stats:** +299 / -35
+
+### Summary
+
+- Added the first realtime game clock and production advancement flow.
+- Connected elapsed-time updates to the app lifecycle and game store.
+
+### Changes
+
+- `game/time/timeManager.ts`, `game/production/advanceProduction.ts`, `game/facilities/facility.ts`, and `stores/gameStore.ts` - Added timed production progression and state updates.
+- `game/recipes/recipes.ts`, `game/resources/resourceTypes.ts`, and working documents - Added the supporting recipe, resource, and flow definitions.
+
+### Notes
+
+- Realtime behavior was subsequently reorganized under `game/core/` in `0.0006a`.
+
+---
+
+## Version 0.00053 - More facility code
+**Date:** 2026-07-27 | **Commit(s):** 2beccf29e32f4a16b336737b56fdefaf97067c36 | **Stats:** +207 / -47
+
+### Summary
+
+- Expanded facility, recipe, inventory, and resource definitions for the facility loop.
+- Added recipe data and connected the expanded definitions to the UI.
+
+### Changes
+
+- `game/facilities/`, `game/recipes/`, `game/inventory/`, and `game/resources/` - Expanded facility and production-domain types, registries, and recipes.
+- `app/index.tsx`, `app/index.styles.ts`, and working documents - Reflected the expanded facility flow in the app and documentation.
+
+### Notes
+
+- This commit continued the early facility implementation without adding persistence.
+
+---
+
+## Version 0.00052 - Construction and demolition of buildings
+**Date:** 2026-07-27 | **Commit(s):** 56ef5dbc95bd72cbcaa69e0d45da53bd7f8bb085 | **Stats:** +393 / -30
+
+### Summary
+
+- Added construction and demolition interactions for facilities.
+- Added finance handling for building costs and updated the facility state flow.
+
+### Changes
+
+- `app/index.tsx`, `game/facilities/`, `game/finance/`, and `stores/gameStore.ts` - Added construction/demolition controls, costs, and state transitions.
+- Working documents and `theme.ts` - Documented the facility economy and adjusted the related presentation.
+
+### Notes
+
+- The feature remained local in the game store and had no durable save layer yet.
+
+---
+
+## Version 0.00051 - Production facility
+**Date:** 2026-07-27 | **Commit(s):** 6366599d33c3d90737c015f7e6317f61a4b47309 | **Stats:** +299 / -19
+
+### Summary
+
+- Added the initial production-facility domain model and registry.
+- Added a game snapshot shape and exposed the facility state in the app.
+
+### Changes
+
+- `game/facilities/` - Added facility types, definitions, collection management, and the registry.
+- `game/state/gameSnapshot.ts`, `stores/gameStore.ts`, and `app/index.tsx` - Added snapshot/store support and facility presentation.
+
+### Notes
+
+- This established the first facility implementation on top of the resource baseline.
+
+---
+
+## Version 0.0005 - Initial resources
+**Date:** 2026-07-27 | **Commit(s):** 2eb875fe38cc948a784022d46e07165b3791c248 | **Stats:** +310 / -29
+
+### Summary
+
+- Added the initial resource, inventory, recipe, and resource-icon model.
+- Replaced the counter store with the game store and surfaced resources in the app.
+
+### Changes
+
+- `game/inventory/`, `game/recipes/`, `game/resources/`, and `stores/gameStore.ts` - Added the initial resource domain and state ownership.
+- `app/index.tsx` and working documents - Added resource display and documented the first resource direction.
+- `stores/counterStore.ts` - Removed the placeholder counter store.
+
+### Notes
+
+- This was the first gameplay-domain implementation; facilities and production followed in later commits.
+
+---
+
+## Version 0.0004 - Expo setup
+**Date:** 2026-07-27 | **Commit(s):** d6f640571ceeedf82863ca97da31f78aa626c646 | **Stats:** +3307 / -1483
+
+### Summary
+
+- Finalized the Expo dependency and configuration baseline for the mobile app.
+- Updated project guidance for the active Expo and React Native setup.
+
+### Changes
+
+- `package.json`, `package-lock.json`, `app.json`, and `.gitignore` - Updated the Expo application configuration and dependency set.
+- `readme.md`, `docs/WorkingDocs/PROJECT_INFO.md`, and `skills/mobilegamedev-gram/SKILL.md` - Updated setup and project conventions.
+- `docs/WorkingDocs/AI_AGENT_INSTRUCTIONS.md` - Removed the redundant instruction file.
+
+### Notes
+
+- This was setup work only; no game mechanics were added.
+
+---
+
+## Version 0.002a - Dependency adjustment
+**Date:** 2026-07-27 | **Commit(s):** c522ee800a9cecb94006e3e6978fd471b58f62f1 | **Stats:** +13 / -0
+
+### Summary
+
+- Added the dependency adjustment required by the initial app shell.
+
+### Changes
+
+- `package.json`, `package-lock.json` - Added and locked the required package dependency.
+
+### Notes
+
+- The commit contains dependency metadata only.
+
+---
+
+## Version 0.0003 - UI shell
+**Date:** 2026-07-27 | **Commit(s):** 7b08af1497b95194524f8b926ed40b0f820793d4 | **Stats:** +374 / -38
+
+### Summary
+
+- Added the first app shell and initial mobile presentation.
+- Added shared theme and documentation support for the new UI structure.
+
+### Changes
+
+- `app/index.tsx`, `app/index.styles.ts`, `app/_layout.tsx`, and `theme.ts` - Added the initial screen shell, styles, layout, and theme.
+- `package.json`, `package-lock.json`, `readme.md`, and working documents - Updated dependencies and project guidance for the shell.
+
+### Notes
+
+- The UI shell preceded the resource and facility gameplay layers.
+
+---
+
+## Version 0.0002 - Dependencies
+**Date:** 2026-07-26 | **Commit(s):** 20884944ee0ab502453b7bbaf2846d7b06b01997 | **Stats:** +7967 / -38
+
+### Summary
+
+- Added the initial Expo project configuration, dependencies, assets, and TypeScript setup.
+- Added the first app layout and placeholder counter store.
+
+### Changes
+
+- `package.json`, `package-lock.json`, `app.json`, `tsconfig.json`, and `.gitignore` - Added the initial Expo project baseline.
+- `app/`, `assets/`, and `stores/counterStore.ts` - Added the first app shell, bundled assets, and placeholder state.
+- `docs/WorkingDocs/`, `readme.md`, and `VariableRelationshipMap.md` - Moved and updated the project documentation for the app baseline.
+
+### Notes
+
+- This commit established the application scaffold; gameplay implementation came later.
+
+---
+
+## Version 0.000e - Initial docs finalized
+**Date:** 2026-07-26 | **Commit(s):** 3035bedc181159d24b2a41c6267ed91091d07e11 | **Stats:** +37 / -0
+
+### Summary
+
+- Finalized the initial project information and version-log documentation.
+
+### Changes
+
+- `docs/WorkingDocs/PROJECT_INFO.md` - Added the initial project implementation map.
+- `docs/WorkingDocs/versionlog.md` - Added the evidence-based version-log format and initial documentation history.
+
+### Notes
+
+- This was documentation-only work before the Expo scaffold was added.
+
+---
+
 ## Version 0.0001d - Initial project consistency review
 **Date:** 2026-07-26 | **Commit(s):** 96c190e534516e5410de01fb2624d36eb946fb2d | **Stats:** +279 / -3534
 

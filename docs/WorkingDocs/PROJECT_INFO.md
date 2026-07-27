@@ -1,53 +1,41 @@
 # Project Information
 
-This is the living implementation map for Industri Clicker. Keep it factual and current; product direction belongs in `design.md`, mechanics and state flow in `gameflow.md`, and stable terms in `CONTEXT.md`.
+This is the factual implementation map for Industri Clicker: repository shape, commands, routes, stack, and verified implementation status. Product direction belongs in `design.md`; mechanics belong in `gameflow.md`; stable terms belong in `CONTEXT.md`.
 
 ## Current Status
 
-- Project stage: foundation; Expo application scaffold and first dashboard UI shell are implemented.
+- Project stage: foundation.
 - Product: single-player, mobile-first industrial clicker for Android.
-- The class-based resource, inventory, facility, finance, foreground realtime-production, and complete local-save foundations are implemented. Offline catch-up remains deferred.
+- Implemented foundation: dashboard shell, resource/inventory, facilities, finance, foreground production, and versioned local saves.
+- Deferred: offline catch-up, markets, upgrades, and cloud services.
 
-## Repository Size At 0.000d
+## Repository Size At 0.0006a
 
-Measured from the committed `0.000d` tree (`96c190e534516e5410de01fb2624d36eb946fb2d`):
+Measured from the latest recorded version tree (`84d1189409f70caf731050642d7cb8b1a2dc4680`, dated 2026-07-27):
 
-- Tracked files: **91** (`77` Markdown, `13` YAML, and `1` JSON file).
-- Estimated repository lines: **~3,155 non-empty text lines** (`4,314` total text lines including blank lines).
-- Code-like/configuration lines: **45 non-empty lines** across YAML and JSON; there were no TypeScript, React Native, or application source files yet.
+- Tracked files: **128** (`76` Markdown, `13` YAML, `6` JSON, and `21` TypeScript files).
+- Estimated repository lines: **~15,790 non-empty text lines** (`17,207` total text lines including blanks).
 
-This is a repository-content estimate that includes documentation and agent skills. It is not an estimate of implemented game code; implemented application LOC is currently zero.
+This includes documentation, agent skills, configuration, generated inspection output, and application source. It is a repository-content estimate, not a measure of the player-facing feature scope.
 
 ## Locked Stack
 
-- Expo SDK 54 + React Native + TypeScript + Expo Router.
+- Expo SDK 54 with React Native, TypeScript, and Expo Router.
 - React Native Paper and React Native core components.
-- Zustand for runtime state and Expo SQLite for deliberate local saves.
+- Zustand for runtime state.
+- Expo SQLite for deliberate local saves.
 - Supabase is deferred until an approved cloud requirement exists.
 
-## Current Repository Shape
+## Repository Shape
 
 ```text
 readme.md                         Project overview and stack decision
-VariableRelationshipMap.md        Variable dependency template
 docs/WorkingDocs/                 Canonical working documentation
 skills/                           Router and local specialist skills
 olditerations/                    Archived predecessor reference material
-```
-
-```text
 app/                              Expo Router screens and root provider
-app/index.styles.ts               Dashboard screen-specific styles
-theme.ts                          Shared visual tokens and React Native Paper theme
-game/resources/                   Resource enum, class definitions, registry, and display icons
-game/inventory/                   Player inventory domain class and plain snapshot shape
-game/recipes/                     Recipe enum, definitions, and typed contracts
-game/facilities/                  Facility types, definitions, player state, and snapshot shapes
-game/finance/                     Player balance, transaction ledger, and snapshot shape
-game/facilities/advanceProduction.ts  Pure active-facility production orchestration
-game/core/persistence/             Single-record Expo SQLite game-save adapter
-game/core/state/                   Top-level plain runtime snapshot contracts
-game/core/time/                    Pure foreground elapsed-minute calculation
+theme.ts                          Shared visual tokens and Paper theme
+game/                             Resource, recipe, facility, finance, time, and persistence logic
 stores/                           Zustand runtime state
 assets/                           Expo application icons and splash asset
 app.json                          Expo application configuration
@@ -56,79 +44,36 @@ package.json                      Dependencies and development commands
 
 ## Current App Routes
 
-- `/` â€” dashboard UI shell with Company, Inventory, Production, and Finance views.
+- `/` — dashboard with Company, Inventory, Production, and Finance views.
 
 ## Available Commands
 
-- `npm run start` â€” start Expo development server.
-- `npm run android` â€” optional emulator shortcut; for a physical phone, use `npm run start` and open the QR code in Expo Go.
-- `npm run web` â€” start browser development preview.
-- `npm run typecheck` â€” TypeScript validation without emitting files.
+- `npm run start` — start Expo development server.
+- `npm run android` — optional emulator shortcut; physical devices use Expo Go through `npm run start`.
+- `npm run web` — start browser development preview.
+- `npm run typecheck` — TypeScript validation without emitting files.
+
+## Verified Implementation Map
+
+| Area | Current fact | Verification/status |
+|---|---|---|
+| Dashboard | `/` renders the safe-area-aware dashboard and locally switches Company, Inventory, Production, and Finance views. | Implemented; typechecked |
+| Resources | `ResourceType` contains Grain, Bread, Water, and Electricity; definitions are code-owned. | Implemented |
+| Inventory | Zustand owns an `Inventory` with quantity and placeholder quality; typed add/remove commands exist. | Implemented |
+| Facilities | Farm, Bakery, and Small Utility Works definitions plus constructed facility state exist. | Implemented |
+| Finance | Starts at €10,000 and records accepted signed transactions; Farm and Bakery cost €60 and €300. | Implemented |
+| Production | Active facilities advance by one work unit per foreground real minute; inputs are paid at cycle start; fast-forward uses the same path. | Implemented |
+| Local save | One versioned `GameSnapshot` persists finance, inventory, facilities, recipes, and progress in Expo SQLite. Saves batch briefly and flush on background/provider cleanup. | Implemented |
+| Offline production | Background/offline time grants no work. | Deferred |
 
 ## Documentation Map
 
-- `CONTEXT.md` — canonical domain language.
-- `design.md` — durable product direction.
-- `gameflow.md` — mechanics, tick order, formulas, state, and persistence flow.
-- `../../VariableRelationshipMap.md` — variable ownership, dependencies, command effects, and persistence relationships.
-- `AIDescriptions_coregame.md` — verified implementation status and deferred areas.
-- `AI_AGENT_INSTRUCTIONS.md` — concise AI working rules.
-- `AIpromt_codecleaning.md` — cleanup workflow.
-- `AIpromt_docs.md` — documentation-maintenance workflow.
-- `versionlog.md` — commit-backed change history.
-
-## Core Gameplay Direction
-
-Planned: an industrial clicker with explicit progression, economy, and time-controlled game flow. Define concrete systems in `design.md` and `gameflow.md` before marking them implemented here.
-
-## AI Development Priorities
-
-1. Keep game mechanics testable outside the UI.
-2. Keep UI, game logic, Zustand state, and Expo SQLite adapters separate.
-3. Prefer deterministic formulas and named balance values.
-4. Keep the game local-first; do not add cloud infrastructure without approval.
-5. Keep documentation tied to verified code and tests.
-
-## Implementation Status Labels
-
-- **Planned** — agreed direction, not built.
-- **In Progress** — partially built and changing.
-- **Implemented** — built and covered by relevant verification.
-- **Deferred** — intentionally postponed.
-
-## Implemented Systems
-
-- **Dashboard UI shell** â€” Implemented. The `/` route renders a safe-area-aware top bar, live balance overview, profile menu, notification control, and locally switched Company, Inventory, Production, and Finance tabs. Shared visual tokens live in `theme.ts`; dashboard layout rules live in `app/index.styles.ts`. The app loads a local save before these player surfaces become interactive. Verified with `npm run typecheck`.
-
-## Resource And Inventory Foundation
-
-- **Implemented:** `ResourceType` is a closed enum containing Grain, Bread, Water, and Electricity; code-owned `Resource` instances live in a registry.
-- **Implemented:** The Zustand game store owns an `Inventory` class that keeps each resource quantity with its placeholder quality (`1`) and exposes typed add/remove commands.
-- **Implemented:** `InventorySnapshot` is a plain data shape reserved for a later Expo SQLite adapter. Grain and Bread recipe definitions are code-owned and exposed to their facilities; production execution remains deferred.
-- **Implemented:** The Company tab displays the two empty inventory entries using the familiar Grain and Bread symbols from Baseclicker.
-- **Implemented:** The shared resource catalogue includes Water and Electricity, so both appear in inventory and are retained by snapshots.
-- **Implemented:** One versioned `GameSnapshot` record persists all mutable player finance, inventory, facilities, active recipes, and recipe work progress in Expo SQLite on Android and web. Web Metro configuration enables the SQLite WebAssembly asset and required cross-origin-isolation headers. Saves batch for one second after changes and flush on backgrounding or provider cleanup.
-- **Deferred:** Local/global markets and offline production catch-up.
-
-## Facility Foundation
-
-- **Implemented:** `FacilityType` is a closed enum containing Farm, Bakery, and Small Utility Works. Their code-owned definitions expose compatible recipe identifiers and Material Design icons.
-- **Implemented:** `Facility` and `FacilityCollection` own player construction, selected-recipe, and active-state data. The Zustand game store exposes typed build and recipe-selection commands, replacing class instances after changes so selectors update.
-- **Implemented:** `GameSnapshot` combines inventory, facility, and finance snapshots; a later Expo SQLite adapter can persist all three state groups together.
-- **Implemented:** The Production tab displays Farm and Bakery construction status. Its touch-friendly build controls open a confirmation dialog with the cost and resulting balance before construction is applied.
-- **Implemented:** Constructed facilities show a destructive action that requires a second confirmation. Demolition removes the facility and does not refund its construction cost.
-- **Implemented:** Active facilities advance by one work unit per completed foreground real minute. Per-recipe progress is snapshot-safe, inputs are paid at cycle start, and the temporary Production-screen fast-forward action advances the same path by one minute.
-- **Implemented:** Facility cards display progress percentage, placeholder value per tick, and estimated real-time remaining duration. They state when production has not started or is paused for specifically missing inputs.
-- **Deferred:** Offline/background production catch-up and upgrades.
-
-## Finance Foundation
-
-- **Implemented:** `Finance` starts at €10,000 and records accepted signed transactions with their balance-after value and timestamp. Negative balances are rejected.
-- **Implemented:** Farm and Bakery construction costs are €60 and €300, respectively. Their cost is checked and recorded by the Zustand-owned `buildFacility` command.
-- **Implemented:** The header shows the live balance; the Finance tab shows the current balance and three most recent transactions.
+- [CONTEXT.md](CONTEXT.md) — canonical domain language.
+- [design.md](design.md) — durable player-facing direction and decisions.
+- [gameflow.md](gameflow.md) — mechanics, formulas, tick order, state, and persistence flow.
+- [VariableRelationshipMap.md](VariableRelationshipMap.md) — concrete variable ownership and dependencies.
+- [AIpromt_docs.md](AIpromt_docs.md) — documentation boundaries and maintenance rules.
 
 ## Maintenance Notes
 
-Update this document when the scaffold, source layout, commands, routes, major ownership boundaries, or verified systems change.
-
-The preferred native development loop is Expo Go on a physical Android device. The Android Emulator is optional, and Expo web is a development aid rather than a release target.
+Update this document when the scaffold, source layout, commands, routes, or verified implementation status changes. Do not copy detailed product rules here; link to the owning working document instead.
