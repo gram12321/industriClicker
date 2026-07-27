@@ -47,8 +47,15 @@ Document each approved system here using this shape:
 - The initial closed resource catalogue contains **Grain** and **Bread** only.
 - Resources are code-defined class instances keyed by an exported `ResourceType` enum. Player-held values are not stored on those definitions.
 - Player inventory owns a resource's quantity and quality together. Quality is currently the placeholder value `1`; no quality calculation is defined yet.
-- `RecipeName` and typed recipe input/output shapes reserve the Grain-to-Bread chain, but recipe costs, yields, player actions, and facilities remain unapproved and unimplemented.
+- `RecipeName` and typed recipe input/output shapes reserve the Grain-to-Bread chain, but recipe costs, yields, and player actions remain unapproved and unimplemented.
 - Local and global market mechanics are explicitly out of scope for this foundation.
+
+### Initial Facility Foundation
+
+- The initial facility catalogue contains **Farm** and **Bakery** only.
+- A constructed facility stores its type, selected recipe identifier, and active/inactive state. The Farm accepts only `GrowGrain`; the Bakery accepts only `BakeBread`.
+- Facility definitions remain code-owned. The player's constructed facility collection is separate, JSON-safe snapshot data for a future Expo SQLite save.
+- Construction costs, currencies, research, production timing, recipe execution, upgrades, and UI build controls are deliberately deferred rather than copied from Baseclicker without their supporting systems.
 
 Questions to settle:
 
@@ -132,6 +139,8 @@ UI renders state and requests actions. Pure TypeScript game logic owns validatio
 | Initial resources | Grain and Bread, held in a class-based inventory | Confirmed foundation |
 | Resource quality | Fixed placeholder value `1` until rules are designed | Confirmed foundation |
 | Market | Not part of the initial resource implementation | Deferred |
+| Initial facilities | Farm and Bakery class-based runtime state | Confirmed foundation |
+| Facility construction and production | Costs, execution rules, and timing are not designed | Deferred |
 | Monetization | To be designed | Open |
 | Concrete art assets | No bespoke graphic-design pipeline | Confirmed direction |
 

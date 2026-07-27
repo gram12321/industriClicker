@@ -28,6 +28,8 @@ Player action or time event
 | `inventory.entries[ResourceType.Bread].quantity` | Bread held by the player | Stored | `Inventory` in Zustand | Future resource command | Inventory and UI | Not yet | Implemented foundation |
 | `inventory.entries[*].quality` | Quality associated with a held resource | Stored | `Inventory` in Zustand | Inventory initialization; future quality rules | Inventory and UI | Not yet | Placeholder value `1` |
 | `InventorySnapshot.entries` | Plain enum-keyed inventory data | Stored snapshot shape | `Inventory.toSnapshot()` | Future deliberate save boundary | Future SQLite adapter | Designed, not written | Implemented shape |
+| `facilities[FacilityType]` | Player-constructed Farm or Bakery state | Stored | `FacilityCollection` in Zustand | Future construction command | Facility UI and future production rules | Not yet | Implemented foundation |
+| `FacilitySnapshot` | Facility type, selected recipe, and active state | Stored snapshot shape | `Facility.toSnapshot()` | Future deliberate save boundary | Future SQLite adapter | Designed, not written | Implemented shape |
 
 ## Relationship Table
 
@@ -45,6 +47,8 @@ Record every game command after it is approved.
 |---|---|---|---|---|---|---|
 | `addResource` | Resource amount must be finite and positive | Resource type, requested amount | A cloned `Inventory` in Zustand | UI can render the new entry | No immediate save | Implemented runtime command |
 | `removeResource` | Resource amount must be finite and positive; player must hold enough | Resource type, requested amount | A cloned `Inventory` in Zustand | UI can render the new entry | No immediate save | Implemented runtime command |
+| `buildFacility` | Facility type has not already been constructed; a future economy rule must approve construction | Facility type | A cloned `FacilityCollection` in Zustand | UI can render construction state | No immediate save | Implemented foundation |
+| `setFacilityRecipe` | Facility must be constructed and recipe must belong to its definition | Facility type, recipe name | A cloned `FacilityCollection` in Zustand | Future production UI can render recipe state | No immediate save | Implemented foundation |
 
 ## Time And Catch-Up Effects
 
@@ -58,6 +62,7 @@ Record every game command after it is approved.
 | State group | Runtime owner | Local-save representation | Save trigger | Restore behavior | Status |
 |---|---|---|---|---|---|
 | Active resource inventory | Zustand game store | `InventorySnapshot` | Not yet designed | Not yet implemented | Foundation only |
+| Constructed facilities | Zustand game store | `FacilityCollectionSnapshot` inside `GameSnapshot` | Not yet designed | Not yet implemented | Foundation only |
 | Balance configuration | Typed TypeScript configuration | Not saved | App version | Loaded with app | Confirmed direction |
 
 ## Rules And Open Questions

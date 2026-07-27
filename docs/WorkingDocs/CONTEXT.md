@@ -22,7 +22,9 @@ This is the canonical glossary for Industri Clicker. Use it to keep game, UI, st
 | Resource quality | A property of one inventory entry. It currently uses the placeholder value `1` until quality rules are designed. | Implemented placeholder |
 | Recipe | A named production transformation shape. Recipe identifiers and types are defined, but no production rules have been approved or implemented. | Foundation only |
 | Production step | A rule that turns inputs, time, or player actions into outputs. | Example placeholder |
-| Facility | A player-owned or player-managed production unit, if the design adopts one. | Example placeholder |
+| Facility | A player-owned production unit. The initial catalogue contains Farm and Bakery; no construction cost or production rule is implemented yet. | Implemented foundation |
+| Farm | The facility type assigned to the reserved Grow Grain recipe. | Implemented definition |
+| Bakery | The facility type assigned to the reserved Bake Bread recipe. | Implemented definition |
 | Progression | A durable increase in available options, capacity, efficiency, or player reach. | Generic term |
 
 ## Production And Economy Language
@@ -73,7 +75,8 @@ The planned relationship is: UI issues commands, pure game logic applies rules, 
 
 - The project is in foundation stage with documentation conventions established.
 - Grain and Bread are the first concrete resource definitions. Their runtime quantities and placeholder quality are held in the Zustand-owned `Inventory` instance.
-- No production rule, facility, currency, market, time system, or persistence adapter is implemented yet.
+- Farm and Bakery have code-owned definitions and can be represented as player-constructed facilities in the runtime store.
+- No production rule, construction cost, currency, market, time system, or SQLite persistence adapter is implemented yet.
 - Supabase is deferred and is not part of the current game-state vocabulary.
 
 ## Flagged Ambiguities

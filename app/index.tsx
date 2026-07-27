@@ -11,6 +11,7 @@ import {
   Avatar,
   Card,
   Divider,
+  List,
   IconButton,
   Menu,
   Surface,
@@ -20,6 +21,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { colors } from '@/theme';
 import type { Inventory } from '@/game/inventory/inventory';
+import type { FacilityCollection } from '@/game/facilities/facilityCollection';
+import { FACILITY_TYPES } from '@/game/facilities/facilityTypes';
+import { getFacilityDefinition } from '@/game/facilities/facilityRegistry';
 import { getResourceIcon } from '@/game/resources/resourceIcons';
 import { RESOURCE_TYPES } from '@/game/resources/resourceTypes';
 import { getResource } from '@/game/resources/resourcesRegistry';
@@ -38,6 +42,7 @@ export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState<DashboardTab>('company');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const inventory = useGameStore((state) => state.inventory);
+  const facilities = useGameStore((state) => state.facilities);
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -84,7 +89,7 @@ export default function HomeScreen() {
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
-          <DashboardContent activeTab={activeTab} inventory={inventory} />
+          <DashboardContent activeTab={activeTab} facilities={facilities} inventory={inventory} />
         </ScrollView>
 
         <Surface elevation={3} style={styles.bottomNavigation}>
@@ -105,9 +110,11 @@ export default function HomeScreen() {
 
 function DashboardContent({
   activeTab,
+  facilities,
   inventory,
 }: {
   activeTab: DashboardTab;
+  facilities: FacilityCollection;
   inventory: Inventory;
 }) {
   if (activeTab === 'production') {
@@ -115,20 +122,24 @@ function DashboardContent({
       <>
         <SectionHeading
           eyebrow="OPERATIONS"
-          title="Production facility"
-          subtitle="Production systems will appear here once their rules are designed."
+          title="Facilities"
+          subtitle="Farm and Bakery are ready for their production rules and construction costs."
         />
-        <Card mode="contained" style={styles.featureCard}>
-          <Card.Content style={styles.cardContent}>
-            <Text style={styles.cardKicker}>FIRST FACILITY</Text>
-            <Text variant="titleLarge">No facility selected</Text>
-            <Text style={styles.cardDescription}>
-              This placeholder is ready for the first player-owned production unit.
-            </Text>
-          </Card.Content>
-        </Card>
-        <PlaceholderRow label="Facility status" value="Not set" />
-        <PlaceholderRow label="Current output" value="Not set" />
+        {FACILITY_TYPES.map((facilityType) => {
+          const definition = getFacilityDefinition(facilityType);
+          const facility = facilities.get(facilityType);
+
+          return (
+            <Card key={facilityType} mode="contained" style={styles.featureCard}>
+              <List.Item
+                description={facility ? 'Constructed' : 'Not constructed'}
+                left={(props) => <List.Icon {...props} icon={definition.icon} />}
+                title={definition.name}
+                titleStyle={styles.facilityTitle}
+              />
+            </Card>
+          );
+        })}
       </>
     );
   }

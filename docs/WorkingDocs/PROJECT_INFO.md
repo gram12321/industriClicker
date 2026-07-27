@@ -6,7 +6,7 @@ This is the living implementation map for Industri Clicker. Keep it factual and 
 
 - Project stage: foundation; Expo application scaffold and first dashboard UI shell are implemented.
 - Product: single-player, mobile-first industrial clicker for Android.
-- The first class-based resource and inventory foundation is implemented. Durable persistence and production execution remain deferred.
+- The class-based resource, inventory, and facility foundations are implemented. Durable persistence and production execution remain deferred.
 
 ## Repository Size At 0.000d
 
@@ -42,6 +42,8 @@ theme.ts                          Shared visual tokens and React Native Paper th
 game/resources/                   Resource enum, class definitions, registry, and display icons
 game/inventory/                   Player inventory domain class and plain snapshot shape
 game/recipes/                     Reserved recipe enum and typed recipe contracts
+game/facilities/                  Facility types, definitions, player state, and snapshot shapes
+game/state/                       Top-level plain runtime snapshot contracts
 stores/                           Zustand runtime state
 assets/                           Expo application icons and splash asset
 app.json                          Expo application configuration
@@ -101,6 +103,14 @@ Planned: an industrial clicker with explicit progression, economy, and time-cont
 - **Implemented:** `InventorySnapshot` is a plain data shape reserved for a later Expo SQLite adapter. `RecipeName` reserves Grain and Bread recipe identifiers, but no recipes or production execution exist.
 - **Implemented:** The Company tab displays the two empty inventory entries using the familiar Grain and Bread symbols from Baseclicker.
 - **Deferred:** Local/global markets and durable persistence.
+
+## Facility Foundation
+
+- **Implemented:** `FacilityType` is a closed enum containing Farm and Bakery. Their code-owned definitions expose compatible recipe identifiers and Material Design icons.
+- **Implemented:** `Facility` and `FacilityCollection` own player construction, selected-recipe, and active-state data. The Zustand game store exposes typed build and recipe-selection commands, replacing class instances after changes so selectors update.
+- **Implemented:** `GameSnapshot` now combines `InventorySnapshot` and `FacilityCollectionSnapshot`; a later Expo SQLite adapter can persist both state groups together.
+- **Implemented:** The Production tab displays Farm and Bakery construction status in a portrait-friendly list.
+- **Deferred:** Construction costs, build controls, recipe execution, production timing, upgrades, and the Expo SQLite repository.
 
 ## Maintenance Notes
 

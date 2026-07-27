@@ -25,6 +25,7 @@ export const styles = StyleSheet.create({
   },
   content: { gap: 12, padding: 20, paddingBottom: 28 },
   featureCard: { backgroundColor: colors.surface },
+  facilityTitle: { color: colors.charcoal, fontWeight: '700' },
   header: { backgroundColor: colors.primary },
   headerActions: { alignItems: 'center', flexDirection: 'row' },
   inventoryHeading: { color: colors.charcoal, marginTop: 8 },
