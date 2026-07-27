@@ -9,14 +9,15 @@ This is the factual implementation map for Industri Clicker: repository shape, c
 - Implemented foundation: dashboard shell, resource/inventory, facilities, finance, foreground production, and versioned local saves.
 - Deferred: offline catch-up, markets, upgrades, and cloud services.
 
-## Repository Size At 0.0006a
+## Code Size At 0.0006a
 
 Measured from the latest recorded version tree (`84d1189409f70caf731050642d7cb8b1a2dc4680`, dated 2026-07-27):
 
-- Tracked files: **128** (`76` Markdown, `13` YAML, `6` JSON, and `21` TypeScript files).
-- Estimated repository lines: **~15,790 non-empty text lines** (`17,207` total text lines including blanks).
+- Application source: **1,646 non-empty TypeScript lines** across 21 `.ts`/`.tsx` files.
+- Project configuration: **96 non-empty lines** across `metro.config.js`, `app.json`, `package.json`, and `tsconfig.json`.
+- Combined application source and project configuration: **1,742 non-empty lines**.
 
-This includes documentation, agent skills, configuration, generated inspection output, and application source. It is a repository-content estimate, not a measure of the player-facing feature scope.
+These counts exclude Markdown documentation, agent skills, dependency lockfiles, and generated `.tmp-web-export` output.
 
 ## Locked Stack
 
