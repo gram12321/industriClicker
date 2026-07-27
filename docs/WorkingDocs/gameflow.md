@@ -11,7 +11,7 @@ This document is the canonical home for mechanics flow, formulas, state ownershi
 
 ## Current Status
 
-Foundation template. No production chain, resource, formula, route, Zustand store, or SQLite schema is implemented yet.
+Resource and inventory foundation implemented. The closed catalogue contains Grain and Bread, and a Zustand store owns the live `Inventory` instance. Recipe identifiers and types are present, but no player action, production rule, market, tick, formula, persistence adapter, or SQLite schema is implemented yet.
 
 ## Planned Gameflow
 
@@ -37,6 +37,9 @@ Elapsed time (only when designed)
 |---|---|---|---|
 | Game configuration and balance values | Typed TypeScript game configuration | No | Versioned with the app; use named constants. |
 | Runtime game state | Zustand | Not directly | Holds the active in-memory session. |
+| Player resource inventory | `Inventory` class in the Zustand game store | Not yet | Quantity and placeholder quality are one inventory entry per `ResourceType`. |
+| Resource catalogue | `Resource` instances in the resource registry | No | Grain and Bread definitions are code-owned and must not be stored in a future player save. |
+| Recipe identifiers and shapes | Typed TypeScript configuration | No | Recipes themselves are deferred until their gameplay rules are approved. |
 | Player command | UI or system event, passed to game logic | No | UI must not directly mutate rules-owned values. |
 | Rule result | Pure TypeScript game logic | No | Validates inputs and returns deterministic changes. |
 | Derived display values | Selectors/view-model helpers | No | Recalculate from source-of-truth state where practical. |
@@ -60,6 +63,15 @@ Inputs + valid player/system action + applicable time
 ```
 
 Record the concrete inputs, outputs, modifiers, limits, and unlock dependencies in a table here. Do not assume a facility, currency, or automation system until the design adopts it.
+
+## Current Resource And Inventory Rules
+
+- `ResourceType` is a closed enum: only `grain` and `bread` currently exist.
+- An `Inventory` owns one `{ quantity, quality }` entry for every resource type.
+- Inventory `add` accepts only finite positive amounts. `remove` succeeds only when the player holds a finite positive requested amount.
+- Quality is stored as `1` by default and does not yet affect any calculation.
+- `Inventory.toSnapshot()` returns plain enum-keyed data for a future Expo SQLite adapter. No save or restore boundary has been introduced yet.
+- `RecipeName.GrowGrain` and `RecipeName.BakeBread` are reserved identifiers only. No recipe registry, execution command, or production flow is active.
 
 ## Tick And Catch-Up Flow
 

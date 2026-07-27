@@ -49,7 +49,7 @@ Escalate to another specialist skill only when the user explicitly asks for it o
 
 ## Session Start And Context
 
-For a change, read the smallest relevant context before starting. Use this order when the listed documents apply:
+Before a change, extended research is normally required. Read at least the following context: Then decide what codefiles the change will impact and these should be read as context. Relevant interrelated coding should also be read for Context. Use this order when the listed documents apply:
 
 1. `readme.md` when it exists; otherwise inspect the root project overview files.
 2. `docs/WorkingDocs/CONTEXT.md` for canonical game terminology.
@@ -57,7 +57,6 @@ For a change, read the smallest relevant context before starting. Use this order
 4. `docs/WorkingDocs/PROJECT_INFO.md` for the selected stack, repository map, commands, and current implementation facts.
 5. `docs/WorkingDocs/gameflow.md` for a change to mechanics, economy, tick order, state flow, or persistence.
 
-Read the code and tests before treating an inherited document as proof that something exists.
 
 ## Core Rules
 

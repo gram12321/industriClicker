@@ -19,6 +19,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { colors } from '@/theme';
+import type { Inventory } from '@/game/inventory/inventory';
+import { getResourceIcon } from '@/game/resources/resourceIcons';
+import { RESOURCE_TYPES } from '@/game/resources/resourceTypes';
+import { getResource } from '@/game/resources/resourcesRegistry';
+import { useGameStore } from '@/stores/gameStore';
 import { styles } from './index.styles';
 
 type DashboardTab = 'company' | 'production' | 'finance';
@@ -32,6 +37,7 @@ const tabs: Array<{ key: DashboardTab; label: string; symbol: string }> = [
 export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState<DashboardTab>('company');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const inventory = useGameStore((state) => state.inventory);
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -78,7 +84,7 @@ export default function HomeScreen() {
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
-          <DashboardContent activeTab={activeTab} />
+          <DashboardContent activeTab={activeTab} inventory={inventory} />
         </ScrollView>
 
         <Surface elevation={3} style={styles.bottomNavigation}>
@@ -97,7 +103,13 @@ export default function HomeScreen() {
   );
 }
 
-function DashboardContent({ activeTab }: { activeTab: DashboardTab }) {
+function DashboardContent({
+  activeTab,
+  inventory,
+}: {
+  activeTab: DashboardTab;
+  inventory: Inventory;
+}) {
   if (activeTab === 'production') {
     return (
       <>
@@ -158,8 +170,20 @@ function DashboardContent({ activeTab }: { activeTab: DashboardTab }) {
           </Text>
         </Card.Content>
       </Card>
+      <Text style={styles.inventoryHeading} variant="titleMedium">Inventory</Text>
+      {RESOURCE_TYPES.map((resourceType) => {
+        const resource = getResource(resourceType);
+        const entry = inventory.getEntry(resourceType);
+
+        return (
+          <PlaceholderRow
+            key={resourceType}
+            label={`${getResourceIcon(resourceType)} ${resource.name}`}
+            value={`${entry.quantity} · Quality ${entry.quality}`}
+          />
+        );
+      })}
       <PlaceholderRow label="Production facilities" value="None yet" />
-      <PlaceholderRow label="Company status" value="Ready to begin" />
     </>
   );
 }

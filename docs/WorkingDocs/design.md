@@ -42,6 +42,14 @@ Document each approved system here using this shape:
 |---|---|---|---|---|---|
 | Example production step | Demonstrates the format only | To be designed | To be designed | To be designed | Placeholder |
 
+### Initial Resource Foundation
+
+- The initial closed resource catalogue contains **Grain** and **Bread** only.
+- Resources are code-defined class instances keyed by an exported `ResourceType` enum. Player-held values are not stored on those definitions.
+- Player inventory owns a resource's quantity and quality together. Quality is currently the placeholder value `1`; no quality calculation is defined yet.
+- `RecipeName` and typed recipe input/output shapes reserve the Grain-to-Bread chain, but recipe costs, yields, player actions, and facilities remain unapproved and unimplemented.
+- Local and global market mechanics are explicitly out of scope for this foundation.
+
 Questions to settle:
 
 - What does the player do manually at the start?
@@ -121,6 +129,9 @@ UI renders state and requests actions. Pure TypeScript game logic owns validatio
 | Local state | Zustand runtime state and Expo SQLite saves | Confirmed |
 | Cloud backend | Supabase only after an approved need | Deferred |
 | Concrete production loop | To be designed | Open |
+| Initial resources | Grain and Bread, held in a class-based inventory | Confirmed foundation |
+| Resource quality | Fixed placeholder value `1` until rules are designed | Confirmed foundation |
+| Market | Not part of the initial resource implementation | Deferred |
 | Monetization | To be designed | Open |
 | Concrete art assets | No bespoke graphic-design pipeline | Confirmed direction |
 

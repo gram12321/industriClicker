@@ -6,7 +6,7 @@ This is the living implementation map for Industri Clicker. Keep it factual and 
 
 - Project stage: foundation; Expo application scaffold and first dashboard UI shell are implemented.
 - Product: single-player, mobile-first industrial clicker for Android.
-- No persistence schema or game systems are implemented yet.
+- The first class-based resource and inventory foundation is implemented. Durable persistence and production execution remain deferred.
 
 ## Repository Size At 0.000d
 
@@ -39,6 +39,9 @@ olditerations/                    Archived predecessor reference material
 app/                              Expo Router screens and root provider
 app/index.styles.ts               Dashboard screen-specific styles
 theme.ts                          Shared visual tokens and React Native Paper theme
+game/resources/                   Resource enum, class definitions, registry, and display icons
+game/inventory/                   Player inventory domain class and plain snapshot shape
+game/recipes/                     Reserved recipe enum and typed recipe contracts
 stores/                           Zustand runtime state
 assets/                           Expo application icons and splash asset
 app.json                          Expo application configuration
@@ -89,7 +92,15 @@ Planned: an industrial clicker with explicit progression, economy, and time-cont
 
 ## Implemented Systems
 
-- **Dashboard UI shell** â€” Implemented. The `/` route renders a safe-area-aware top bar, placeholder balance overview, profile menu, notification control, and locally switched Company, Production, and Finance tabs. Shared visual tokens live in `theme.ts`; dashboard layout rules live in `app/index.styles.ts`. It has no game-state, economy, or persistence integration. Verified with `npm run typecheck`.
+- **Dashboard UI shell** â€” Implemented. The `/` route renders a safe-area-aware top bar, placeholder balance overview, profile menu, notification control, and locally switched Company, Production, and Finance tabs. Shared visual tokens live in `theme.ts`; dashboard layout rules live in `app/index.styles.ts`. The Company tab reads the resource inventory from Zustand; economy and persistence integration remain deferred. Verified with `npm run typecheck`.
+
+## Resource And Inventory Foundation
+
+- **Implemented:** `ResourceType` is a closed enum containing Grain and Bread; code-owned `Resource` instances live in a registry.
+- **Implemented:** The Zustand game store owns an `Inventory` class that keeps each resource quantity with its placeholder quality (`1`) and exposes typed add/remove commands.
+- **Implemented:** `InventorySnapshot` is a plain data shape reserved for a later Expo SQLite adapter. `RecipeName` reserves Grain and Bread recipe identifiers, but no recipes or production execution exist.
+- **Implemented:** The Company tab displays the two empty inventory entries using the familiar Grain and Bread symbols from Baseclicker.
+- **Deferred:** Local/global markets and durable persistence.
 
 ## Maintenance Notes
 

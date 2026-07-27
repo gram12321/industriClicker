@@ -24,10 +24,10 @@ Player action or time event
 
 | Variable | Meaning and unit | Kind | Source of truth | Changes when | Used by | Saved? | Status |
 |---|---|---|---|---|---|---|---|
-| `exampleResourceAmount` | Example resource amount; replace with the agreed resource and unit | Stored | To be designed | To be designed | To be designed | To be designed | Placeholder |
-| `exampleActionCost` | Example cost calculated for a player action | Derived | Formula inputs | Action preview or execution | UI and rule validation | No | Placeholder |
-| `exampleProductionRate` | Example output per approved time unit | Derived or stored, as designed | To be designed | To be designed | Tick/catch-up calculation | To be designed | Placeholder |
-| `exampleLastSavedAt` | Timestamp of the latest deliberate local snapshot | Stored | Save system | Approved save boundary | Restore and catch-up flow | Yes | Placeholder |
+| `inventory.entries[ResourceType.Grain].quantity` | Grain held by the player | Stored | `Inventory` in Zustand | Future resource command | Inventory and UI | Not yet | Implemented foundation |
+| `inventory.entries[ResourceType.Bread].quantity` | Bread held by the player | Stored | `Inventory` in Zustand | Future resource command | Inventory and UI | Not yet | Implemented foundation |
+| `inventory.entries[*].quality` | Quality associated with a held resource | Stored | `Inventory` in Zustand | Inventory initialization; future quality rules | Inventory and UI | Not yet | Placeholder value `1` |
+| `InventorySnapshot.entries` | Plain enum-keyed inventory data | Stored snapshot shape | `Inventory.toSnapshot()` | Future deliberate save boundary | Future SQLite adapter | Designed, not written | Implemented shape |
 
 ## Relationship Table
 
@@ -35,8 +35,7 @@ Use this table to make each dependency explicit.
 
 | Output variable | Depends on | Relationship/formula | Limits and rounding | Update trigger | Notes |
 |---|---|---|---|---|---|
-| `exampleActionCost` | `exampleResourceAmount`, balance value | Replace with approved formula | Define minimum, maximum, and rounding | Action preview | Placeholder only |
-| `exampleProductionRate` | Player progression, balance values | Replace with approved formula | Define caps and rounding | Unlock or upgrade | Placeholder only |
+| Inventory entry quality | Resource type | Fixed at `1` until quality rules are approved | Must be finite and greater than zero when restored | Inventory construction or restore | Placeholder only |
 
 ## Command Effects
 
@@ -44,7 +43,8 @@ Record every game command after it is approved.
 
 | Command | Preconditions | Reads | Writes | Derived effects | Save boundary | Status |
 |---|---|---|---|---|---|---|
-| `examplePerformAction` | To be designed | To be designed | To be designed | To be designed | To be designed | Placeholder |
+| `addResource` | Resource amount must be finite and positive | Resource type, requested amount | A cloned `Inventory` in Zustand | UI can render the new entry | No immediate save | Implemented runtime command |
+| `removeResource` | Resource amount must be finite and positive; player must hold enough | Resource type, requested amount | A cloned `Inventory` in Zustand | UI can render the new entry | No immediate save | Implemented runtime command |
 
 ## Time And Catch-Up Effects
 
@@ -57,7 +57,7 @@ Record every game command after it is approved.
 
 | State group | Runtime owner | Local-save representation | Save trigger | Restore behavior | Status |
 |---|---|---|---|---|---|
-| Active game state | Zustand | To be designed | To be designed | To be designed | Placeholder |
+| Active resource inventory | Zustand game store | `InventorySnapshot` | Not yet designed | Not yet implemented | Foundation only |
 | Balance configuration | Typed TypeScript configuration | Not saved | App version | Loaded with app | Confirmed direction |
 
 ## Rules And Open Questions

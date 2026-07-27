@@ -27,6 +27,7 @@ export const styles = StyleSheet.create({
   featureCard: { backgroundColor: colors.surface },
   header: { backgroundColor: colors.primary },
   headerActions: { alignItems: 'center', flexDirection: 'row' },
+  inventoryHeading: { color: colors.charcoal, marginTop: 8 },
   largePlaceholder: {
     color: colors.charcoal,
     fontSize: 40,

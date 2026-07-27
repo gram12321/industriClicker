@@ -15,7 +15,12 @@ This is the canonical glossary for Industri Clicker. Use it to keep game, UI, st
 |---|---|---|
 | Industrial clicker | The planned single-player game genre and setting direction. | Confirmed direction |
 | Player action | A deliberate player input, such as a tap or a selected command. | Generic term |
-| Resource | A quantity the player can gain, spend, transform, or track. The concrete resources are not decided yet. | Example placeholder |
+| Resource | A code-defined resource type that the player can gain, spend, transform, and track in inventory. | Confirmed direction |
+| Grain | The first raw resource type. | Implemented resource definition |
+| Bread | The first processed resource type. | Implemented resource definition |
+| Inventory | Player-owned quantities and their associated quality, owned together by the `Inventory` game-domain class. | Implemented runtime model |
+| Resource quality | A property of one inventory entry. It currently uses the placeholder value `1` until quality rules are designed. | Implemented placeholder |
+| Recipe | A named production transformation shape. Recipe identifiers and types are defined, but no production rules have been approved or implemented. | Foundation only |
 | Production step | A rule that turns inputs, time, or player actions into outputs. | Example placeholder |
 | Facility | A player-owned or player-managed production unit, if the design adopts one. | Example placeholder |
 | Progression | A durable increase in available options, capacity, efficiency, or player reach. | Generic term |
@@ -67,7 +72,8 @@ The planned relationship is: UI issues commands, pure game logic applies rules, 
 ## Current Implementation Notes
 
 - The project is in foundation stage with documentation conventions established.
-- No concrete industrial resources, facilities, currencies, production chains, or progression rules are implemented.
+- Grain and Bread are the first concrete resource definitions. Their runtime quantities and placeholder quality are held in the Zustand-owned `Inventory` instance.
+- No production rule, facility, currency, market, time system, or persistence adapter is implemented yet.
 - Supabase is deferred and is not part of the current game-state vocabulary.
 
 ## Flagged Ambiguities
