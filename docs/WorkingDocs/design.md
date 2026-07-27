@@ -52,11 +52,11 @@ Document each approved system here using this shape:
 
 ### Initial Facility Foundation
 
-- The initial facility catalogue contains **Farm** and **Bakery** only.
+- The initial facility catalogue contains **Farm**, **Bakery**, and **Small Utility Works**.
 - A constructed facility stores its type, selected recipe identifier, and active/inactive state. The Farm accepts only `GrowGrain`; the Bakery accepts only `BakeBread`.
 - Facility definitions remain code-owned. The player's constructed facility collection is separate, JSON-safe snapshot data for a future Expo SQLite save.
 - Construction costs are €60 for Farm and €300 for Bakery. A new company starts with €10,000, and insufficient funds prevent construction.
-- On the portrait Production screen, a player first opens a concise confirmation dialog showing the cost and resulting balance before construction is applied.
+- On the portrait Production screen, the Facilities list shows only constructed facilities. A Build facility overlay presents the available catalogue, recipe previews, cost, and affordability; selecting one then opens a concise confirmation dialog showing the cost and resulting balance.
 - A constructed facility can be destroyed only through a separate confirmation dialog. Destruction refunds no funds.
 - Research, production timing, recipe execution, and upgrades remain deliberately deferred rather than copied from Baseclicker without their supporting systems.
 

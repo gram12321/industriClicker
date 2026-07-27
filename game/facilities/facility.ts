@@ -38,7 +38,7 @@ export class Facility {
       return true;
     }
 
-    if (!getFacilityDefinition(this.facilityType).recipeNames.includes(recipeName)) {
+    if (!getFacilityDefinition(this.facilityType).recipes.some((recipe) => recipe.name === recipeName)) {
       return false;
     }
 

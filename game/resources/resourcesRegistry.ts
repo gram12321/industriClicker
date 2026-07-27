@@ -5,6 +5,8 @@ import { ResourceType } from './resourceTypes';
 export const resources: Readonly<Record<ResourceType, Resource>> = {
   [ResourceType.Grain]: new Resource(ResourceType.Grain, 'Grain'),
   [ResourceType.Bread]: new Resource(ResourceType.Bread, 'Bread'),
+  [ResourceType.Water]: new Resource(ResourceType.Water, 'Water'),
+  [ResourceType.Electricity]: new Resource(ResourceType.Electricity, 'Electricity'),
 };
 
 export function getResource(resourceType: ResourceType): Resource {

@@ -1,9 +1,11 @@
 import type { ResourceType } from '../resources/resourceTypes';
 
-/** Reserved recipe identifiers for the initial Grain-to-Bread production chain. */
+/** Recipe identifiers for the initial Grain-to-Bread production chain. */
 export enum RecipeName {
   GrowGrain = 'grow-grain',
   BakeBread = 'bake-bread',
+  ProduceWater = 'produce-water',
+  ProduceElectricity = 'produce-electricity',
 }
 
 export type RecipeInput = {
@@ -16,12 +18,10 @@ export type RecipeOutput = {
   amount: number;
 };
 
-/**
- * Recipe rules will be registered once their inputs, output amounts, work, and
- * unlock conditions have been approved.
- */
 export type Recipe = {
   name: RecipeName;
   inputs: readonly RecipeInput[];
   output: RecipeOutput;
+  /** Deterministic work units required for one production cycle. */
+  workAmount: number;
 };

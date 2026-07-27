@@ -41,7 +41,7 @@ app/index.styles.ts               Dashboard screen-specific styles
 theme.ts                          Shared visual tokens and React Native Paper theme
 game/resources/                   Resource enum, class definitions, registry, and display icons
 game/inventory/                   Player inventory domain class and plain snapshot shape
-game/recipes/                     Reserved recipe enum and typed recipe contracts
+game/recipes/                     Recipe enum, definitions, and typed contracts
 game/facilities/                  Facility types, definitions, player state, and snapshot shapes
 game/finance/                     Player balance, transaction ledger, and snapshot shape
 game/state/                       Top-level plain runtime snapshot contracts
@@ -101,7 +101,7 @@ Planned: an industrial clicker with explicit progression, economy, and time-cont
 
 - **Implemented:** `ResourceType` is a closed enum containing Grain and Bread; code-owned `Resource` instances live in a registry.
 - **Implemented:** The Zustand game store owns an `Inventory` class that keeps each resource quantity with its placeholder quality (`1`) and exposes typed add/remove commands.
-- **Implemented:** `InventorySnapshot` is a plain data shape reserved for a later Expo SQLite adapter. `RecipeName` reserves Grain and Bread recipe identifiers, but no recipes or production execution exist.
+- **Implemented:** `InventorySnapshot` is a plain data shape reserved for a later Expo SQLite adapter. Grain and Bread recipe definitions are code-owned and exposed to their facilities; production execution remains deferred.
 - **Implemented:** The Company tab displays the two empty inventory entries using the familiar Grain and Bread symbols from Baseclicker.
 - **Deferred:** Local/global markets and durable persistence.
 

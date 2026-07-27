@@ -30,6 +30,7 @@ import { getFacilityDefinition } from '@/game/facilities/facilityRegistry';
 import { getResourceIcon } from '@/game/resources/resourceIcons';
 import { RESOURCE_TYPES } from '@/game/resources/resourceTypes';
 import { getResource } from '@/game/resources/resourcesRegistry';
+import type { Recipe } from '@/game/recipes/recipeTypes';
 import { useGameStore } from '@/stores/gameStore';
 import { styles } from './index.styles';
 
@@ -44,6 +45,7 @@ const tabs: Array<{ key: DashboardTab; label: string; symbol: string }> = [
 export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState<DashboardTab>('company');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isConstructionYardOpen, setIsConstructionYardOpen] = useState(false);
   const [pendingConstruction, setPendingConstruction] = useState<FacilityType | null>(null);
   const [pendingDestruction, setPendingDestruction] = useState<FacilityType | null>(null);
   const inventory = useGameStore((state) => state.inventory);
@@ -99,7 +101,7 @@ export default function HomeScreen() {
         >
           <DashboardContent
             activeTab={activeTab}
-            requestFacilityConstruction={setPendingConstruction}
+            openConstructionYard={() => setIsConstructionYardOpen(true)}
             requestFacilityDestruction={setPendingDestruction}
             facilities={facilities}
             finance={finance}
@@ -130,6 +132,16 @@ export default function HomeScreen() {
         }}
         onDismiss={() => setPendingConstruction(null)}
       />
+      <ConstructionYardDialog
+        facilities={facilities}
+        finance={finance}
+        onDismiss={() => setIsConstructionYardOpen(false)}
+        onSelectFacility={(facilityType) => {
+          setIsConstructionYardOpen(false);
+          setPendingConstruction(facilityType);
+        }}
+        visible={isConstructionYardOpen}
+      />
       <DestructionDialog
         facilityType={pendingDestruction}
         onConfirm={() => {
@@ -148,14 +160,14 @@ function DashboardContent({
   facilities,
   finance,
   inventory,
-  requestFacilityConstruction,
+  openConstructionYard,
   requestFacilityDestruction,
 }: {
   activeTab: DashboardTab;
   facilities: FacilityCollection;
   finance: Finance;
   inventory: Inventory;
-  requestFacilityConstruction: (facilityType: FacilityType) => void;
+  openConstructionYard: () => void;
   requestFacilityDestruction: (facilityType: FacilityType) => void;
 }) {
   if (activeTab === 'production') {
@@ -164,9 +176,12 @@ function DashboardContent({
         <SectionHeading
           eyebrow="OPERATIONS"
           title="Facilities"
-          subtitle="Construct a Farm or Bakery. Production rules will follow."
+          subtitle="Manage your constructed facilities and build new ones."
         />
-        {FACILITY_TYPES.map((facilityType) => {
+        <Button icon="plus" mode="contained" onPress={openConstructionYard}>
+          Build facility
+        </Button>
+        {FACILITY_TYPES.filter((facilityType) => facilities.has(facilityType)).map((facilityType) => {
           const definition = getFacilityDefinition(facilityType);
           const facility = facilities.get(facilityType);
 
@@ -174,34 +189,27 @@ function DashboardContent({
             <Card key={facilityType} mode="contained" style={styles.featureCard}>
               <Card.Content>
                 <List.Item
-                  description={facility ? 'Constructed' : `Construction cost: ${formatCurrency(definition.constructionCost)}`}
+                  description="Constructed"
                   left={(props) => <List.Icon {...props} icon={definition.icon} />}
                   title={definition.name}
                   titleStyle={styles.facilityTitle}
                 />
               </Card.Content>
               <Card.Actions>
-                {facility ? (
-                  <Button
-                    mode="outlined"
-                    onPress={() => requestFacilityDestruction(facilityType)}
-                    textColor={colors.error}
-                  >
-                    Destroy facility
-                  </Button>
-                ) : (
-                  <Button
-                    disabled={!finance.canAfford(definition.constructionCost)}
-                    mode="contained"
-                    onPress={() => requestFacilityConstruction(facilityType)}
-                  >
-                    Review construction
-                  </Button>
-                )}
+                <Button
+                  mode="outlined"
+                  onPress={() => requestFacilityDestruction(facilityType)}
+                  textColor={colors.error}
+                >
+                  Destroy facility
+                </Button>
               </Card.Actions>
             </Card>
           );
         })}
+        {FACILITY_TYPES.every((facilityType) => !facilities.has(facilityType)) && (
+          <PlaceholderRow label="Constructed facilities" value="None yet" />
+        )}
       </>
     );
   }
@@ -308,6 +316,74 @@ function TransactionRow({ transaction }: { transaction: FinanceTransaction }) {
   );
 }
 
+function ConstructionYardDialog({
+  facilities,
+  finance,
+  onDismiss,
+  onSelectFacility,
+  visible,
+}: {
+  facilities: FacilityCollection;
+  finance: Finance;
+  onDismiss: () => void;
+  onSelectFacility: (facilityType: FacilityType) => void;
+  visible: boolean;
+}) {
+  return (
+    <Portal>
+      <Dialog dismissable onDismiss={onDismiss} style={styles.constructionYardDialog} visible={visible}>
+        <Dialog.Title>Build facility</Dialog.Title>
+        <Dialog.Content>
+          <Text style={styles.dialogDescription}>
+            Choose an available facility. Its recipes and final cost are shown before construction.
+          </Text>
+          <Text style={styles.constructionYardFunds}>
+            Available funds: {formatCurrency(finance.getBalance())}
+          </Text>
+          <ScrollView contentContainerStyle={styles.constructionYardList} showsVerticalScrollIndicator>
+            {FACILITY_TYPES.map((facilityType) => {
+              const definition = getFacilityDefinition(facilityType);
+              const isBuilt = facilities.has(facilityType);
+              const canAfford = finance.canAfford(definition.constructionCost);
+
+              return (
+                <Card key={facilityType} mode="contained" style={styles.constructionYardCard}>
+                  <Card.Content>
+                    <List.Item
+                      description={`Construction cost: ${formatCurrency(definition.constructionCost)}`}
+                      left={(props) => <List.Icon {...props} icon={definition.icon} />}
+                      title={definition.name}
+                      titleStyle={styles.facilityTitle}
+                    />
+                    <Text style={styles.constructionYardRecipeLabel}>Available recipes</Text>
+                    {definition.recipes.map((recipe) => (
+                      <Text key={recipe.name} style={styles.constructionYardRecipe}>
+                        {formatRecipeName(recipe)}: {formatRecipeInputs(recipe)} → {formatRecipeOutput(recipe)}
+                      </Text>
+                    ))}
+                  </Card.Content>
+                  <Card.Actions>
+                    <Button
+                      disabled={isBuilt || !canAfford}
+                      mode="contained"
+                      onPress={() => onSelectFacility(facilityType)}
+                    >
+                      {isBuilt ? 'Already built' : canAfford ? 'Review construction' : 'Insufficient funds'}
+                    </Button>
+                  </Card.Actions>
+                </Card>
+              );
+            })}
+          </ScrollView>
+        </Dialog.Content>
+        <Dialog.Actions>
+          <Button onPress={onDismiss}>Close</Button>
+        </Dialog.Actions>
+      </Dialog>
+    </Portal>
+  );
+}
+
 function ConstructionDialog({
   facilities,
   facilityType,
@@ -341,6 +417,15 @@ function ConstructionDialog({
             <PlaceholderRow label="Construction cost" value={formatCurrency(definition.constructionCost)} />
             <PlaceholderRow label="Balance after construction" value={formatCurrency(balanceAfterConstruction)} />
           </View>
+          <Text variant="titleMedium" style={styles.dialogSectionHeading}>Available recipes</Text>
+          {definition.recipes.map((recipe) => (
+            <List.Item
+              key={recipe.name}
+              title={formatRecipeName(recipe)}
+              description={`${formatRecipeInputs(recipe)} → ${formatRecipeOutput(recipe)} · Work ${recipe.workAmount}`}
+              left={(props) => <List.Icon {...props} icon="play-circle-outline" />}
+            />
+          ))}
         </Dialog.Content>
         <Dialog.Actions>
           <Button onPress={onDismiss}>Cancel</Button>
@@ -349,6 +434,25 @@ function ConstructionDialog({
       </Dialog>
     </Portal>
   );
+}
+
+function formatRecipeInputs(recipe: Recipe): string {
+  if (recipe.inputs.length === 0) return 'No inputs';
+  return recipe.inputs.map(({ resourceType, amount }) => `${getResource(resourceType).name} ×${amount}`).join(' + ');
+}
+
+function formatRecipeName(recipe: Recipe): string {
+  switch (recipe.name) {
+    case 'grow-grain': return 'Grow grain';
+    case 'bake-bread': return 'Bake bread';
+    case 'produce-water': return 'Produce water';
+    case 'produce-electricity': return 'Produce electricity';
+    default: return recipe.name;
+  }
+}
+
+function formatRecipeOutput(recipe: Recipe): string {
+  return `${getResource(recipe.output.resourceType).name} ×${recipe.output.amount}`;
 }
 
 function DestructionDialog({

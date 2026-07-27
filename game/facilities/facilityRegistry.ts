@@ -1,4 +1,5 @@
-import { RecipeName } from '../recipes/recipeTypes';
+import { ALL_RECIPES } from '../recipes/recipes';
+import { RecipeName, Recipe } from '../recipes/recipeTypes';
 import { FacilityType } from './facilityTypes';
 
 export type FacilityDefinition = {
@@ -6,7 +7,7 @@ export type FacilityDefinition = {
   name: string;
   icon: string;
   constructionCost: number;
-  recipeNames: readonly RecipeName[];
+  recipes: readonly Recipe[];
 };
 
 /**
@@ -19,14 +20,21 @@ export const facilities: Readonly<Record<FacilityType, FacilityDefinition>> = {
     name: 'Farm',
     icon: 'tractor',
     constructionCost: 60,
-    recipeNames: [RecipeName.GrowGrain],
+    recipes: [ALL_RECIPES[RecipeName.GrowGrain]],
   },
   [FacilityType.Bakery]: {
     type: FacilityType.Bakery,
     name: 'Bakery',
     icon: 'bread-slice-outline',
     constructionCost: 300,
-    recipeNames: [RecipeName.BakeBread],
+    recipes: [ALL_RECIPES[RecipeName.BakeBread]],
+  },
+  [FacilityType.SmallUtilityWorks]: {
+    type: FacilityType.SmallUtilityWorks,
+    name: 'Small Utility Works',
+    icon: 'flash-outline',
+    constructionCost: 500,
+    recipes: [ALL_RECIPES[RecipeName.ProduceWater], ALL_RECIPES[RecipeName.ProduceElectricity]],
   },
 };
 

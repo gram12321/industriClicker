@@ -63,7 +63,7 @@ export class FacilityCollection {
     const collection = new FacilityCollection();
 
     for (const facilitySnapshot of snapshot.facilities) {
-      if (!FACILITY_TYPES.includes(facilitySnapshot.facilityType) || collection.has(facilitySnapshot.facilityType)) {
+      if (!(FACILITY_TYPES as readonly FacilityType[]).includes(facilitySnapshot.facilityType) || collection.has(facilitySnapshot.facilityType)) {
         continue;
       }
 

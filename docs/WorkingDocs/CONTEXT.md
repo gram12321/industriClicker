@@ -18,13 +18,16 @@ This is the canonical glossary for Industri Clicker. Use it to keep game, UI, st
 | Resource | A code-defined resource type that the player can gain, spend, transform, and track in inventory. | Confirmed direction |
 | Grain | The first raw resource type. | Implemented resource definition |
 | Bread | The first processed resource type. | Implemented resource definition |
+| Water | A utility resource produced by Small Utility Works and consumed by production recipes. | Implemented resource definition |
+| Electricity | A utility resource produced by Small Utility Works and consumed by production recipes. | Implemented resource definition |
 | Inventory | Player-owned quantities and their associated quality, owned together by the `Inventory` game-domain class. | Implemented runtime model |
 | Resource quality | A property of one inventory entry. It currently uses the placeholder value `1` until quality rules are designed. | Implemented placeholder |
-| Recipe | A named production transformation shape. Recipe identifiers and types are defined, but no production rules have been approved or implemented. | Foundation only |
+| Recipe | A named production transformation with typed inputs, output, and work amount. | Definitions implemented; execution deferred |
 | Production step | A rule that turns inputs, time, or player actions into outputs. | Example placeholder |
-| Facility | A player-owned production unit. The initial catalogue contains Farm and Bakery; no construction cost or production rule is implemented yet. | Implemented foundation |
-| Farm | The facility type assigned to the reserved Grow Grain recipe. | Implemented definition |
-| Bakery | The facility type assigned to the reserved Bake Bread recipe. | Implemented definition |
+| Facility | A player-owned production unit. The initial catalogue contains Farm, Bakery, and Small Utility Works. | Implemented foundation |
+| Farm | The facility type assigned to the Grow Grain recipe. | Implemented definition |
+| Bakery | The facility type assigned to the Bake Bread recipe. | Implemented definition |
+| Small Utility Works | The facility type assigned to the Produce Water and Produce Electricity recipes. | Implemented definition |
 | Euro (€) | The initial player currency. A new company starts with €10,000. | Implemented foundation |
 | Finance | Player balance plus an append-only record of balance-changing transactions. | Implemented runtime model |
 | Progression | A durable increase in available options, capacity, efficiency, or player reach. | Generic term |
