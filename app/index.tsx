@@ -53,6 +53,8 @@ export default function HomeScreen() {
   const finance = useGameStore((state) => state.finance);
   const buildFacility = useGameStore((state) => state.buildFacility);
   const destroyFacility = useGameStore((state) => state.destroyFacility);
+  const setFacilityRecipe = useGameStore((state) => state.setFacilityRecipe);
+  const fastForwardOneMinute = useGameStore((state) => state.fastForwardOneMinute);
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -105,7 +107,9 @@ export default function HomeScreen() {
             requestFacilityDestruction={setPendingDestruction}
             facilities={facilities}
             finance={finance}
+            fastForwardOneMinute={fastForwardOneMinute}
             inventory={inventory}
+            setFacilityRecipe={setFacilityRecipe}
           />
         </ScrollView>
 
@@ -159,16 +163,20 @@ function DashboardContent({
   activeTab,
   facilities,
   finance,
+  fastForwardOneMinute,
   inventory,
   openConstructionYard,
   requestFacilityDestruction,
+  setFacilityRecipe,
 }: {
   activeTab: DashboardTab;
   facilities: FacilityCollection;
   finance: Finance;
+  fastForwardOneMinute: () => boolean;
   inventory: Inventory;
   openConstructionYard: () => void;
   requestFacilityDestruction: (facilityType: FacilityType) => void;
+  setFacilityRecipe: (facilityType: FacilityType, recipeName: Recipe['name'] | null) => boolean;
 }) {
   if (activeTab === 'production') {
     return (
@@ -181,19 +189,43 @@ function DashboardContent({
         <Button icon="plus" mode="contained" onPress={openConstructionYard}>
           Build facility
         </Button>
+        <Button icon="fast-forward" mode="outlined" onPress={fastForwardOneMinute}>
+          Fast-forward 1 minute
+        </Button>
         {FACILITY_TYPES.filter((facilityType) => facilities.has(facilityType)).map((facilityType) => {
           const definition = getFacilityDefinition(facilityType);
           const facility = facilities.get(facilityType);
+          const activeRecipeName = facility?.getActiveRecipeName() ?? null;
+          const activeRecipe = definition.recipes.find((recipe) => recipe.name === activeRecipeName);
 
           return (
             <Card key={facilityType} mode="contained" style={styles.featureCard}>
               <Card.Content>
                 <List.Item
-                  description="Constructed"
+                  description={activeRecipe
+                    ? `${formatRecipeName(activeRecipe)} · Work ${facility?.getRecipeProgress(activeRecipe.name)}/${activeRecipe.workAmount}`
+                    : 'No active recipe'}
                   left={(props) => <List.Icon {...props} icon={definition.icon} />}
                   title={definition.name}
                   titleStyle={styles.facilityTitle}
                 />
+                <Text style={styles.constructionYardRecipeLabel}>Production recipe</Text>
+                <View style={styles.facilityRecipeControls}>
+                  {definition.recipes.map((recipe) => {
+                    const isSelected = activeRecipeName === recipe.name && facility?.isActive();
+
+                    return (
+                      <Button
+                        compact
+                        key={recipe.name}
+                        mode={isSelected ? 'contained' : 'outlined'}
+                        onPress={() => setFacilityRecipe(facilityType, isSelected ? null : recipe.name)}
+                      >
+                        {isSelected ? `Stop ${formatRecipeName(recipe)}` : `Run ${formatRecipeName(recipe)}`}
+                      </Button>
+                    );
+                  })}
+                </View>
               </Card.Content>
               <Card.Actions>
                 <Button

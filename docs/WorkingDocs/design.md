@@ -44,10 +44,10 @@ Document each approved system here using this shape:
 
 ### Initial Resource Foundation
 
-- The initial closed resource catalogue contains **Grain** and **Bread** only.
+- The initial closed resource catalogue contains **Grain**, **Bread**, **Water**, and **Electricity**.
 - Resources are code-defined class instances keyed by an exported `ResourceType` enum. Player-held values are not stored on those definitions.
 - Player inventory owns a resource's quantity and quality together. Quality is currently the placeholder value `1`; no quality calculation is defined yet.
-- `RecipeName` and typed recipe input/output shapes reserve the Grain-to-Bread chain, but recipe costs, yields, and player actions remain unapproved and unimplemented.
+- Small Utility Works produces Water or Electricity; Farm consumes one of each to grow Grain; Bakery consumes Grain, Water, and Electricity to bake Bread.
 - Local and global market mechanics are explicitly out of scope for this foundation.
 
 ### Initial Facility Foundation
@@ -58,7 +58,7 @@ Document each approved system here using this shape:
 - Construction costs are €60 for Farm and €300 for Bakery. A new company starts with €10,000, and insufficient funds prevent construction.
 - On the portrait Production screen, the Facilities list shows only constructed facilities. A Build facility overlay presents the available catalogue, recipe previews, cost, and affordability; selecting one then opens a concise confirmation dialog showing the cost and resulting balance.
 - A constructed facility can be destroyed only through a separate confirmation dialog. Destruction refunds no funds.
-- Research, production timing, recipe execution, and upgrades remain deliberately deferred rather than copied from Baseclicker without their supporting systems.
+- Production executes only while the app is foregrounded: every active facility receives one work unit per completed real minute. The temporary Fast-forward 1 minute control uses exactly the same production path. Offline/background progress is planned but deliberately not enabled until its catch-up cap and device-clock policy are approved.
 
 Questions to settle:
 
@@ -83,11 +83,10 @@ Questions to settle:
 
 ## Time-Controlled Progression
 
-The game may include active-session ticks and elapsed-time catch-up after resume. Neither rule is designed yet.
+The first implementation uses foreground realtime progression: one work unit per active facility per completed real minute. It intentionally grants no work while the app is inactive or closed. Offline catch-up remains planned for a later design pass.
 
-Before implementation, define:
+Before enabling offline catch-up, define:
 
-- what can progress while active;
 - what can progress while the app is closed;
 - maximum catch-up duration or caps, if any;
 - how timestamps, device-clock changes, and invalid elapsed time are handled;

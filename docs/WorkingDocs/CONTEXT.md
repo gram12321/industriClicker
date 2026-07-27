@@ -55,6 +55,7 @@ These are working definitions, not confirmation that every system will be used.
 | Elapsed-time catch-up | Applying approved progression for time passed while the app was inactive. |
 | Save boundary | The intentional point at which runtime state is written to durable storage. |
 | Resume | Restoring a saved game and applying any approved catch-up rules. |
+| Foreground realtime progression | The initial implemented time rule: every active facility receives one work unit per completed real minute while the app is active. Background and offline time do not yet produce work. |
 
 ## State And Persistence Language
 
@@ -82,7 +83,7 @@ The planned relationship is: UI issues commands, pure game logic applies rules, 
 - Grain and Bread are the first concrete resource definitions. Their runtime quantities and placeholder quality are held in the Zustand-owned `Inventory` instance.
 - Farm and Bakery have code-owned definitions and can be represented as player-constructed facilities in the runtime store.
 - Finance starts every new company with €10,000. Facility construction deducts its approved cost and records a transaction.
-- No production rule, market, time system, or SQLite persistence adapter is implemented yet.
+- Foreground realtime production is implemented. Offline/background catch-up, markets, and the SQLite persistence adapter remain deferred.
 - Supabase is deferred and is not part of the current game-state vocabulary.
 
 ## Flagged Ambiguities
@@ -93,4 +94,4 @@ Add unresolved terminology here before agents create competing names.
 |---|---|---|
 | What is the first player-controlled production activity? | To be designed | Open |
 | Which resources and currencies exist? | To be designed | Open |
-| Which time rules apply while the app is closed? | To be designed | Open |
+| Which catch-up limits and device-clock rules apply while the app is closed? | Offline progress is planned; detailed policy remains to be designed | Open |

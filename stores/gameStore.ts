@@ -3,21 +3,28 @@ import { Inventory } from '@/game/inventory/inventory';
 import { FacilityCollection } from '@/game/facilities/facilityCollection';
 import type { FacilityType } from '@/game/facilities/facilityTypes';
 import { getFacilityDefinition } from '@/game/facilities/facilityRegistry';
+import { advanceProduction as advanceFacilityProduction } from '@/game/production/advanceProduction';
 import type { RecipeName } from '@/game/recipes/recipeTypes';
 import type { ResourceType } from '@/game/resources/resourceTypes';
 import type { GameSnapshot } from '@/game/state/gameSnapshot';
+import { calculateRealtimeAdvance } from '@/game/time/timeManager';
 import { create } from 'zustand';
 
 type GameState = {
   finance: Finance;
   inventory: Inventory;
   facilities: FacilityCollection;
+  lastProcessedAtMs: number;
   addResource: (resourceType: ResourceType, amount?: number) => boolean;
   removeResource: (resourceType: ResourceType, amount?: number) => boolean;
   buildFacility: (facilityType: FacilityType) => boolean;
   destroyFacility: (facilityType: FacilityType) => boolean;
   setFacilityRecipe: (facilityType: FacilityType, recipeName: RecipeName | null) => boolean;
   recordTransaction: (amount: number, description: string) => boolean;
+  advanceProduction: (workAmount: number) => boolean;
+  advanceRealtime: (nowMs: number) => number;
+  fastForwardOneMinute: () => boolean;
+  resetRealtimeClock: (nowMs: number) => void;
   createSnapshot: () => GameSnapshot;
   restoreSnapshot: (snapshot: GameSnapshot) => void;
   resetInventory: () => void;
@@ -28,6 +35,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   finance: new Finance(),
   inventory: new Inventory(),
   facilities: new FacilityCollection(),
+  lastProcessedAtMs: Date.now(),
   addResource: (resourceType, amount) => {
     const inventory = get().inventory.clone();
 
@@ -49,6 +57,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     return true;
   },
   buildFacility: (facilityType) => {
+    get().advanceRealtime(Date.now());
     const facilities = get().facilities.clone();
     const finance = get().finance.clone();
     const definition = getFacilityDefinition(facilityType);
@@ -69,6 +78,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     return true;
   },
   destroyFacility: (facilityType) => {
+    get().advanceRealtime(Date.now());
     const facilities = get().facilities.clone();
 
     if (!facilities.destroy(facilityType)) {
@@ -79,6 +89,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     return true;
   },
   setFacilityRecipe: (facilityType, recipeName) => {
+    get().advanceRealtime(Date.now());
     const facilities = get().facilities.clone();
     const facility = facilities.get(facilityType);
 
@@ -99,6 +110,40 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ finance });
     return true;
   },
+  advanceProduction: (workAmount) => {
+    if (!Number.isInteger(workAmount) || workAmount <= 0) {
+      return false;
+    }
+
+    const facilities = get().facilities.clone();
+    const inventory = get().inventory.clone();
+    advanceFacilityProduction(facilities, inventory, workAmount);
+
+    set({ facilities, inventory });
+    return true;
+  },
+  advanceRealtime: (nowMs) => {
+    const { elapsedMinutes, nextProcessedAtMs } = calculateRealtimeAdvance(get().lastProcessedAtMs, nowMs);
+
+    if (elapsedMinutes > 0) {
+      get().advanceProduction(elapsedMinutes);
+    }
+
+    if (nextProcessedAtMs !== get().lastProcessedAtMs) {
+      set({ lastProcessedAtMs: nextProcessedAtMs });
+    }
+
+    return elapsedMinutes;
+  },
+  fastForwardOneMinute: () => {
+    get().advanceRealtime(Date.now());
+    return get().advanceProduction(1);
+  },
+  resetRealtimeClock: (nowMs) => {
+    if (Number.isFinite(nowMs)) {
+      set({ lastProcessedAtMs: nowMs });
+    }
+  },
   createSnapshot: () => ({
     finance: get().finance.toSnapshot(),
     inventory: get().inventory.toSnapshot(),
@@ -108,6 +153,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     finance: Finance.fromSnapshot(snapshot.finance),
     inventory: Inventory.fromSnapshot(snapshot.inventory),
     facilities: FacilityCollection.fromSnapshot(snapshot.facilities),
+    // Offline progress is planned; a restored foreground session starts fresh.
+    lastProcessedAtMs: Date.now(),
   }),
   resetInventory: () => set({ inventory: new Inventory() }),
 }));

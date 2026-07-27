@@ -6,7 +6,7 @@ This is the living implementation map for Industri Clicker. Keep it factual and 
 
 - Project stage: foundation; Expo application scaffold and first dashboard UI shell are implemented.
 - Product: single-player, mobile-first industrial clicker for Android.
-- The class-based resource, inventory, facility, and finance foundations are implemented. Durable persistence and production execution remain deferred.
+- The class-based resource, inventory, facility, finance, and foreground realtime-production foundations are implemented. Durable persistence and offline catch-up remain deferred.
 
 ## Repository Size At 0.000d
 
@@ -44,7 +44,9 @@ game/inventory/                   Player inventory domain class and plain snapsh
 game/recipes/                     Recipe enum, definitions, and typed contracts
 game/facilities/                  Facility types, definitions, player state, and snapshot shapes
 game/finance/                     Player balance, transaction ledger, and snapshot shape
+game/production/                  Pure active-facility production orchestration
 game/state/                       Top-level plain runtime snapshot contracts
+game/time/                        Pure foreground elapsed-minute calculation
 stores/                           Zustand runtime state
 assets/                           Expo application icons and splash asset
 app.json                          Expo application configuration
@@ -99,20 +101,22 @@ Planned: an industrial clicker with explicit progression, economy, and time-cont
 
 ## Resource And Inventory Foundation
 
-- **Implemented:** `ResourceType` is a closed enum containing Grain and Bread; code-owned `Resource` instances live in a registry.
+- **Implemented:** `ResourceType` is a closed enum containing Grain, Bread, Water, and Electricity; code-owned `Resource` instances live in a registry.
 - **Implemented:** The Zustand game store owns an `Inventory` class that keeps each resource quantity with its placeholder quality (`1`) and exposes typed add/remove commands.
 - **Implemented:** `InventorySnapshot` is a plain data shape reserved for a later Expo SQLite adapter. Grain and Bread recipe definitions are code-owned and exposed to their facilities; production execution remains deferred.
 - **Implemented:** The Company tab displays the two empty inventory entries using the familiar Grain and Bread symbols from Baseclicker.
-- **Deferred:** Local/global markets and durable persistence.
+- **Implemented:** The shared resource catalogue includes Water and Electricity, so both appear in inventory and are retained by snapshots.
+- **Deferred:** Local/global markets, durable persistence, and offline production catch-up.
 
 ## Facility Foundation
 
-- **Implemented:** `FacilityType` is a closed enum containing Farm and Bakery. Their code-owned definitions expose compatible recipe identifiers and Material Design icons.
+- **Implemented:** `FacilityType` is a closed enum containing Farm, Bakery, and Small Utility Works. Their code-owned definitions expose compatible recipe identifiers and Material Design icons.
 - **Implemented:** `Facility` and `FacilityCollection` own player construction, selected-recipe, and active-state data. The Zustand game store exposes typed build and recipe-selection commands, replacing class instances after changes so selectors update.
 - **Implemented:** `GameSnapshot` combines inventory, facility, and finance snapshots; a later Expo SQLite adapter can persist all three state groups together.
 - **Implemented:** The Production tab displays Farm and Bakery construction status. Its touch-friendly build controls open a confirmation dialog with the cost and resulting balance before construction is applied.
 - **Implemented:** Constructed facilities show a destructive action that requires a second confirmation. Demolition removes the facility and does not refund its construction cost.
-- **Deferred:** Recipe execution, production timing, upgrades, and the Expo SQLite repository.
+- **Implemented:** Active facilities advance by one work unit per completed foreground real minute. Per-recipe progress is snapshot-safe, inputs are paid at cycle start, and the temporary Production-screen fast-forward action advances the same path by one minute.
+- **Deferred:** Offline/background production catch-up, upgrades, and the Expo SQLite repository.
 
 ## Finance Foundation
 

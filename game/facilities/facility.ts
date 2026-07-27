@@ -1,4 +1,6 @@
 import { RecipeName } from '../recipes/recipeTypes';
+import type { Inventory } from '../inventory/inventory';
+import { getRecipe } from '../recipes/recipes';
 import { getFacilityDefinition } from './facilityRegistry';
 import { FacilityType } from './facilityTypes';
 
@@ -7,12 +9,14 @@ export type FacilitySnapshot = {
   facilityType: FacilityType;
   activeRecipeName: RecipeName | null;
   isActive: boolean;
+  recipeProgress: Partial<Record<RecipeName, number>>;
 };
 
 /** Player-owned state for one constructed facility. */
 export class Facility {
   private activeRecipeName: RecipeName | null = null;
   private active = false;
+  private recipeProgress: Partial<Record<RecipeName, number>> = {};
 
   constructor(
     public readonly facilityType: FacilityType,
@@ -29,6 +33,10 @@ export class Facility {
 
   isActive(): boolean {
     return this.active;
+  }
+
+  getRecipeProgress(recipeName: RecipeName): number {
+    return this.recipeProgress[recipeName] ?? 0;
   }
 
   setActiveRecipe(recipeName: RecipeName | null): boolean {
@@ -51,6 +59,47 @@ export class Facility {
     this.active = false;
   }
 
+  /**
+   * Applies work to the selected recipe. Inputs are paid at the beginning of
+   * each cycle, matching the Baseclicker production rule.
+   */
+  advanceProduction(inventory: Inventory, workAmount: number): void {
+    if (!Number.isFinite(workAmount) || workAmount <= 0 || !this.active || !this.activeRecipeName) {
+      return;
+    }
+
+    const recipe = getRecipe(this.activeRecipeName);
+    if (!recipe || recipe.workAmount <= 0) {
+      return;
+    }
+
+    let remainingWork = workAmount;
+    let progress = this.getRecipeProgress(recipe.name);
+
+    while (remainingWork > 0) {
+      if (progress === 0 && !recipe.inputs.every((input) => inventory.has(input.resourceType, input.amount))) {
+        break;
+      }
+
+      if (progress === 0) {
+        for (const input of recipe.inputs) {
+          inventory.remove(input.resourceType, input.amount);
+        }
+      }
+
+      const appliedWork = Math.min(remainingWork, recipe.workAmount - progress);
+      progress += appliedWork;
+      remainingWork -= appliedWork;
+
+      if (progress === recipe.workAmount) {
+        inventory.add(recipe.output.resourceType, recipe.output.amount);
+        progress = 0;
+      }
+    }
+
+    this.recipeProgress[recipe.name] = progress;
+  }
+
   clone(): Facility {
     return Facility.fromSnapshot(this.toSnapshot());
   }
@@ -60,6 +109,7 @@ export class Facility {
       facilityType: this.facilityType,
       activeRecipeName: this.activeRecipeName,
       isActive: this.active,
+      recipeProgress: { ...this.recipeProgress },
     };
   }
 
@@ -76,6 +126,16 @@ export class Facility {
 
     if (!snapshot.isActive) {
       this.deactivate();
+    }
+
+    this.recipeProgress = {};
+
+    for (const recipe of getFacilityDefinition(this.facilityType).recipes) {
+      const progress = snapshot.recipeProgress[recipe.name];
+
+      if (Number.isFinite(progress) && progress !== undefined && progress >= 0 && progress < recipe.workAmount) {
+        this.recipeProgress[recipe.name] = progress;
+      }
     }
   }
 }

@@ -31,8 +31,10 @@ Player action or time event
 | `finance.balance` | Available company funds in euros | Stored | `Finance` in Zustand | Accepted finance transaction | Header, finance view, construction validation | Not yet | Implemented foundation |
 | `finance.transactions` | Immutable record of accepted balance changes | Stored | `Finance` in Zustand | Accepted finance transaction | Finance view and future SQLite save | Not yet | Implemented foundation |
 | `FinanceSnapshot` | Plain balance and transaction data | Stored snapshot shape | `Finance.toSnapshot()` | Future deliberate save boundary | Future SQLite adapter | Designed, not written | Implemented shape |
-| `facilities[FacilityType]` | Player-constructed Farm or Bakery state | Stored | `FacilityCollection` in Zustand | Future construction command | Facility UI and future production rules | Not yet | Implemented foundation |
+| `facilities[FacilityType]` | Player-constructed Farm, Bakery, or Small Utility Works state | Stored | `FacilityCollection` in Zustand | Construction, recipe change, or production advance | Facility UI and production rules | Not yet | Implemented runtime model |
 | `FacilitySnapshot` | Facility type, selected recipe, and active state | Stored snapshot shape | `Facility.toSnapshot()` | Future deliberate save boundary | Future SQLite adapter | Designed, not written | Implemented shape |
+| `facility.recipeProgress[RecipeName]` | Work completed on a facility recipe | Stored | `Facility` in Zustand | Foreground elapsed minute or fast-forward | Production view and recipe completion | Designed, not written | Implemented runtime rule |
+| `lastProcessedAtMs` | Runtime wall-clock anchor in epoch milliseconds | Stored runtime state | Zustand game store | Foreground timer or lifecycle transition | `TimeManager` | No | Foreground-only implementation |
 
 ## Relationship Table
 
@@ -55,13 +57,15 @@ Record every game command after it is approved.
 | `destroyFacility` | Facility type is constructed | Facility type | Cloned `FacilityCollection` in Zustand | Removes facility; balance is unchanged | No immediate save | Implemented |
 | `setFacilityRecipe` | Facility must be constructed and recipe must belong to its definition | Facility type, recipe name | A cloned `FacilityCollection` in Zustand | Future production UI can render recipe state | No immediate save | Implemented foundation |
 | `recordTransaction` | Amount is finite, description and timestamp are non-empty, resulting balance is non-negative | Signed amount, description | Cloned `Finance` in Zustand | UI updates balance and transaction list | No immediate save | Implemented |
+| `advanceRealtime` | Finite foreground clock input | Last processed time, facilities, inventory | Cloned facilities/inventory and runtime clock anchor | Advances eligible active-facility production by whole elapsed minutes | No immediate save | Implemented foreground-only |
+| `fastForwardOneMinute` | None | Facilities, inventory | Cloned facilities/inventory | Invokes the same production path once | No immediate save | Implemented temporary developer action |
 
 ## Time And Catch-Up Effects
 
 | Event | Time input | Variables affected | Limits | Player feedback | Status |
 |---|---|---|---|---|---|
-| Active tick | To be designed | To be designed | To be designed | To be designed | Placeholder |
-| Resume catch-up | Validated elapsed time | To be designed | To be designed | To be designed | Placeholder |
+| Foreground elapsed minute | `Date.now()` compared with `lastProcessedAtMs` | Active facility progress and inventory | Whole completed minutes only; partial minute retained | Facility progress and inventory update | Implemented |
+| Resume catch-up | No approved input yet | None | Clock resets; background/offline minutes produce no work | None | Offline progress planned |
 
 ## Persistence Map
 

@@ -11,7 +11,7 @@ This document is the canonical home for mechanics flow, formulas, state ownershi
 
 ## Current Status
 
-Resource, inventory, facility, finance, and recipe foundations are implemented. The closed catalogue contains Grain, Bread, Water, and Electricity; Farm, Bakery, and Small Utility Works expose their recipe definitions. A Zustand store owns the live `Finance`, `Inventory`, and constructed `FacilityCollection`. Production execution, market, tick, persistence adapter, and SQLite schema remain deferred.
+Resource, inventory, facility, finance, recipe, and foreground realtime-production foundations are implemented. The closed catalogue contains Grain, Bread, Water, and Electricity; Farm, Bakery, and Small Utility Works execute their selected recipe definitions. A Zustand store owns the live `Finance`, `Inventory`, `FacilityCollection`, and foreground clock anchor. Market, offline catch-up, persistence adapter, and SQLite schema remain deferred.
 
 ## Planned Gameflow
 
@@ -37,6 +37,7 @@ Elapsed time (only when designed)
 |---|---|---|---|
 | Game configuration and balance values | Typed TypeScript game configuration | No | Versioned with the app; use named constants. |
 | Runtime game state | Zustand | Not directly | Holds the active in-memory session. |
+| Foreground clock anchor | Zustand `lastProcessedAtMs` | No | Runtime-only wall-clock anchor; reset on resume so inactive time grants no work. Offline catch-up is planned separately. |
 | Player finance | `Finance` class in the Zustand game store | Not yet | Starts at €10,000 and records accepted balance changes. |
 | Player resource inventory | `Inventory` class in the Zustand game store | Not yet | Quantity and placeholder quality are one inventory entry per `ResourceType`. |
 | Constructed facilities | `FacilityCollection` class in the Zustand game store | Not yet | Holds at most one Farm and one Bakery, with their selected-recipe and active-state data. |
@@ -69,17 +70,17 @@ Record the concrete inputs, outputs, modifiers, limits, and unlock dependencies 
 
 ## Current Resource And Inventory Rules
 
-- `ResourceType` is a closed enum: only `grain` and `bread` currently exist.
+- `ResourceType` is a closed enum: `grain`, `bread`, `water`, and `electricity` currently exist.
 - An `Inventory` owns one `{ quantity, quality }` entry for every resource type.
 - Inventory `add` accepts only finite positive amounts. `remove` succeeds only when the player holds a finite positive requested amount.
 - Quality is stored as `1` by default and does not yet affect any calculation.
 - `Inventory.toSnapshot()` returns plain enum-keyed data for a future Expo SQLite adapter. No save or restore boundary has been introduced yet.
-- `RecipeName.GrowGrain` and `RecipeName.BakeBread` are registered definitions with inputs, outputs, and work amounts. No execution command or production flow is active.
-- `FacilityType` is a closed enum: only Farm and Bakery currently exist. A Farm accepts `GrowGrain`; a Bakery accepts `BakeBread`.
+- `GrowGrain` consumes one Water and one Electricity to output one Grain after five work units. `BakeBread` consumes two Grain, one Water, and one Electricity to output one Bread after ten work units. `ProduceWater` and `ProduceElectricity` each output one utility resource after five work units.
+- `FacilityType` is a closed enum: Farm, Bakery, and Small Utility Works currently exist. A Farm accepts `GrowGrain`; a Bakery accepts `BakeBread`; Small Utility Works accepts `ProduceWater` or `ProduceElectricity`.
 - Farm construction costs €60; Bakery construction costs €300. `buildFacility` accepts the command only if the type is unconstructed and `Finance` can afford its code-defined cost.
 - Construction writes one negative finance transaction using the facility name and cost. The UI exposes touch-friendly build controls and disables unaffordable choices.
 - `destroyFacility` removes a constructed facility without changing Finance. The UI requires a second explicit confirmation tap before it calls this command.
-- `GameSnapshot` joins `FinanceSnapshot`, `InventorySnapshot`, and `FacilityCollectionSnapshot` for the future Expo SQLite adapter.
+- `FacilitySnapshot` preserves active state plus per-recipe work progress. `GameSnapshot` joins `FinanceSnapshot`, `InventorySnapshot`, and `FacilityCollectionSnapshot` for the future Expo SQLite adapter.
 
 ## Finance Formula
 
@@ -95,16 +96,14 @@ Invalid-input behavior: Non-finite transaction amounts and empty descriptions ar
 
 ## Tick And Catch-Up Flow
 
-Planned template:
+1. While React Native reports the app as active, a lightweight runtime timer reads `Date.now()`.
+2. `TimeManager` calculates whole elapsed minutes and retains partial-minute remainder to avoid timer-drift loss.
+3. For each elapsed minute, every active facility receives one work unit in fixed order: Small Utility Works, Farm, Bakery.
+4. A recipe pays all inputs at the beginning of a cycle, advances its stored progress, and grants output on completion. A missing input stalls that facility and does not bank work.
+5. The temporary Fast-forward 1 minute UI action invokes this identical production path once.
+6. On background or resume, the runtime clock anchor resets. This first implementation deliberately awards no background/offline work.
 
-1. Read a trusted active-session or saved timestamp.
-2. Calculate elapsed time with explicit invalid-clock handling.
-3. Apply only the approved time-based rules and maximum limits.
-4. Run the same validation and calculation rules used by normal gameplay.
-5. Update runtime state and derive resume feedback.
-6. Save only at the approved boundary.
-
-Open decisions: active tick cadence, offline eligibility, catch-up cap, device-clock policy, and save frequency.
+Planned offline catch-up: persist a timestamp with the eventual SQLite snapshot, validate elapsed time, apply an approved cap and device-clock policy, then invoke the same production path. Those policy details are not implemented.
 
 ## Persistence Boundaries
 
@@ -112,7 +111,7 @@ Open decisions: active tick cadence, offline eligibility, catch-up cap, device-c
 |---|---|---|
 | Normal tap/action | Update runtime state; do not assume an immediate SQLite write | Template |
 | Meaningful checkpoint | Create a deliberate SQLite snapshot when designed | Template |
-| App background/resume | Define safe save and restore behavior before implementation | Open |
+| App background/resume | Reset the foreground clock; award no background work. Offline catch-up is planned separately. | Implemented foreground-only |
 | App launch | Restore a valid snapshot and apply approved catch-up | Template |
 | Invalid/corrupt saved data | Define recovery and player feedback before implementation | Open |
 

@@ -35,6 +35,7 @@ export const styles = StyleSheet.create({
   dialogSummary: { gap: 8, marginTop: 16 },
   dialogSectionHeading: { marginTop: 16, marginBottom: 4 },
   featureCard: { backgroundColor: colors.surface },
+  facilityRecipeControls: { gap: 8, marginTop: 8 },
   facilityTitle: { color: colors.charcoal, fontWeight: '700' },
   header: { backgroundColor: colors.primary },
   headerActions: { alignItems: 'center', flexDirection: 'row' },

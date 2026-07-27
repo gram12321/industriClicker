@@ -11,4 +11,9 @@ export enum ResourceType {
   Electricity = 'electricity',
 }
 
-export const RESOURCE_TYPES = [ResourceType.Grain, ResourceType.Bread] as const;
+export const RESOURCE_TYPES = [
+  ResourceType.Grain,
+  ResourceType.Bread,
+  ResourceType.Water,
+  ResourceType.Electricity,
+] as const;
