@@ -60,6 +60,11 @@ Current foundation rules:
 - `GrowGrain` consumes 1 Water and 1 Electricity and produces 1 Grain after 5 work units.
 - `BakeBread` consumes 2 Grain, 1 Water, and 1 Electricity and produces 1 Bread after 10 work units.
 - `ProduceWater` and `ProduceElectricity` each produce 1 utility resource after 5 work units.
+- `GrowSugar` consumes 4 Water and produces 1 Sugar after 3 work units.
+- `MineCoal` consumes 3 Electricity and produces 1 Coal after 3 work units.
+- `BakeCake` consumes 1 Grain, 0.5 Sugar, 2 Electricity, and 2 Water and produces 1 Cake after 15 work units.
+- `ManualPumping` produces 1 Water after 1 work unit; `ElectricPumping` consumes 1 Electricity and produces 5 Water after 0.5 work units.
+- `CoalPower` consumes 1 Coal and 2 Water and produces 10 Electricity after 5 work units; `SolarPower` produces 1 Electricity after 10 work units.
 - Inputs are paid at cycle start. If inputs are missing, the facility stalls and does not bank work.
 
 ## Finance Formula

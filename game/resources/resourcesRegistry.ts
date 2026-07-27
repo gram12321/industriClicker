@@ -7,6 +7,9 @@ export const resources: Readonly<Record<ResourceType, Resource>> = {
   [ResourceType.Bread]: new Resource(ResourceType.Bread, 'Bread'),
   [ResourceType.Water]: new Resource(ResourceType.Water, 'Water'),
   [ResourceType.Electricity]: new Resource(ResourceType.Electricity, 'Electricity'),
+  [ResourceType.Sugar]: new Resource(ResourceType.Sugar, 'Sugar'),
+  [ResourceType.Coal]: new Resource(ResourceType.Coal, 'Coal'),
+  [ResourceType.Cake]: new Resource(ResourceType.Cake, 'Cake'),
 };
 
 export function getResource(resourceType: ResourceType): Resource {

@@ -38,6 +38,7 @@ Player action or time event
 |---|---|---|---|---|
 | Inventory quantity | Resource command or completed recipe | Add/remove the requested finite amount | Removal requires sufficient quantity | Command or production completion |
 | Inventory entry quality | Resource type | Placeholder value `1` | Must be finite and greater than zero when restored | Inventory construction or restore |
+| Facility recipe catalogue | Facility type | Code-owned recipe list for each facility | Not player-mutable in runtime | Catalogue load |
 | Company balance | Prior balance, signed transaction amount | `balanceAfter = balance + amount` | Balance must remain finite and at least €0 | Accepted transaction |
 | Recipe progress | Prior progress, work units, recipe work amount | Progress advances by one work unit per eligible tick | Completion resets progress and grants output | Production tick |
 | Production output | Recipe inputs and completion state | Recipe-specific output after required work | Inputs are paid at cycle start; missing inputs stall | Cycle start or completion |

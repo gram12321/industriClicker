@@ -59,9 +59,9 @@ package.json                      Dependencies and development commands
 | Area | Current fact | Verification/status |
 |---|---|---|
 | Dashboard | `/` renders the safe-area-aware dashboard and locally switches Company, Inventory, Production, and Finance views. | Implemented; typechecked |
-| Resources | `ResourceType` contains Grain, Bread, Water, and Electricity; definitions are code-owned. | Implemented |
+| Resources | `ResourceType` contains Grain, Bread, Water, Electricity, Sugar, Coal, and Cake; definitions are code-owned. | Implemented |
 | Inventory | Zustand owns an `Inventory` with quantity and placeholder quality; typed add/remove commands exist. | Implemented |
-| Facilities | Farm, Bakery, and Small Utility Works definitions plus constructed facility state exist. | Implemented |
+| Facilities | Farm, Bakery, Small Utility Works, Mine, Water Well, and Power Plant definitions plus constructed facility state exist. | Implemented |
 | Finance | Starts at €10,000 and records accepted signed transactions; Farm and Bakery cost €60 and €300. | Implemented |
 | Production | Active facilities advance by one work unit per foreground real minute; inputs are paid at cycle start; fast-forward uses the same path. | Implemented |
 | Local save | One versioned `GameSnapshot` persists finance, inventory, facilities, recipes, and progress in Expo SQLite. Saves batch briefly and flush on background/provider cleanup. | Implemented |

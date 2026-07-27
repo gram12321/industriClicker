@@ -10,6 +10,9 @@ const PRODUCTION_ORDER = [
   FacilityType.SmallUtilityWorks,
   FacilityType.Farm,
   FacilityType.Bakery,
+  FacilityType.Mine,
+  FacilityType.WaterWell,
+  FacilityType.PowerPlant,
 ] as const;
 
 /** Applies one or more already-approved work units to all active facilities. */

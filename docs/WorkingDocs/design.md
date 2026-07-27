@@ -34,9 +34,10 @@ The concrete loop is still being established. The intended shape is:
 
 ### Resource and Facility Foundation
 
-- The initial resource catalogue contains Grain, Bread, Water, and Electricity.
-- The initial facility catalogue contains Farm, Bakery, and Small Utility Works.
+- The current resource catalogue contains Grain, Bread, Water, Electricity, Sugar, Coal, and Cake.
+- The current facility catalogue contains Farm, Bakery, Small Utility Works, Mine, Water Well, and Power Plant.
 - Small Utility Works produces Water or Electricity; Farm grows Grain; Bakery bakes Bread.
+- Farm can also grow Sugar; Mine produces Coal; Water Well pumps Water; Power Plant produces Electricity; Bakery can bake Cake.
 - Local and global market mechanics are outside the foundation scope.
 - Resource quality currently has no player-visible rule beyond its placeholder value.
 

@@ -6,6 +6,9 @@ export const RESOURCE_ICONS: Readonly<Record<ResourceType, string>> = {
   [ResourceType.Bread]: '🍞',
   [ResourceType.Water]: '💧',
   [ResourceType.Electricity]: '⚡',
+  [ResourceType.Sugar]: '🍬',
+  [ResourceType.Coal]: '🪨',
+  [ResourceType.Cake]: '🍰',
 };
 
 export function getResourceIcon(resourceType: ResourceType): string {
