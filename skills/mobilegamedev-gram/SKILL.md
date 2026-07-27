@@ -21,7 +21,7 @@ The repository is being consolidated from prior projects. Their documentation an
 | UI | React Native Paper + React Native core components |
 | Runtime and durable state | Zustand in memory + Expo SQLite for deliberate saves |
 | Cloud/backend | None initially; Supabase only for an approved need |
-| Development and release | Android Emulator/Fast Refresh; native Android build; no PWA/web release |
+| Development and release | Expo Go on a physical Android device/Fast Refresh; native Android build; no PWA/web release |
 
 - The game is a native Android app first, built with Expo, React Native, TypeScript, and Expo Router.
 - Use React Native Paper and React Native core components for the code-defined Material UI. Do not use browser DOM components for native screens.
@@ -29,7 +29,7 @@ The repository is being consolidated from prior projects. Their documentation an
 - Keep game rules in pure TypeScript engine/service modules. UI components issue commands and render state; persistence adapters own SQLite access.
 - Supabase is deferred. Add it only for an explicitly approved cloud requirement, such as backup, cross-device sync, accounts, or server-owned features.
 - Expo web is a desktop development aid for fast layout inspection and browser DevTools. It is not a PWA or web-release target.
-- Use the Android Emulator as the primary desktop preview and Fast Refresh for ordinary TypeScript/UI edits. Verify on a physical Android device at meaningful interaction or release checkpoints.
+- Use Expo Go on a physical Android device as the primary native preview and Fast Refresh for ordinary TypeScript/UI edits. Expo web is a lightweight desktop aid. Treat the Android Emulator as optional because it may be too resource-intensive on some development machines. Verify on a physical Android device at meaningful interaction or release checkpoints.
 
 ## Stack Rationale
 

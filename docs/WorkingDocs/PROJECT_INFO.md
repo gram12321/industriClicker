@@ -20,7 +20,7 @@ This is a repository-content estimate that includes documentation and agent skil
 
 ## Locked Stack
 
-- Expo + React Native + TypeScript + Expo Router.
+- Expo SDK 54 + React Native + TypeScript + Expo Router.
 - React Native Paper and React Native core components.
 - Zustand for runtime state and Expo SQLite for deliberate local saves.
 - Supabase is deferred until an approved cloud requirement exists.
@@ -52,7 +52,7 @@ package.json                      Dependencies and development commands
 ## Available Commands
 
 - `npm run start` â€” start Expo development server.
-- `npm run android` â€” start Expo and open Android preview.
+- `npm run android` â€” optional emulator shortcut; for a physical phone, use `npm run start` and open the QR code in Expo Go.
 - `npm run web` â€” start browser development preview.
 - `npm run typecheck` â€” TypeScript validation without emitting files.
 
@@ -94,3 +94,5 @@ Planned: an industrial clicker with explicit progression, economy, and time-cont
 ## Maintenance Notes
 
 Update this document when the scaffold, source layout, commands, routes, major ownership boundaries, or verified systems change.
+
+The preferred native development loop is Expo Go on a physical Android device. The Android Emulator is optional, and Expo web is a development aid rather than a release target.

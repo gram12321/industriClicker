@@ -24,7 +24,7 @@ Industri Clicker is an early-stage, single-player industrial clicker game for An
 | In-memory state | Zustand |
 | Local persistence | Expo SQLite |
 | Cloud/backend | None initially; Supabase only when a real cloud need exists |
-| Desktop development | Android Emulator as the primary preview; browser preview and DevTools as secondary tools |
+| Development preview | Expo Go on a physical Android device; browser preview and DevTools as lightweight secondary tools |
 | Release path | Native Android build; no PWA or web release target |
 
 Exact package versions are intentionally not fixed here. The selected Expo SDK determines compatible versions when the project is scaffolded.
@@ -36,7 +36,7 @@ npm install
 npm run web
 ```
 
-The web command is a local browser preview for development and layout inspection; Android remains the product target. Use `npm run android` to open the native Android preview when an emulator is available.
+The web command is a local browser preview for development and layout inspection; Android remains the product target. For the preferred native preview, run `npm run start`, keep the phone and computer on the same network, and scan the QR code from Expo Go. `npm run android` is an optional emulator shortcut when an emulator is available.
 
 ## Why This Stack
 
@@ -73,13 +73,13 @@ React Native UI -> hooks/view models -> game commands/services -> state and pers
 
 ## Development and Validation
 
-The primary desktop preview is the Android Emulator. Expo Fast Refresh should update ordinary TypeScript and UI edits quickly. Expo web may be used for browser DevTools and fast layout inspection, but it is a development aid only; the emulator and periodic physical Android-device checks are the truth for native behavior.
+The primary native preview is a physical Android device running Expo Go. Expo Fast Refresh should update ordinary TypeScript and UI edits quickly. Expo web may be used for browser DevTools and fast layout inspection, but it is a development aid only. The emulator is optional; physical-device checks are the preferred truth for native behavior.
 
 Use the smallest useful verification for each change:
 
 - Documentation-only changes: review links and stale terminology; run `git diff --check` before handoff.
 - Gameplay changes: add or update focused tests for player-visible behavior, formulas, and tick order.
-- UI changes: inspect the narrow Android-emulator layout and the affected interaction path.
+- UI changes: inspect the narrow physical-device layout and the affected interaction path; use the emulator only when available.
 - Cross-cutting or release-style work: run the relevant full test/build checks once at the integration gate.
 
 Do not start a development server, create a release build, or commit changes unless the task or user explicitly calls for it.
