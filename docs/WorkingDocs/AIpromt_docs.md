@@ -11,7 +11,7 @@ Use this guide when updating Industri Clicker documentation.
 | `design.md` | Durable game direction and product decisions. |
 | `gameflow.md` | Mechanics, tick order, state, and persistence flow. |
 | `../../VariableRelationshipMap.md` | Variable ownership, dependencies, commands, and persistence relationships. |
-| `PROJECT_INFO.md` | Verified layout, commands, and implementation map. |
+| `PROJECT_INFO.md` | Layout, commands, and implementation map. |
 | `AIDescriptions_coregame.md` | Current verified systems and deferred areas. |
 | `AI_AGENT_INSTRUCTIONS.md` | Agent boundaries and workflow. |
 | `AIpromt_codecleaning.md` | Cleanup workflow. |

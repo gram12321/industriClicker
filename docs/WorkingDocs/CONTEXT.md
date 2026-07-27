@@ -64,7 +64,7 @@ These are working definitions, not confirmation that every system will be used.
 - **Command:** a typed request from UI or a system event to change game state.
 - **Snapshot:** the deliberate local-save representation of durable game state.
 - **Runtime store:** Zustand-managed in-memory state.
-- **Local save:** Expo SQLite data used to restore approved durable progress.
+- **Local save:** The single Expo SQLite record containing the current-version `GameSnapshot`, used to restore approved durable progress.
 
 ## UI And Mobile Language
 
@@ -83,7 +83,7 @@ The planned relationship is: UI issues commands, pure game logic applies rules, 
 - Grain and Bread are the first concrete resource definitions. Their runtime quantities and placeholder quality are held in the Zustand-owned `Inventory` instance.
 - Farm and Bakery have code-owned definitions and can be represented as player-constructed facilities in the runtime store.
 - Finance starts every new company with €10,000. Facility construction deducts its approved cost and records a transaction.
-- Foreground realtime production is implemented. Offline/background catch-up, markets, and the SQLite persistence adapter remain deferred.
+- Foreground realtime production and the single-record Expo SQLite save are implemented. Offline/background catch-up and markets remain deferred.
 - Supabase is deferred and is not part of the current game-state vocabulary.
 
 ## Flagged Ambiguities

@@ -6,7 +6,7 @@ This is the living implementation map for Industri Clicker. Keep it factual and 
 
 - Project stage: foundation; Expo application scaffold and first dashboard UI shell are implemented.
 - Product: single-player, mobile-first industrial clicker for Android.
-- The class-based resource, inventory, facility, finance, and foreground realtime-production foundations are implemented. Durable persistence and offline catch-up remain deferred.
+- The class-based resource, inventory, facility, finance, foreground realtime-production, and complete local-save foundations are implemented. Offline catch-up remains deferred.
 
 ## Repository Size At 0.000d
 
@@ -44,9 +44,10 @@ game/inventory/                   Player inventory domain class and plain snapsh
 game/recipes/                     Recipe enum, definitions, and typed contracts
 game/facilities/                  Facility types, definitions, player state, and snapshot shapes
 game/finance/                     Player balance, transaction ledger, and snapshot shape
-game/production/                  Pure active-facility production orchestration
-game/state/                       Top-level plain runtime snapshot contracts
-game/time/                        Pure foreground elapsed-minute calculation
+game/facilities/advanceProduction.ts  Pure active-facility production orchestration
+game/core/persistence/             Single-record Expo SQLite game-save adapter
+game/core/state/                   Top-level plain runtime snapshot contracts
+game/core/time/                    Pure foreground elapsed-minute calculation
 stores/                           Zustand runtime state
 assets/                           Expo application icons and splash asset
 app.json                          Expo application configuration
@@ -55,7 +56,7 @@ package.json                      Dependencies and development commands
 
 ## Current App Routes
 
-- `/` â€” dashboard UI shell with Company, Production, and Finance views.
+- `/` â€” dashboard UI shell with Company, Inventory, Production, and Finance views.
 
 ## Available Commands
 
@@ -97,7 +98,7 @@ Planned: an industrial clicker with explicit progression, economy, and time-cont
 
 ## Implemented Systems
 
-- **Dashboard UI shell** â€” Implemented. The `/` route renders a safe-area-aware top bar, live balance overview, profile menu, notification control, and locally switched Company, Production, and Finance tabs. Shared visual tokens live in `theme.ts`; dashboard layout rules live in `app/index.styles.ts`. The Company tab reads the resource inventory from Zustand; persistence remains deferred. Verified with `npm run typecheck`.
+- **Dashboard UI shell** â€” Implemented. The `/` route renders a safe-area-aware top bar, live balance overview, profile menu, notification control, and locally switched Company, Inventory, Production, and Finance tabs. Shared visual tokens live in `theme.ts`; dashboard layout rules live in `app/index.styles.ts`. The app loads a local save before these player surfaces become interactive. Verified with `npm run typecheck`.
 
 ## Resource And Inventory Foundation
 
@@ -106,7 +107,8 @@ Planned: an industrial clicker with explicit progression, economy, and time-cont
 - **Implemented:** `InventorySnapshot` is a plain data shape reserved for a later Expo SQLite adapter. Grain and Bread recipe definitions are code-owned and exposed to their facilities; production execution remains deferred.
 - **Implemented:** The Company tab displays the two empty inventory entries using the familiar Grain and Bread symbols from Baseclicker.
 - **Implemented:** The shared resource catalogue includes Water and Electricity, so both appear in inventory and are retained by snapshots.
-- **Deferred:** Local/global markets, durable persistence, and offline production catch-up.
+- **Implemented:** One versioned `GameSnapshot` record persists all mutable player finance, inventory, facilities, active recipes, and recipe work progress in Expo SQLite on Android and web. Web Metro configuration enables the SQLite WebAssembly asset and required cross-origin-isolation headers. Saves batch for one second after changes and flush on backgrounding or provider cleanup.
+- **Deferred:** Local/global markets and offline production catch-up.
 
 ## Facility Foundation
 
@@ -116,7 +118,8 @@ Planned: an industrial clicker with explicit progression, economy, and time-cont
 - **Implemented:** The Production tab displays Farm and Bakery construction status. Its touch-friendly build controls open a confirmation dialog with the cost and resulting balance before construction is applied.
 - **Implemented:** Constructed facilities show a destructive action that requires a second confirmation. Demolition removes the facility and does not refund its construction cost.
 - **Implemented:** Active facilities advance by one work unit per completed foreground real minute. Per-recipe progress is snapshot-safe, inputs are paid at cycle start, and the temporary Production-screen fast-forward action advances the same path by one minute.
-- **Deferred:** Offline/background production catch-up, upgrades, and the Expo SQLite repository.
+- **Implemented:** Facility cards display progress percentage, placeholder value per tick, and estimated real-time remaining duration. They state when production has not started or is paused for specifically missing inputs.
+- **Deferred:** Offline/background production catch-up and upgrades.
 
 ## Finance Foundation
 

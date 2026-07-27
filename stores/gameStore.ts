@@ -3,11 +3,11 @@ import { Inventory } from '@/game/inventory/inventory';
 import { FacilityCollection } from '@/game/facilities/facilityCollection';
 import type { FacilityType } from '@/game/facilities/facilityTypes';
 import { getFacilityDefinition } from '@/game/facilities/facilityRegistry';
-import { advanceProduction as advanceFacilityProduction } from '@/game/production/advanceProduction';
+import { advanceProduction as advanceFacilityProduction } from '@/game/facilities/advanceProduction';
 import type { RecipeName } from '@/game/recipes/recipeTypes';
 import type { ResourceType } from '@/game/resources/resourceTypes';
-import type { GameSnapshot } from '@/game/state/gameSnapshot';
-import { calculateRealtimeAdvance } from '@/game/time/timeManager';
+import type { GameSnapshot } from '@/game/core/state/gameSnapshot';
+import { calculateRealtimeAdvance } from '@/game/core/time/timeManager';
 import { create } from 'zustand';
 
 type GameState = {

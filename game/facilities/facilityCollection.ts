@@ -1,7 +1,7 @@
 import { Facility, type FacilitySnapshot } from './facility';
 import { FACILITY_TYPES, FacilityType } from './facilityTypes';
 
-/** Plain collection data used by a future game snapshot and Expo SQLite adapter. */
+/** Plain collection data used by the game snapshot and Expo SQLite adapter. */
 export type FacilityCollectionSnapshot = {
   facilities: FacilitySnapshot[];
 };

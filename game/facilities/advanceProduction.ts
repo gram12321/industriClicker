@@ -1,5 +1,5 @@
-import type { FacilityCollection } from '../facilities/facilityCollection';
-import { FacilityType } from '../facilities/facilityTypes';
+import type { FacilityCollection } from './facilityCollection';
+import { FacilityType } from './facilityTypes';
 import type { Inventory } from '../inventory/inventory';
 
 /**

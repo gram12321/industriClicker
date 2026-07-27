@@ -17,6 +17,7 @@ import {
   IconButton,
   Menu,
   Portal,
+  ProgressBar,
   Surface,
   Text,
 } from 'react-native-paper';
@@ -34,10 +35,11 @@ import type { Recipe } from '@/game/recipes/recipeTypes';
 import { useGameStore } from '@/stores/gameStore';
 import { styles } from './index.styles';
 
-type DashboardTab = 'company' | 'production' | 'finance';
+type DashboardTab = 'company' | 'inventory' | 'production' | 'finance';
 
 const tabs: Array<{ key: DashboardTab; label: string; symbol: string }> = [
   { key: 'company', label: 'Company', symbol: '⌂' },
+  { key: 'inventory', label: 'Inventory', symbol: '▣' },
   { key: 'production', label: 'Production', symbol: '⚙' },
   { key: 'finance', label: 'Finance', symbol: '¤' },
 ];
@@ -178,6 +180,30 @@ function DashboardContent({
   requestFacilityDestruction: (facilityType: FacilityType) => void;
   setFacilityRecipe: (facilityType: FacilityType, recipeName: Recipe['name'] | null) => boolean;
 }) {
+  if (activeTab === 'inventory') {
+    return (
+      <>
+        <SectionHeading
+          eyebrow="STOCK"
+          title="Inventory"
+          subtitle="Review the resources currently held by your company."
+        />
+        {RESOURCE_TYPES.map((resourceType) => {
+          const resource = getResource(resourceType);
+          const entry = inventory.getEntry(resourceType);
+
+          return (
+            <PlaceholderRow
+              key={resourceType}
+              label={`${getResourceIcon(resourceType)} ${resource.name}`}
+              value={`${entry.quantity} · Quality ${entry.quality}`}
+            />
+          );
+        })}
+      </>
+    );
+  }
+
   if (activeTab === 'production') {
     return (
       <>
@@ -197,6 +223,8 @@ function DashboardContent({
           const facility = facilities.get(facilityType);
           const activeRecipeName = facility?.getActiveRecipeName() ?? null;
           const activeRecipe = definition.recipes.find((recipe) => recipe.name === activeRecipeName);
+          const productionStatus = facility?.getProductionStatus(inventory) ?? 'not-started';
+          const missingInputs = facility?.getMissingInputs(inventory) ?? [];
 
           return (
             <Card key={facilityType} mode="contained" style={styles.featureCard}>
@@ -226,16 +254,22 @@ function DashboardContent({
                     );
                   })}
                 </View>
+                <FacilityProductionStatus
+                  progress={activeRecipe ? facility?.getRecipeProgress(activeRecipe.name) ?? 0 : 0}
+                  missingInputs={missingInputs}
+                  recipe={activeRecipe ?? null}
+                  status={productionStatus}
+                />
+                <View style={styles.facilityActions}>
+                  <IconButton
+                    accessibilityLabel={`Destroy ${definition.name}`}
+                    icon="trash-can-outline"
+                    iconColor={colors.error}
+                    onPress={() => requestFacilityDestruction(facilityType)}
+                    size={22}
+                  />
+                </View>
               </Card.Content>
-              <Card.Actions>
-                <Button
-                  mode="outlined"
-                  onPress={() => requestFacilityDestruction(facilityType)}
-                  textColor={colors.error}
-                >
-                  Destroy facility
-                </Button>
-              </Card.Actions>
             </Card>
           );
         })}
@@ -289,21 +323,45 @@ function DashboardContent({
           </Text>
         </Card.Content>
       </Card>
-      <Text style={styles.inventoryHeading} variant="titleMedium">Inventory</Text>
-      {RESOURCE_TYPES.map((resourceType) => {
-        const resource = getResource(resourceType);
-        const entry = inventory.getEntry(resourceType);
-
-        return (
-          <PlaceholderRow
-            key={resourceType}
-            label={`${getResourceIcon(resourceType)} ${resource.name}`}
-            value={`${entry.quantity} · Quality ${entry.quality}`}
-          />
-        );
-      })}
-      <PlaceholderRow label="Production facilities" value="None yet" />
     </>
+  );
+}
+
+function FacilityProductionStatus({
+  progress,
+  missingInputs,
+  recipe,
+  status,
+}: {
+  progress: number;
+  missingInputs: Recipe['inputs'];
+  recipe: Recipe | null;
+  status: 'not-started' | 'missing-inputs' | 'producing';
+}) {
+  if (status === 'not-started' || !recipe) {
+    return <Text style={styles.productionError}>Production is not started. Choose a recipe to begin.</Text>;
+  }
+
+  if (status === 'missing-inputs') {
+    return (
+      <Text style={styles.productionError}>
+        Production is paused: missing {formatRecipeInputs({ ...recipe, inputs: missingInputs })}.
+      </Text>
+    );
+  }
+
+  const progressPercent = Math.min(100, Math.max(0, (progress / recipe.workAmount) * 100));
+  const minutesRemaining = Math.max(0, recipe.workAmount - progress);
+
+  return (
+    <View style={styles.productionProgress}>
+      <View style={styles.productionProgressHeader}>
+        <Text style={styles.productionValuePlaceholder}>Value/tick: —</Text>
+        <Text style={styles.productionPercent}>{formatPercent(progressPercent)}</Text>
+      </View>
+      <ProgressBar color={colors.primary} progress={progressPercent / 100} style={styles.productionProgressBar} />
+      <Text style={styles.productionTimeLeft}>{formatTimeRemaining(minutesRemaining)} left</Text>
+    </View>
   );
 }
 
@@ -469,8 +527,12 @@ function ConstructionDialog({
 }
 
 function formatRecipeInputs(recipe: Recipe): string {
-  if (recipe.inputs.length === 0) return 'No inputs';
-  return recipe.inputs.map(({ resourceType, amount }) => `${getResource(resourceType).name} ×${amount}`).join(' + ');
+  return formatRecipeInputList(recipe.inputs);
+}
+
+function formatRecipeInputList(inputs: Recipe['inputs']): string {
+  if (inputs.length === 0) return 'No inputs';
+  return inputs.map(({ resourceType, amount }) => `${getResource(resourceType).name} ×${amount}`).join(' + ');
 }
 
 function formatRecipeName(recipe: Recipe): string {
@@ -485,6 +547,20 @@ function formatRecipeName(recipe: Recipe): string {
 
 function formatRecipeOutput(recipe: Recipe): string {
   return `${getResource(recipe.output.resourceType).name} ×${recipe.output.amount}`;
+}
+
+function formatPercent(value: number): string {
+  return `${value.toFixed(0)}%`;
+}
+
+function formatTimeRemaining(minutes: number): string {
+  if (minutes < 60) {
+    return `${minutes} min`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return remainingMinutes === 0 ? `${hours} h` : `${hours} h ${remainingMinutes} min`;
 }
 
 function DestructionDialog({

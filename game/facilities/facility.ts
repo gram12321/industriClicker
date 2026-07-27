@@ -1,10 +1,10 @@
-import { RecipeName } from '../recipes/recipeTypes';
+import { RecipeName, type RecipeInput } from '../recipes/recipeTypes';
 import type { Inventory } from '../inventory/inventory';
 import { getRecipe } from '../recipes/recipes';
 import { getFacilityDefinition } from './facilityRegistry';
 import { FacilityType } from './facilityTypes';
 
-/** Plain data used by a future game snapshot and Expo SQLite adapter. */
+/** Plain data used by the game snapshot and Expo SQLite adapter. */
 export type FacilitySnapshot = {
   facilityType: FacilityType;
   activeRecipeName: RecipeName | null;
@@ -37,6 +37,27 @@ export class Facility {
 
   getRecipeProgress(recipeName: RecipeName): number {
     return this.recipeProgress[recipeName] ?? 0;
+  }
+
+  getProductionStatus(inventory: Inventory): 'not-started' | 'missing-inputs' | 'producing' {
+    if (!this.active || !this.activeRecipeName) {
+      return 'not-started';
+    }
+
+    const recipe = getRecipe(this.activeRecipeName);
+    const isAtCycleStart = this.getRecipeProgress(recipe.name) === 0;
+
+    return isAtCycleStart && this.getMissingInputs(inventory).length > 0 ? 'missing-inputs' : 'producing';
+  }
+
+  getMissingInputs(inventory: Inventory): RecipeInput[] {
+    if (!this.activeRecipeName) {
+      return [];
+    }
+
+    return getRecipe(this.activeRecipeName).inputs.filter((input) => (
+      !inventory.has(input.resourceType, input.amount)
+    ));
   }
 
   setActiveRecipe(recipeName: RecipeName | null): boolean {

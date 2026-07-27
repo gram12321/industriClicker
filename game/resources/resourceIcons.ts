@@ -4,8 +4,8 @@ import { ResourceType } from './resourceTypes';
 export const RESOURCE_ICONS: Readonly<Record<ResourceType, string>> = {
   [ResourceType.Grain]: '🌾',
   [ResourceType.Bread]: '🍞',
-  [ResourceType.Water]: 'water',
-  [ResourceType.Electricity]: 'electricity',
+  [ResourceType.Water]: '💧',
+  [ResourceType.Electricity]: '⚡',
 };
 
 export function getResourceIcon(resourceType: ResourceType): string {

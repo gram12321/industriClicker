@@ -103,8 +103,8 @@ Before enabling offline catch-up, define:
 ## Persistence And Offline Play
 
 - Runtime state belongs in Zustand.
-- Deliberate durable snapshots belong in Expo SQLite.
-- Do not save on every tap; define save boundaries in `gameflow.md`.
+- One versioned `GameSnapshot` is stored as the complete device-local save in Expo SQLite.
+- Save changes are batched briefly, then flushed when the app backgrounds. Restore completes before the game becomes interactive.
 - Supabase is deferred unless an approved cloud need changes this decision.
 
 ## Events And Notifications

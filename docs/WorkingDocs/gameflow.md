@@ -11,7 +11,7 @@ This document is the canonical home for mechanics flow, formulas, state ownershi
 
 ## Current Status
 
-Resource, inventory, facility, finance, recipe, and foreground realtime-production foundations are implemented. The closed catalogue contains Grain, Bread, Water, and Electricity; Farm, Bakery, and Small Utility Works execute their selected recipe definitions. A Zustand store owns the live `Finance`, `Inventory`, `FacilityCollection`, and foreground clock anchor. Market, offline catch-up, persistence adapter, and SQLite schema remain deferred.
+Resource, inventory, facility, finance, recipe, foreground realtime-production, and local-save foundations are implemented. The closed catalogue contains Grain, Bread, Water, and Electricity; Farm, Bakery, and Small Utility Works execute their selected recipe definitions. A Zustand store owns the live `Finance`, `Inventory`, `FacilityCollection`, and foreground clock anchor. One versioned `GameSnapshot` record persists player progress in Expo SQLite on Android and web; web support uses the required WebAssembly and cross-origin-isolation configuration. Market and offline catch-up remain deferred.
 
 ## Planned Gameflow
 
@@ -38,16 +38,16 @@ Elapsed time (only when designed)
 | Game configuration and balance values | Typed TypeScript game configuration | No | Versioned with the app; use named constants. |
 | Runtime game state | Zustand | Not directly | Holds the active in-memory session. |
 | Foreground clock anchor | Zustand `lastProcessedAtMs` | No | Runtime-only wall-clock anchor; reset on resume so inactive time grants no work. Offline catch-up is planned separately. |
-| Player finance | `Finance` class in the Zustand game store | Not yet | Starts at €10,000 and records accepted balance changes. |
-| Player resource inventory | `Inventory` class in the Zustand game store | Not yet | Quantity and placeholder quality are one inventory entry per `ResourceType`. |
-| Constructed facilities | `FacilityCollection` class in the Zustand game store | Not yet | Holds at most one Farm and one Bakery, with their selected-recipe and active-state data. |
+| Player finance | `Finance` class in the Zustand game store | Yes | Starts at €10,000 and records accepted balance changes. |
+| Player resource inventory | `Inventory` class in the Zustand game store | Yes | Quantity and placeholder quality are one inventory entry per `ResourceType`. |
+| Constructed facilities | `FacilityCollection` class in the Zustand game store | Yes | Holds at most one of each facility type, with selected recipe, active state, and per-recipe work progress. |
 | Facility catalogue | Typed facility registry | No | Farm, Bakery, and Small Utility Works definitions are code-owned and must not be stored in a future player save. |
 | Resource catalogue | `Resource` instances in the resource registry | No | Grain and Bread definitions are code-owned and must not be stored in a future player save. |
 | Recipe catalogue | Typed code-owned recipe definitions | No | Execution and production scheduling are deferred. |
 | Player command | UI or system event, passed to game logic | No | UI must not directly mutate rules-owned values. |
 | Rule result | Pure TypeScript game logic | No | Validates inputs and returns deterministic changes. |
 | Derived display values | Selectors/view-model helpers | No | Recalculate from source-of-truth state where practical. |
-| Durable progress snapshot | Expo SQLite adapter | Yes, at deliberate boundaries | Exact shape is not designed. |
+| Durable progress snapshot | `gameSaveRepository` Expo SQLite adapter | Yes | One current-version `GameSnapshot` record. |
 | Cloud state | None | No | Supabase remains deferred. |
 
 ## Variable Relationship Map
@@ -103,17 +103,19 @@ Invalid-input behavior: Non-finite transaction amounts and empty descriptions ar
 5. The temporary Fast-forward 1 minute UI action invokes this identical production path once.
 6. On background or resume, the runtime clock anchor resets. This first implementation deliberately awards no background/offline work.
 
+The Production view renders active-recipe progress as a percentage and estimated time remaining. A facility with no selected recipe reports that production has not started; a facility stalled at the beginning of a cycle identifies the missing input resources.
+
 Planned offline catch-up: persist a timestamp with the eventual SQLite snapshot, validate elapsed time, apply an approved cap and device-clock policy, then invoke the same production path. Those policy details are not implemented.
 
 ## Persistence Boundaries
 
 | Event | Planned behavior | Status |
 |---|---|---|
-| Normal tap/action | Update runtime state; do not assume an immediate SQLite write | Template |
-| Meaningful checkpoint | Create a deliberate SQLite snapshot when designed | Template |
-| App background/resume | Reset the foreground clock; award no background work. Offline catch-up is planned separately. | Implemented foreground-only |
-| App launch | Restore a valid snapshot and apply approved catch-up | Template |
-| Invalid/corrupt saved data | Define recovery and player feedback before implementation | Open |
+| Normal tap/action | Update runtime state; batch the current snapshot for one second | Implemented |
+| Meaningful checkpoint | Write the current single-record snapshot | Implemented |
+| App background/resume | Flush the current snapshot, reset the foreground clock, and award no background work. Offline catch-up is planned separately. | Implemented foreground-only |
+| App launch | Read the current-version valid single-row snapshot before the game becomes interactive; no catch-up is applied. | Implemented |
+| Invalid/corrupt saved data | Ignore it and start a fresh runtime state; it remains untouched until a later successful save. | Implemented |
 
 ## Formula Template
 

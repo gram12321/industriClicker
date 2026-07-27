@@ -27,12 +27,12 @@ Player action or time event
 | `inventory.entries[ResourceType.Grain].quantity` | Grain held by the player | Stored | `Inventory` in Zustand | Future resource command | Inventory and UI | Not yet | Implemented foundation |
 | `inventory.entries[ResourceType.Bread].quantity` | Bread held by the player | Stored | `Inventory` in Zustand | Future resource command | Inventory and UI | Not yet | Implemented foundation |
 | `inventory.entries[*].quality` | Quality associated with a held resource | Stored | `Inventory` in Zustand | Inventory initialization; future quality rules | Inventory and UI | Not yet | Placeholder value `1` |
-| `InventorySnapshot.entries` | Plain enum-keyed inventory data | Stored snapshot shape | `Inventory.toSnapshot()` | Future deliberate save boundary | Future SQLite adapter | Designed, not written | Implemented shape |
+| `InventorySnapshot.entries` | Plain enum-keyed inventory data | Stored snapshot shape | `Inventory.toSnapshot()` | Batched runtime change or app background | SQLite game-save record | Yes | Implemented |
 | `finance.balance` | Available company funds in euros | Stored | `Finance` in Zustand | Accepted finance transaction | Header, finance view, construction validation | Not yet | Implemented foundation |
 | `finance.transactions` | Immutable record of accepted balance changes | Stored | `Finance` in Zustand | Accepted finance transaction | Finance view and future SQLite save | Not yet | Implemented foundation |
-| `FinanceSnapshot` | Plain balance and transaction data | Stored snapshot shape | `Finance.toSnapshot()` | Future deliberate save boundary | Future SQLite adapter | Designed, not written | Implemented shape |
+| `FinanceSnapshot` | Plain balance and transaction data | Stored snapshot shape | `Finance.toSnapshot()` | Batched runtime change or app background | SQLite game-save record | Yes | Implemented |
 | `facilities[FacilityType]` | Player-constructed Farm, Bakery, or Small Utility Works state | Stored | `FacilityCollection` in Zustand | Construction, recipe change, or production advance | Facility UI and production rules | Not yet | Implemented runtime model |
-| `FacilitySnapshot` | Facility type, selected recipe, and active state | Stored snapshot shape | `Facility.toSnapshot()` | Future deliberate save boundary | Future SQLite adapter | Designed, not written | Implemented shape |
+| `FacilitySnapshot` | Facility type, selected recipe, active state, and progress | Stored snapshot shape | `Facility.toSnapshot()` | Batched runtime change or app background | SQLite game-save record | Yes | Implemented |
 | `facility.recipeProgress[RecipeName]` | Work completed on a facility recipe | Stored | `Facility` in Zustand | Foreground elapsed minute or fast-forward | Production view and recipe completion | Designed, not written | Implemented runtime rule |
 | `lastProcessedAtMs` | Runtime wall-clock anchor in epoch milliseconds | Stored runtime state | Zustand game store | Foreground timer or lifecycle transition | `TimeManager` | No | Foreground-only implementation |
 
@@ -71,9 +71,9 @@ Record every game command after it is approved.
 
 | State group | Runtime owner | Local-save representation | Save trigger | Restore behavior | Status |
 |---|---|---|---|---|---|
-| Active resource inventory | Zustand game store | `InventorySnapshot` | Not yet designed | Not yet implemented | Foundation only |
-| Active finance | Zustand game store | `FinanceSnapshot` inside `GameSnapshot` | Not yet designed | Not yet implemented | Foundation only |
-| Constructed facilities | Zustand game store | `FacilityCollectionSnapshot` inside `GameSnapshot` | Not yet designed | Not yet implemented | Foundation only |
+| Active resource inventory | Zustand game store | `InventorySnapshot` | Batched after runtime changes; immediate on app background | Restore from valid current-version snapshot | Implemented |
+| Active finance | Zustand game store | `FinanceSnapshot` inside `GameSnapshot` | Batched after runtime changes; immediate on app background | Restore from valid current-version snapshot | Implemented |
+| Constructed facilities | Zustand game store | `FacilityCollectionSnapshot` inside `GameSnapshot` | Batched after runtime changes; immediate on app background | Restore from valid current-version snapshot | Implemented |
 | Balance configuration | Typed TypeScript configuration | Not saved | App version | Loaded with app | Confirmed direction |
 
 ## Rules And Open Questions
