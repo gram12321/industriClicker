@@ -6,7 +6,7 @@ This is the living implementation map for Industri Clicker. Keep it factual and 
 
 - Project stage: foundation; Expo application scaffold and first dashboard UI shell are implemented.
 - Product: single-player, mobile-first industrial clicker for Android.
-- The class-based resource, inventory, and facility foundations are implemented. Durable persistence and production execution remain deferred.
+- The class-based resource, inventory, facility, and finance foundations are implemented. Durable persistence and production execution remain deferred.
 
 ## Repository Size At 0.000d
 
@@ -43,6 +43,7 @@ game/resources/                   Resource enum, class definitions, registry, an
 game/inventory/                   Player inventory domain class and plain snapshot shape
 game/recipes/                     Reserved recipe enum and typed recipe contracts
 game/facilities/                  Facility types, definitions, player state, and snapshot shapes
+game/finance/                     Player balance, transaction ledger, and snapshot shape
 game/state/                       Top-level plain runtime snapshot contracts
 stores/                           Zustand runtime state
 assets/                           Expo application icons and splash asset
@@ -94,7 +95,7 @@ Planned: an industrial clicker with explicit progression, economy, and time-cont
 
 ## Implemented Systems
 
-- **Dashboard UI shell** â€” Implemented. The `/` route renders a safe-area-aware top bar, placeholder balance overview, profile menu, notification control, and locally switched Company, Production, and Finance tabs. Shared visual tokens live in `theme.ts`; dashboard layout rules live in `app/index.styles.ts`. The Company tab reads the resource inventory from Zustand; economy and persistence integration remain deferred. Verified with `npm run typecheck`.
+- **Dashboard UI shell** â€” Implemented. The `/` route renders a safe-area-aware top bar, live balance overview, profile menu, notification control, and locally switched Company, Production, and Finance tabs. Shared visual tokens live in `theme.ts`; dashboard layout rules live in `app/index.styles.ts`. The Company tab reads the resource inventory from Zustand; persistence remains deferred. Verified with `npm run typecheck`.
 
 ## Resource And Inventory Foundation
 
@@ -108,9 +109,16 @@ Planned: an industrial clicker with explicit progression, economy, and time-cont
 
 - **Implemented:** `FacilityType` is a closed enum containing Farm and Bakery. Their code-owned definitions expose compatible recipe identifiers and Material Design icons.
 - **Implemented:** `Facility` and `FacilityCollection` own player construction, selected-recipe, and active-state data. The Zustand game store exposes typed build and recipe-selection commands, replacing class instances after changes so selectors update.
-- **Implemented:** `GameSnapshot` now combines `InventorySnapshot` and `FacilityCollectionSnapshot`; a later Expo SQLite adapter can persist both state groups together.
-- **Implemented:** The Production tab displays Farm and Bakery construction status in a portrait-friendly list.
-- **Deferred:** Construction costs, build controls, recipe execution, production timing, upgrades, and the Expo SQLite repository.
+- **Implemented:** `GameSnapshot` combines inventory, facility, and finance snapshots; a later Expo SQLite adapter can persist all three state groups together.
+- **Implemented:** The Production tab displays Farm and Bakery construction status. Its touch-friendly build controls open a confirmation dialog with the cost and resulting balance before construction is applied.
+- **Implemented:** Constructed facilities show a destructive action that requires a second confirmation. Demolition removes the facility and does not refund its construction cost.
+- **Deferred:** Recipe execution, production timing, upgrades, and the Expo SQLite repository.
+
+## Finance Foundation
+
+- **Implemented:** `Finance` starts at €10,000 and records accepted signed transactions with their balance-after value and timestamp. Negative balances are rejected.
+- **Implemented:** Farm and Bakery construction costs are €60 and €300, respectively. Their cost is checked and recorded by the Zustand-owned `buildFacility` command.
+- **Implemented:** The header shows the live balance; the Finance tab shows the current balance and three most recent transactions.
 
 ## Maintenance Notes
 

@@ -8,6 +8,7 @@ export const styles = StyleSheet.create({
   avatar: { backgroundColor: '#D9EDE5' },
   balanceInline: { alignItems: 'center', flexDirection: 'row', gap: 8 },
   balanceInlineValue: { color: colors.onDark, fontSize: 20, fontWeight: '700' },
+  balanceValue: { color: colors.charcoal, fontSize: 36, fontWeight: '700', lineHeight: 42 },
   coinIcon: { fontSize: 21 },
   bottomNavigation: {
     backgroundColor: colors.surface,
@@ -24,6 +25,8 @@ export const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   content: { gap: 12, padding: 20, paddingBottom: 28 },
+  dialogDescription: { color: colors.muted, lineHeight: 21 },
+  dialogSummary: { gap: 8, marginTop: 16 },
   featureCard: { backgroundColor: colors.surface },
   facilityTitle: { color: colors.charcoal, fontWeight: '700' },
   header: { backgroundColor: colors.primary },
@@ -78,4 +81,7 @@ export const styles = StyleSheet.create({
     minHeight: 64,
     paddingHorizontal: 20,
   },
+  transactionCost: { color: colors.error, fontWeight: '700' },
+  transactionDetails: { flex: 1, gap: 2, paddingRight: 12 },
+  transactionIncome: { color: colors.primary, fontWeight: '700' },
 });

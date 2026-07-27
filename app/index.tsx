@@ -9,20 +9,23 @@ import {
 } from 'react-native';
 import {
   Avatar,
+  Button,
   Card,
+  Dialog,
   Divider,
   List,
   IconButton,
   Menu,
+  Portal,
   Surface,
   Text,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { colors } from '@/theme';
+import type { Finance, FinanceTransaction } from '@/game/finance/finance';
 import type { Inventory } from '@/game/inventory/inventory';
 import type { FacilityCollection } from '@/game/facilities/facilityCollection';
-import { FACILITY_TYPES } from '@/game/facilities/facilityTypes';
+import { FACILITY_TYPES, type FacilityType } from '@/game/facilities/facilityTypes';
 import { getFacilityDefinition } from '@/game/facilities/facilityRegistry';
 import { getResourceIcon } from '@/game/resources/resourceIcons';
 import { RESOURCE_TYPES } from '@/game/resources/resourceTypes';
@@ -41,8 +44,13 @@ const tabs: Array<{ key: DashboardTab; label: string; symbol: string }> = [
 export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState<DashboardTab>('company');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [pendingConstruction, setPendingConstruction] = useState<FacilityType | null>(null);
+  const [pendingDestruction, setPendingDestruction] = useState<FacilityType | null>(null);
   const inventory = useGameStore((state) => state.inventory);
   const facilities = useGameStore((state) => state.facilities);
+  const finance = useGameStore((state) => state.finance);
+  const buildFacility = useGameStore((state) => state.buildFacility);
+  const destroyFacility = useGameStore((state) => state.destroyFacility);
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -52,7 +60,7 @@ export default function HomeScreen() {
           <View style={styles.topBar}>
             <View style={styles.balanceInline}>
               <Text accessibilityLabel="Balance icon" style={styles.coinIcon}>🪙</Text>
-              <Text style={styles.balanceInlineValue}>€ 000</Text>
+              <Text style={styles.balanceInlineValue}>{formatCurrency(finance.getBalance())}</Text>
             </View>
             <View style={styles.headerActions}>
               <IconButton
@@ -89,7 +97,14 @@ export default function HomeScreen() {
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
-          <DashboardContent activeTab={activeTab} facilities={facilities} inventory={inventory} />
+          <DashboardContent
+            activeTab={activeTab}
+            requestFacilityConstruction={setPendingConstruction}
+            requestFacilityDestruction={setPendingDestruction}
+            facilities={facilities}
+            finance={finance}
+            inventory={inventory}
+          />
         </ScrollView>
 
         <Surface elevation={3} style={styles.bottomNavigation}>
@@ -104,6 +119,26 @@ export default function HomeScreen() {
           ))}
         </Surface>
       </View>
+      <ConstructionDialog
+        facilities={facilities}
+        facilityType={pendingConstruction}
+        finance={finance}
+        onConfirm={() => {
+          if (pendingConstruction && buildFacility(pendingConstruction)) {
+            setPendingConstruction(null);
+          }
+        }}
+        onDismiss={() => setPendingConstruction(null)}
+      />
+      <DestructionDialog
+        facilityType={pendingDestruction}
+        onConfirm={() => {
+          if (pendingDestruction && destroyFacility(pendingDestruction)) {
+            setPendingDestruction(null);
+          }
+        }}
+        onDismiss={() => setPendingDestruction(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -111,11 +146,17 @@ export default function HomeScreen() {
 function DashboardContent({
   activeTab,
   facilities,
+  finance,
   inventory,
+  requestFacilityConstruction,
+  requestFacilityDestruction,
 }: {
   activeTab: DashboardTab;
   facilities: FacilityCollection;
+  finance: Finance;
   inventory: Inventory;
+  requestFacilityConstruction: (facilityType: FacilityType) => void;
+  requestFacilityDestruction: (facilityType: FacilityType) => void;
 }) {
   if (activeTab === 'production') {
     return (
@@ -123,7 +164,7 @@ function DashboardContent({
         <SectionHeading
           eyebrow="OPERATIONS"
           title="Facilities"
-          subtitle="Farm and Bakery are ready for their production rules and construction costs."
+          subtitle="Construct a Farm or Bakery. Production rules will follow."
         />
         {FACILITY_TYPES.map((facilityType) => {
           const definition = getFacilityDefinition(facilityType);
@@ -131,12 +172,33 @@ function DashboardContent({
 
           return (
             <Card key={facilityType} mode="contained" style={styles.featureCard}>
-              <List.Item
-                description={facility ? 'Constructed' : 'Not constructed'}
-                left={(props) => <List.Icon {...props} icon={definition.icon} />}
-                title={definition.name}
-                titleStyle={styles.facilityTitle}
-              />
+              <Card.Content>
+                <List.Item
+                  description={facility ? 'Constructed' : `Construction cost: ${formatCurrency(definition.constructionCost)}`}
+                  left={(props) => <List.Icon {...props} icon={definition.icon} />}
+                  title={definition.name}
+                  titleStyle={styles.facilityTitle}
+                />
+              </Card.Content>
+              <Card.Actions>
+                {facility ? (
+                  <Button
+                    mode="outlined"
+                    onPress={() => requestFacilityDestruction(facilityType)}
+                    textColor={colors.error}
+                  >
+                    Destroy facility
+                  </Button>
+                ) : (
+                  <Button
+                    disabled={!finance.canAfford(definition.constructionCost)}
+                    mode="contained"
+                    onPress={() => requestFacilityConstruction(facilityType)}
+                  >
+                    Review construction
+                  </Button>
+                )}
+              </Card.Actions>
             </Card>
           );
         })}
@@ -150,17 +212,23 @@ function DashboardContent({
         <SectionHeading
           eyebrow="FINANCE"
           title="Financial overview"
-          subtitle="Transaction and balance details will appear here later."
+          subtitle="Review your available funds and recent company transactions."
         />
         <Card mode="contained" style={styles.featureCard}>
           <Card.Content style={styles.cardContent}>
-            <Text style={styles.cardKicker}>CURRENT POSITION</Text>
-            <Text style={styles.largePlaceholder}>—</Text>
-            <Text style={styles.cardDescription}>No financial values have been defined yet.</Text>
+            <Text style={styles.cardKicker}>AVAILABLE FUNDS</Text>
+            <Text style={styles.balanceValue}>{formatCurrency(finance.getBalance())}</Text>
+            <Text style={styles.cardDescription}>Construction costs are recorded when a facility is built.</Text>
           </Card.Content>
         </Card>
-        <PlaceholderRow label="Income" value="Not available" />
-        <PlaceholderRow label="Recent activity" value="No transactions" />
+        <Text style={styles.inventoryHeading} variant="titleMedium">Recent activity</Text>
+        {finance.getTransactions().length === 0 ? (
+          <PlaceholderRow label="Transactions" value="No transactions yet" />
+        ) : (
+          finance.getTransactions().slice(-3).reverse().map((transaction, index) => (
+            <TransactionRow key={`${transaction.occurredAt}-${index}`} transaction={transaction} />
+          ))
+        )}
       </>
     );
   }
@@ -224,6 +292,107 @@ function PlaceholderRow({ label, value }: { label: string; value: string }) {
       <Text style={styles.placeholderValue}>{value}</Text>
     </Surface>
   );
+}
+
+function TransactionRow({ transaction }: { transaction: FinanceTransaction }) {
+  return (
+    <Surface elevation={0} style={styles.placeholderRow}>
+      <View style={styles.transactionDetails}>
+        <Text variant="bodyLarge">{transaction.description}</Text>
+        <Text style={styles.placeholderValue}>{new Date(transaction.occurredAt).toLocaleString()}</Text>
+      </View>
+      <Text style={transaction.amount < 0 ? styles.transactionCost : styles.transactionIncome}>
+        {formatCurrency(transaction.amount)}
+      </Text>
+    </Surface>
+  );
+}
+
+function ConstructionDialog({
+  facilities,
+  facilityType,
+  finance,
+  onConfirm,
+  onDismiss,
+}: {
+  facilities: FacilityCollection;
+  facilityType: FacilityType | null;
+  finance: Finance;
+  onConfirm: () => void;
+  onDismiss: () => void;
+}) {
+  if (facilityType === null) {
+    return null;
+  }
+
+  const definition = getFacilityDefinition(facilityType);
+  const canConstruct = !facilities.has(facilityType) && finance.canAfford(definition.constructionCost);
+  const balanceAfterConstruction = finance.getBalance() - definition.constructionCost;
+
+  return (
+    <Portal>
+      <Dialog dismissable onDismiss={onDismiss} visible>
+        <Dialog.Title>{`Construct ${definition.name}?`}</Dialog.Title>
+        <Dialog.Content>
+          <Text style={styles.dialogDescription}>
+            This confirms the construction cost before the facility is added to your company.
+          </Text>
+          <View style={styles.dialogSummary}>
+            <PlaceholderRow label="Construction cost" value={formatCurrency(definition.constructionCost)} />
+            <PlaceholderRow label="Balance after construction" value={formatCurrency(balanceAfterConstruction)} />
+          </View>
+        </Dialog.Content>
+        <Dialog.Actions>
+          <Button onPress={onDismiss}>Cancel</Button>
+          <Button disabled={!canConstruct} mode="contained" onPress={onConfirm}>Confirm build</Button>
+        </Dialog.Actions>
+      </Dialog>
+    </Portal>
+  );
+}
+
+function DestructionDialog({
+  facilityType,
+  onConfirm,
+  onDismiss,
+}: {
+  facilityType: FacilityType | null;
+  onConfirm: () => void;
+  onDismiss: () => void;
+}) {
+  if (facilityType === null) {
+    return null;
+  }
+
+  const definition = getFacilityDefinition(facilityType);
+
+  return (
+    <Portal>
+      <Dialog dismissable onDismiss={onDismiss} visible>
+        <Dialog.Title>{`Destroy ${definition.name}?`}</Dialog.Title>
+        <Dialog.Content>
+          <Text style={styles.dialogDescription}>
+            This permanently removes the facility from your company. Construction funds are not refunded.
+          </Text>
+        </Dialog.Content>
+        <Dialog.Actions>
+          <Button onPress={onDismiss}>Cancel</Button>
+          <Button buttonColor={colors.error} mode="contained" onPress={onConfirm} textColor={colors.onDark}>
+            Confirm destruction
+          </Button>
+        </Dialog.Actions>
+      </Dialog>
+    </Portal>
+  );
+}
+
+function formatCurrency(amount: number): string {
+  const sign = amount < 0 ? '-' : '';
+  const formattedAmount = Math.abs(amount).toLocaleString('en-US', {
+    maximumFractionDigits: 2,
+  });
+
+  return `${sign}€ ${formattedAmount}`;
 }
 
 function BottomNavigationItem({

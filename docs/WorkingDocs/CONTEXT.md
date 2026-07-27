@@ -25,6 +25,8 @@ This is the canonical glossary for Industri Clicker. Use it to keep game, UI, st
 | Facility | A player-owned production unit. The initial catalogue contains Farm and Bakery; no construction cost or production rule is implemented yet. | Implemented foundation |
 | Farm | The facility type assigned to the reserved Grow Grain recipe. | Implemented definition |
 | Bakery | The facility type assigned to the reserved Bake Bread recipe. | Implemented definition |
+| Euro (€) | The initial player currency. A new company starts with €10,000. | Implemented foundation |
+| Finance | Player balance plus an append-only record of balance-changing transactions. | Implemented runtime model |
 | Progression | A durable increase in available options, capacity, efficiency, or player reach. | Generic term |
 
 ## Production And Economy Language
@@ -76,7 +78,8 @@ The planned relationship is: UI issues commands, pure game logic applies rules, 
 - The project is in foundation stage with documentation conventions established.
 - Grain and Bread are the first concrete resource definitions. Their runtime quantities and placeholder quality are held in the Zustand-owned `Inventory` instance.
 - Farm and Bakery have code-owned definitions and can be represented as player-constructed facilities in the runtime store.
-- No production rule, construction cost, currency, market, time system, or SQLite persistence adapter is implemented yet.
+- Finance starts every new company with €10,000. Facility construction deducts its approved cost and records a transaction.
+- No production rule, market, time system, or SQLite persistence adapter is implemented yet.
 - Supabase is deferred and is not part of the current game-state vocabulary.
 
 ## Flagged Ambiguities

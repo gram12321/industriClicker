@@ -55,7 +55,10 @@ Document each approved system here using this shape:
 - The initial facility catalogue contains **Farm** and **Bakery** only.
 - A constructed facility stores its type, selected recipe identifier, and active/inactive state. The Farm accepts only `GrowGrain`; the Bakery accepts only `BakeBread`.
 - Facility definitions remain code-owned. The player's constructed facility collection is separate, JSON-safe snapshot data for a future Expo SQLite save.
-- Construction costs, currencies, research, production timing, recipe execution, upgrades, and UI build controls are deliberately deferred rather than copied from Baseclicker without their supporting systems.
+- Construction costs are €60 for Farm and €300 for Bakery. A new company starts with €10,000, and insufficient funds prevent construction.
+- On the portrait Production screen, a player first opens a concise confirmation dialog showing the cost and resulting balance before construction is applied.
+- A constructed facility can be destroyed only through a separate confirmation dialog. Destruction refunds no funds.
+- Research, production timing, recipe execution, and upgrades remain deliberately deferred rather than copied from Baseclicker without their supporting systems.
 
 Questions to settle:
 
@@ -70,6 +73,13 @@ Questions to settle:
 - Show costs, gains, requirements, and blocked states clearly to the player.
 - Avoid hidden losses or unclear time calculations.
 - Record actual resource relationships, rates, and caps in `../../VariableRelationshipMap.md`; record formula examples in `gameflow.md`.
+
+### Initial Finance Foundation
+
+- A new company starts with **€10,000**.
+- Finance records every accepted balance change with a signed amount, description, resulting balance, and timestamp.
+- A transaction that would reduce the balance below zero is rejected.
+- Farm construction costs **€60** and Bakery construction costs **€300**. These are named code-owned facility-definition values, not UI constants.
 
 ## Time-Controlled Progression
 
@@ -140,7 +150,9 @@ UI renders state and requests actions. Pure TypeScript game logic owns validatio
 | Resource quality | Fixed placeholder value `1` until rules are designed | Confirmed foundation |
 | Market | Not part of the initial resource implementation | Deferred |
 | Initial facilities | Farm and Bakery class-based runtime state | Confirmed foundation |
-| Facility construction and production | Costs, execution rules, and timing are not designed | Deferred |
+| Facility construction | Farm costs €60; Bakery costs €300; both require sufficient funds | Confirmed foundation |
+| Finance | €10,000 start and transaction ledger | Confirmed foundation |
+| Production execution and timing | Not designed | Deferred |
 | Monetization | To be designed | Open |
 | Concrete art assets | No bespoke graphic-design pipeline | Confirmed direction |
 

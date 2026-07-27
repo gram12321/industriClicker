@@ -36,6 +36,15 @@ export class FacilityCollection {
     return true;
   }
 
+  destroy(facilityType: FacilityType): boolean {
+    if (!this.has(facilityType)) {
+      return false;
+    }
+
+    delete this.facilities[facilityType];
+    return true;
+  }
+
   clear(): void {
     this.facilities = {};
   }

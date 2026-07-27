@@ -11,7 +11,7 @@ This document is the canonical home for mechanics flow, formulas, state ownershi
 
 ## Current Status
 
-Resource, inventory, and facility foundations are implemented. The closed catalogue contains Grain and Bread; Farm and Bakery are the available facility definitions. A Zustand store owns the live `Inventory` and constructed `FacilityCollection`. Recipe identifiers and types are present, but no player action, construction cost, production rule, market, tick, formula, persistence adapter, or SQLite schema is implemented yet.
+Resource, inventory, facility, and finance foundations are implemented. The closed catalogue contains Grain and Bread; Farm and Bakery are the available facility definitions. A Zustand store owns the live `Finance`, `Inventory`, and constructed `FacilityCollection`. Recipe identifiers and types are present, but no production rule, market, tick, persistence adapter, or SQLite schema is implemented yet.
 
 ## Planned Gameflow
 
@@ -37,6 +37,7 @@ Elapsed time (only when designed)
 |---|---|---|---|
 | Game configuration and balance values | Typed TypeScript game configuration | No | Versioned with the app; use named constants. |
 | Runtime game state | Zustand | Not directly | Holds the active in-memory session. |
+| Player finance | `Finance` class in the Zustand game store | Not yet | Starts at €10,000 and records accepted balance changes. |
 | Player resource inventory | `Inventory` class in the Zustand game store | Not yet | Quantity and placeholder quality are one inventory entry per `ResourceType`. |
 | Constructed facilities | `FacilityCollection` class in the Zustand game store | Not yet | Holds at most one Farm and one Bakery, with their selected-recipe and active-state data. |
 | Facility catalogue | Typed facility registry | No | Farm and Bakery definitions are code-owned and must not be stored in a future player save. |
@@ -75,8 +76,22 @@ Record the concrete inputs, outputs, modifiers, limits, and unlock dependencies 
 - `Inventory.toSnapshot()` returns plain enum-keyed data for a future Expo SQLite adapter. No save or restore boundary has been introduced yet.
 - `RecipeName.GrowGrain` and `RecipeName.BakeBread` are reserved identifiers only. No recipe registry, execution command, or production flow is active.
 - `FacilityType` is a closed enum: only Farm and Bakery currently exist. A Farm accepts `GrowGrain`; a Bakery accepts `BakeBread`.
-- Facility construction currently has no economy rule or player-facing control. The runtime command exists so future approved construction rules have one state-owner path.
-- `FacilityCollection.toSnapshot()` returns an array of plain facility snapshots. `GameSnapshot` joins it with `InventorySnapshot` for the future Expo SQLite adapter.
+- Farm construction costs €60; Bakery construction costs €300. `buildFacility` accepts the command only if the type is unconstructed and `Finance` can afford its code-defined cost.
+- Construction writes one negative finance transaction using the facility name and cost. The UI exposes touch-friendly build controls and disables unaffordable choices.
+- `destroyFacility` removes a constructed facility without changing Finance. The UI requires a second explicit confirmation tap before it calls this command.
+- `GameSnapshot` joins `FinanceSnapshot`, `InventorySnapshot`, and `FacilityCollectionSnapshot` for the future Expo SQLite adapter.
+
+## Finance Formula
+
+Name: Facility construction balance change
+
+Inputs and units: Current balance (€), facility construction cost (€)
+
+Formula: `newBalance = currentBalance - constructionCost`
+
+Rounding and limits: Facility costs are whole euros. Construction is rejected when `currentBalance < constructionCost`; balance cannot become negative.
+
+Invalid-input behavior: Non-finite transaction amounts and empty descriptions are rejected.
 
 ## Tick And Catch-Up Flow
 

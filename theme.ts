@@ -2,6 +2,7 @@ import { MD3LightTheme } from 'react-native-paper';
 
 export const colors = {
   charcoal: '#19211F',
+  error: '#B3261E',
   muted: '#61716B',
   onDark: '#FFFFFF',
   paleGreen: '#E0EEE7',
