@@ -29,6 +29,7 @@ export function DashboardContent({
   inventory,
   openConstructionYard,
   requestFacilityDestruction,
+  rejectSalesContract,
   setFacilityRecipe,
   setFacilityWorkers,
   salesContracts,
@@ -42,6 +43,7 @@ export function DashboardContent({
   inventory: Inventory;
   openConstructionYard: () => void;
   requestFacilityDestruction: (facilityType: FacilityType) => void;
+  rejectSalesContract: (contractId: string) => boolean;
   setFacilityRecipe: (facilityType: FacilityType, recipeName: Recipe['name'] | null) => boolean;
   setFacilityWorkers: (facilityType: FacilityType, workerCount: number) => boolean;
   upgradeFacility: (facilityType: FacilityType, upgradeKind: FacilityUpgradeKind) => boolean;
@@ -49,7 +51,8 @@ export function DashboardContent({
   customerPipelineProgress: number;
 }) {
   const [collapsedFacilities, setCollapsedFacilities] = useState<Partial<Record<FacilityType, boolean>>>({});
-  const [salesList, setSalesList] = useState<'offered' | 'completed'>('offered');
+  const [salesList, setSalesList] = useState<'open' | 'closed'>('open');
+  const [closedFilter, setClosedFilter] = useState<'completed' | 'rejected'>('completed');
 
   if (activeTab === 'inventory') {
     return (
@@ -261,9 +264,11 @@ export function DashboardContent({
     const unfulfilledContractCount = salesContracts.getOfferedContracts().length;
     const offerChance = calculateSalesContractOfferChance(unfulfilledContractCount);
     const estimatedWaitMinutes = calculateSalesContractEstimatedWaitMinutes(unfulfilledContractCount);
-    const contracts = salesList === 'offered'
+    const contracts = salesList === 'open'
       ? salesContracts.getOfferedContracts()
-      : salesContracts.getCompletedContracts();
+      : salesContracts.getCompletedContracts().filter((contract) => (
+        closedFilter === 'completed' ? contract.status === 'fulfilled' : contract.status === 'rejected'
+      ));
 
     return (
       <>
@@ -294,24 +299,42 @@ export function DashboardContent({
         </Card>
         <View style={styles.salesFilters}>
           <Button
-            mode={salesList === 'offered' ? 'contained' : 'outlined'}
-            onPress={() => setSalesList('offered')}
+            mode={salesList === 'open' ? 'contained' : 'outlined'}
+            onPress={() => setSalesList('open')}
             style={styles.salesFilterButton}
           >
-            {`Unfulfilled (${unfulfilledContractCount})`}
+            {`Open (${unfulfilledContractCount})`}
           </Button>
           <Button
-            mode={salesList === 'completed' ? 'contained' : 'outlined'}
-            onPress={() => setSalesList('completed')}
+            mode={salesList === 'closed' ? 'contained' : 'outlined'}
+            onPress={() => setSalesList('closed')}
             style={styles.salesFilterButton}
           >
-            {`Completed (${salesContracts.getCompletedContracts().length})`}
+            {`Closed (${salesContracts.getCompletedContracts().length})`}
           </Button>
         </View>
+        {salesList === 'closed' && (
+          <View style={styles.salesFilters}>
+            <Button
+              mode={closedFilter === 'completed' ? 'contained' : 'outlined'}
+              onPress={() => setClosedFilter('completed')}
+              style={styles.salesFilterButton}
+            >
+              {`Completed (${salesContracts.getCompletedContracts().filter((contract) => contract.status === 'fulfilled').length})`}
+            </Button>
+            <Button
+              mode={closedFilter === 'rejected' ? 'contained' : 'outlined'}
+              onPress={() => setClosedFilter('rejected')}
+              style={styles.salesFilterButton}
+            >
+              {`Rejected (${salesContracts.getCompletedContracts().filter((contract) => contract.status === 'rejected').length})`}
+            </Button>
+          </View>
+        )}
         {contracts.length === 0 ? (
           <PlaceholderRow
-            label={salesList === 'offered' ? 'Customer contracts' : 'Completed contracts'}
-            value={salesList === 'offered' ? 'No requests yet' : 'No completed contracts yet'}
+            label={salesList === 'open' ? 'Open contracts' : `${closedFilter[0].toUpperCase()}${closedFilter.slice(1)} contracts`}
+            value={salesList === 'open' ? 'No requests yet' : `No ${closedFilter} contracts yet`}
           />
         ) : contracts.map((contract) => {
           const resource = getResource(contract.resourceType);
@@ -330,25 +353,34 @@ export function DashboardContent({
                   </View>
                   <Text style={styles.salesReward}>{formatCurrency(contract.reward)}</Text>
                 </View>
-                {salesList === 'offered' ? (
+                {salesList === 'open' ? (
                   <>
                     <Text style={styles.salesAvailability}>
                       {canFulfill
                         ? `In stock: ${formatNumber(available)}`
                         : `Needs ${formatNumber(contract.quantity)} · In stock: ${formatNumber(available)}`}
                     </Text>
-                    <Button
-                      accessibilityLabel={`Fulfill contract for ${contract.customerName}`}
-                      disabled={!canFulfill}
-                      mode="contained"
-                      onPress={() => fulfillSalesContract(contract.id)}
-                    >
-                      Fulfill contract
-                    </Button>
+                    <View style={styles.salesActions}>
+                      <Button
+                        accessibilityLabel={`Fulfill contract for ${contract.customerName}`}
+                        disabled={!canFulfill}
+                        mode="contained"
+                        onPress={() => fulfillSalesContract(contract.id)}
+                      >
+                        Fulfill
+                      </Button>
+                      <Button
+                        accessibilityLabel={`Reject contract for ${contract.customerName}`}
+                        mode="outlined"
+                        onPress={() => rejectSalesContract(contract.id)}
+                      >
+                        Reject
+                      </Button>
+                    </View>
                   </>
                 ) : (
                   <Text style={styles.salesAvailability}>
-                    {`Completed ${formatDate(new Date(contract.fulfilledAt ?? contract.offeredAt), true)}`}
+                    {`${contract.status === 'fulfilled' ? 'Completed' : 'Rejected'} ${formatDate(new Date(contract.fulfilledAt ?? contract.rejectedAt ?? contract.offeredAt), true)}`}
                   </Text>
                 )}
               </Card.Content>

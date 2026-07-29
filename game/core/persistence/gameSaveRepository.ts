@@ -3,7 +3,7 @@ import * as SQLite from 'expo-sqlite';
 import type { GameSnapshot } from '../state/gameSnapshot';
 
 const DATABASE_NAME = 'industri-clicker.db';
-const SAVE_VERSION = 3;
+const SAVE_VERSION = 4;
 const SAVE_ROW_ID = 1;
 
 type SaveRow = {

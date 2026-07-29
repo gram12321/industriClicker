@@ -70,6 +70,7 @@ Player action or time event
 | `advanceRealtime` | Finite foreground clock input | Clock anchor, facilities, inventory | Facilities, inventory, clock anchor | Advances eligible production by whole minutes | Batched save | Implemented |
 | `fastForwardOneMinute` | None | Facilities, inventory, sales contracts | Facilities, inventory, sales contracts | Runs one production and sales minute | Batched save | Implemented |
 | `fulfillSalesContract` | Contract is unfulfilled; inventory covers its full requested quantity | Contract, inventory, finance | Sales contracts, inventory, finance | Completed contract and positive finance transaction | No immediate save | Implemented |
+| `rejectSalesContract` | Contract is offered | Contract | Sales contracts | Rejected contract history entry | No immediate save | Implemented |
 
 ## Time Effects
 

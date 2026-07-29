@@ -35,7 +35,7 @@ This is the canonical glossary for Industri Clicker. Use it for stable game, UI,
 | Power Plant | The facility type assigned to the Coal Power and Solar Power recipes. | Implemented definition |
 | Euro (€) | The initial player currency. | Implemented foundation |
 | Finance | Player balance plus an append-only record of balance-changing transactions. | Implemented model |
-| Sales contract | A customer request for one resource and an integer quantity. A contract remains unfulfilled until the player supplies the full quantity, then moves to completed and pays its fixed reward. | Implemented foundation |
+| Sales contract | A customer request for one resource and an integer quantity. A contract remains offered until the player fulfils or rejects it, then moves to retained completed/rejected history. | Implemented foundation |
 | Speed upgrade | A money-funded facility level that raises production work rate with diminishing returns and raises staffing requirements. | Implemented model |
 | Output upgrade | A money-funded facility level that raises recipe output with diminishing returns and raises staffing requirements. | Implemented model |
 | Assigned workers | The local worker count allocated to one facility. It may be below or above that facility's requirement. | Implemented model |

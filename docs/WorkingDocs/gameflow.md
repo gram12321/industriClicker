@@ -105,6 +105,7 @@ Invalid-input behavior: Reject non-finite transaction amounts and empty descript
 - The requested resource is randomly selected from the code-owned resource catalogue. Quantity is a random integer from 1 through 10.
 - Reward is `quantity × €1`.
 - Fulfilment first verifies the complete inventory quantity. It then removes the requested resource, records the positive finance transaction, and moves the contract from unfulfilled to completed.
+- Rejection moves the offered contract to retained rejected history without changing inventory or finance.
 - Contracts have no expiry or pending-offer cap in this foundation implementation.
 
 ## Tick Order and Foreground Time

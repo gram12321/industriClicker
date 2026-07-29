@@ -17,15 +17,18 @@ export const SALES_CONTRACT_UNFULFILLED_CHANCE_CONTROL_POINTS = [
 export const SALES_CONTRACT_UNIT_PRICE_EUROS = 1;
 export const SALES_CONTRACT_MIN_REQUEST_QUANTITY = 1;
 export const SALES_CONTRACT_MAX_REQUEST_QUANTITY = 10;
+export type SalesContractStatus = 'offered' | 'fulfilled' | 'rejected';
 
 export type SalesContract = {
   id: string;
+  status: SalesContractStatus;
   customerName: string;
   resourceType: ResourceType;
   quantity: number;
   reward: number;
   offeredAt: string;
   fulfilledAt?: string;
+  rejectedAt?: string;
 };
 
 /** Plain game data persisted inside the current game snapshot. */
@@ -38,6 +41,7 @@ export type SalesContractsSnapshot = {
 function isContract(value: SalesContract): boolean {
   return (
     value.id.length > 0
+    && (value.status === 'offered' || value.status === 'fulfilled' || value.status === 'rejected')
     && value.customerName.length > 0
     && Number.isInteger(value.quantity)
     && value.quantity >= SALES_CONTRACT_MIN_REQUEST_QUANTITY
@@ -135,9 +139,25 @@ export class SalesContracts {
     }
 
     const [offer] = this.offered.splice(offerIndex, 1);
-    const completedContract = { ...offer, fulfilledAt };
+    const completedContract = { ...offer, status: 'fulfilled' as const, fulfilledAt };
     this.completed.unshift(completedContract);
     return cloneContract(completedContract);
+  }
+
+  reject(id: string, rejectedAt: string): SalesContract | null {
+    if (rejectedAt.length === 0) {
+      return null;
+    }
+
+    const offerIndex = this.offered.findIndex((offer) => offer.id === id);
+    if (offerIndex < 0) {
+      return null;
+    }
+
+    const [offer] = this.offered.splice(offerIndex, 1);
+    const rejectedContract = { ...offer, status: 'rejected' as const, rejectedAt };
+    this.completed.unshift(rejectedContract);
+    return cloneContract(rejectedContract);
   }
 
   clone(): SalesContracts {
@@ -170,6 +190,7 @@ export class SalesContracts {
     return {
       id: `sales-contract-${customerNumber}`,
       customerName: `Customer #${customerNumber}`,
+      status: 'offered',
       resourceType: resourceTypes[resourceIndex],
       quantity,
       reward: quantity * SALES_CONTRACT_UNIT_PRICE_EUROS,
@@ -178,9 +199,11 @@ export class SalesContracts {
   }
 
   private restore(snapshot: SalesContractsSnapshot): void {
-    this.offered = snapshot.offered.filter(isContract).map(cloneContract);
+    this.offered = snapshot.offered.filter((contract) => isContract(contract) && contract.status === 'offered').map(cloneContract);
     this.completed = snapshot.completed
-      .filter((contract) => isContract(contract) && typeof contract.fulfilledAt === 'string' && contract.fulfilledAt.length > 0)
+      .filter((contract) => isContract(contract)
+        && ((contract.status === 'fulfilled' && typeof contract.fulfilledAt === 'string' && contract.fulfilledAt.length > 0)
+          || (contract.status === 'rejected' && typeof contract.rejectedAt === 'string' && contract.rejectedAt.length > 0)))
       .map(cloneContract);
     this.nextCustomerNumber = Number.isInteger(snapshot.nextCustomerNumber) && snapshot.nextCustomerNumber > 0
       ? snapshot.nextCustomerNumber

@@ -98,6 +98,7 @@ export const styles = StyleSheet.create({
   profileButton: { borderRadius: 22, padding: 2 },
   safeArea: { backgroundColor: colors.primary, flex: 1 },
   salesAvailability: { color: colors.muted, fontSize: 12 },
+  salesActions: { flexDirection: 'row', gap: 8 },
   salesContractHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   salesFilterButton: { flex: 1 },
   salesFilters: { flexDirection: 'row', gap: 8 },

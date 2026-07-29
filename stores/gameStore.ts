@@ -34,6 +34,7 @@ type GameState = {
   advanceCustomerPipelineProgress: (elapsedSeconds: number) => void;
   advanceSalesContracts: (elapsedMinutes: number) => number;
   fulfillSalesContract: (contractId: string) => boolean;
+  rejectSalesContract: (contractId: string) => boolean;
   resetRealtimeClock: (nowMs: number) => void;
   createSnapshot: () => GameSnapshot;
   restoreSnapshot: (snapshot: GameSnapshot) => void;
@@ -256,6 +257,17 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
 
     set({ inventory, finance, salesContracts });
+    return true;
+  },
+  rejectSalesContract: (contractId) => {
+    const salesContracts = get().salesContracts.clone();
+    const rejected = salesContracts.reject(contractId, new Date().toISOString());
+
+    if (!rejected) {
+      return false;
+    }
+
+    set({ salesContracts });
     return true;
   },
   resetRealtimeClock: (nowMs) => {

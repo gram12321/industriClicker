@@ -48,6 +48,7 @@ export default function HomeScreen() {
   const upgradeFacility = useGameStore((state) => state.upgradeFacility);
   const fastForwardOneMinute = useGameStore((state) => state.fastForwardOneMinute);
   const fulfillSalesContract = useGameStore((state) => state.fulfillSalesContract);
+  const rejectSalesContract = useGameStore((state) => state.rejectSalesContract);
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -109,6 +110,7 @@ export default function HomeScreen() {
             fulfillSalesContract={fulfillSalesContract}
             inventory={inventory}
             salesContracts={salesContracts}
+            rejectSalesContract={rejectSalesContract}
             customerPipelineProgress={customerPipelineProgress}
             setFacilityRecipe={setFacilityRecipe}
             setFacilityWorkers={setFacilityWorkers}

@@ -53,6 +53,8 @@ The concrete loop is still being established. The intended shape is:
 - Each foreground game minute has a chance to create a numbered customer contract for one randomly selected resource and an integer quantity from 1 to 10. The chance starts at 100% with no unfulfilled contracts and declines sharply as they accumulate, without reaching zero.
 - Each supplied unit pays €1. Contracts do not expire and remain available until the player fulfils them.
 - A contract can only be fulfilled when the full requested quantity is in inventory. Fulfilment removes that quantity, records the income, and moves the contract to the completed list.
+- The player can reject an offered contract without changing inventory or balance; rejected contracts remain visible in rejected history.
+- Sales presents contracts as Open or Closed. Closed contracts can be filtered to Completed or Rejected, with Completed selected by default.
 - Fast-forward 1 minute advances contract time; background time does not.
 - The Sales tab shows a visual customer-pipeline estimate. It fills over the calculated expected wait, but does not determine when the random customer roll succeeds.
 
