@@ -3,7 +3,7 @@ import { FacilityType } from './facilityTypes';
 import type { Inventory } from '../inventory/inventory';
 
 /**
- * Fixed order keeps a production minute deterministic. Utilities run before
+ * Fixed order keeps production deterministic. Utilities run before
  * consumers so Water and Electricity can be used by Farm and Bakery work.
  */
 const PRODUCTION_ORDER = [

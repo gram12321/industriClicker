@@ -17,8 +17,22 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+function isGameTimeSnapshot(value: unknown): boolean {
+  return isRecord(value)
+    && typeof value.lastProcessedAtMs === 'number'
+    && Number.isFinite(value.lastProcessedAtMs)
+    && typeof value.unprocessedWorkMs === 'number'
+    && Number.isFinite(value.unprocessedWorkMs)
+    && value.unprocessedWorkMs >= 0
+    && value.unprocessedWorkMs < 60_000
+    && typeof value.customerPipelineProgress === 'number'
+    && Number.isFinite(value.customerPipelineProgress)
+    && value.customerPipelineProgress >= 0
+    && value.customerPipelineProgress <= 1;
+}
+
 function isGameSnapshot(value: unknown): value is GameSnapshot {
-  if (!isRecord(value) || !isRecord(value.finance) || !isRecord(value.inventory) || !isRecord(value.facilities) || !isRecord(value.salesContracts)) {
+  if (!isRecord(value) || !isRecord(value.finance) || !isRecord(value.inventory) || !isRecord(value.facilities) || !isRecord(value.salesContracts) || !isRecord(value.time)) {
     return false;
   }
 
@@ -30,6 +44,7 @@ function isGameSnapshot(value: unknown): value is GameSnapshot {
     && Array.isArray(value.salesContracts.offered)
     && Array.isArray(value.salesContracts.completed)
     && typeof value.salesContracts.nextCustomerNumber === 'number'
+    && isGameTimeSnapshot(value.time)
   );
 }
 

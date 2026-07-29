@@ -10,6 +10,8 @@ import {
   getStaffingEfficiency,
 } from './facilityUpgrades';
 
+const WORK_COMPLETION_EPSILON = 1e-9;
+
 /** Plain data used by the game snapshot and Expo SQLite adapter. */
 export type FacilitySnapshot = {
   facilityType: FacilityType;
@@ -175,7 +177,7 @@ export class Facility {
       progress += appliedWork;
       remainingWork -= appliedWork;
 
-      if (progress >= recipe.workAmount) {
+      if (progress + WORK_COMPLETION_EPSILON >= recipe.workAmount) {
         inventory.add(recipe.output.resourceType, recipe.output.amount * this.getOutputMultiplier());
         progress = 0;
       }

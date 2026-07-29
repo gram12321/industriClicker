@@ -9,6 +9,7 @@ import { useGameStore } from '@/stores/gameStore';
 import { paperTheme } from '@/theme';
 
 const INITIAL_SAVE_LOAD_TIMEOUT_MS = 10_000;
+const ACTIVE_SAVE_BATCH_MS = 5_000;
 
 function loadInitialSnapshot() {
   return new Promise<Awaited<ReturnType<typeof loadGameSnapshot>>>((resolve) => {
@@ -34,16 +35,24 @@ function GamePersistence({ children }: { children: ReactNode }) {
     let isMounted = true;
     let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
-    const saveNow = () => saveGameSnapshot(useGameStore.getState().createSnapshot()).catch(() => undefined);
+    const saveNow = (shouldProcessForegroundTime = AppState.currentState !== 'background' && AppState.currentState !== 'inactive') => {
+      // Process the final active interval before reading the snapshot. This
+      // keeps a background transition from saving state that predates a just-
+      // completed foreground work minute.
+      if (shouldProcessForegroundTime) {
+        useGameStore.getState().advanceRealtime(Date.now());
+      }
+      return saveGameSnapshot(useGameStore.getState().createSnapshot()).catch(() => undefined);
+    };
     const scheduleSave = () => {
       if (saveTimeout) {
-        clearTimeout(saveTimeout);
+        return;
       }
 
       saveTimeout = setTimeout(() => {
         saveTimeout = null;
         void saveNow();
-      }, 1_000);
+      }, ACTIVE_SAVE_BATCH_MS);
     };
 
     const initialize = async () => {
@@ -79,7 +88,7 @@ function GamePersistence({ children }: { children: ReactNode }) {
           clearTimeout(saveTimeout);
           saveTimeout = null;
         }
-        void saveNow();
+        void saveNow(true);
       }
     });
 
@@ -124,10 +133,6 @@ function ForegroundRealtimeClock() {
     }, 1_000);
 
     const subscription = AppState.addEventListener('change', (nextAppState) => {
-      if (isForeground && nextAppState !== 'active') {
-        advanceRealtime(Date.now());
-      }
-
       if (nextAppState === 'active') {
         // Offline progress is planned, but background time intentionally does
         // not grant work in this first foreground-only implementation.
