@@ -6,6 +6,7 @@ import type { Inventory } from '@/game/inventory/inventory';
 import type { FacilityCollection } from '@/game/facilities/facilityCollection';
 import { FACILITY_TYPES, type FacilityType } from '@/game/facilities/facilityTypes';
 import { getFacilityDefinition } from '@/game/facilities/facilityRegistry';
+import { getFacilityUpgradeCost, type FacilityUpgradeKind } from '@/game/facilities/facilityUpgrades';
 import { getResourceIcon } from '@/game/resources/resourceIcons';
 import { RESOURCE_TYPES } from '@/game/resources/resourceTypes';
 import { getResource } from '@/game/resources/resourcesRegistry';
@@ -23,6 +24,8 @@ export function DashboardContent({
   openConstructionYard,
   requestFacilityDestruction,
   setFacilityRecipe,
+  setFacilityWorkers,
+  upgradeFacility,
 }: {
   activeTab: DashboardTab;
   facilities: FacilityCollection;
@@ -32,6 +35,8 @@ export function DashboardContent({
   openConstructionYard: () => void;
   requestFacilityDestruction: (facilityType: FacilityType) => void;
   setFacilityRecipe: (facilityType: FacilityType, recipeName: Recipe['name'] | null) => boolean;
+  setFacilityWorkers: (facilityType: FacilityType, workerCount: number) => boolean;
+  upgradeFacility: (facilityType: FacilityType, upgradeKind: FacilityUpgradeKind) => boolean;
 }) {
   if (activeTab === 'inventory') {
     return (
@@ -78,6 +83,12 @@ export function DashboardContent({
           const activeRecipe = definition.recipes.find((recipe) => recipe.name === activeRecipeName);
           const productionStatus = facility?.getProductionStatus(inventory) ?? 'not-started';
           const missingInputs = facility?.getMissingInputs(inventory) ?? [];
+          const assignedWorkers = facility?.getAssignedWorkers() ?? 0;
+          const requiredWorkers = facility?.getRequiredWorkers() ?? 0;
+          const speedUpgradeLevel = facility?.getSpeedUpgradeLevel() ?? 0;
+          const outputUpgradeLevel = facility?.getOutputUpgradeLevel() ?? 0;
+          const speedUpgradeCost = getFacilityUpgradeCost(definition.constructionCost, speedUpgradeLevel);
+          const outputUpgradeCost = getFacilityUpgradeCost(definition.constructionCost, outputUpgradeLevel);
 
           return (
             <Card key={facilityType} mode="contained" style={styles.featureCard}>
@@ -113,6 +124,49 @@ export function DashboardContent({
                   recipe={activeRecipe ?? null}
                   status={productionStatus}
                 />
+                <Text style={styles.constructionYardRecipeLabel}>Staffing</Text>
+                <View style={styles.facilityStaffingControls}>
+                  <IconButton
+                    accessibilityLabel={`Remove worker from ${definition.name}`}
+                    disabled={assignedWorkers === 0}
+                    icon="minus"
+                    onPress={() => setFacilityWorkers(facilityType, assignedWorkers - 1)}
+                  />
+                  <View style={styles.facilityStaffingSummary}>
+                    <Text style={styles.facilityStaffingValue}>{assignedWorkers} / {requiredWorkers} workers</Text>
+                    <Text style={styles.facilityStaffingDetail}>Efficiency {formatPercent((facility?.getEfficiency() ?? 0) * 100)}</Text>
+                  </View>
+                  <IconButton
+                    accessibilityLabel={`Add worker to ${definition.name}`}
+                    icon="plus"
+                    onPress={() => setFacilityWorkers(facilityType, assignedWorkers + 1)}
+                  />
+                </View>
+                <Button compact mode="text" onPress={() => setFacilityWorkers(facilityType, requiredWorkers)}>
+                  Set required staffing
+                </Button>
+                <Text style={styles.constructionYardRecipeLabel}>Upgrades</Text>
+                <Text style={styles.facilityUpgradeSummary}>
+                  Speed ×{(facility?.getSpeedMultiplier() ?? 1).toFixed(2)} · Output ×{(facility?.getOutputMultiplier() ?? 1).toFixed(2)}
+                </Text>
+                <View style={styles.facilityUpgradeControls}>
+                  <Button
+                    compact
+                    disabled={!finance.canAfford(speedUpgradeCost)}
+                    mode="outlined"
+                    onPress={() => upgradeFacility(facilityType, 'speed')}
+                  >
+                    {`Speed L${speedUpgradeLevel + 1} · ${formatCurrency(speedUpgradeCost)}`}
+                  </Button>
+                  <Button
+                    compact
+                    disabled={!finance.canAfford(outputUpgradeCost)}
+                    mode="outlined"
+                    onPress={() => upgradeFacility(facilityType, 'output')}
+                  >
+                    {`Output L${outputUpgradeLevel + 1} · ${formatCurrency(outputUpgradeCost)}`}
+                  </Button>
+                </View>
                 <View style={styles.facilityActions}>
                   <IconButton
                     accessibilityLabel={`Destroy ${definition.name}`}

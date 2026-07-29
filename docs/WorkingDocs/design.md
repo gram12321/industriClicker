@@ -48,6 +48,14 @@ The concrete loop is still being established. The intended shape is:
 - Construction requires sufficient funds and destruction refunds no funds.
 - Finance records accepted balance changes so the player can understand company activity.
 
+### Facility Upgrades and Staffing
+
+- Each constructed facility has independently purchasable Speed and Output upgrades, funded only with euros in this first version.
+- Upgrade costs rise exponentially. The speed and output gains diminish toward fixed caps, so early levels are valuable without creating unbounded production.
+- Every upgrade increases the facility's required worker count. A facility starts fully staffed, but the player can assign fewer or more workers.
+- Staffing is the first building-efficiency factor. Understaffing applies an increasingly severe penalty; overstaffing provides a capped, diminishing production-speed bonus.
+- Global workforce supply, hiring, wages, education, machine condition, and other efficiency factors are deferred.
+
 ### Time-Controlled Progression
 
 - Production advances only while the app is foregrounded in the first implementation.

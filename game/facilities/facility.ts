@@ -3,6 +3,12 @@ import type { Inventory } from '../inventory/inventory';
 import { getRecipe } from '../recipes/recipes';
 import { getFacilityDefinition } from './facilityRegistry';
 import { FacilityType } from './facilityTypes';
+import {
+  getOutputUpgradeMultiplier,
+  getRequiredWorkers,
+  getSpeedUpgradeMultiplier,
+  getStaffingEfficiency,
+} from './facilityUpgrades';
 
 /** Plain data used by the game snapshot and Expo SQLite adapter. */
 export type FacilitySnapshot = {
@@ -10,6 +16,9 @@ export type FacilitySnapshot = {
   activeRecipeName: RecipeName | null;
   isActive: boolean;
   recipeProgress: Partial<Record<RecipeName, number>>;
+  speedUpgradeLevel?: number;
+  outputUpgradeLevel?: number;
+  assignedWorkers?: number;
 };
 
 /** Player-owned state for one constructed facility. */
@@ -17,6 +26,9 @@ export class Facility {
   private activeRecipeName: RecipeName | null = null;
   private active = false;
   private recipeProgress: Partial<Record<RecipeName, number>> = {};
+  private speedUpgradeLevel = 0;
+  private outputUpgradeLevel = 0;
+  private assignedWorkers = 0;
 
   constructor(
     public readonly facilityType: FacilityType,
@@ -24,6 +36,8 @@ export class Facility {
   ) {
     if (snapshot) {
       this.restore(snapshot);
+    } else {
+      this.assignedWorkers = this.getRequiredWorkers();
     }
   }
 
@@ -37,6 +51,55 @@ export class Facility {
 
   getRecipeProgress(recipeName: RecipeName): number {
     return this.recipeProgress[recipeName] ?? 0;
+  }
+
+  getSpeedUpgradeLevel(): number {
+    return this.speedUpgradeLevel;
+  }
+
+  getOutputUpgradeLevel(): number {
+    return this.outputUpgradeLevel;
+  }
+
+  getAssignedWorkers(): number {
+    return this.assignedWorkers;
+  }
+
+  getRequiredWorkers(): number {
+    return getRequiredWorkers(
+      getFacilityDefinition(this.facilityType).baseWorkers,
+      this.speedUpgradeLevel,
+      this.outputUpgradeLevel,
+    );
+  }
+
+  getEfficiency(): number {
+    return getStaffingEfficiency(this.assignedWorkers, this.getRequiredWorkers());
+  }
+
+  getSpeedMultiplier(): number {
+    return getSpeedUpgradeMultiplier(this.speedUpgradeLevel);
+  }
+
+  getOutputMultiplier(): number {
+    return getOutputUpgradeMultiplier(this.outputUpgradeLevel);
+  }
+
+  setAssignedWorkers(workerCount: number): boolean {
+    if (!Number.isInteger(workerCount) || workerCount < 0) {
+      return false;
+    }
+
+    this.assignedWorkers = workerCount;
+    return true;
+  }
+
+  upgradeSpeed(): void {
+    this.speedUpgradeLevel += 1;
+  }
+
+  upgradeOutput(): void {
+    this.outputUpgradeLevel += 1;
   }
 
   getProductionStatus(inventory: Inventory): 'not-started' | 'missing-inputs' | 'producing' {
@@ -94,7 +157,7 @@ export class Facility {
       return;
     }
 
-    let remainingWork = workAmount;
+    let remainingWork = workAmount * this.getEfficiency() * this.getSpeedMultiplier();
     let progress = this.getRecipeProgress(recipe.name);
 
     while (remainingWork > 0) {
@@ -112,8 +175,8 @@ export class Facility {
       progress += appliedWork;
       remainingWork -= appliedWork;
 
-      if (progress === recipe.workAmount) {
-        inventory.add(recipe.output.resourceType, recipe.output.amount);
+      if (progress >= recipe.workAmount) {
+        inventory.add(recipe.output.resourceType, recipe.output.amount * this.getOutputMultiplier());
         progress = 0;
       }
     }
@@ -131,6 +194,9 @@ export class Facility {
       activeRecipeName: this.activeRecipeName,
       isActive: this.active,
       recipeProgress: { ...this.recipeProgress },
+      speedUpgradeLevel: this.speedUpgradeLevel,
+      outputUpgradeLevel: this.outputUpgradeLevel,
+      assignedWorkers: this.assignedWorkers,
     };
   }
 
@@ -150,6 +216,11 @@ export class Facility {
     }
 
     this.recipeProgress = {};
+    this.speedUpgradeLevel = isValidUpgradeLevel(snapshot.speedUpgradeLevel) ? snapshot.speedUpgradeLevel : 0;
+    this.outputUpgradeLevel = isValidUpgradeLevel(snapshot.outputUpgradeLevel) ? snapshot.outputUpgradeLevel : 0;
+    this.assignedWorkers = isValidWorkerCount(snapshot.assignedWorkers)
+      ? snapshot.assignedWorkers
+      : this.getRequiredWorkers();
 
     for (const recipe of getFacilityDefinition(this.facilityType).recipes) {
       const progress = snapshot.recipeProgress[recipe.name];
@@ -159,4 +230,12 @@ export class Facility {
       }
     }
   }
+}
+
+function isValidUpgradeLevel(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0;
+}
+
+function isValidWorkerCount(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0;
 }

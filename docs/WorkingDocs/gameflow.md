@@ -67,6 +67,22 @@ Current foundation rules:
 - `CoalPower` consumes 1 Coal and 2 Water and produces 10 Electricity after 5 work units; `SolarPower` produces 1 Electricity after 10 work units.
 - Inputs are paid at cycle start. If inputs are missing, the facility stalls and does not bank work.
 
+## Facility Upgrade and Staffing Rules
+
+Each facility stores `speedUpgradeLevel`, `outputUpgradeLevel`, and `assignedWorkers`; newly constructed facilities and pre-upgrade saves default to level `0` and fully staffed.
+
+- Next Speed or Output upgrade cost: `ceil(constructionCost × 1.5^currentLevel)` euros.
+- Speed multiplier: `1 + 0.8 × (1 - e^(-0.22 × speedLevel))`.
+- Output multiplier: `1 + 1.0 × (1 - e^(-0.18 × outputLevel))`.
+- Required workers, where `levels = speedLevel + outputLevel`: `baseWorkers + levels + ceil(baseWorkers × 1.15^levels - baseWorkers)`.
+- Staffing ratio: `assignedWorkers / requiredWorkers`.
+  - At or below the target: `0.01 + 0.99 × ratio^1.6` efficiency.
+  - Above the target: `1 + 0.25 × (1 - e^(-0.7 × (ratio - 1)))` efficiency.
+- Effective work per approved work unit: `baseWork × staffingEfficiency × speedMultiplier`.
+- Completed recipe output: `baseOutput × outputMultiplier`.
+
+Levels and worker counts are non-negative integers. A facility with zero required workers has 100% staffing efficiency. Above-target staffing is permitted, but its bonus cannot reach 25%.
+
 ## Finance Formula
 
 Name: Facility construction balance change
@@ -83,7 +99,7 @@ Invalid-input behavior: Reject non-finite transaction amounts and empty descript
 
 1. While the app is active, the runtime timer reads `Date.now()`.
 2. `TimeManager` calculates whole elapsed minutes and retains the partial-minute remainder.
-3. For each elapsed minute, active facilities receive one work unit in fixed order: Small Utility Works, Farm, Bakery.
+3. For each elapsed minute, active facilities receive one base work unit in fixed order. Each facility applies its staffing efficiency and speed multiplier before progressing its selected recipe.
 4. The Fast-forward 1 minute control invokes the same production path once.
 5. On background or resume, the runtime clock anchor resets; inactive time awards no work.
 

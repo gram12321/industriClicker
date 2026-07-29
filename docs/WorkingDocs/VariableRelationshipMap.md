@@ -30,6 +30,9 @@ Player action or time event
 | `finance.transactions` | Accepted balance changes | Stored | `Finance` in Zustand | Accepted finance transaction | Finance view | Yes, via `FinanceSnapshot` | Implemented |
 | `facilities[FacilityType]` | Player-constructed facility state | Stored | `FacilityCollection` in Zustand | Construction, recipe change, or production advance | Facility UI and production rules | Yes, via `FacilityCollectionSnapshot` | Implemented |
 | `facility.recipeProgress[RecipeName]` | Work completed on a facility recipe | Stored | `Facility` in Zustand | Foreground elapsed minute or fast-forward | Production view and recipe completion | Yes, via facility snapshot | Implemented |
+| `facility.speedUpgradeLevel` | Purchased speed-upgrade count | Stored | `Facility` in Zustand | Accepted Speed upgrade | Upgrade UI and production speed | Yes, via facility snapshot | Implemented |
+| `facility.outputUpgradeLevel` | Purchased output-upgrade count | Stored | `Facility` in Zustand | Accepted Output upgrade | Upgrade UI and recipe output | Yes, via facility snapshot | Implemented |
+| `facility.assignedWorkers` | Local workers allocated to one facility | Stored | `Facility` in Zustand | Player staffing command | Staffing UI and efficiency | Yes, via facility snapshot | Implemented |
 | `lastProcessedAtMs` | Foreground wall-clock anchor in epoch milliseconds | Runtime state | Zustand game store | Foreground timer or lifecycle transition | `TimeManager` | No | Foreground-only |
 
 ## Dependency Table
@@ -41,7 +44,10 @@ Player action or time event
 | Facility recipe catalogue | Facility type | Code-owned recipe list for each facility | Not player-mutable in runtime | Catalogue load |
 | Company balance | Prior balance, signed transaction amount | `balanceAfter = balance + amount` | Balance must remain finite and at least €0 | Accepted transaction |
 | Recipe progress | Prior progress, work units, recipe work amount | Progress advances by one work unit per eligible tick | Completion resets progress and grants output | Production tick |
-| Production output | Recipe inputs and completion state | Recipe-specific output after required work | Inputs are paid at cycle start; missing inputs stall | Cycle start or completion |
+| Required workers | Facility base workers, speed level, output level | `base + levels + ceil(base × 1.15^levels - base)` | Non-negative integer | Construction or accepted upgrade |
+| Staffing efficiency | Assigned workers, required workers | Understaffing uses a power penalty; overstaffing uses a capped exponential bonus | Minimum 1%; above-target bonus is below 25% | Staffing command or accepted upgrade |
+| Production work | Base work, staffing efficiency, speed level | `baseWork × staffingEfficiency × speedMultiplier` | Positive fractional work is supported | Production tick |
+| Production output | Recipe inputs, output level, completion state | `baseOutput × outputMultiplier` after required work | Inputs are paid at cycle start; missing inputs stall | Cycle start or completion |
 
 ## Command Effects
 
@@ -52,6 +58,8 @@ Player action or time event
 | `buildFacility` | Type unconstructed; balance covers code-defined cost | Facility type, cost, balance | Facilities and Finance | Construction transaction and UI update | No immediate save | Implemented |
 | `destroyFacility` | Facility is constructed | Facility type | Facilities | Facility disappears; no refund | No immediate save | Implemented |
 | `setFacilityRecipe` | Facility constructed; recipe belongs to definition | Facility type, recipe | Facilities | Production UI updates | No immediate save | Implemented |
+| `setFacilityWorkers` | Facility constructed; non-negative integer worker count | Facility type, worker count | Facilities | Recalculates derived efficiency | No immediate save | Implemented |
+| `upgradeFacility` | Facility constructed; balance covers the next code-defined money cost | Facility type, upgrade kind, balance, current level | Facilities and Finance | Upgrade transaction, worker requirement, and production modifiers update | No immediate save | Implemented |
 | `recordTransaction` | Valid amount, description, timestamp, and non-negative result | Transaction data | Finance | Balance and ledger update | No immediate save | Implemented |
 | `advanceRealtime` | Finite foreground clock input | Clock anchor, facilities, inventory | Facilities, inventory, clock anchor | Advances eligible production by whole minutes | Batched save | Implemented |
 | `fastForwardOneMinute` | None | Facilities, inventory | Facilities, inventory | Runs one production minute | Batched save | Implemented |
