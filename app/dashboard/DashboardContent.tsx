@@ -5,7 +5,11 @@ import { colors } from '@/theme';
 import type { Finance, FinanceTransaction } from '@/game/finance/finance';
 import type { Inventory } from '@/game/inventory/inventory';
 import type { FacilityCollection } from '@/game/facilities/facilityCollection';
-import type { SalesContracts } from '@/game/sales/salesContracts';
+import {
+  SALES_CONTRACT_ESTIMATED_WAIT_MINUTES,
+  SALES_CONTRACT_OFFER_CHANCE_PER_MINUTE,
+  type SalesContracts,
+} from '@/game/sales/salesContracts';
 import { FACILITY_TYPES, type FacilityType } from '@/game/facilities/facilityTypes';
 import { getFacilityDefinition } from '@/game/facilities/facilityRegistry';
 import { getFacilityUpgradeCost, type FacilityUpgradeKind } from '@/game/facilities/facilityUpgrades';
@@ -21,7 +25,6 @@ export function DashboardContent({
   activeTab,
   facilities,
   finance,
-  fastForwardOneMinute,
   fulfillSalesContract,
   inventory,
   openConstructionYard,
@@ -34,7 +37,6 @@ export function DashboardContent({
   activeTab: DashboardTab;
   facilities: FacilityCollection;
   finance: Finance;
-  fastForwardOneMinute: () => boolean;
   fulfillSalesContract: (contractId: string) => boolean;
   inventory: Inventory;
   openConstructionYard: () => void;
@@ -81,9 +83,6 @@ export function DashboardContent({
         />
         <Button icon="plus" mode="contained" onPress={openConstructionYard}>
           Build facility
-        </Button>
-        <Button icon="fast-forward" mode="outlined" onPress={fastForwardOneMinute}>
-          Fast-forward 1 minute
         </Button>
         {FACILITY_TYPES.filter((facilityType) => facilities.has(facilityType)).map((facilityType) => {
           const definition = getFacilityDefinition(facilityType);
@@ -266,8 +265,19 @@ export function DashboardContent({
         <SectionHeading
           eyebrow="SALES"
           title="Customer contracts"
-          subtitle="New customer requests arrive every five foreground minutes."
+          subtitle="Each foreground minute has a 20% chance to bring a new customer request."
         />
+        <Card mode="contained" style={styles.featureCard}>
+          <Card.Content style={styles.cardContent}>
+            <Text style={styles.cardKicker}>CUSTOMER PIPELINE</Text>
+            <Text variant="titleMedium">
+              {`${formatNumber(SALES_CONTRACT_OFFER_CHANCE_PER_MINUTE * 100)}% chance per foreground minute`}
+            </Text>
+            <Text style={styles.cardDescription}>
+              {`Estimated next customer: ${formatNumber(SALES_CONTRACT_ESTIMATED_WAIT_MINUTES)} minutes`}
+            </Text>
+          </Card.Content>
+        </Card>
         <View style={styles.salesFilters}>
           <Button
             mode={salesList === 'offered' ? 'contained' : 'outlined'}

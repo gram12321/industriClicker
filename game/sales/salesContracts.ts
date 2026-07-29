@@ -1,7 +1,8 @@
 import type { ResourceType } from '../resources/resourceTypes';
 
-/** Foreground game minutes between new customer contract offers. */
-export const SALES_CONTRACT_INTERVAL_MINUTES = 5;
+/** Chance to receive a customer contract during one foreground game minute. */
+export const SALES_CONTRACT_OFFER_CHANCE_PER_MINUTE = 0.2;
+export const SALES_CONTRACT_ESTIMATED_WAIT_MINUTES = 1 / SALES_CONTRACT_OFFER_CHANCE_PER_MINUTE;
 export const SALES_CONTRACT_UNIT_PRICE_EUROS = 1;
 export const SALES_CONTRACT_MIN_QUANTITY = 1;
 export const SALES_CONTRACT_MAX_QUANTITY = 10;
@@ -20,7 +21,6 @@ export type SalesContract = {
 export type SalesContractsSnapshot = {
   offered: SalesContract[];
   completed: SalesContract[];
-  elapsedMinutesSinceLastOffer: number;
   nextCustomerNumber: number;
 };
 
@@ -48,7 +48,6 @@ function cloneContract(contract: SalesContract): SalesContract {
 export class SalesContracts {
   private offered: SalesContract[] = [];
   private completed: SalesContract[] = [];
-  private elapsedMinutesSinceLastOffer = 0;
   private nextCustomerNumber = 1;
 
   constructor(snapshot?: SalesContractsSnapshot) {
@@ -75,13 +74,13 @@ export class SalesContracts {
       return 0;
     }
 
-    this.elapsedMinutesSinceLastOffer += elapsedMinutes;
     let contractsCreated = 0;
 
-    while (this.elapsedMinutesSinceLastOffer >= SALES_CONTRACT_INTERVAL_MINUTES) {
-      this.elapsedMinutesSinceLastOffer -= SALES_CONTRACT_INTERVAL_MINUTES;
-      this.offered.push(this.createOffer(resourceTypes, random));
-      contractsCreated += 1;
+    for (let minute = 0; minute < elapsedMinutes; minute += 1) {
+      if (clampRandom(random()) < SALES_CONTRACT_OFFER_CHANCE_PER_MINUTE) {
+        this.offered.push(this.createOffer(resourceTypes, random));
+        contractsCreated += 1;
+      }
     }
 
     return contractsCreated;
@@ -111,7 +110,6 @@ export class SalesContracts {
     return {
       offered: this.getOfferedContracts(),
       completed: this.getCompletedContracts(),
-      elapsedMinutesSinceLastOffer: this.elapsedMinutesSinceLastOffer,
       nextCustomerNumber: this.nextCustomerNumber,
     };
   }
@@ -146,11 +144,6 @@ export class SalesContracts {
     this.completed = snapshot.completed
       .filter((contract) => isContract(contract) && typeof contract.fulfilledAt === 'string' && contract.fulfilledAt.length > 0)
       .map(cloneContract);
-    this.elapsedMinutesSinceLastOffer = Number.isInteger(snapshot.elapsedMinutesSinceLastOffer)
-      && snapshot.elapsedMinutesSinceLastOffer >= 0
-      && snapshot.elapsedMinutesSinceLastOffer < SALES_CONTRACT_INTERVAL_MINUTES
-      ? snapshot.elapsedMinutesSinceLastOffer
-      : 0;
     this.nextCustomerNumber = Number.isInteger(snapshot.nextCustomerNumber) && snapshot.nextCustomerNumber > 0
       ? snapshot.nextCustomerNumber
       : 1;

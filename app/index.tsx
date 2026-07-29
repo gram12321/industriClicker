@@ -60,6 +60,12 @@ export default function HomeScreen() {
             </View>
             <View style={styles.headerActions}>
               <IconButton
+                accessibilityLabel="Fast-forward one minute"
+                icon="fast-forward"
+                iconColor={colors.onDark}
+                onPress={fastForwardOneMinute}
+              />
+              <IconButton
                 accessibilityLabel="Notifications placeholder"
                 icon="bell-outline"
                 iconColor={colors.onDark}
@@ -99,7 +105,6 @@ export default function HomeScreen() {
             requestFacilityDestruction={setPendingDestruction}
             facilities={facilities}
             finance={finance}
-            fastForwardOneMinute={fastForwardOneMinute}
             fulfillSalesContract={fulfillSalesContract}
             inventory={inventory}
             salesContracts={salesContracts}

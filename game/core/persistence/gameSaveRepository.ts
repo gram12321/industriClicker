@@ -3,7 +3,7 @@ import * as SQLite from 'expo-sqlite';
 import type { GameSnapshot } from '../state/gameSnapshot';
 
 const DATABASE_NAME = 'industri-clicker.db';
-const SAVE_VERSION = 2;
+const SAVE_VERSION = 3;
 const SAVE_ROW_ID = 1;
 
 type SaveRow = {
@@ -29,7 +29,6 @@ function isGameSnapshot(value: unknown): value is GameSnapshot {
     && Array.isArray(value.facilities.facilities)
     && Array.isArray(value.salesContracts.offered)
     && Array.isArray(value.salesContracts.completed)
-    && typeof value.salesContracts.elapsedMinutesSinceLastOffer === 'number'
     && typeof value.salesContracts.nextCustomerNumber === 'number'
   );
 }

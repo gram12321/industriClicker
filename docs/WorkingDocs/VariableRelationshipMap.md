@@ -33,9 +33,8 @@ Player action or time event
 | `facility.speedUpgradeLevel` | Purchased speed-upgrade count | Stored | `Facility` in Zustand | Accepted Speed upgrade | Upgrade UI and production speed | Yes, via facility snapshot | Implemented |
 | `facility.outputUpgradeLevel` | Purchased output-upgrade count | Stored | `Facility` in Zustand | Accepted Output upgrade | Upgrade UI and recipe output | Yes, via facility snapshot | Implemented |
 | `facility.assignedWorkers` | Local workers allocated to one facility | Stored | `Facility` in Zustand | Player staffing command | Staffing UI and efficiency | Yes, via facility snapshot | Implemented |
-| `salesContracts.offered` | Unfulfilled customer resource contracts | Stored | `SalesContracts` in Zustand | Five foreground minutes elapsed | Sales UI and fulfilment validation | Yes, via `SalesContractsSnapshot` | Implemented |
+| `salesContracts.offered` | Unfulfilled customer resource contracts | Stored | `SalesContracts` in Zustand | Successful 20% foreground-minute offer roll | Sales UI and fulfilment validation | Yes, via `SalesContractsSnapshot` | Implemented |
 | `salesContracts.completed` | Fulfilled customer contracts | Stored | `SalesContracts` in Zustand | Accepted contract fulfilment | Completed sales UI | Yes, via `SalesContractsSnapshot` | Implemented |
-| `salesContracts.elapsedMinutesSinceLastOffer` | Foreground minutes accumulated toward the next offer | Stored | `SalesContracts` in Zustand | Foreground time or fast-forward | Contract generator | Yes, via `SalesContractsSnapshot` | Implemented |
 | `salesContracts.nextCustomerNumber` | Number assigned to the next generated customer | Stored | `SalesContracts` in Zustand | Contract generation | Customer label and contract identifier | Yes, via `SalesContractsSnapshot` | Implemented |
 | `lastProcessedAtMs` | Foreground wall-clock anchor in epoch milliseconds | Runtime state | Zustand game store | Foreground timer or lifecycle transition | `TimeManager` | No | Foreground-only |
 
@@ -75,7 +74,7 @@ Player action or time event
 | Event | Time input | Variables affected | Limits | Status |
 |---|---|---|---|---|
 | Foreground elapsed minute | `Date.now()` compared with `lastProcessedAtMs` | Facility progress and inventory | Whole minutes only; partial minute retained | Implemented |
-| Every fifth foreground minute | Foreground elapsed minutes or Fast-forward 1 minute | Offered sales contracts | One random resource and integer quantity 1–10 | Implemented |
+| Foreground offer roll | Foreground elapsed minute or Fast-forward 1 minute | Offered sales contracts | 20% chance; one random resource and integer quantity 1–10 | Implemented |
 | Resume/background transition | Lifecycle event | Clock anchor and save snapshot | Background minutes produce no work | Implemented foreground-only |
 | Offline catch-up | Not approved | None yet | Cap and device-clock policy required | Deferred |
 

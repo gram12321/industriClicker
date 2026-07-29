@@ -98,7 +98,8 @@ Invalid-input behavior: Reject non-finite transaction amounts and empty descript
 
 ## Sales Contract Rule
 
-- Every five foreground minutes, create one unfulfilled contract for `Customer #n`.
+- Each foreground minute rolls a 20% chance to create one unfulfilled contract for `Customer #n`.
+- The estimated wait for a customer is `1 / 0.20 = 5` foreground minutes; individual waits remain random.
 - The requested resource is randomly selected from the code-owned resource catalogue. Quantity is a random integer from 1 through 10.
 - Reward is `quantity × €1`.
 - Fulfilment first verifies the complete inventory quantity. It then removes the requested resource, records the positive finance transaction, and moves the contract from unfulfilled to completed.
@@ -109,7 +110,7 @@ Invalid-input behavior: Reject non-finite transaction amounts and empty descript
 1. While the app is active, the runtime timer reads `Date.now()`.
 2. `TimeManager` calculates whole elapsed minutes and retains the partial-minute remainder.
 3. For each elapsed minute, active facilities receive one base work unit in fixed order. Each facility applies its staffing efficiency and speed multiplier before progressing its selected recipe.
-4. The same elapsed minutes advance the sales-contract offer clock; each five-minute interval creates one offer.
+4. The same elapsed minutes each roll the sales-contract 20% offer chance.
 5. The Fast-forward 1 minute control invokes both production and sales time paths once.
 6. On background or resume, the runtime clock anchor resets; inactive time awards no work or contract offers.
 
