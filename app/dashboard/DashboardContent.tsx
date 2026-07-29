@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { View } from 'react-native';
 import { Button, Card, IconButton, List, ProgressBar, Surface, Text } from 'react-native-paper';
 import { colors } from '@/theme';
@@ -38,6 +39,8 @@ export function DashboardContent({
   setFacilityWorkers: (facilityType: FacilityType, workerCount: number) => boolean;
   upgradeFacility: (facilityType: FacilityType, upgradeKind: FacilityUpgradeKind) => boolean;
 }) {
+  const [collapsedFacilities, setCollapsedFacilities] = useState<Partial<Record<FacilityType, boolean>>>({});
+
   if (activeTab === 'inventory') {
     return (
       <>
@@ -89,6 +92,7 @@ export function DashboardContent({
           const outputUpgradeLevel = facility?.getOutputUpgradeLevel() ?? 0;
           const speedUpgradeCost = getFacilityUpgradeCost(definition.constructionCost, speedUpgradeLevel);
           const outputUpgradeCost = getFacilityUpgradeCost(definition.constructionCost, outputUpgradeLevel);
+          const isExpanded = collapsedFacilities[facilityType] !== true;
 
           return (
             <Card key={facilityType} mode="contained" style={styles.featureCard}>
@@ -98,10 +102,33 @@ export function DashboardContent({
                     ? `${formatRecipeName(activeRecipe)} · Work ${formatNumber(facility?.getRecipeProgress(activeRecipe.name) ?? 0, { smartDecimals: true })}/${formatNumber(activeRecipe.workAmount, { smartDecimals: true })}`
                     : 'No active recipe'}
                   left={(props) => <List.Icon {...props} icon={definition.icon} />}
+                  right={(props) => (
+                    <IconButton
+                      {...props}
+                      accessibilityLabel={`${isExpanded ? 'Collapse' : 'Expand'} ${definition.name}`}
+                      icon={isExpanded ? 'chevron-up' : 'chevron-down'}
+                      onPress={() => setCollapsedFacilities((current) => ({
+                        ...current,
+                        [facilityType]: isExpanded,
+                      }))}
+                    />
+                  )}
                   title={definition.name}
                   titleStyle={styles.facilityTitle}
                 />
-                <Text style={styles.constructionYardRecipeLabel}>Production recipe</Text>
+                {!isExpanded && activeRecipe && (
+                  <FacilityProductionStatus
+                    compact
+                    efficiency={facility?.getEfficiency() ?? 0}
+                    progress={facility?.getRecipeProgress(activeRecipe.name) ?? 0}
+                    missingInputs={missingInputs}
+                    recipe={activeRecipe}
+                    speedMultiplier={facility?.getSpeedMultiplier() ?? 1}
+                    status={productionStatus}
+                  />
+                )}
+                {isExpanded && <>
+                  <Text style={styles.constructionYardRecipeLabel}>Production recipe</Text>
                 <View style={styles.facilityRecipeControls}>
                   {definition.recipes.map((recipe) => {
                     const isSelected = activeRecipeName === recipe.name && facility?.isActive();
@@ -118,10 +145,18 @@ export function DashboardContent({
                     );
                   })}
                 </View>
+                {activeRecipe && (
+                  <FacilityResourceSummary
+                    outputMultiplier={facility?.getOutputMultiplier() ?? 1}
+                    recipe={activeRecipe}
+                  />
+                )}
                 <FacilityProductionStatus
+                  efficiency={facility?.getEfficiency() ?? 0}
                   progress={activeRecipe ? facility?.getRecipeProgress(activeRecipe.name) ?? 0 : 0}
                   missingInputs={missingInputs}
                   recipe={activeRecipe ?? null}
+                  speedMultiplier={facility?.getSpeedMultiplier() ?? 1}
                   status={productionStatus}
                 />
                 <Text style={styles.constructionYardRecipeLabel}>Staffing</Text>
@@ -167,7 +202,7 @@ export function DashboardContent({
                     {`Output L${formatNumber(outputUpgradeLevel + 1)} · ${formatCurrency(outputUpgradeCost)}`}
                   </Button>
                 </View>
-                <View style={styles.facilityActions}>
+                  <View style={styles.facilityActions}>
                   <IconButton
                     accessibilityLabel={`Destroy ${definition.name}`}
                     icon="trash-can-outline"
@@ -175,7 +210,8 @@ export function DashboardContent({
                     onPress={() => requestFacilityDestruction(facilityType)}
                     size={22}
                   />
-                </View>
+                  </View>
+                </>}
               </Card.Content>
             </Card>
           );
@@ -234,18 +270,80 @@ export function DashboardContent({
   );
 }
 
+function FacilityResourceSummary({
+  outputMultiplier,
+  recipe,
+}: {
+  outputMultiplier: number;
+  recipe: Recipe;
+}) {
+  return (
+    <View style={styles.facilityResourceSummary}>
+      <View style={styles.facilityResourceGroup}>
+        <Text style={styles.facilityResourceLabel}>Input</Text>
+        <View style={styles.facilityResourceItems}>
+          {recipe.inputs.length === 0 ? (
+            <Text style={styles.facilityResourceEmpty}>—</Text>
+          ) : recipe.inputs.map((input) => (
+            <Text
+              key={input.resourceType}
+              accessibilityLabel={`${getResource(input.resourceType).name} ${formatNumber(input.amount, { smartDecimals: true })}`}
+              style={styles.facilityResourceValue}
+            >
+              {getResourceIcon(input.resourceType)} {formatNumber(input.amount, { smartDecimals: true })}
+            </Text>
+          ))}
+        </View>
+      </View>
+      <Text style={styles.facilityResourceArrow}>→</Text>
+      <View style={styles.facilityResourceGroup}>
+        <Text style={styles.facilityResourceLabel}>Output</Text>
+        <Text
+          accessibilityLabel={`${getResource(recipe.output.resourceType).name} ${formatNumber(recipe.output.amount * outputMultiplier, { smartDecimals: true })}`}
+          style={styles.facilityResourceValue}
+        >
+          {getResourceIcon(recipe.output.resourceType)} {formatNumber(recipe.output.amount * outputMultiplier, { smartDecimals: true })}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 function FacilityProductionStatus({
+  compact = false,
+  efficiency,
   progress,
   missingInputs,
   recipe,
+  speedMultiplier,
   status,
 }: {
+  compact?: boolean;
+  efficiency: number;
   progress: number;
   missingInputs: Recipe['inputs'];
   recipe: Recipe | null;
+  speedMultiplier: number;
   status: 'not-started' | 'missing-inputs' | 'producing';
 }) {
-  if (status === 'not-started' || !recipe) {
+  if (!recipe) {
+    return <Text style={styles.productionError}>Production is not started. Choose a recipe to begin.</Text>;
+  }
+
+  const progressPercent = clamp((progress / recipe.workAmount) * 100, 0, 100);
+
+  if (compact) {
+    return (
+      <View style={styles.productionProgress}>
+        <Text style={styles.productionPercent}>
+          {formatPercent(progressPercent, { decimals: 0, input: 'percent' })}
+        </Text>
+        <ProgressBar color={colors.primary} progress={progressPercent / 100} style={styles.productionProgressBar} />
+      </View>
+    );
+  }
+
+  if (status === 'not-started') {
     return <Text style={styles.productionError}>Production is not started. Choose a recipe to begin.</Text>;
   }
 
@@ -257,8 +355,10 @@ function FacilityProductionStatus({
     );
   }
 
-  const progressPercent = clamp((progress / recipe.workAmount) * 100, 0, 100);
-  const minutesRemaining = Math.max(0, recipe.workAmount - progress);
+  const workPerMinute = efficiency * speedMultiplier;
+  const minutesRemaining = workPerMinute > 0
+    ? Math.max(0, recipe.workAmount - progress) / workPerMinute
+    : 0;
 
   return (
     <View style={styles.productionProgress}>
