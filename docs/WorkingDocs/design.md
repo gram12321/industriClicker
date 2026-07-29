@@ -54,6 +54,7 @@ The concrete loop is still being established. The intended shape is:
 - Each supplied unit pays €1. Contracts do not expire and remain available until the player fulfils them.
 - A contract can only be fulfilled when the full requested quantity is in inventory. Fulfilment removes that quantity, records the income, and moves the contract to the completed list.
 - Fast-forward 1 minute advances contract time; background time does not.
+- The Sales tab shows a visual customer-pipeline estimate. It fills over the calculated expected wait, but does not determine when the random customer roll succeeds.
 
 ### Facility Upgrades and Staffing
 

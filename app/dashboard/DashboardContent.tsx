@@ -32,6 +32,7 @@ export function DashboardContent({
   setFacilityRecipe,
   setFacilityWorkers,
   salesContracts,
+  customerPipelineProgress,
   upgradeFacility,
 }: {
   activeTab: DashboardTab;
@@ -45,6 +46,7 @@ export function DashboardContent({
   setFacilityWorkers: (facilityType: FacilityType, workerCount: number) => boolean;
   upgradeFacility: (facilityType: FacilityType, upgradeKind: FacilityUpgradeKind) => boolean;
   salesContracts: SalesContracts;
+  customerPipelineProgress: number;
 }) {
   const [collapsedFacilities, setCollapsedFacilities] = useState<Partial<Record<FacilityType, boolean>>>({});
   const [salesList, setSalesList] = useState<'offered' | 'completed'>('offered');
@@ -278,6 +280,15 @@ export function DashboardContent({
             </Text>
             <Text style={styles.cardDescription}>
               {`Estimated next customer: ${formatNumber(estimatedWaitMinutes, { smartDecimals: true })} minutes · ${formatNumber(unfulfilledContractCount)} unfulfilled`}
+            </Text>
+            <ProgressBar
+              accessibilityLabel="Estimated progress toward the next customer"
+              color={colors.primary}
+              progress={customerPipelineProgress}
+              style={styles.customerPipelineProgressBar}
+            />
+            <Text style={styles.salesAvailability}>
+              {`${formatNumber(customerPipelineProgress * 100, { decimals: 0 })}% toward the estimated next customer`}
             </Text>
           </Card.Content>
         </Card>

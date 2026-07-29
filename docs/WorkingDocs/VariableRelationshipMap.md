@@ -36,6 +36,7 @@ Player action or time event
 | `salesContracts.offered` | Unfulfilled customer resource contracts | Stored | `SalesContracts` in Zustand | Successful foreground-minute offer roll | Sales UI and fulfilment validation | Yes, via `SalesContractsSnapshot` | Implemented |
 | `salesContracts.completed` | Fulfilled customer contracts | Stored | `SalesContracts` in Zustand | Accepted contract fulfilment | Completed sales UI | Yes, via `SalesContractsSnapshot` | Implemented |
 | `salesContracts.nextCustomerNumber` | Number assigned to the next generated customer | Stored | `SalesContracts` in Zustand | Contract generation | Customer label and contract identifier | Yes, via `SalesContractsSnapshot` | Implemented |
+| `customerPipelineProgress` | Visual 0–1 estimate toward the next customer | Runtime state | Zustand game store | Foreground second, fast-forward, or successful offer | Sales pipeline progress bar | No | Implemented |
 | `lastProcessedAtMs` | Foreground wall-clock anchor in epoch milliseconds | Runtime state | Zustand game store | Foreground timer or lifecycle transition | `TimeManager` | No | Foreground-only |
 
 ## Dependency Table
@@ -76,6 +77,7 @@ Player action or time event
 |---|---|---|---|---|
 | Foreground elapsed minute | `Date.now()` compared with `lastProcessedAtMs` | Facility progress and inventory | Whole minutes only; partial minute retained | Implemented |
 | Foreground offer roll | Foreground elapsed minute or Fast-forward 1 minute | Offered sales contracts | Current diminishing chance; one random resource and integer quantity 1–10 | Implemented |
+| Customer pipeline estimate | Foreground elapsed second or Fast-forward 1 minute | `customerPipelineProgress` | Add `offerChance / 60` per second; reset on created offer | Implemented |
 | Resume/background transition | Lifecycle event | Clock anchor and save snapshot | Background minutes produce no work | Implemented foreground-only |
 | Offline catch-up | Not approved | None yet | Cap and device-clock policy required | Deferred |
 

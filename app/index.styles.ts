@@ -33,6 +33,7 @@ export const styles = StyleSheet.create({
   constructionYardListViewport: { flexShrink: 1 },
   constructionYardRecipe: { color: colors.muted, lineHeight: 20, marginTop: 4 },
   constructionYardRecipeLabel: { color: colors.charcoal, fontWeight: '700', marginTop: 8 },
+  customerPipelineProgressBar: { borderRadius: 6, height: 8 },
   dialogDescription: { color: colors.muted, lineHeight: 21 },
   dialogSummary: { gap: 8, marginTop: 16 },
   dialogSectionHeading: { marginTop: 16, marginBottom: 4 },

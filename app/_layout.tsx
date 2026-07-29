@@ -61,7 +61,18 @@ function GamePersistence({ children }: { children: ReactNode }) {
 
     void initialize();
 
-    const unsubscribe = useGameStore.subscribe(scheduleSave);
+    const unsubscribe = useGameStore.subscribe((state, previousState) => {
+      if (
+        state.finance === previousState.finance
+        && state.inventory === previousState.inventory
+        && state.facilities === previousState.facilities
+        && state.salesContracts === previousState.salesContracts
+      ) {
+        return;
+      }
+
+      scheduleSave();
+    });
     const appStateSubscription = AppState.addEventListener('change', (nextAppState) => {
       if (nextAppState !== 'active') {
         if (saveTimeout) {

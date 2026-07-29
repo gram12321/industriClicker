@@ -40,6 +40,7 @@ export default function HomeScreen() {
   const facilities = useGameStore((state) => state.facilities);
   const finance = useGameStore((state) => state.finance);
   const salesContracts = useGameStore((state) => state.salesContracts);
+  const customerPipelineProgress = useGameStore((state) => state.customerPipelineProgress);
   const buildFacility = useGameStore((state) => state.buildFacility);
   const destroyFacility = useGameStore((state) => state.destroyFacility);
   const setFacilityRecipe = useGameStore((state) => state.setFacilityRecipe);
@@ -108,6 +109,7 @@ export default function HomeScreen() {
             fulfillSalesContract={fulfillSalesContract}
             inventory={inventory}
             salesContracts={salesContracts}
+            customerPipelineProgress={customerPipelineProgress}
             setFacilityRecipe={setFacilityRecipe}
             setFacilityWorkers={setFacilityWorkers}
             upgradeFacility={upgradeFacility}

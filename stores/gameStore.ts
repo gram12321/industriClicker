@@ -9,7 +9,7 @@ import type { RecipeName } from '@/game/recipes/recipeTypes';
 import { RESOURCE_TYPES, type ResourceType } from '@/game/resources/resourceTypes';
 import type { GameSnapshot } from '@/game/core/state/gameSnapshot';
 import { calculateRealtimeAdvance } from '@/game/core/time/timeManager';
-import { SalesContracts } from '@/game/sales/salesContracts';
+import { calculateSalesContractOfferChance, SalesContracts } from '@/game/sales/salesContracts';
 import { create } from 'zustand';
 
 type GameState = {
@@ -18,6 +18,8 @@ type GameState = {
   facilities: FacilityCollection;
   salesContracts: SalesContracts;
   lastProcessedAtMs: number;
+  customerPipelineProgress: number;
+  lastCustomerPipelineProgressAtMs: number;
   addResource: (resourceType: ResourceType, amount?: number) => boolean;
   removeResource: (resourceType: ResourceType, amount?: number) => boolean;
   buildFacility: (facilityType: FacilityType) => boolean;
@@ -29,6 +31,7 @@ type GameState = {
   advanceProduction: (workAmount: number) => boolean;
   advanceRealtime: (nowMs: number) => number;
   fastForwardOneMinute: () => boolean;
+  advanceCustomerPipelineProgress: (elapsedSeconds: number) => void;
   advanceSalesContracts: (elapsedMinutes: number) => number;
   fulfillSalesContract: (contractId: string) => boolean;
   resetRealtimeClock: (nowMs: number) => void;
@@ -44,6 +47,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   facilities: new FacilityCollection(),
   salesContracts: new SalesContracts(),
   lastProcessedAtMs: Date.now(),
+  customerPipelineProgress: 0,
+  lastCustomerPipelineProgressAtMs: Date.now(),
   addResource: (resourceType, amount) => {
     const inventory = get().inventory.clone();
 
@@ -180,6 +185,12 @@ export const useGameStore = create<GameState>((set, get) => ({
     return true;
   },
   advanceRealtime: (nowMs) => {
+    const lastCustomerPipelineProgressAtMs = get().lastCustomerPipelineProgressAtMs;
+    if (Number.isFinite(nowMs) && nowMs >= lastCustomerPipelineProgressAtMs) {
+      get().advanceCustomerPipelineProgress((nowMs - lastCustomerPipelineProgressAtMs) / 1_000);
+      set({ lastCustomerPipelineProgressAtMs: nowMs });
+    }
+
     const { elapsedMinutes, nextProcessedAtMs } = calculateRealtimeAdvance(get().lastProcessedAtMs, nowMs);
 
     if (elapsedMinutes > 0) {
@@ -196,15 +207,28 @@ export const useGameStore = create<GameState>((set, get) => ({
   fastForwardOneMinute: () => {
     get().advanceRealtime(Date.now());
     const productionAdvanced = get().advanceProduction(1);
+    get().advanceCustomerPipelineProgress(60);
     get().advanceSalesContracts(1);
     return productionAdvanced;
+  },
+  advanceCustomerPipelineProgress: (elapsedSeconds) => {
+    if (!Number.isFinite(elapsedSeconds) || elapsedSeconds <= 0) {
+      return;
+    }
+
+    const offerChance = calculateSalesContractOfferChance(get().salesContracts.getOfferedContracts().length);
+    const progressAdded = (elapsedSeconds * offerChance) / 60;
+    set({ customerPipelineProgress: Math.min(1, get().customerPipelineProgress + progressAdded) });
   },
   advanceSalesContracts: (elapsedMinutes: number) => {
     const salesContracts = get().salesContracts.clone();
     const contractsCreated = salesContracts.advanceTime(elapsedMinutes, RESOURCE_TYPES);
 
     if (contractsCreated > 0 || elapsedMinutes > 0) {
-      set({ salesContracts });
+      set({
+        salesContracts,
+        customerPipelineProgress: contractsCreated > 0 ? 0 : get().customerPipelineProgress,
+      });
     }
 
     return contractsCreated;
@@ -236,7 +260,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
   resetRealtimeClock: (nowMs) => {
     if (Number.isFinite(nowMs)) {
-      set({ lastProcessedAtMs: nowMs });
+      set({ lastProcessedAtMs: nowMs, lastCustomerPipelineProgressAtMs: nowMs });
     }
   },
   createSnapshot: () => ({
@@ -252,6 +276,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     salesContracts: SalesContracts.fromSnapshot(snapshot.salesContracts),
     // Offline progress is planned; a restored foreground session starts fresh.
     lastProcessedAtMs: Date.now(),
+    customerPipelineProgress: 0,
+    lastCustomerPipelineProgressAtMs: Date.now(),
   }),
   resetInventory: () => set({ inventory: new Inventory() }),
 }));
