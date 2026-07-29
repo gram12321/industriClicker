@@ -65,7 +65,7 @@ These are working definitions, not confirmation that every system will be used:
 | Save boundary | An intentional point at which runtime state is written to durable storage. |
 | Resume | Restoring a saved game and applying any approved catch-up rules. |
 | Foreground realtime progression | Progression awarded while the app is active according to the implemented real-time rule. |
-| Contract offer chance | Each foreground game minute has a 20% chance to create a new sales-contract offer. Fast-forward time also counts. |
+| Contract offer chance | Each foreground game minute rolls the current sales-contract offer chance. It starts at 100% with no unfulfilled contracts and approaches 0% without reaching it as contracts accumulate. Fast-forward time also counts. |
 | Source of truth | The authoritative value from which other values are derived. |
 | Derived value | A display or convenience value calculated from source-of-truth state. |
 | Command | A typed request from UI or a system event to change game state. |

@@ -98,8 +98,9 @@ Invalid-input behavior: Reject non-finite transaction amounts and empty descript
 
 ## Sales Contract Rule
 
-- Each foreground minute rolls a 20% chance to create one unfulfilled contract for `Customer #n`.
-- The estimated wait for a customer is `1 / 0.20 = 5` foreground minutes; individual waits remain random.
+- Each foreground minute rolls the current chance to create one unfulfilled contract for `Customer #n`. With no unfulfilled contracts the chance is 100%.
+- Map unfulfilled contracts through Sales control points `0→0`, `3→0.25`, `5→0.50`, `10→0.75`, and `1,000,000→almost 1`; apply `calculateAsymmetricalScaler01`, then invert the result. This gives approximately 100%, 63%, 30%, 8%, and effectively 0% chance at those counts.
+- The estimated wait is `1 / currentCustomerChance` foreground minutes; individual waits remain random.
 - The requested resource is randomly selected from the code-owned resource catalogue. Quantity is a random integer from 1 through 10.
 - Reward is `quantity × €1`.
 - Fulfilment first verifies the complete inventory quantity. It then removes the requested resource, records the positive finance transaction, and moves the contract from unfulfilled to completed.
@@ -110,7 +111,7 @@ Invalid-input behavior: Reject non-finite transaction amounts and empty descript
 1. While the app is active, the runtime timer reads `Date.now()`.
 2. `TimeManager` calculates whole elapsed minutes and retains the partial-minute remainder.
 3. For each elapsed minute, active facilities receive one base work unit in fixed order. Each facility applies its staffing efficiency and speed multiplier before progressing its selected recipe.
-4. The same elapsed minutes each roll the sales-contract 20% offer chance.
+4. The same elapsed minutes each roll the current diminishing sales-contract offer chance.
 5. The Fast-forward 1 minute control invokes both production and sales time paths once.
 6. On background or resume, the runtime clock anchor resets; inactive time awards no work or contract offers.
 

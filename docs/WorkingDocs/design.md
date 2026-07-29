@@ -50,7 +50,7 @@ The concrete loop is still being established. The intended shape is:
 
 ### Sales Contracts
 
-- Each foreground game minute has a 20% chance to create a numbered customer contract for one randomly selected resource and an integer quantity from 1 to 10.
+- Each foreground game minute has a chance to create a numbered customer contract for one randomly selected resource and an integer quantity from 1 to 10. The chance starts at 100% with no unfulfilled contracts and declines sharply as they accumulate, without reaching zero.
 - Each supplied unit pays €1. Contracts do not expire and remain available until the player fulfils them.
 - A contract can only be fulfilled when the full requested quantity is in inventory. Fulfilment removes that quantity, records the income, and moves the contract to the completed list.
 - Fast-forward 1 minute advances contract time; background time does not.

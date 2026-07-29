@@ -6,8 +6,8 @@ import type { Finance, FinanceTransaction } from '@/game/finance/finance';
 import type { Inventory } from '@/game/inventory/inventory';
 import type { FacilityCollection } from '@/game/facilities/facilityCollection';
 import {
-  SALES_CONTRACT_ESTIMATED_WAIT_MINUTES,
-  SALES_CONTRACT_OFFER_CHANCE_PER_MINUTE,
+  calculateSalesContractEstimatedWaitMinutes,
+  calculateSalesContractOfferChance,
   type SalesContracts,
 } from '@/game/sales/salesContracts';
 import { FACILITY_TYPES, type FacilityType } from '@/game/facilities/facilityTypes';
@@ -256,6 +256,9 @@ export function DashboardContent({
   }
 
   if (activeTab === 'sales') {
+    const unfulfilledContractCount = salesContracts.getOfferedContracts().length;
+    const offerChance = calculateSalesContractOfferChance(unfulfilledContractCount);
+    const estimatedWaitMinutes = calculateSalesContractEstimatedWaitMinutes(unfulfilledContractCount);
     const contracts = salesList === 'offered'
       ? salesContracts.getOfferedContracts()
       : salesContracts.getCompletedContracts();
@@ -265,16 +268,16 @@ export function DashboardContent({
         <SectionHeading
           eyebrow="SALES"
           title="Customer contracts"
-          subtitle="Each foreground minute has a 20% chance to bring a new customer request."
+          subtitle="Unfulfilled contracts reduce the chance of a new customer request."
         />
         <Card mode="contained" style={styles.featureCard}>
           <Card.Content style={styles.cardContent}>
             <Text style={styles.cardKicker}>CUSTOMER PIPELINE</Text>
             <Text variant="titleMedium">
-              {`${formatNumber(SALES_CONTRACT_OFFER_CHANCE_PER_MINUTE * 100)}% chance per foreground minute`}
+              {`${formatNumber(offerChance * 100, { smartDecimals: true })}% chance per foreground minute`}
             </Text>
             <Text style={styles.cardDescription}>
-              {`Estimated next customer: ${formatNumber(SALES_CONTRACT_ESTIMATED_WAIT_MINUTES)} minutes`}
+              {`Estimated next customer: ${formatNumber(estimatedWaitMinutes, { smartDecimals: true })} minutes · ${formatNumber(unfulfilledContractCount)} unfulfilled`}
             </Text>
           </Card.Content>
         </Card>
@@ -284,7 +287,7 @@ export function DashboardContent({
             onPress={() => setSalesList('offered')}
             style={styles.salesFilterButton}
           >
-            {`Unfulfilled (${salesContracts.getOfferedContracts().length})`}
+            {`Unfulfilled (${unfulfilledContractCount})`}
           </Button>
           <Button
             mode={salesList === 'completed' ? 'contained' : 'outlined'}

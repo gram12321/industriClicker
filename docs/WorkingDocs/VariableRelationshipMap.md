@@ -33,7 +33,7 @@ Player action or time event
 | `facility.speedUpgradeLevel` | Purchased speed-upgrade count | Stored | `Facility` in Zustand | Accepted Speed upgrade | Upgrade UI and production speed | Yes, via facility snapshot | Implemented |
 | `facility.outputUpgradeLevel` | Purchased output-upgrade count | Stored | `Facility` in Zustand | Accepted Output upgrade | Upgrade UI and recipe output | Yes, via facility snapshot | Implemented |
 | `facility.assignedWorkers` | Local workers allocated to one facility | Stored | `Facility` in Zustand | Player staffing command | Staffing UI and efficiency | Yes, via facility snapshot | Implemented |
-| `salesContracts.offered` | Unfulfilled customer resource contracts | Stored | `SalesContracts` in Zustand | Successful 20% foreground-minute offer roll | Sales UI and fulfilment validation | Yes, via `SalesContractsSnapshot` | Implemented |
+| `salesContracts.offered` | Unfulfilled customer resource contracts | Stored | `SalesContracts` in Zustand | Successful foreground-minute offer roll | Sales UI and fulfilment validation | Yes, via `SalesContractsSnapshot` | Implemented |
 | `salesContracts.completed` | Fulfilled customer contracts | Stored | `SalesContracts` in Zustand | Accepted contract fulfilment | Completed sales UI | Yes, via `SalesContractsSnapshot` | Implemented |
 | `salesContracts.nextCustomerNumber` | Number assigned to the next generated customer | Stored | `SalesContracts` in Zustand | Contract generation | Customer label and contract identifier | Yes, via `SalesContractsSnapshot` | Implemented |
 | `lastProcessedAtMs` | Foreground wall-clock anchor in epoch milliseconds | Runtime state | Zustand game store | Foreground timer or lifecycle transition | `TimeManager` | No | Foreground-only |
@@ -52,6 +52,7 @@ Player action or time event
 | Production work | Base work, staffing efficiency, speed level | `baseWork × staffingEfficiency × speedMultiplier` | Positive fractional work is supported | Production tick |
 | Production output | Recipe inputs, output level, completion state | `baseOutput × outputMultiplier` after required work | Inputs are paid at cycle start; missing inputs stall | Cycle start or completion |
 | Contract reward | Requested quantity | `quantity × €1` | Quantity is an integer from 1 through 10 | Contract generation |
+| Customer offer chance | Unfulfilled contract count, Sales control points | `1 - asymmetricalScaler(controlPointNormalize(unfulfilledContracts))` | 0, 3, 5, 10, and 1,000,000 contracts map to approximately 100%, 63%, 30%, 8%, and effectively 0% chance | Each foreground minute |
 
 ## Command Effects
 
@@ -74,7 +75,7 @@ Player action or time event
 | Event | Time input | Variables affected | Limits | Status |
 |---|---|---|---|---|
 | Foreground elapsed minute | `Date.now()` compared with `lastProcessedAtMs` | Facility progress and inventory | Whole minutes only; partial minute retained | Implemented |
-| Foreground offer roll | Foreground elapsed minute or Fast-forward 1 minute | Offered sales contracts | 20% chance; one random resource and integer quantity 1–10 | Implemented |
+| Foreground offer roll | Foreground elapsed minute or Fast-forward 1 minute | Offered sales contracts | Current diminishing chance; one random resource and integer quantity 1–10 | Implemented |
 | Resume/background transition | Lifecycle event | Clock anchor and save snapshot | Background minutes produce no work | Implemented foreground-only |
 | Offline catch-up | Not approved | None yet | Cap and device-clock policy required | Deferred |
 

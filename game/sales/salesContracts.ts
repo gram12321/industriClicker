@@ -1,11 +1,22 @@
 import type { ResourceType } from '../resources/resourceTypes';
+import {
+  calculateAsymmetricalScaler01,
+  normalizeWithControlPoints01,
+  type NormalizationControlPoint,
+} from '../core/math/scaling';
 
-/** Chance to receive a customer contract during one foreground game minute. */
-export const SALES_CONTRACT_OFFER_CHANCE_PER_MINUTE = 0.2;
-export const SALES_CONTRACT_ESTIMATED_WAIT_MINUTES = 1 / SALES_CONTRACT_OFFER_CHANCE_PER_MINUTE;
+/** The number of unfulfilled contracts treated as the probability curve's theoretical maximum. */
+export const SALES_CONTRACT_UNFULFILLED_THEORETICAL_MAXIMUM = 1_000_000;
+export const SALES_CONTRACT_UNFULFILLED_CHANCE_CONTROL_POINTS = [
+  { input: 0, normalized: 0 },
+  { input: 3, normalized: 0.25 },
+  { input: 5, normalized: 0.5 },
+  { input: 10, normalized: 0.75 },
+  { input: SALES_CONTRACT_UNFULFILLED_THEORETICAL_MAXIMUM, normalized: 1 - Number.EPSILON },
+] as const satisfies readonly NormalizationControlPoint[];
 export const SALES_CONTRACT_UNIT_PRICE_EUROS = 1;
-export const SALES_CONTRACT_MIN_QUANTITY = 1;
-export const SALES_CONTRACT_MAX_QUANTITY = 10;
+export const SALES_CONTRACT_MIN_REQUEST_QUANTITY = 1;
+export const SALES_CONTRACT_MAX_REQUEST_QUANTITY = 10;
 
 export type SalesContract = {
   id: string;
@@ -29,8 +40,8 @@ function isContract(value: SalesContract): boolean {
     value.id.length > 0
     && value.customerName.length > 0
     && Number.isInteger(value.quantity)
-    && value.quantity >= SALES_CONTRACT_MIN_QUANTITY
-    && value.quantity <= SALES_CONTRACT_MAX_QUANTITY
+    && value.quantity >= SALES_CONTRACT_MIN_REQUEST_QUANTITY
+    && value.quantity <= SALES_CONTRACT_MAX_REQUEST_QUANTITY
     && Number.isFinite(value.reward)
     && value.reward === value.quantity * SALES_CONTRACT_UNIT_PRICE_EUROS
     && value.offeredAt.length > 0
@@ -39,6 +50,33 @@ function isContract(value: SalesContract): boolean {
 
 function cloneContract(contract: SalesContract): SalesContract {
   return { ...contract };
+}
+
+/**
+ * Calculates the direct customer offer chance for one foreground minute.
+ * Starts at 1.0 with no unfulfilled contracts, then maps contract count through
+ * consumer-defined control points and the inverted asymmetrical curve.
+ * The result remains positive and approaches 0 without reaching it.
+ *
+ * Rough mapping with Sales control points:
+ * 0 → 100%, 3 → ~63%, 5 → ~30%, 10 → ~8%, 1,000,000+ → effectively 0%
+ */
+export function calculateSalesContractOfferChance(unfulfilledContractCount: number): number {
+  const normalizedCount = normalizeWithControlPoints01(
+    unfulfilledContractCount,
+    SALES_CONTRACT_UNFULFILLED_CHANCE_CONTROL_POINTS,
+  );
+
+  return 1 - calculateAsymmetricalScaler01(normalizedCount);
+}
+
+/**
+ * Calculates the expected foreground minutes until the next customer offer.
+ * This is the geometric-distribution mean: 1 / current per-minute chance.
+ */
+export function calculateSalesContractEstimatedWaitMinutes(unfulfilledContractCount: number): number {
+  const chance = calculateSalesContractOfferChance(unfulfilledContractCount);
+  return chance > 0 ? 1 / chance : 0;
 }
 
 /**
@@ -77,7 +115,7 @@ export class SalesContracts {
     let contractsCreated = 0;
 
     for (let minute = 0; minute < elapsedMinutes; minute += 1) {
-      if (clampRandom(random()) < SALES_CONTRACT_OFFER_CHANCE_PER_MINUTE) {
+      if (clampRandom(random()) < calculateSalesContractOfferChance(this.offered.length)) {
         this.offered.push(this.createOffer(resourceTypes, random));
         contractsCreated += 1;
       }
@@ -123,8 +161,8 @@ export class SalesContracts {
     const quantityRoll = clampRandom(random());
     const resourceIndex = Math.floor(resourceRoll * resourceTypes.length);
     const quantity = Math.min(
-      SALES_CONTRACT_MAX_QUANTITY,
-      SALES_CONTRACT_MIN_QUANTITY + Math.floor(quantityRoll * SALES_CONTRACT_MAX_QUANTITY),
+      SALES_CONTRACT_MAX_REQUEST_QUANTITY,
+      SALES_CONTRACT_MIN_REQUEST_QUANTITY + Math.floor(quantityRoll * SALES_CONTRACT_MAX_REQUEST_QUANTITY),
     );
     const customerNumber = this.nextCustomerNumber;
     this.nextCustomerNumber += 1;
