@@ -9,6 +9,7 @@ import { useGameStore } from '@/stores/gameStore';
 import { paperTheme } from '@/theme';
 
 const INITIAL_SAVE_LOAD_TIMEOUT_MS = 10_000;
+const ACTIVE_SAVE_BATCH_MS = 5_000;
 
 function loadInitialSnapshot() {
   return new Promise<Awaited<ReturnType<typeof loadGameSnapshot>>>((resolve) => {
@@ -45,13 +46,13 @@ function GamePersistence({ children }: { children: ReactNode }) {
     };
     const scheduleSave = () => {
       if (saveTimeout) {
-        clearTimeout(saveTimeout);
+        return;
       }
 
       saveTimeout = setTimeout(() => {
         saveTimeout = null;
         void saveNow();
-      }, 1_000);
+      }, ACTIVE_SAVE_BATCH_MS);
     };
 
     const initialize = async () => {

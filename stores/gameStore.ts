@@ -8,7 +8,11 @@ import { getFacilityUpgradeCost, type FacilityUpgradeKind } from '@/game/facilit
 import type { RecipeName } from '@/game/recipes/recipeTypes';
 import { RESOURCE_TYPES, type ResourceType } from '@/game/resources/resourceTypes';
 import type { GameSnapshot } from '@/game/core/state/gameSnapshot';
-import { calculateRealtimeAdvance, REALTIME_WORK_MINUTE_MS } from '@/game/core/time/timeManager';
+import {
+  calculateRealtimeAdvance,
+  FOREGROUND_SIMULATION_STEP_MS,
+  REALTIME_WORK_MINUTE_MS,
+} from '@/game/core/time/timeManager';
 import { calculateSalesContractOfferChance, SalesContracts } from '@/game/sales/salesContracts';
 import { create } from 'zustand';
 
@@ -21,7 +25,7 @@ type GameState = {
   lastProcessedAtMs: number;
   /** Last foreground wall-clock observation; deliberately not persisted. */
   lastObservedAtMs: number;
-  /** Foreground time that has not yet formed a whole production minute. */
+  /** Foreground time that has not yet formed a whole sales minute. */
   unprocessedWorkMs: number;
   customerPipelineProgress: number;
   addResource: (resourceType: ResourceType, amount?: number) => boolean;
@@ -181,41 +185,54 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
 
     const elapsedMs = Math.floor(elapsedMilliseconds);
-    const totalWorkMs = get().unprocessedWorkMs + elapsedMs;
-    const elapsedMinutes = Math.floor(totalWorkMs / REALTIME_WORK_MINUTE_MS);
-    const unprocessedWorkMs = totalWorkMs - elapsedMinutes * REALTIME_WORK_MINUTE_MS;
-    const offerChance = calculateSalesContractOfferChance(get().salesContracts.getOfferedContracts().length);
-    let customerPipelineProgress = Math.min(
-      1,
-      get().customerPipelineProgress + (elapsedMs / 1_000) * offerChance / 60,
-    );
+    const hasProducingFacility = get().facilities.getAll().some((facility) => (
+      facility.getProductionStatus(get().inventory) === 'producing'
+    ));
+    const facilities = hasProducingFacility ? get().facilities.clone() : get().facilities;
+    const inventory = hasProducingFacility ? get().inventory.clone() : get().inventory;
+    let salesContracts: SalesContracts | null = null;
+    let unprocessedWorkMs = get().unprocessedWorkMs;
+    let customerPipelineProgress = get().customerPipelineProgress;
+    let elapsedMinutes = 0;
+    let remainingMs = elapsedMs;
 
-    if (elapsedMinutes === 0) {
-      set({
-        lastProcessedAtMs: get().lastProcessedAtMs + elapsedMs,
-        unprocessedWorkMs,
-        customerPipelineProgress,
-      });
-      return 0;
-    }
+    while (remainingMs > 0) {
+      const stepMs = Math.min(FOREGROUND_SIMULATION_STEP_MS, remainingMs);
 
-    const facilities = get().facilities.clone();
-    const inventory = get().inventory.clone();
-    const salesContracts = get().salesContracts.clone();
-    advanceFacilityProduction(facilities, inventory, elapsedMinutes);
-    const contractsCreated = salesContracts.advanceTime(elapsedMinutes, RESOURCE_TYPES);
+      if (hasProducingFacility) {
+        advanceFacilityProduction(facilities, inventory, stepMs / REALTIME_WORK_MINUTE_MS);
+      }
 
-    if (contractsCreated > 0) {
-      customerPipelineProgress = 0;
+      const currentSalesContracts = salesContracts ?? get().salesContracts;
+      const offerChance = calculateSalesContractOfferChance(currentSalesContracts.getOfferedContracts().length);
+      customerPipelineProgress = Math.min(
+        1,
+        customerPipelineProgress + (stepMs / 1_000) * offerChance / 60,
+      );
+
+      const totalSalesMs = unprocessedWorkMs + stepMs;
+      const completedSalesMinutes = Math.floor(totalSalesMs / REALTIME_WORK_MINUTE_MS);
+      unprocessedWorkMs = totalSalesMs - completedSalesMinutes * REALTIME_WORK_MINUTE_MS;
+
+      if (completedSalesMinutes > 0) {
+        salesContracts ??= get().salesContracts.clone();
+        const contractsCreated = salesContracts.advanceTime(completedSalesMinutes, RESOURCE_TYPES);
+        elapsedMinutes += completedSalesMinutes;
+
+        if (contractsCreated > 0) {
+          customerPipelineProgress = 0;
+        }
+      }
+
+      remainingMs -= stepMs;
     }
 
     set({
-      facilities,
-      inventory,
-      salesContracts,
       lastProcessedAtMs: get().lastProcessedAtMs + elapsedMs,
       unprocessedWorkMs,
       customerPipelineProgress,
+      ...(hasProducingFacility ? { facilities, inventory } : {}),
+      ...(salesContracts ? { salesContracts } : {}),
     });
     return elapsedMinutes;
   },

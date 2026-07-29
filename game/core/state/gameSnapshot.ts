@@ -6,7 +6,7 @@ import { type SalesContractsSnapshot } from '../../sales/salesContracts';
 export type GameTimeSnapshot = {
   /** Logical foreground game time. Fast-forward deliberately advances it. */
   lastProcessedAtMs: number;
-  /** Foreground milliseconds retained until they form a whole work minute. */
+  /** Foreground milliseconds retained until they form a whole sales minute. */
   unprocessedWorkMs: number;
   /** Current visual estimate towards the next customer offer. */
   customerPipelineProgress: number;

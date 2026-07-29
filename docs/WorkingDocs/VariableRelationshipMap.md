@@ -39,7 +39,7 @@ Player action or time event
 | `customerPipelineProgress` | Visual 0–1 estimate toward the next customer | Stored | Zustand game store | Global foreground-time advance or successful offer | Sales pipeline progress bar | Yes, via `GameTimeSnapshot` | Implemented |
 | `lastProcessedAtMs` | Logical foreground game time in epoch milliseconds | Stored | Zustand game store | Realtime or fast-forward global-time advance | Snapshot, global-time command | Yes, via `GameTimeSnapshot` | Foreground-only |
 | `lastObservedAtMs` | Last foreground wall-clock observation in epoch milliseconds | Runtime state | Zustand game store | Foreground timer or lifecycle transition | `TimeManager` | No | Foreground-only |
-| `unprocessedWorkMs` | Foreground milliseconds retained until a complete work minute | Stored | Zustand game store | Global foreground-time advance | Production timing | Yes, via `GameTimeSnapshot` | Implemented |
+| `unprocessedWorkMs` | Foreground milliseconds retained until a complete sales minute | Stored | Zustand game store | Global foreground-time advance | Sales timing | Yes, via `GameTimeSnapshot` | Implemented |
 
 ## Dependency Table
 
@@ -69,16 +69,16 @@ Player action or time event
 | `setFacilityWorkers` | Facility constructed; non-negative integer worker count | Facility type, worker count | Facilities | Recalculates derived efficiency | No immediate save | Implemented |
 | `upgradeFacility` | Facility constructed; balance covers the next code-defined money cost | Facility type, upgrade kind, balance, current level | Facilities and Finance | Upgrade transaction, worker requirement, and production modifiers update | No immediate save | Implemented |
 | `recordTransaction` | Valid amount, description, timestamp, and non-negative result | Transaction data | Finance | Balance and ledger update | No immediate save | Implemented |
-| `advanceRealtime` | Finite foreground clock input | Observation anchor and global time | Logical time, partial work, pipeline, facilities, inventory, sales contracts | Measures elapsed foreground time, then invokes `advanceGameTime` | Batched save | Implemented |
-| `advanceGameTime` | Finite elapsed foreground milliseconds | Global time, partial work, facilities, inventory, sales contracts | Logical time, partial work, pipeline, facilities, inventory, sales contracts | Runs every currently registered timed rule | Batched save | Implemented |
-| `fastForwardOneMinute` | None | Global time | Logical time, partial work, pipeline, facilities, inventory, sales contracts | Invokes `advanceGameTime(60,000)` after measuring real foreground time | Batched save | Implemented |
+| `advanceRealtime` | Finite foreground clock input | Observation anchor and global time | Logical time, partial sales time, pipeline, facilities, inventory, sales contracts | Measures elapsed foreground time, then invokes `advanceGameTime` | Batched save | Implemented |
+| `advanceGameTime` | Finite elapsed foreground milliseconds | Global time, partial sales time, facilities, inventory, sales contracts | Logical time, partial sales time, pipeline, facilities, inventory, sales contracts | Simulates production in one-second steps and sales per whole minute | Batched save | Implemented |
+| `fastForwardOneMinute` | None | Global time | Logical time, partial sales time, pipeline, facilities, inventory, sales contracts | Invokes one minute of one-second simulation steps after measuring real foreground time | Batched save | Implemented |
 | `fulfillSalesContract` | Contract is unfulfilled; inventory covers its full requested quantity | Contract, inventory, finance | Sales contracts, inventory, finance | Completed contract and positive finance transaction | No immediate save | Implemented |
 
 ## Time Effects
 
 | Event | Time input | Variables affected | Limits | Status |
 |---|---|---|---|---|
-| Global foreground-time advance | Measured foreground milliseconds or 60,000 milliseconds from fast-forward | Logical time, partial work, pipeline, facility progress, inventory, and sales contracts | Work/sales resolve only on whole minutes; partial work is retained | Implemented |
+| Global foreground-time advance | Measured foreground milliseconds or 60,000 milliseconds from fast-forward | Logical time, partial sales time, pipeline, facility progress, inventory, and sales contracts | Production resolves in one-second steps; sales resolve on whole minutes | Implemented |
 | Resume/background transition | Lifecycle event | Observation anchor and complete save snapshot | Final active time is processed before saving; background minutes produce no work | Implemented foreground-only |
 | Offline catch-up | Not approved | None yet | Cap and device-clock policy required | Deferred |
 
@@ -90,7 +90,7 @@ Player action or time event
 | Finance | Zustand game store | `FinanceSnapshot` inside `GameSnapshot` | Batched after changes; immediate on background | Restore valid current-version snapshot | Implemented |
 | Constructed facilities | Zustand game store | `FacilityCollectionSnapshot` inside `GameSnapshot` | Batched after changes; immediate on background | Restore valid current-version snapshot | Implemented |
 | Sales contracts | Zustand game store | `SalesContractsSnapshot` inside `GameSnapshot` | Batched after changes; immediate on background | Restore valid current-version snapshot | Implemented |
-| Foreground game time | Zustand game store | `GameTimeSnapshot` inside `GameSnapshot` | Batched after completed timed rules; final active interval on background/cleanup | Restore logical time, partial work, and pipeline; reset wall-clock observation anchor | Implemented |
+| Foreground game time | Zustand game store | `GameTimeSnapshot` inside `GameSnapshot` | Batched every up to five seconds during active changes; final active interval on background/cleanup | Restore logical time, partial sales time, and pipeline; reset wall-clock observation anchor | Implemented |
 | Code-owned catalogues | Typed TypeScript definitions | Not saved | App version | Loaded from code | Implemented |
 
 ## Map Rules
