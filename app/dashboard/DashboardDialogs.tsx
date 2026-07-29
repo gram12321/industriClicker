@@ -6,8 +6,9 @@ import type { FacilityCollection } from '@/game/facilities/facilityCollection';
 import { FACILITY_TYPES, type FacilityType } from '@/game/facilities/facilityTypes';
 import { getFacilityDefinition } from '@/game/facilities/facilityRegistry';
 import type { Recipe } from '@/game/recipes/recipeTypes';
+import { clamp, formatCurrency } from '@/utils';
 import { styles } from '../index.styles';
-import { formatCurrency, formatRecipeInputs, formatRecipeName, formatRecipeOutput } from './dashboardFormatters';
+import { formatRecipeInputs, formatRecipeName, formatRecipeOutput } from './dashboardFormatters';
 import { PlaceholderRow } from './DashboardContent';
 
 export function DashboardDialogs(props: {
@@ -43,7 +44,7 @@ export function ConstructionYardDialog({
   visible: boolean;
 }) {
   const { height } = useWindowDimensions();
-  const facilityListMaxHeight = Math.max(160, Math.min(480, height - 280));
+  const facilityListMaxHeight = clamp(height - 280, 160, 480);
 
   return (
     <Portal>

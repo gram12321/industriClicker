@@ -11,7 +11,7 @@ import type { Finance } from '@/game/finance/finance';
 import type { FacilityType } from '@/game/facilities/facilityTypes';
 import { DashboardContent } from './dashboard/DashboardContent';
 import { DashboardDialogs } from './dashboard/DashboardDialogs';
-import { formatCurrency } from './dashboard/dashboardFormatters';
+import { formatCurrency } from '@/utils';
 import { useGameStore } from '@/stores/gameStore';
 import { styles } from './index.styles';
 

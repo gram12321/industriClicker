@@ -10,9 +10,10 @@ import { getResourceIcon } from '@/game/resources/resourceIcons';
 import { RESOURCE_TYPES } from '@/game/resources/resourceTypes';
 import { getResource } from '@/game/resources/resourcesRegistry';
 import type { Recipe } from '@/game/recipes/recipeTypes';
+import { clamp, formatCurrency, formatDate, formatNumber, formatPercent } from '@/utils';
  type DashboardTab = 'company' | 'inventory' | 'production' | 'finance';
 import { styles } from '../index.styles';
-import { formatCurrency, formatPercent, formatRecipeInputs, formatRecipeName, formatTimeRemaining } from './dashboardFormatters';
+import { formatRecipeInputs, formatRecipeName, formatTimeRemaining } from './dashboardFormatters';
 export function DashboardContent({
   activeTab,
   facilities,
@@ -48,7 +49,7 @@ export function DashboardContent({
             <PlaceholderRow
               key={resourceType}
               label={`${getResourceIcon(resourceType)} ${resource.name}`}
-              value={`${entry.quantity} · Quality ${entry.quality}`}
+              value={`${formatNumber(entry.quantity, { smartDecimals: true })} · Quality ${formatNumber(entry.quality, { smartDecimals: true })}`}
             />
           );
         })}
@@ -83,7 +84,7 @@ export function DashboardContent({
               <Card.Content>
                 <List.Item
                   description={activeRecipe
-                    ? `${formatRecipeName(activeRecipe)} · Work ${facility?.getRecipeProgress(activeRecipe.name)}/${activeRecipe.workAmount}`
+                    ? `${formatRecipeName(activeRecipe)} · Work ${formatNumber(facility?.getRecipeProgress(activeRecipe.name) ?? 0, { smartDecimals: true })}/${formatNumber(activeRecipe.workAmount, { smartDecimals: true })}`
                     : 'No active recipe'}
                   left={(props) => <List.Icon {...props} icon={definition.icon} />}
                   title={definition.name}
@@ -202,14 +203,14 @@ function FacilityProductionStatus({
     );
   }
 
-  const progressPercent = Math.min(100, Math.max(0, (progress / recipe.workAmount) * 100));
+  const progressPercent = clamp((progress / recipe.workAmount) * 100, 0, 100);
   const minutesRemaining = Math.max(0, recipe.workAmount - progress);
 
   return (
     <View style={styles.productionProgress}>
       <View style={styles.productionProgressHeader}>
         <Text style={styles.productionValuePlaceholder}>Value/tick: —</Text>
-        <Text style={styles.productionPercent}>{formatPercent(progressPercent)}</Text>
+        <Text style={styles.productionPercent}>{formatPercent(progressPercent, { decimals: 0, input: 'percent' })}</Text>
       </View>
       <ProgressBar color={colors.primary} progress={progressPercent / 100} style={styles.productionProgressBar} />
       <Text style={styles.productionTimeLeft}>{formatTimeRemaining(minutesRemaining)} left</Text>
@@ -249,7 +250,7 @@ export function TransactionRow({ transaction }: { transaction: FinanceTransactio
     <Surface elevation={0} style={styles.placeholderRow}>
       <View style={styles.transactionDetails}>
         <Text variant="bodyLarge">{transaction.description}</Text>
-        <Text style={styles.placeholderValue}>{new Date(transaction.occurredAt).toLocaleString()}</Text>
+        <Text style={styles.placeholderValue}>{formatDate(new Date(transaction.occurredAt), true)}</Text>
       </View>
       <Text style={transaction.amount < 0 ? styles.transactionCost : styles.transactionIncome}>
         {formatCurrency(transaction.amount)}
