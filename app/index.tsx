@@ -15,7 +15,7 @@ import { formatCurrency } from '@/utils';
 import { useGameStore } from '@/stores/gameStore';
 import { styles } from './index.styles';
 
-type DashboardTab = 'company' | 'inventory' | 'production' | 'finance';
+type DashboardTab = 'company' | 'inventory' | 'production' | 'sales' | 'finance';
 
 const tabs: Array<{ key: DashboardTab; label: string; symbol: string }> = [
   { key: 'company', label: 'Company', symbol: '⌂' },
@@ -23,6 +23,12 @@ const tabs: Array<{ key: DashboardTab; label: string; symbol: string }> = [
   { key: 'production', label: 'Production', symbol: '⚙' },
   { key: 'finance', label: 'Finance', symbol: '¤' },
 ];
+
+const salesTab: { key: DashboardTab; label: string; symbol: string } = {
+  key: 'sales',
+  label: 'Sales',
+  symbol: '$',
+};
 
 export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState<DashboardTab>('company');
@@ -33,12 +39,14 @@ export default function HomeScreen() {
   const inventory = useGameStore((state) => state.inventory);
   const facilities = useGameStore((state) => state.facilities);
   const finance = useGameStore((state) => state.finance);
+  const salesContracts = useGameStore((state) => state.salesContracts);
   const buildFacility = useGameStore((state) => state.buildFacility);
   const destroyFacility = useGameStore((state) => state.destroyFacility);
   const setFacilityRecipe = useGameStore((state) => state.setFacilityRecipe);
   const setFacilityWorkers = useGameStore((state) => state.setFacilityWorkers);
   const upgradeFacility = useGameStore((state) => state.upgradeFacility);
   const fastForwardOneMinute = useGameStore((state) => state.fastForwardOneMinute);
+  const fulfillSalesContract = useGameStore((state) => state.fulfillSalesContract);
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -92,7 +100,9 @@ export default function HomeScreen() {
             facilities={facilities}
             finance={finance}
             fastForwardOneMinute={fastForwardOneMinute}
+            fulfillSalesContract={fulfillSalesContract}
             inventory={inventory}
+            salesContracts={salesContracts}
             setFacilityRecipe={setFacilityRecipe}
             setFacilityWorkers={setFacilityWorkers}
             upgradeFacility={upgradeFacility}
@@ -100,7 +110,7 @@ export default function HomeScreen() {
         </ScrollView>
 
         <Surface elevation={3} style={styles.bottomNavigation}>
-          {tabs.map((tab) => (
+          {[...tabs.slice(0, 3), salesTab, ...tabs.slice(3)].map((tab) => (
             <BottomNavigationItem
               active={activeTab === tab.key}
               key={tab.key}

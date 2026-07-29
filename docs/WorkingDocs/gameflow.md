@@ -37,6 +37,7 @@ Elapsed time
 | Player finance | `Finance` in the Zustand store | Yes |
 | Player inventory | `Inventory` in the Zustand store | Yes |
 | Constructed facilities | `FacilityCollection` in the Zustand store | Yes |
+| Sales contracts | `SalesContracts` in the Zustand store | Yes |
 | Resource, recipe, and facility catalogues | Typed code-owned definitions | No |
 | Player commands and rule results | UI/system event plus pure TypeScript game logic | No |
 | Derived display values | Selectors/view-model helpers | No |
@@ -95,13 +96,22 @@ Rounding and limits: Costs are whole euros. Reject construction when the current
 
 Invalid-input behavior: Reject non-finite transaction amounts and empty descriptions.
 
+## Sales Contract Rule
+
+- Every five foreground minutes, create one unfulfilled contract for `Customer #n`.
+- The requested resource is randomly selected from the code-owned resource catalogue. Quantity is a random integer from 1 through 10.
+- Reward is `quantity × €1`.
+- Fulfilment first verifies the complete inventory quantity. It then removes the requested resource, records the positive finance transaction, and moves the contract from unfulfilled to completed.
+- Contracts have no expiry or pending-offer cap in this foundation implementation.
+
 ## Tick Order and Foreground Time
 
 1. While the app is active, the runtime timer reads `Date.now()`.
 2. `TimeManager` calculates whole elapsed minutes and retains the partial-minute remainder.
 3. For each elapsed minute, active facilities receive one base work unit in fixed order. Each facility applies its staffing efficiency and speed multiplier before progressing its selected recipe.
-4. The Fast-forward 1 minute control invokes the same production path once.
-5. On background or resume, the runtime clock anchor resets; inactive time awards no work.
+4. The same elapsed minutes advance the sales-contract offer clock; each five-minute interval creates one offer.
+5. The Fast-forward 1 minute control invokes both production and sales time paths once.
+6. On background or resume, the runtime clock anchor resets; inactive time awards no work or contract offers.
 
 Offline catch-up is not part of this flow yet. When designed, it must validate elapsed time and use the same production rule path.
 
@@ -114,6 +124,8 @@ Offline catch-up is not part of this flow yet. When designed, it must validate e
 | App background/resume | Flush the snapshot, reset the foreground clock, and award no background work. | Implemented foreground-only |
 | App launch | Restore a valid current-version snapshot before interaction; apply no catch-up. | Implemented |
 | Invalid/corrupt save | Ignore it and start fresh; leave it untouched until a successful save. | Implemented |
+
+The snapshot version is intentionally strict. Older save versions do not restore when the persisted shape changes unless an explicit migration is approved.
 
 ## Formula Template
 

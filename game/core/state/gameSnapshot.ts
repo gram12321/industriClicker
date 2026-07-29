@@ -1,6 +1,7 @@
 import { type FinanceSnapshot } from '../../finance/finance';
 import { type InventorySnapshot } from '../../inventory/inventory';
 import { type FacilityCollectionSnapshot } from '../../facilities/facilityCollection';
+import { type SalesContractsSnapshot } from '../../sales/salesContracts';
 
 /**
  * Plain game data written to the single Expo SQLite save record. Code-owned
@@ -10,4 +11,5 @@ export type GameSnapshot = {
   finance: FinanceSnapshot;
   inventory: InventorySnapshot;
   facilities: FacilityCollectionSnapshot;
+  salesContracts: SalesContractsSnapshot;
 };

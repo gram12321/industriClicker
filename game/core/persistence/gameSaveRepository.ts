@@ -3,7 +3,7 @@ import * as SQLite from 'expo-sqlite';
 import type { GameSnapshot } from '../state/gameSnapshot';
 
 const DATABASE_NAME = 'industri-clicker.db';
-const SAVE_VERSION = 1;
+const SAVE_VERSION = 2;
 const SAVE_ROW_ID = 1;
 
 type SaveRow = {
@@ -18,7 +18,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isGameSnapshot(value: unknown): value is GameSnapshot {
-  if (!isRecord(value) || !isRecord(value.finance) || !isRecord(value.inventory) || !isRecord(value.facilities)) {
+  if (!isRecord(value) || !isRecord(value.finance) || !isRecord(value.inventory) || !isRecord(value.facilities) || !isRecord(value.salesContracts)) {
     return false;
   }
 
@@ -27,6 +27,10 @@ function isGameSnapshot(value: unknown): value is GameSnapshot {
     && Array.isArray(value.finance.transactions)
     && isRecord(value.inventory.entries)
     && Array.isArray(value.facilities.facilities)
+    && Array.isArray(value.salesContracts.offered)
+    && Array.isArray(value.salesContracts.completed)
+    && typeof value.salesContracts.elapsedMinutesSinceLastOffer === 'number'
+    && typeof value.salesContracts.nextCustomerNumber === 'number'
   );
 }
 

@@ -33,6 +33,10 @@ Player action or time event
 | `facility.speedUpgradeLevel` | Purchased speed-upgrade count | Stored | `Facility` in Zustand | Accepted Speed upgrade | Upgrade UI and production speed | Yes, via facility snapshot | Implemented |
 | `facility.outputUpgradeLevel` | Purchased output-upgrade count | Stored | `Facility` in Zustand | Accepted Output upgrade | Upgrade UI and recipe output | Yes, via facility snapshot | Implemented |
 | `facility.assignedWorkers` | Local workers allocated to one facility | Stored | `Facility` in Zustand | Player staffing command | Staffing UI and efficiency | Yes, via facility snapshot | Implemented |
+| `salesContracts.offered` | Unfulfilled customer resource contracts | Stored | `SalesContracts` in Zustand | Five foreground minutes elapsed | Sales UI and fulfilment validation | Yes, via `SalesContractsSnapshot` | Implemented |
+| `salesContracts.completed` | Fulfilled customer contracts | Stored | `SalesContracts` in Zustand | Accepted contract fulfilment | Completed sales UI | Yes, via `SalesContractsSnapshot` | Implemented |
+| `salesContracts.elapsedMinutesSinceLastOffer` | Foreground minutes accumulated toward the next offer | Stored | `SalesContracts` in Zustand | Foreground time or fast-forward | Contract generator | Yes, via `SalesContractsSnapshot` | Implemented |
+| `salesContracts.nextCustomerNumber` | Number assigned to the next generated customer | Stored | `SalesContracts` in Zustand | Contract generation | Customer label and contract identifier | Yes, via `SalesContractsSnapshot` | Implemented |
 | `lastProcessedAtMs` | Foreground wall-clock anchor in epoch milliseconds | Runtime state | Zustand game store | Foreground timer or lifecycle transition | `TimeManager` | No | Foreground-only |
 
 ## Dependency Table
@@ -48,6 +52,7 @@ Player action or time event
 | Staffing efficiency | Assigned workers, required workers | Understaffing uses a power penalty; overstaffing uses a capped exponential bonus | Minimum 1%; above-target bonus is below 25% | Staffing command or accepted upgrade |
 | Production work | Base work, staffing efficiency, speed level | `baseWork × staffingEfficiency × speedMultiplier` | Positive fractional work is supported | Production tick |
 | Production output | Recipe inputs, output level, completion state | `baseOutput × outputMultiplier` after required work | Inputs are paid at cycle start; missing inputs stall | Cycle start or completion |
+| Contract reward | Requested quantity | `quantity × €1` | Quantity is an integer from 1 through 10 | Contract generation |
 
 ## Command Effects
 
@@ -62,13 +67,15 @@ Player action or time event
 | `upgradeFacility` | Facility constructed; balance covers the next code-defined money cost | Facility type, upgrade kind, balance, current level | Facilities and Finance | Upgrade transaction, worker requirement, and production modifiers update | No immediate save | Implemented |
 | `recordTransaction` | Valid amount, description, timestamp, and non-negative result | Transaction data | Finance | Balance and ledger update | No immediate save | Implemented |
 | `advanceRealtime` | Finite foreground clock input | Clock anchor, facilities, inventory | Facilities, inventory, clock anchor | Advances eligible production by whole minutes | Batched save | Implemented |
-| `fastForwardOneMinute` | None | Facilities, inventory | Facilities, inventory | Runs one production minute | Batched save | Implemented |
+| `fastForwardOneMinute` | None | Facilities, inventory, sales contracts | Facilities, inventory, sales contracts | Runs one production and sales minute | Batched save | Implemented |
+| `fulfillSalesContract` | Contract is unfulfilled; inventory covers its full requested quantity | Contract, inventory, finance | Sales contracts, inventory, finance | Completed contract and positive finance transaction | No immediate save | Implemented |
 
 ## Time Effects
 
 | Event | Time input | Variables affected | Limits | Status |
 |---|---|---|---|---|
 | Foreground elapsed minute | `Date.now()` compared with `lastProcessedAtMs` | Facility progress and inventory | Whole minutes only; partial minute retained | Implemented |
+| Every fifth foreground minute | Foreground elapsed minutes or Fast-forward 1 minute | Offered sales contracts | One random resource and integer quantity 1–10 | Implemented |
 | Resume/background transition | Lifecycle event | Clock anchor and save snapshot | Background minutes produce no work | Implemented foreground-only |
 | Offline catch-up | Not approved | None yet | Cap and device-clock policy required | Deferred |
 
@@ -79,6 +86,7 @@ Player action or time event
 | Resource inventory | Zustand game store | `InventorySnapshot` inside `GameSnapshot` | Batched after changes; immediate on background | Restore valid current-version snapshot | Implemented |
 | Finance | Zustand game store | `FinanceSnapshot` inside `GameSnapshot` | Batched after changes; immediate on background | Restore valid current-version snapshot | Implemented |
 | Constructed facilities | Zustand game store | `FacilityCollectionSnapshot` inside `GameSnapshot` | Batched after changes; immediate on background | Restore valid current-version snapshot | Implemented |
+| Sales contracts | Zustand game store | `SalesContractsSnapshot` inside `GameSnapshot` | Batched after changes; immediate on background | Restore valid current-version snapshot | Implemented |
 | Code-owned catalogues | Typed TypeScript definitions | Not saved | App version | Loaded from code | Implemented |
 
 ## Map Rules

@@ -96,6 +96,11 @@ export const styles = StyleSheet.create({
   productionValuePlaceholder: { color: colors.primary, fontSize: 12, fontWeight: '700' },
   profileButton: { borderRadius: 22, padding: 2 },
   safeArea: { backgroundColor: colors.primary, flex: 1 },
+  salesAvailability: { color: colors.muted, fontSize: 12 },
+  salesContractHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  salesFilterButton: { flex: 1 },
+  salesFilters: { flexDirection: 'row', gap: 8 },
+  salesReward: { color: colors.primary, fontSize: 20, fontWeight: '700' },
   screen: { backgroundColor: colors.softBackground, flex: 1 },
   sectionEyebrow: {
     color: colors.primary,

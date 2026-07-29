@@ -14,7 +14,8 @@ Use `skills/toolsskills/small-steps/SKILL.md` as the default working style. Sele
 - Use Expo, React Native, TypeScript, Expo Router, React Native Paper, Zustand, and Expo SQLite.
 - Keep React Native UI, pure game logic, Zustand state, and Expo SQLite adapters separate.
 - Keep formulas deterministic, typed, named, and testable outside UI components.
-- Supabase is deferred. Do not add backend, cloud sync, accounts, web release, iOS release, or compatibility layers without explicit approval.
+- Supabase is deferred. Do not add backend, cloud sync, accounts, web release, or iOS release without explicit approval.
+- Do not add backward-compatibility layers for code, local-save shapes, tables, or persistence keys. When a persisted shape changes, deliberately version it and allow older saves to be discarded unless the user explicitly approves a migration.
 - Do not commit, push, launch a development server, create a release build, or run broad verification unless the user explicitly asks or the task clearly justifies it.
 - Use focused verification and report only checks that actually ran.
 

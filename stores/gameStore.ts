@@ -6,15 +6,17 @@ import { getFacilityDefinition } from '@/game/facilities/facilityRegistry';
 import { advanceProduction as advanceFacilityProduction } from '@/game/facilities/advanceProduction';
 import { getFacilityUpgradeCost, type FacilityUpgradeKind } from '@/game/facilities/facilityUpgrades';
 import type { RecipeName } from '@/game/recipes/recipeTypes';
-import type { ResourceType } from '@/game/resources/resourceTypes';
+import { RESOURCE_TYPES, type ResourceType } from '@/game/resources/resourceTypes';
 import type { GameSnapshot } from '@/game/core/state/gameSnapshot';
 import { calculateRealtimeAdvance } from '@/game/core/time/timeManager';
+import { SalesContracts } from '@/game/sales/salesContracts';
 import { create } from 'zustand';
 
 type GameState = {
   finance: Finance;
   inventory: Inventory;
   facilities: FacilityCollection;
+  salesContracts: SalesContracts;
   lastProcessedAtMs: number;
   addResource: (resourceType: ResourceType, amount?: number) => boolean;
   removeResource: (resourceType: ResourceType, amount?: number) => boolean;
@@ -27,6 +29,8 @@ type GameState = {
   advanceProduction: (workAmount: number) => boolean;
   advanceRealtime: (nowMs: number) => number;
   fastForwardOneMinute: () => boolean;
+  advanceSalesContracts: (elapsedMinutes: number) => number;
+  fulfillSalesContract: (contractId: string) => boolean;
   resetRealtimeClock: (nowMs: number) => void;
   createSnapshot: () => GameSnapshot;
   restoreSnapshot: (snapshot: GameSnapshot) => void;
@@ -38,6 +42,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   finance: new Finance(),
   inventory: new Inventory(),
   facilities: new FacilityCollection(),
+  salesContracts: new SalesContracts(),
   lastProcessedAtMs: Date.now(),
   addResource: (resourceType, amount) => {
     const inventory = get().inventory.clone();
@@ -179,6 +184,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     if (elapsedMinutes > 0) {
       get().advanceProduction(elapsedMinutes);
+      get().advanceSalesContracts(elapsedMinutes);
     }
 
     if (nextProcessedAtMs !== get().lastProcessedAtMs) {
@@ -189,7 +195,44 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
   fastForwardOneMinute: () => {
     get().advanceRealtime(Date.now());
-    return get().advanceProduction(1);
+    const productionAdvanced = get().advanceProduction(1);
+    get().advanceSalesContracts(1);
+    return productionAdvanced;
+  },
+  advanceSalesContracts: (elapsedMinutes: number) => {
+    const salesContracts = get().salesContracts.clone();
+    const contractsCreated = salesContracts.advanceTime(elapsedMinutes, RESOURCE_TYPES);
+
+    if (contractsCreated > 0 || elapsedMinutes > 0) {
+      set({ salesContracts });
+    }
+
+    return contractsCreated;
+  },
+  fulfillSalesContract: (contractId) => {
+    const salesContracts = get().salesContracts.clone();
+    const contract = salesContracts.getOfferedContract(contractId);
+
+    if (!contract) {
+      return false;
+    }
+
+    const inventory = get().inventory.clone();
+    const finance = get().finance.clone();
+
+    if (!inventory.has(contract.resourceType, contract.quantity)) {
+      return false;
+    }
+
+    const occurredAt = new Date().toISOString();
+    if (!inventory.remove(contract.resourceType, contract.quantity)
+      || !finance.applyTransaction(contract.reward, `Contract fulfilled: ${contract.customerName}`, occurredAt)
+      || !salesContracts.fulfill(contract.id, occurredAt)) {
+      return false;
+    }
+
+    set({ inventory, finance, salesContracts });
+    return true;
   },
   resetRealtimeClock: (nowMs) => {
     if (Number.isFinite(nowMs)) {
@@ -200,11 +243,13 @@ export const useGameStore = create<GameState>((set, get) => ({
     finance: get().finance.toSnapshot(),
     inventory: get().inventory.toSnapshot(),
     facilities: get().facilities.toSnapshot(),
+    salesContracts: get().salesContracts.toSnapshot(),
   }),
   restoreSnapshot: (snapshot) => set({
     finance: Finance.fromSnapshot(snapshot.finance),
     inventory: Inventory.fromSnapshot(snapshot.inventory),
     facilities: FacilityCollection.fromSnapshot(snapshot.facilities),
+    salesContracts: SalesContracts.fromSnapshot(snapshot.salesContracts),
     // Offline progress is planned; a restored foreground session starts fresh.
     lastProcessedAtMs: Date.now(),
   }),

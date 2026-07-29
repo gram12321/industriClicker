@@ -5,6 +5,7 @@ import { colors } from '@/theme';
 import type { Finance, FinanceTransaction } from '@/game/finance/finance';
 import type { Inventory } from '@/game/inventory/inventory';
 import type { FacilityCollection } from '@/game/facilities/facilityCollection';
+import type { SalesContracts } from '@/game/sales/salesContracts';
 import { FACILITY_TYPES, type FacilityType } from '@/game/facilities/facilityTypes';
 import { getFacilityDefinition } from '@/game/facilities/facilityRegistry';
 import { getFacilityUpgradeCost, type FacilityUpgradeKind } from '@/game/facilities/facilityUpgrades';
@@ -13,7 +14,7 @@ import { RESOURCE_TYPES } from '@/game/resources/resourceTypes';
 import { getResource } from '@/game/resources/resourcesRegistry';
 import type { Recipe } from '@/game/recipes/recipeTypes';
 import { clamp, formatCurrency, formatDate, formatDuration, formatNumber, formatPercent } from '@/utils';
- type DashboardTab = 'company' | 'inventory' | 'production' | 'finance';
+type DashboardTab = 'company' | 'inventory' | 'production' | 'sales' | 'finance';
 import { styles } from '../index.styles';
 import { formatRecipeInputs, formatRecipeName } from './recipeFormatters';
 export function DashboardContent({
@@ -21,25 +22,30 @@ export function DashboardContent({
   facilities,
   finance,
   fastForwardOneMinute,
+  fulfillSalesContract,
   inventory,
   openConstructionYard,
   requestFacilityDestruction,
   setFacilityRecipe,
   setFacilityWorkers,
+  salesContracts,
   upgradeFacility,
 }: {
   activeTab: DashboardTab;
   facilities: FacilityCollection;
   finance: Finance;
   fastForwardOneMinute: () => boolean;
+  fulfillSalesContract: (contractId: string) => boolean;
   inventory: Inventory;
   openConstructionYard: () => void;
   requestFacilityDestruction: (facilityType: FacilityType) => void;
   setFacilityRecipe: (facilityType: FacilityType, recipeName: Recipe['name'] | null) => boolean;
   setFacilityWorkers: (facilityType: FacilityType, workerCount: number) => boolean;
   upgradeFacility: (facilityType: FacilityType, upgradeKind: FacilityUpgradeKind) => boolean;
+  salesContracts: SalesContracts;
 }) {
   const [collapsedFacilities, setCollapsedFacilities] = useState<Partial<Record<FacilityType, boolean>>>({});
+  const [salesList, setSalesList] = useState<'offered' | 'completed'>('offered');
 
   if (activeTab === 'inventory') {
     return (
@@ -246,6 +252,85 @@ export function DashboardContent({
             <TransactionRow key={`${transaction.occurredAt}-${index}`} transaction={transaction} />
           ))
         )}
+      </>
+    );
+  }
+
+  if (activeTab === 'sales') {
+    const contracts = salesList === 'offered'
+      ? salesContracts.getOfferedContracts()
+      : salesContracts.getCompletedContracts();
+
+    return (
+      <>
+        <SectionHeading
+          eyebrow="SALES"
+          title="Customer contracts"
+          subtitle="New customer requests arrive every five foreground minutes."
+        />
+        <View style={styles.salesFilters}>
+          <Button
+            mode={salesList === 'offered' ? 'contained' : 'outlined'}
+            onPress={() => setSalesList('offered')}
+            style={styles.salesFilterButton}
+          >
+            {`Unfulfilled (${salesContracts.getOfferedContracts().length})`}
+          </Button>
+          <Button
+            mode={salesList === 'completed' ? 'contained' : 'outlined'}
+            onPress={() => setSalesList('completed')}
+            style={styles.salesFilterButton}
+          >
+            {`Completed (${salesContracts.getCompletedContracts().length})`}
+          </Button>
+        </View>
+        {contracts.length === 0 ? (
+          <PlaceholderRow
+            label={salesList === 'offered' ? 'Customer contracts' : 'Completed contracts'}
+            value={salesList === 'offered' ? 'No requests yet' : 'No completed contracts yet'}
+          />
+        ) : contracts.map((contract) => {
+          const resource = getResource(contract.resourceType);
+          const available = inventory.getAmount(contract.resourceType);
+          const canFulfill = available >= contract.quantity;
+
+          return (
+            <Card key={contract.id} mode="contained" style={styles.featureCard}>
+              <Card.Content style={styles.cardContent}>
+                <View style={styles.salesContractHeader}>
+                  <View>
+                    <Text variant="titleMedium">{contract.customerName}</Text>
+                    <Text style={styles.cardDescription}>
+                      {`${getResourceIcon(contract.resourceType)} ${resource.name} · ${formatNumber(contract.quantity)}`}
+                    </Text>
+                  </View>
+                  <Text style={styles.salesReward}>{formatCurrency(contract.reward)}</Text>
+                </View>
+                {salesList === 'offered' ? (
+                  <>
+                    <Text style={styles.salesAvailability}>
+                      {canFulfill
+                        ? `In stock: ${formatNumber(available)}`
+                        : `Needs ${formatNumber(contract.quantity)} · In stock: ${formatNumber(available)}`}
+                    </Text>
+                    <Button
+                      accessibilityLabel={`Fulfill contract for ${contract.customerName}`}
+                      disabled={!canFulfill}
+                      mode="contained"
+                      onPress={() => fulfillSalesContract(contract.id)}
+                    >
+                      Fulfill contract
+                    </Button>
+                  </>
+                ) : (
+                  <Text style={styles.salesAvailability}>
+                    {`Completed ${formatDate(new Date(contract.fulfilledAt ?? contract.offeredAt), true)}`}
+                  </Text>
+                )}
+              </Card.Content>
+            </Card>
+          );
+        })}
       </>
     );
   }

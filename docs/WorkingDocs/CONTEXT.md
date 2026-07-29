@@ -35,6 +35,7 @@ This is the canonical glossary for Industri Clicker. Use it for stable game, UI,
 | Power Plant | The facility type assigned to the Coal Power and Solar Power recipes. | Implemented definition |
 | Euro (€) | The initial player currency. | Implemented foundation |
 | Finance | Player balance plus an append-only record of balance-changing transactions. | Implemented model |
+| Sales contract | A customer request for one resource and an integer quantity. A contract remains unfulfilled until the player supplies the full quantity, then moves to completed and pays its fixed reward. | Implemented foundation |
 | Speed upgrade | A money-funded facility level that raises production work rate with diminishing returns and raises staffing requirements. | Implemented model |
 | Output upgrade | A money-funded facility level that raises recipe output with diminishing returns and raises staffing requirements. | Implemented model |
 | Assigned workers | The local worker count allocated to one facility. It may be below or above that facility's requirement. | Implemented model |
@@ -64,6 +65,7 @@ These are working definitions, not confirmation that every system will be used:
 | Save boundary | An intentional point at which runtime state is written to durable storage. |
 | Resume | Restoring a saved game and applying any approved catch-up rules. |
 | Foreground realtime progression | Progression awarded while the app is active according to the implemented real-time rule. |
+| Contract offer interval | Five foreground game minutes between new sales-contract offers. Fast-forward time also counts. |
 | Source of truth | The authoritative value from which other values are derived. |
 | Derived value | A display or convenience value calculated from source-of-truth state. |
 | Command | A typed request from UI or a system event to change game state. |

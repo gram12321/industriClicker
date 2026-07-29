@@ -48,6 +48,13 @@ The concrete loop is still being established. The intended shape is:
 - Construction requires sufficient funds and destruction refunds no funds.
 - Finance records accepted balance changes so the player can understand company activity.
 
+### Sales Contracts
+
+- Every five foreground game minutes, a numbered customer offers a contract for one randomly selected resource and an integer quantity from 1 to 10.
+- Each supplied unit pays €1. Contracts do not expire and remain available until the player fulfils them.
+- A contract can only be fulfilled when the full requested quantity is in inventory. Fulfilment removes that quantity, records the income, and moves the contract to the completed list.
+- Fast-forward 1 minute advances contract time; background time does not.
+
 ### Facility Upgrades and Staffing
 
 - Each constructed facility has independently purchasable Speed and Output upgrades, funded only with euros in this first version.
@@ -80,6 +87,7 @@ The concrete loop is still being established. The intended shape is:
 | Monetization | To be designed. | Open |
 | Broader progression | To be designed after the first playable loop. | Open |
 | Concrete art assets | No bespoke pipeline currently. | Confirmed direction |
+| Save backward compatibility | Do not preserve prior local-save shapes by default. A new save version discards older snapshots unless a migration is explicitly approved. | Confirmed direction |
 
 ## References
 
