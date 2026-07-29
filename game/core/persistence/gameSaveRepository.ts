@@ -3,12 +3,10 @@ import * as SQLite from 'expo-sqlite';
 import type { GameSnapshot } from '../state/gameSnapshot';
 
 const DATABASE_NAME = 'industri-clicker.db';
-const SAVE_VERSION = 4;
 const SAVE_ROW_ID = 1;
 
 type SaveRow = {
   snapshot_json: string;
-  version: number;
 };
 
 let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
@@ -55,9 +53,7 @@ function getDatabase(): Promise<SQLite.SQLiteDatabase> {
         await database.execAsync(`
       CREATE TABLE IF NOT EXISTS game_save (
         id INTEGER PRIMARY KEY NOT NULL,
-        version INTEGER NOT NULL,
-        snapshot_json TEXT NOT NULL,
-        saved_at TEXT NOT NULL
+        snapshot_json TEXT NOT NULL
       );
     `);
 
@@ -73,15 +69,15 @@ function getDatabase(): Promise<SQLite.SQLiteDatabase> {
   return databasePromise;
 }
 
-/** Loads the single local save when it has the current supported shape. */
+/** Loads the single local save when its snapshot is valid. */
 export async function loadGameSnapshot(): Promise<GameSnapshot | null> {
   const database = await getDatabase();
   const row = await database.getFirstAsync<SaveRow>(
-    'SELECT version, snapshot_json FROM game_save WHERE id = ?',
+    'SELECT snapshot_json FROM game_save WHERE id = ?',
     SAVE_ROW_ID,
   );
 
-  if (!row || row.version !== SAVE_VERSION) {
+  if (!row) {
     return null;
   }
 
@@ -98,15 +94,17 @@ export async function saveGameSnapshot(snapshot: GameSnapshot): Promise<void> {
   const database = await getDatabase();
 
   await database.runAsync(
-    `INSERT INTO game_save (id, version, snapshot_json, saved_at)
-     VALUES (?, ?, ?, ?)
+    `INSERT INTO game_save (id, snapshot_json)
+     VALUES (?, ?)
      ON CONFLICT(id) DO UPDATE SET
-       version = excluded.version,
-       snapshot_json = excluded.snapshot_json,
-       saved_at = excluded.saved_at`,
+       snapshot_json = excluded.snapshot_json`,
     SAVE_ROW_ID,
-    SAVE_VERSION,
     JSON.stringify(snapshot),
-    new Date().toISOString(),
   );
+}
+
+/** Clears the single local save for an admin-triggered fresh start. */
+export async function resetGameSave(): Promise<void> {
+  const database = await getDatabase();
+  await database.runAsync('DELETE FROM game_save WHERE id = ?', SAVE_ROW_ID);
 }
