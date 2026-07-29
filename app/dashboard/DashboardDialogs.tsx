@@ -8,7 +8,7 @@ import { getFacilityDefinition } from '@/game/facilities/facilityRegistry';
 import type { Recipe } from '@/game/recipes/recipeTypes';
 import { clamp, formatCurrency } from '@/utils';
 import { styles } from '../index.styles';
-import { formatRecipeInputs, formatRecipeName, formatRecipeOutput } from './dashboardFormatters';
+import { formatRecipeInputs, formatRecipeName, formatRecipeOutput } from './recipeFormatters';
 import { PlaceholderRow } from './DashboardContent';
 
 export function DashboardDialogs(props: {

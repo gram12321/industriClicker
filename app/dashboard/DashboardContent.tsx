@@ -11,10 +11,10 @@ import { getResourceIcon } from '@/game/resources/resourceIcons';
 import { RESOURCE_TYPES } from '@/game/resources/resourceTypes';
 import { getResource } from '@/game/resources/resourcesRegistry';
 import type { Recipe } from '@/game/recipes/recipeTypes';
-import { clamp, formatCurrency, formatDate, formatNumber, formatPercent } from '@/utils';
+import { clamp, formatCurrency, formatDate, formatDuration, formatNumber, formatPercent } from '@/utils';
  type DashboardTab = 'company' | 'inventory' | 'production' | 'finance';
 import { styles } from '../index.styles';
-import { formatRecipeInputs, formatRecipeName, formatTimeRemaining } from './dashboardFormatters';
+import { formatRecipeInputs, formatRecipeName } from './recipeFormatters';
 export function DashboardContent({
   activeTab,
   facilities,
@@ -133,8 +133,8 @@ export function DashboardContent({
                     onPress={() => setFacilityWorkers(facilityType, assignedWorkers - 1)}
                   />
                   <View style={styles.facilityStaffingSummary}>
-                    <Text style={styles.facilityStaffingValue}>{assignedWorkers} / {requiredWorkers} workers</Text>
-                    <Text style={styles.facilityStaffingDetail}>Efficiency {formatPercent((facility?.getEfficiency() ?? 0) * 100)}</Text>
+                    <Text style={styles.facilityStaffingValue}>{formatNumber(assignedWorkers)} / {formatNumber(requiredWorkers)} workers</Text>
+                    <Text style={styles.facilityStaffingDetail}>Efficiency {formatPercent(facility?.getEfficiency() ?? 0, { decimals: 0 })}</Text>
                   </View>
                   <IconButton
                     accessibilityLabel={`Add worker to ${definition.name}`}
@@ -147,7 +147,7 @@ export function DashboardContent({
                 </Button>
                 <Text style={styles.constructionYardRecipeLabel}>Upgrades</Text>
                 <Text style={styles.facilityUpgradeSummary}>
-                  Speed ×{(facility?.getSpeedMultiplier() ?? 1).toFixed(2)} · Output ×{(facility?.getOutputMultiplier() ?? 1).toFixed(2)}
+                  Speed ×{formatNumber(facility?.getSpeedMultiplier() ?? 1, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })} · Output ×{formatNumber(facility?.getOutputMultiplier() ?? 1, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })}
                 </Text>
                 <View style={styles.facilityUpgradeControls}>
                   <Button
@@ -156,7 +156,7 @@ export function DashboardContent({
                     mode="outlined"
                     onPress={() => upgradeFacility(facilityType, 'speed')}
                   >
-                    {`Speed L${speedUpgradeLevel + 1} · ${formatCurrency(speedUpgradeCost)}`}
+                    {`Speed L${formatNumber(speedUpgradeLevel + 1)} · ${formatCurrency(speedUpgradeCost)}`}
                   </Button>
                   <Button
                     compact
@@ -164,7 +164,7 @@ export function DashboardContent({
                     mode="outlined"
                     onPress={() => upgradeFacility(facilityType, 'output')}
                   >
-                    {`Output L${outputUpgradeLevel + 1} · ${formatCurrency(outputUpgradeCost)}`}
+                    {`Output L${formatNumber(outputUpgradeLevel + 1)} · ${formatCurrency(outputUpgradeCost)}`}
                   </Button>
                 </View>
                 <View style={styles.facilityActions}>
@@ -267,7 +267,7 @@ function FacilityProductionStatus({
         <Text style={styles.productionPercent}>{formatPercent(progressPercent, { decimals: 0, input: 'percent' })}</Text>
       </View>
       <ProgressBar color={colors.primary} progress={progressPercent / 100} style={styles.productionProgressBar} />
-      <Text style={styles.productionTimeLeft}>{formatTimeRemaining(minutesRemaining)} left</Text>
+      <Text style={styles.productionTimeLeft}>{formatDuration(minutesRemaining)} left</Text>
     </View>
   );
 }

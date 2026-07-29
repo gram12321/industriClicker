@@ -208,6 +208,22 @@ export function formatTime(date: Date): string {
   }).format(date);
 }
 
+export function formatDuration(minutes: number): string {
+  if (!Number.isFinite(minutes) || minutes <= 0) return '0 min';
+
+  if (minutes < 60) {
+    return `${formatNumber(minutes, { smartDecimals: true })} min`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  const formattedHours = formatNumber(hours, { smartDecimals: true });
+
+  return remainingMinutes === 0
+    ? `${formattedHours} h`
+    : `${formattedHours} h ${formatNumber(remainingMinutes, { smartDecimals: true })} min`;
+}
+
 /** Returns a React Native-ready hex color for a normalized 0-1 rating. */
 export function getColorClass(value: number): string {
   if (!Number.isFinite(value)) return '#61716B';
