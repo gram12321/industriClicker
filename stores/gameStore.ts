@@ -4,6 +4,7 @@ import { FacilityCollection } from '@/game/facilities/facilityCollection';
 import type { FacilityType } from '@/game/facilities/facilityTypes';
 import { getFacilityDefinition } from '@/game/facilities/facilityRegistry';
 import { advanceProduction as advanceFacilityProduction } from '@/game/facilities/advanceProduction';
+import { getFacilityUpgradeCost, type FacilityUpgradeKind } from '@/game/facilities/facilityUpgrades';
 import type { RecipeName } from '@/game/recipes/recipeTypes';
 import type { ResourceType } from '@/game/resources/resourceTypes';
 import type { GameSnapshot } from '@/game/core/state/gameSnapshot';
@@ -20,6 +21,8 @@ type GameState = {
   buildFacility: (facilityType: FacilityType) => boolean;
   destroyFacility: (facilityType: FacilityType) => boolean;
   setFacilityRecipe: (facilityType: FacilityType, recipeName: RecipeName | null) => boolean;
+  setFacilityWorkers: (facilityType: FacilityType, workerCount: number) => boolean;
+  upgradeFacility: (facilityType: FacilityType, upgradeKind: FacilityUpgradeKind) => boolean;
   recordTransaction: (amount: number, description: string) => boolean;
   advanceProduction: (workAmount: number) => boolean;
   advanceRealtime: (nowMs: number) => number;
@@ -98,6 +101,55 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
 
     set({ facilities });
+    return true;
+  },
+  setFacilityWorkers: (facilityType, workerCount) => {
+    get().advanceRealtime(Date.now());
+    const facilities = get().facilities.clone();
+    const facility = facilities.get(facilityType);
+
+    if (!facility || !facility.setAssignedWorkers(workerCount)) {
+      return false;
+    }
+
+    set({ facilities });
+    return true;
+  },
+  upgradeFacility: (facilityType, upgradeKind) => {
+    get().advanceRealtime(Date.now());
+    const facilities = get().facilities.clone();
+    const finance = get().finance.clone();
+    const facility = facilities.get(facilityType);
+
+    if (!facility) {
+      return false;
+    }
+
+    const currentLevel = upgradeKind === 'speed'
+      ? facility.getSpeedUpgradeLevel()
+      : facility.getOutputUpgradeLevel();
+    const definition = getFacilityDefinition(facilityType);
+    const cost = getFacilityUpgradeCost(definition.constructionCost, currentLevel);
+
+    if (!finance.canAfford(cost)) {
+      return false;
+    }
+
+    if (upgradeKind === 'speed') {
+      facility.upgradeSpeed();
+    } else {
+      facility.upgradeOutput();
+    }
+
+    if (!finance.applyTransaction(
+      -cost,
+      `${upgradeKind === 'speed' ? 'Speed' : 'Output'} upgrade for ${definition.name}`,
+      new Date().toISOString(),
+    )) {
+      return false;
+    }
+
+    set({ facilities, finance });
     return true;
   },
   recordTransaction: (amount, description) => {

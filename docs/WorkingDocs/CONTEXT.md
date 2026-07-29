@@ -35,6 +35,11 @@ This is the canonical glossary for Industri Clicker. Use it for stable game, UI,
 | Power Plant | The facility type assigned to the Coal Power and Solar Power recipes. | Implemented definition |
 | Euro (€) | The initial player currency. | Implemented foundation |
 | Finance | Player balance plus an append-only record of balance-changing transactions. | Implemented model |
+| Speed upgrade | A money-funded facility level that raises production work rate with diminishing returns and raises staffing requirements. | Implemented model |
+| Output upgrade | A money-funded facility level that raises recipe output with diminishing returns and raises staffing requirements. | Implemented model |
+| Assigned workers | The local worker count allocated to one facility. It may be below or above that facility's requirement. | Implemented model |
+| Required workers | The calculated staffing target for a facility's base staffing plus its speed and output upgrade levels. | Implemented model |
+| Building efficiency | The production-speed multiplier currently calculated from assigned versus required workers. Other efficiency factors are deferred. | Implemented model |
 | Progression | A durable increase in available options, capacity, efficiency, or player reach. | Generic term |
 
 ## Economy Language

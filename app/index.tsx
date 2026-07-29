@@ -36,6 +36,8 @@ export default function HomeScreen() {
   const buildFacility = useGameStore((state) => state.buildFacility);
   const destroyFacility = useGameStore((state) => state.destroyFacility);
   const setFacilityRecipe = useGameStore((state) => state.setFacilityRecipe);
+  const setFacilityWorkers = useGameStore((state) => state.setFacilityWorkers);
+  const upgradeFacility = useGameStore((state) => state.upgradeFacility);
   const fastForwardOneMinute = useGameStore((state) => state.fastForwardOneMinute);
 
   return (
@@ -92,6 +94,8 @@ export default function HomeScreen() {
             fastForwardOneMinute={fastForwardOneMinute}
             inventory={inventory}
             setFacilityRecipe={setFacilityRecipe}
+            setFacilityWorkers={setFacilityWorkers}
+            upgradeFacility={upgradeFacility}
           />
         </ScrollView>
 
