@@ -64,9 +64,9 @@ package.json                      Dependencies and development commands
 | Facilities | Farm, Bakery, Small Utility Works, Mine, Water Well, and Power Plant definitions plus constructed facility state exist. | Implemented |
 | Facility upgrades | Each facility supports money-funded Speed and Output upgrades, locally assigned workers, and staffing-based production efficiency. | Implemented; typechecked |
 | Finance | Starts at €10,000 and records accepted signed transactions; Farm and Bakery cost €60 and €300. | Implemented |
-| Production | Active facilities advance by one work unit per foreground real minute; inputs are paid at cycle start; fast-forward uses the same path. | Implemented |
+| Foreground game time | One global foreground-time command advances logical game time, retained partial work, production, sales, and the customer pipeline; fast-forward advances the identical command by one minute. | Implemented |
 | Sales contracts | Each foreground minute rolls a diminishing chance to create a random resource contract; a visual per-second pipeline estimate resets after each created offer. Valid fulfilment removes inventory, credits €1 per unit, and retains a completed record. | Implemented |
-| Local save | One versioned `GameSnapshot` persists finance, inventory, facilities, recipes, and progress in Expo SQLite. Saves batch briefly and flush on background/provider cleanup. | Implemented |
+| Local save | One versioned `GameSnapshot` persists finance, inventory, facilities/recipes/progress, sales, logical game time, retained partial work, and pipeline progress in Expo SQLite. Saves batch briefly and processes then flushes time on background/provider cleanup. | Implemented |
 | Offline production | Background/offline time grants no work. | Deferred |
 
 ## Documentation Map

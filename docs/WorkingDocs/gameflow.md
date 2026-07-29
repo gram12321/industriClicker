@@ -23,8 +23,9 @@ Approved save boundary
         -> restore on later launch or resume
 
 Elapsed time
-        -> validated foreground elapsed-time calculation
-        -> same production rule path
+        -> validated foreground elapsed-time measurement
+        -> one global foreground game-time command
+        -> all registered timed rules
 ```
 
 ## State Ownership
@@ -33,7 +34,9 @@ Elapsed time
 |---|---|---|
 | Game configuration and balance values | Typed TypeScript configuration | No |
 | Runtime game state | Zustand | Through a snapshot |
-| Foreground clock anchor | Zustand `lastProcessedAtMs` | No |
+| Logical foreground game time | Zustand `lastProcessedAtMs` | Yes |
+| Foreground wall-clock observation anchor | Zustand `lastObservedAtMs` | No |
+| Retained partial foreground work time | Zustand `unprocessedWorkMs` | Yes |
 | Player finance | `Finance` in the Zustand store | Yes |
 | Player inventory | `Inventory` in the Zustand store | Yes |
 | Constructed facilities | `FacilityCollection` in the Zustand store | Yes |
@@ -110,11 +113,11 @@ Invalid-input behavior: Reject non-finite transaction amounts and empty descript
 ## Tick Order and Foreground Time
 
 1. While the app is active, the runtime timer reads `Date.now()`.
-2. `TimeManager` calculates whole elapsed minutes and retains the partial-minute remainder.
-3. For each elapsed minute, active facilities receive one base work unit in fixed order. Each facility applies its staffing efficiency and speed multiplier before progressing its selected recipe.
-4. Every foreground second advances the visual customer-pipeline estimate. The same elapsed minutes each roll the current diminishing sales-contract offer chance and reset the estimate after a successful offer.
-5. The Fast-forward 1 minute control invokes both production and sales time paths once.
-6. On background or resume, the runtime clock anchor resets; inactive time awards no work or contract offers.
+2. `TimeManager` measures elapsed foreground wall-clock time since `lastObservedAtMs`.
+3. `advanceGameTime` is the one owner of currently registered timed rules. It advances logical game time, retains partial-minute work time, advances the customer pipeline, and applies each completed minute to production and sales-contract offers.
+4. For each completed minute, active facilities receive one base work unit in fixed order. Each facility applies its staffing efficiency and speed multiplier before progressing its selected recipe.
+5. The Fast-forward 1 minute control first processes real foreground time, then invokes `advanceGameTime(60,000)`. It therefore advances the same logical game time, pipeline, production, and sales rules as one real minute.
+6. On background, the final active interval is processed and saved as one snapshot. On resume, `lastObservedAtMs` resets; inactive time awards no work or contract offers.
 
 Offline catch-up is not part of this flow yet. When designed, it must validate elapsed time and use the same production rule path.
 
@@ -124,8 +127,8 @@ Offline catch-up is not part of this flow yet. When designed, it must validate e
 |---|---|---|
 | Normal action | Update runtime state; batch the current snapshot for one second. | Implemented |
 | Meaningful checkpoint | Write the current single-record snapshot. | Implemented |
-| App background/resume | Flush the snapshot, reset the foreground clock, and award no background work. | Implemented foreground-only |
-| App launch | Restore a valid current-version snapshot before interaction; apply no catch-up. | Implemented |
+| App background/resume | Process the final active interval, flush the snapshot, reset the wall-clock observation anchor, and award no background work. | Implemented foreground-only |
+| App launch | Restore a valid current-version snapshot, including logical time and retained partial work time, before interaction; apply no catch-up. | Implemented |
 | Invalid/corrupt save | Ignore it and start fresh; leave it untouched until a successful save. | Implemented |
 
 The snapshot version is intentionally strict. Older save versions do not restore when the persisted shape changes unless an explicit migration is approved.

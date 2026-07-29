@@ -1,32 +1,30 @@
-/** One work unit is completed by every active facility per foreground minute. */
+/** One work unit is completed by every active facility per game-time minute. */
 export const REALTIME_WORK_MINUTE_MS = 60_000;
 
 export type RealtimeAdvance = {
-  elapsedMinutes: number;
-  nextProcessedAtMs: number;
+  elapsedMilliseconds: number;
+  nextObservedAtMs: number;
 };
 
 /**
- * Converts a wall-clock interval into whole foreground work minutes. It keeps
- * partial minutes for the next call, so timer scheduling drift cannot create
- * or lose completed work units.
+ * Measures a foreground wall-clock interval. Applying that interval to game
+ * state belongs to the global game-time command in the runtime store.
  *
  * Offline progress is planned, but deliberately not implemented here. The
- * React Native lifecycle resets this clock whenever the app returns active.
+ * React Native lifecycle resets this observation anchor whenever the app
+ * returns active.
  */
-export function calculateRealtimeAdvance(lastProcessedAtMs: number, nowMs: number): RealtimeAdvance {
+export function calculateRealtimeAdvance(lastObservedAtMs: number, nowMs: number): RealtimeAdvance {
   if (!Number.isFinite(nowMs)) {
-    return { elapsedMinutes: 0, nextProcessedAtMs: lastProcessedAtMs };
+    return { elapsedMilliseconds: 0, nextObservedAtMs: lastObservedAtMs };
   }
 
-  if (!Number.isFinite(lastProcessedAtMs) || nowMs < lastProcessedAtMs) {
-    return { elapsedMinutes: 0, nextProcessedAtMs: nowMs };
+  if (!Number.isFinite(lastObservedAtMs) || nowMs < lastObservedAtMs) {
+    return { elapsedMilliseconds: 0, nextObservedAtMs: nowMs };
   }
-
-  const elapsedMinutes = Math.floor((nowMs - lastProcessedAtMs) / REALTIME_WORK_MINUTE_MS);
 
   return {
-    elapsedMinutes,
-    nextProcessedAtMs: lastProcessedAtMs + elapsedMinutes * REALTIME_WORK_MINUTE_MS,
+    elapsedMilliseconds: nowMs - lastObservedAtMs,
+    nextObservedAtMs: nowMs,
   };
 }
