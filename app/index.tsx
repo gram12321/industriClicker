@@ -11,11 +11,14 @@ import type { Finance } from '@/game/finance/finance';
 import type { FacilityType } from '@/game/facilities/facilityTypes';
 import { DashboardContent } from './dashboard/DashboardContent';
 import { DashboardDialogs } from './dashboard/DashboardDialogs';
+import { AdminDashboard } from './dashboard/AdminDashboard';
+import { isDevAdminSurfaceAvailable } from './dashboard/devAdminGate';
 import { formatCurrency } from '@/utils';
 import { useGameStore } from '@/stores/gameStore';
 import { styles } from './index.styles';
 
 type DashboardTab = 'company' | 'inventory' | 'production' | 'sales' | 'finance';
+type DashboardView = DashboardTab | 'admin';
 
 const tabs: Array<{ key: DashboardTab; label: string; symbol: string }> = [
   { key: 'company', label: 'Company', symbol: '⌂' },
@@ -31,7 +34,7 @@ const salesTab: { key: DashboardTab; label: string; symbol: string } = {
 };
 
 export default function HomeScreen() {
-  const [activeTab, setActiveTab] = useState<DashboardTab>('company');
+  const [activeView, setActiveView] = useState<DashboardView>('company');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isConstructionYardOpen, setIsConstructionYardOpen] = useState(false);
   const [pendingConstruction, setPendingConstruction] = useState<FacilityType | null>(null);
@@ -49,6 +52,7 @@ export default function HomeScreen() {
   const fastForwardOneMinute = useGameStore((state) => state.fastForwardOneMinute);
   const fulfillSalesContract = useGameStore((state) => state.fulfillSalesContract);
   const rejectSalesContract = useGameStore((state) => state.rejectSalesContract);
+  const isAdminDashboardAvailable = isDevAdminSurfaceAvailable();
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -90,6 +94,13 @@ export default function HomeScreen() {
                 <Menu.Item leadingIcon="account-outline" onPress={() => setIsProfileMenuOpen(false)} title="Profile" />
                 <Menu.Item leadingIcon="cog-outline" onPress={() => setIsProfileMenuOpen(false)} title="Settings" />
                 <Menu.Item leadingIcon="trophy-outline" onPress={() => setIsProfileMenuOpen(false)} title="Achievements" />
+                {isAdminDashboardAvailable && (
+                  <Menu.Item
+                    leadingIcon="shield-crown-outline"
+                    onPress={() => { setIsProfileMenuOpen(false); setActiveView('admin'); }}
+                    title="Admin Dashboard"
+                  />
+                )}
                 <Divider />
                 <Menu.Item leadingIcon="logout" onPress={() => setIsProfileMenuOpen(false)} title="Log out" />
               </Menu>
@@ -101,30 +112,32 @@ export default function HomeScreen() {
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
-          <DashboardContent
-            activeTab={activeTab}
-            openConstructionYard={() => setIsConstructionYardOpen(true)}
-            requestFacilityDestruction={setPendingDestruction}
-            facilities={facilities}
-            finance={finance}
-            fulfillSalesContract={fulfillSalesContract}
-            inventory={inventory}
-            salesContracts={salesContracts}
-            rejectSalesContract={rejectSalesContract}
-            customerPipelineProgress={customerPipelineProgress}
-            setFacilityRecipe={setFacilityRecipe}
-            setFacilityWorkers={setFacilityWorkers}
-            upgradeFacility={upgradeFacility}
-          />
+          {activeView === 'admin' && isAdminDashboardAvailable ? <AdminDashboard /> : (
+            <DashboardContent
+              activeTab={activeView === 'admin' ? 'company' : activeView}
+              openConstructionYard={() => setIsConstructionYardOpen(true)}
+              requestFacilityDestruction={setPendingDestruction}
+              facilities={facilities}
+              finance={finance}
+              fulfillSalesContract={fulfillSalesContract}
+              inventory={inventory}
+              salesContracts={salesContracts}
+              rejectSalesContract={rejectSalesContract}
+              customerPipelineProgress={customerPipelineProgress}
+              setFacilityRecipe={setFacilityRecipe}
+              setFacilityWorkers={setFacilityWorkers}
+              upgradeFacility={upgradeFacility}
+            />
+          )}
         </ScrollView>
 
         <Surface elevation={3} style={styles.bottomNavigation}>
           {[...tabs.slice(0, 3), salesTab, ...tabs.slice(3)].map((tab) => (
             <BottomNavigationItem
-              active={activeTab === tab.key}
+              active={activeView === tab.key}
               key={tab.key}
               label={tab.label}
-              onPress={() => setActiveTab(tab.key)}
+              onPress={() => setActiveView(tab.key)}
               symbol={tab.symbol}
             />
           ))}
