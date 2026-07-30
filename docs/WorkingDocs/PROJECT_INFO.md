@@ -24,6 +24,8 @@ Measured from the current working tree on 2026-07-30:
 - Zustand for runtime state and Expo SQLite for deliberate local saves.
 - No cloud backend.
 
+Public import barrels are `game/core/index.ts`, `game/index.ts`, and `ui/index.ts`. They use wildcard re-exports; internal modules may retain leaf imports to avoid dependency cycles.
+
 ## Repository Shape
 
 ```text

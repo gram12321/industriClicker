@@ -1,9 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { View } from 'react-native';
 import { Text } from 'react-native-paper';
-import { getResourceIcon } from '@/game/resources/resourceIcons';
-import { RESOURCE_TYPES } from '@/game/resources/resourceTypes';
-import { getResource } from '@/game/resources/resourcesRegistry';
+import { getResource, getResourceIcon, RESOURCE_TYPES } from '@/game/resources/resourceConstants';
 import type { Inventory } from '@/game/inventory/inventory';
 import { APP_ICONS } from '@/icons';
 import { formatNumber } from '@/utils';

@@ -17,8 +17,7 @@ if (__DEV__ && globalThis.window) {
   };
 }
 
-import { loadGameSnapshot, saveGameSnapshot } from '@/game/core/persistence/gameSaveRepository';
-import { useGameStore } from '@/stores/gameStore';
+import { loadGameSnapshot, saveGameSnapshot, useGameStore } from '@/game/core';
 import { paperTheme } from '@/theme';
 
 const INITIAL_SAVE_LOAD_TIMEOUT_MS = 10_000;

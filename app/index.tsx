@@ -8,20 +8,24 @@ import {
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/theme';
-import type { Finance } from '@/game/finance/finance';
-import type { FacilityType } from '@/game/facilities/facilityTypes';
-import { DashboardContent, type DashboardTab } from '@/ui/dashboard/DashboardView';
-import { DashboardDialogs } from '@/ui/dashboard/components/DashboardDialogs';
-import { PrestigeDialog } from '@/ui/dashboard/components/PrestigeDialog';
-import { AdminDashboard } from '@/ui/dashboard/views/AdminDashboard';
-import { ProfileDashboard } from '@/ui/dashboard/views/ProfileDashboard';
-import { IndustriPediaDashboard } from '@/ui/dashboard/views/IndustriPediaDashboard';
-import { isDevAdminSurfaceAvailable } from '@/ui/dashboard/helpers/devAdminGate';
+import type { FacilityType, Finance } from '@/game';
+import {
+  calculateCompanyPrestigeSummary,
+  resetGameSave,
+  useGameStore,
+} from '@/game';
+import {
+  AdminDashboard,
+  DashboardContent,
+  DashboardDialogs,
+  IndustriPediaDashboard,
+  isDevAdminSurfaceAvailable,
+  PrestigeDialog,
+  ProfileDashboard,
+  styles,
+  type DashboardTab,
+} from '@/ui';
 import { formatCurrency, formatNumber } from '@/utils';
-import { useGameStore } from '@/stores/gameStore';
-import { resetGameSave } from '@/game/core/persistence/gameSaveRepository';
-import { calculateCompanyPrestigeSummary } from '@/game/prestige/prestigeCalculator';
-import { styles } from '@/ui/dashboard/dashboard.styles';
 import { APP_ICONS } from '@/icons';
 
 type DashboardView = DashboardTab | 'admin' | 'profile' | 'pedia';

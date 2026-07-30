@@ -1,15 +1,12 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, List, Text } from 'react-native-paper';
-import { getFacilityDefinition } from '@/game/facilities/facilityRegistry';
-import { FACILITY_TYPES } from '@/game/facilities/facilityTypes';
-import { INITIAL_BALANCE } from '@/game/finance/finance';
+import { FACILITY_TYPES, getFacilityDefinition } from '@/game/facilities/facilityConstants';
+import { FINANCE_INITIAL_BALANCE } from '@/game/finance/financeConstants';
 import { PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS } from '@/game/prestige/prestigeConstants';
-import { ALL_RECIPES } from '@/game/recipes/recipes';
+import { ALL_RECIPES } from '@/game/recipes/recipeConstants';
 import { formatRecipeInputs, formatRecipeName, formatRecipeOutput } from '@/ui/dashboard/helpers/recipeFormatters';
-import { getResourceIcon } from '@/game/resources/resourceIcons';
-import { getResource } from '@/game/resources/resourcesRegistry';
-import { RESOURCE_TYPES } from '@/game/resources/resourceTypes';
+import { getResource, getResourceIcon, RESOURCE_TYPES } from '@/game/resources/resourceConstants';
 import { formatCurrency, formatNumber } from '@/utils';
 import { styles } from '@/ui/dashboard/dashboard.styles';
 import { SectionHeading, WorkMetric } from '../components/DashboardViewComponents';
@@ -93,7 +90,7 @@ function FinanceSection() {
   return <>
     <SectionHeading eyebrow="FINANCE" title="Company funds" subtitle="Euros fund construction and upgrades, and are earned by fulfilling customer contracts." />
     <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
-      <Text style={styles.cardKicker}>STARTING CAPITAL</Text><Text style={styles.balanceValue}>{formatCurrency(INITIAL_BALANCE)}</Text>
+      <Text style={styles.cardKicker}>STARTING CAPITAL</Text><Text style={styles.balanceValue}>{formatCurrency(FINANCE_INITIAL_BALANCE)}</Text>
       <Text style={styles.cardDescription}>Facilities can only be constructed when the full construction cost is available. Destroying a facility does not refund its cost.</Text>
     </Card.Content></Card>
     <Card mode="contained" style={styles.featureCard}><Card.Content><List.Item description="Each fulfilled unit pays €1. The requested quantity must be fully available in inventory before a contract can be supplied." left={(props) => <List.Icon {...props} icon={APP_ICONS.contracts} />} title="Customer contracts" /><List.Item description="Each facility has separate Speed and Output upgrades. The next level costs more than the previous one." left={(props) => <List.Icon {...props} icon={APP_ICONS.speed} />} title="Facility upgrades" /><List.Item description="Every accepted cost and income is recorded in the Finance activity list." left={(props) => <List.Icon {...props} icon={APP_ICONS.financeHistory} />} title="Transaction history" /></Card.Content></Card>

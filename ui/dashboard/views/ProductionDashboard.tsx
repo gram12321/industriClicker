@@ -4,13 +4,12 @@ import { Button, Card, IconButton, List, ProgressBar, Text } from 'react-native-
 import { colors } from '@/theme';
 import type { Finance } from '@/game/finance/finance';
 import type { FacilityCollection } from '@/game/facilities/facilityCollection';
-import { FACILITY_TYPES, type FacilityType } from '@/game/facilities/facilityTypes';
-import { getFacilityDefinition } from '@/game/facilities/facilityRegistry';
+import { FACILITY_TYPES, getFacilityDefinition } from '@/game/facilities/facilityConstants';
+import type { FacilityType } from '@/game/facilities/facilityTypes';
 import { getFacilityUpgradeCost, type FacilityUpgradeKind } from '@/game/facilities/facilityUpgrades';
 import type { Inventory } from '@/game/inventory/inventory';
 import type { Recipe } from '@/game/recipes/recipeTypes';
-import { getResourceIcon } from '@/game/resources/resourceIcons';
-import { getResource } from '@/game/resources/resourcesRegistry';
+import { getResource, getResourceIcon } from '@/game/resources/resourceConstants';
 import { clamp, formatCurrency, formatDuration, formatNumber, formatPercent } from '@/utils';
 import { styles } from '@/ui/dashboard/dashboard.styles';
 import { PlaceholderRow, SectionHeading, WorkMetric } from '../components/DashboardViewComponents';

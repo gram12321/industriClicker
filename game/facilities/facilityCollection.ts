@@ -1,10 +1,8 @@
 import { Facility, type FacilitySnapshot } from './facility';
-import { FACILITY_TYPES, FacilityType } from './facilityTypes';
-
+import { FACILITY_TYPES } from './facilityConstants';
+import { FacilityType } from './facilityTypes';
 /** Plain collection data used by the game snapshot and Expo SQLite adapter. */
-export type FacilityCollectionSnapshot = {
-  facilities: FacilitySnapshot[];
-};
+export type FacilityCollectionSnapshot = {   facilities: FacilitySnapshot[]; };
 
 /**
  * Player-owned constructed facilities. A facility type can be constructed once.

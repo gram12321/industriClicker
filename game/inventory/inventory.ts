@@ -1,7 +1,6 @@
-import { RESOURCE_TYPES, ResourceType } from '../resources/resourceTypes';
-
-/** Quality is intentionally fixed at this value until quality rules are designed. */
-export const DEFAULT_RESOURCE_QUALITY = 1;
+import { ResourceType } from '../resources/resourceTypes';
+import { RESOURCE_TYPES } from '../resources/resourceConstants';
+import { INVENTORY_DEFAULT_RESOURCE_QUALITY } from './inventoryConstants';
 
 /** Quantity and quality are owned together for one player-held resource. */
 export type InventoryEntry = {
@@ -16,13 +15,13 @@ export type InventorySnapshot = {
 
 function createEmptyEntries(): Record<ResourceType, InventoryEntry> {
   return {
-    [ResourceType.Grain]: { quantity: 0, quality: DEFAULT_RESOURCE_QUALITY },
-    [ResourceType.Bread]: { quantity: 0, quality: DEFAULT_RESOURCE_QUALITY },
-    [ResourceType.Water]: { quantity: 0, quality: DEFAULT_RESOURCE_QUALITY },
-    [ResourceType.Electricity]: { quantity: 0, quality: DEFAULT_RESOURCE_QUALITY },
-    [ResourceType.Sugar]: { quantity: 0, quality: DEFAULT_RESOURCE_QUALITY },
-    [ResourceType.Coal]: { quantity: 0, quality: DEFAULT_RESOURCE_QUALITY },
-    [ResourceType.Cake]: { quantity: 0, quality: DEFAULT_RESOURCE_QUALITY },
+    [ResourceType.Grain]: { quantity: 0, quality: INVENTORY_DEFAULT_RESOURCE_QUALITY },
+    [ResourceType.Bread]: { quantity: 0, quality: INVENTORY_DEFAULT_RESOURCE_QUALITY },
+    [ResourceType.Water]: { quantity: 0, quality: INVENTORY_DEFAULT_RESOURCE_QUALITY },
+    [ResourceType.Electricity]: { quantity: 0, quality: INVENTORY_DEFAULT_RESOURCE_QUALITY },
+    [ResourceType.Sugar]: { quantity: 0, quality: INVENTORY_DEFAULT_RESOURCE_QUALITY },
+    [ResourceType.Coal]: { quantity: 0, quality: INVENTORY_DEFAULT_RESOURCE_QUALITY },
+    [ResourceType.Cake]: { quantity: 0, quality: INVENTORY_DEFAULT_RESOURCE_QUALITY },
   };
 }
 
@@ -124,7 +123,7 @@ export class Inventory {
         quantity: Number.isFinite(entry.quantity) && entry.quantity >= 0 ? entry.quantity : 0,
         quality: Number.isFinite(entry.quality) && entry.quality > 0
           ? entry.quality
-          : DEFAULT_RESOURCE_QUALITY,
+          : INVENTORY_DEFAULT_RESOURCE_QUALITY,
       };
     }
   }

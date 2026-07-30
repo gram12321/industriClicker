@@ -32,7 +32,7 @@ export function PrestigeDialog({ isOpen, onClose, summary, currentGameTimeMs }: 
       <View style={styles.eventList}>
         {events.length === 0 ? <Text style={styles.emptyText}>No matching prestige events yet.</Text> : events.map((event) => {
           const isSelected = selectedEventId === event.id;
-          return <Fragment key={event.id}><Pressable accessibilityLabel={`${isSelected ? 'Hide' : 'Show'} prestige details for ${EVENT_LABELS[event.type]}`} onPress={() => setSelectedEventId(isSelected ? null : event.id)}><Surface elevation={0} style={[styles.eventRow, isSelected && styles.selectedEventRow]}><View style={styles.eventText}><Text variant="bodyLarge">{EVENT_LABELS[event.type]}</Text><Text style={styles.eventDescription}>{event.description}</Text><Text style={styles.eventDecay}>{event.decayHalfLifeForegroundHours === null ? 'Permanent' : `Fading: halves every ${formatNumber(event.decayHalfLifeForegroundHours, { smartDecimals: true })} active hours`}</Text><Text style={styles.tapHint}>{isSelected ? 'Tap to hide details' : 'Tap to show details'}</Text></View><Text style={event.currentAmount < 0 ? styles.penaltyAmount : styles.eventAmount}>{formatSigned(event.currentAmount, { smartDecimals: true })}</Text><Icon source={isSelected ? 'chevron-up' : 'chevron-down'} size={22} color={colors.muted} /></Surface></Pressable>{isSelected && <PrestigeDetails currentGameTimeMs={currentGameTimeMs} event={event} />}</Fragment>;
+          return <Fragment key={event.id}><Pressable accessibilityLabel={`${isSelected ? 'Hide' : 'Show'} prestige details for ${EVENT_LABELS[event.type]}`} onPress={() => setSelectedEventId(isSelected ? null : event.id)}><Surface elevation={0} style={[styles.eventRow, isSelected && styles.selectedEventRow]}><View style={styles.eventText}><Text variant="bodyLarge">{EVENT_LABELS[event.type]}</Text><Text style={styles.eventDescription}>{event.description}</Text><Text style={styles.eventDecay}>{formatEventDecay(event, currentGameTimeMs)}</Text><Text style={styles.tapHint}>{isSelected ? 'Tap to hide details' : 'Tap to show details'}</Text></View><Text style={event.currentAmount < 0 ? styles.penaltyAmount : styles.eventAmount}>{formatSigned(event.currentAmount, { smartDecimals: true })}</Text><Icon source={isSelected ? 'chevron-up' : 'chevron-down'} size={22} color={colors.muted} /></Surface></Pressable>{isSelected && <PrestigeDetails currentGameTimeMs={currentGameTimeMs} event={event} />}</Fragment>;
         })}
       </View>
     </ScrollView></Dialog.Content>
@@ -44,6 +44,17 @@ function SummaryRow({ label, value }: { label: string; value: number }) {
   return <View style={styles.summaryRow}><Text style={styles.summaryLabel}>{label}</Text><Text style={styles.summaryValue}>{formatSigned(value, { smartDecimals: true })}</Text></View>;
 }
 
+function formatEventDecay(event: CompanyPrestigeSummary['events'][number], currentGameTimeMs: number): string {
+  const details = calculatePrestigeDecayDetails(event, currentGameTimeMs);
+  if (details.halfLifeForegroundHours === null) {
+    return 'Permanent';
+  }
+
+  const retainedPercent = Math.min(100, Math.max(0, Math.abs(details.currentAmount / details.originalAmount) * 100));
+  const decayedPercent = Math.max(0, 100 - retainedPercent);
+  return `${formatNumber(details.decayPerForegroundHourPercent ?? 0, { smartDecimals: true })}% hourly (~${formatNumber(details.halfLifeForegroundHours, { smartDecimals: true })} hours to 50%) • ${formatNumber(decayedPercent, { smartDecimals: true })}% decayed`;
+}
+
 function PrestigeDetails({ currentGameTimeMs, event }: { currentGameTimeMs: number; event: CompanyPrestigeSummary['events'][number] }) {
   const details = calculatePrestigeDecayDetails(event, currentGameTimeMs);
 
@@ -51,7 +62,7 @@ function PrestigeDetails({ currentGameTimeMs, event }: { currentGameTimeMs: numb
     <Text style={styles.kicker}>PRESTIGE DETAILS</Text>
     <SummaryRow label="Original" value={details.originalAmount} />
     <SummaryRow label="Current" value={event.currentAmount} />
-    {details.halfLifeForegroundHours === null ? <Text style={styles.eventDecay}>No decay. Permanent sources provide stable prestige.</Text> : <><Text style={styles.eventDecay}>{`Hourly decay: ${formatNumber(details.decayPerForegroundHourPercent ?? 0, { smartDecimals: true })}%`}</Text><Text style={styles.eventDecay}>{`Retained: ${formatNumber(Math.abs(details.currentAmount / details.originalAmount) * 100, { smartDecimals: true })}%`}</Text><Text style={styles.eventDecay}>{`Half-life: ${formatNumber(details.halfLifeForegroundHours, { smartDecimals: true })} active hours`}</Text><Text style={styles.eventDecay}>Projection</Text>{details.projections.map((projection) => <SummaryRow key={projection.foregroundHoursFromNow} label={`In ${projection.foregroundHoursFromNow} active hour${projection.foregroundHoursFromNow === 1 ? '' : 's'}`} value={projection.amount} />)}</>}
+    {details.halfLifeForegroundHours === null ? <Text style={styles.eventDecay}>No decay. Permanent sources provide stable prestige.</Text> : <><Text style={styles.eventDecay}>{`Hourly decay: ${formatNumber(details.decayPerForegroundHourPercent ?? 0, { smartDecimals: true })}%`}</Text><Text style={styles.eventDecay}>{`Retained: ${formatNumber(Math.abs(details.currentAmount / details.originalAmount) * 100, { smartDecimals: true })}%`}</Text><Text style={styles.eventDecay}>{`Half-life: ${formatNumber(details.halfLifeForegroundHours, { smartDecimals: true })} hours`}</Text><Text style={styles.eventDecay}>Projection</Text>{details.projections.map((projection) => <SummaryRow key={projection.foregroundHoursFromNow} label={`In ${projection.foregroundHoursFromNow} hour${projection.foregroundHoursFromNow === 1 ? '' : 's'}`} value={projection.amount} />)}</>}
   </Surface>;
 }
 

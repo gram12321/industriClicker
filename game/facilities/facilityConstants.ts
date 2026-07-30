@@ -1,7 +1,28 @@
-import { ALL_RECIPES } from '../recipes/recipes';
-import { RecipeName, Recipe } from '../recipes/recipeTypes';
+import { ALL_RECIPES } from '../recipes/recipeConstants';
+import { RecipeName, type Recipe } from '../recipes/recipeTypes';
 import { FacilityType } from './facilityTypes';
-import { APP_ICONS } from '@/icons';
+
+export const FACILITY_TYPES = [FacilityType.Farm, FacilityType.Bakery, FacilityType.SmallUtilityWorks, FacilityType.Mine, FacilityType.WaterWell, FacilityType.PowerPlant] as const;
+export const FACILITY_UPGRADE_COST_GROWTH = 1.5;
+export const FACILITY_SPEED_MAXIMUM_BONUS = 0.8;
+export const FACILITY_SPEED_BONUS_RATE = 0.22;
+export const FACILITY_OUTPUT_MAXIMUM_BONUS = 1;
+export const FACILITY_OUTPUT_BONUS_RATE = 0.18;
+export const FACILITY_WORKER_REQUIREMENT_GROWTH = 1.15;
+export const FACILITY_UNDERSTAFFING_EXPONENT = 1.6;
+export const FACILITY_OVERSTAFFING_MAXIMUM_BONUS = 0.25;
+export const FACILITY_OVERSTAFFING_BONUS_RATE = 0.7;
+export const FACILITY_MINIMUM_STAFFING_EFFICIENCY = 0.01;
+
+/** Fixed order keeps production deterministic and runs utility producers first. */
+export const FACILITY_PRODUCTION_ORDER = [
+  FacilityType.SmallUtilityWorks,
+  FacilityType.Farm,
+  FacilityType.Bakery,
+  FacilityType.Mine,
+  FacilityType.WaterWell,
+  FacilityType.PowerPlant,
+] as const;
 
 export type FacilityDefinition = {
   type: FacilityType;
@@ -12,15 +33,12 @@ export type FacilityDefinition = {
   recipes: readonly Recipe[];
 };
 
-/**
- * Code-owned facility definitions. Player-owned construction and configuration
- * state belongs to FacilityCollection, not this registry.
- */
-export const facilities: Readonly<Record<FacilityType, FacilityDefinition>> = {
+/** Code-owned facility catalogue. Player-owned state belongs to FacilityCollection. */
+export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
   [FacilityType.Farm]: {
     type: FacilityType.Farm,
     name: 'Farm',
-    icon: APP_ICONS.facilityFarm,
+    icon: 'tractor',
     constructionCost: 60,
     baseWorkers: 2,
     recipes: [ALL_RECIPES[RecipeName.GrowGrain], ALL_RECIPES[RecipeName.GrowSugar]],
@@ -28,7 +46,7 @@ export const facilities: Readonly<Record<FacilityType, FacilityDefinition>> = {
   [FacilityType.Bakery]: {
     type: FacilityType.Bakery,
     name: 'Bakery',
-    icon: APP_ICONS.facilityBakery,
+    icon: 'bread-slice-outline',
     constructionCost: 300,
     baseWorkers: 3,
     recipes: [ALL_RECIPES[RecipeName.BakeBread], ALL_RECIPES[RecipeName.BakeCake]],
@@ -36,7 +54,7 @@ export const facilities: Readonly<Record<FacilityType, FacilityDefinition>> = {
   [FacilityType.SmallUtilityWorks]: {
     type: FacilityType.SmallUtilityWorks,
     name: 'Small Utility Works',
-    icon: APP_ICONS.facilityUtilityWorks,
+    icon: 'flash-outline',
     constructionCost: 500,
     baseWorkers: 1,
     recipes: [ALL_RECIPES[RecipeName.ProduceWater], ALL_RECIPES[RecipeName.ProduceElectricity]],
@@ -44,7 +62,7 @@ export const facilities: Readonly<Record<FacilityType, FacilityDefinition>> = {
   [FacilityType.Mine]: {
     type: FacilityType.Mine,
     name: 'Mine',
-    icon: APP_ICONS.facilityMine,
+    icon: 'pickaxe',
     constructionCost: 150,
     baseWorkers: 10,
     recipes: [ALL_RECIPES[RecipeName.MineCoal]],
@@ -52,7 +70,7 @@ export const facilities: Readonly<Record<FacilityType, FacilityDefinition>> = {
   [FacilityType.WaterWell]: {
     type: FacilityType.WaterWell,
     name: 'Water Well',
-    icon: APP_ICONS.facilityWaterWell,
+    icon: 'water-well',
     constructionCost: 100,
     baseWorkers: 1,
     recipes: [ALL_RECIPES[RecipeName.ManualPumping], ALL_RECIPES[RecipeName.ElectricPumping]],
@@ -60,7 +78,7 @@ export const facilities: Readonly<Record<FacilityType, FacilityDefinition>> = {
   [FacilityType.PowerPlant]: {
     type: FacilityType.PowerPlant,
     name: 'Power Plant',
-    icon: APP_ICONS.facilityPowerPlant,
+    icon: 'factory',
     constructionCost: 500,
     baseWorkers: 18,
     recipes: [ALL_RECIPES[RecipeName.CoalPower], ALL_RECIPES[RecipeName.SolarPower]],
@@ -68,5 +86,5 @@ export const facilities: Readonly<Record<FacilityType, FacilityDefinition>> = {
 };
 
 export function getFacilityDefinition(facilityType: FacilityType): FacilityDefinition {
-  return facilities[facilityType];
+  return FACILITIES[facilityType];
 }

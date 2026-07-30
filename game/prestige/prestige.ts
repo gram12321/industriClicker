@@ -1,13 +1,5 @@
-import {
-  PRESTIGE_COMPANY_BALANCE_SOURCE_ID,
-  PRESTIGE_EVENT_MIN_AMOUNT,
-  PRESTIGE_EVENT_TYPES,
-  PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS,
-} from './prestigeConstants';
-import {
-  calculateCurrentPrestigeAmount,
-  calculateSalesContractPrestige,
-} from './prestigeCalculator';
+import { PRESTIGE_COMPANY_BALANCE_SOURCE_ID, PRESTIGE_EVENT_MIN_AMOUNT, PRESTIGE_EVENT_TYPES, PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS } from './prestigeConstants';
+import { calculateCurrentPrestigeAmount, calculateSalesContractPrestige } from './prestigeCalculator';
 
 export type PrestigeEventType = typeof PRESTIGE_EVENT_TYPES[number];
 
