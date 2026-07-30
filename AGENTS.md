@@ -15,6 +15,7 @@ Use `skills/toolsskills/small-steps/SKILL.md` as the default working style. Sele
 - Keep React Native UI, pure game logic, Zustand state, and Expo SQLite adapters separate.
 - Keep formulas deterministic, typed, named, and testable outside UI components.
 - Put code-owned domain catalogues, balance values, and deterministic game configuration in that domain's named `*Constants.ts` module. Keep only technical implementation details, such as numerical tolerances and SQLite identifiers, local to their owning module.
+- Use `game/core/index.ts`, `game/index.ts`, and `ui/index.ts` as the public barrel surfaces. Prefer wildcard re-exports there; keep internal leaf imports when a barrel would create a dependency cycle.
 - Supabase is deferred. Do not add backend, cloud sync, accounts, web release, or iOS release without explicit approval.
 - Do not add backward-compatibility layers for code, local-save shapes, tables, or persistence keys. When a persisted shape changes, deliberately version it and allow older saves to be discarded unless the user explicitly approves a migration.
 - Do not commit, push, launch a development server, create a release build, or run broad verification unless the user explicitly asks or the task clearly justifies it.

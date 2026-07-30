@@ -1,14 +1,6 @@
 import type { ResourceType } from '../resources/resourceTypes';
-import {
-  calculateAsymmetricalScaler01,
-  normalizeWithControlPoints01,
-} from '../core/math/scaling';
-import {
-  SALES_CONTRACT_MAX_REQUEST_QUANTITY,
-  SALES_CONTRACT_MIN_REQUEST_QUANTITY,
-  SALES_CONTRACT_UNFULFILLED_CHANCE_CONTROL_POINTS,
-  SALES_CONTRACT_UNIT_PRICE_EUROS,
-} from './salesConstants';
+import { calculateAsymmetricalScaler01, normalizeWithControlPoints01 } from '../core/math/scaling';
+import { SALES_CONTRACT_MAX_REQUEST_QUANTITY, SALES_CONTRACT_MIN_REQUEST_QUANTITY, SALES_CONTRACT_UNFULFILLED_CHANCE_CONTROL_POINTS, SALES_CONTRACT_UNIT_PRICE_EUROS } from './salesConstants';
 export type SalesContractStatus = 'offered' | 'fulfilled' | 'rejected';
 
 export type SalesContract = {

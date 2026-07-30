@@ -62,6 +62,7 @@ React Native UI -> hooks/view models -> game commands/services -> state and pers
 - Expo SQLite adapters own durable local reads and writes. Save deliberately at meaningful checkpoints or batched intervals.
 - Keep balance values named, centralized, and easy to tune. Do not hide tunable values in UI components.
 - Keep code-owned domain catalogues, balance values, and deterministic game configuration in the owning domain's named `*Constants.ts` module. Leave only technical implementation details, such as numerical tolerances and persistence identifiers, local to their module.
+- Use `game/core/index.ts`, `game/index.ts`, and `ui/index.ts` as the public barrel surfaces. Prefer wildcard re-exports in those barrels; keep internal implementation imports on leaf modules when using the barrel would create a dependency cycle.
 - Do not add compatibility layers, legacy data shapes, or backend infrastructure unless the task explicitly requires them.
 
 ## Mobile-First Experience

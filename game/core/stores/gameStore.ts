@@ -9,18 +9,11 @@ import type { RecipeName } from '@/game/recipes/recipeTypes';
 import { RESOURCE_TYPES } from '@/game/resources/resourceConstants';
 import type { ResourceType } from '@/game/resources/resourceTypes';
 import type { GameSnapshot } from '@/game/core/state/gameSnapshot';
-import {
-  calculateRealtimeAdvance,
-} from '@/game/core/time/timeManager';
-import {
-  FOREGROUND_SIMULATION_STEP_MS,
-  REALTIME_WORK_MINUTE_MS,
-} from '@/game/core/time/timeConstants';
+import {   calculateRealtimeAdvance, } from '@/game/core/time/timeManager';
+import {   FOREGROUND_SIMULATION_STEP_MS,   REALTIME_WORK_MINUTE_MS, } from '@/game/core/time/timeConstants';
 import { calculateSalesContractOfferChance, SalesContracts } from '@/game/sales/salesContracts';
 import { PrestigeLedger } from '@/game/prestige/prestige';
-import {
-  calculateCompanyBalancePrestige,
-} from '@/game/prestige/prestigeCalculator';
+import {   calculateCompanyBalancePrestige, } from '@/game/prestige/prestigeCalculator';
 import { PRESTIGE_FOREGROUND_HOUR_MS } from '@/game/prestige/prestigeConstants';
 import { create } from 'zustand';
 

@@ -1,13 +1,7 @@
 import type { PrestigeEvent } from './prestige';
 import { FINANCE_INITIAL_BALANCE } from '@/game/finance/financeConstants';
 import { safeNonNegative } from '@/utils';
-import {
-  PRESTIGE_EVENT_MIN_AMOUNT,
-  PRESTIGE_DECAY_PROJECTION_FOREGROUND_HOURS,
-  PRESTIGE_FOREGROUND_HOUR_MS,
-  PRESTIGE_ROUNDING_FACTOR,
-  PRESTIGE_SALES_MAX_AMOUNT,
-} from './prestigeConstants';
+import { PRESTIGE_EVENT_MIN_AMOUNT, PRESTIGE_DECAY_PROJECTION_FOREGROUND_HOURS, PRESTIGE_FOREGROUND_HOUR_MS, PRESTIGE_ROUNDING_FACTOR, PRESTIGE_SALES_MAX_AMOUNT } from './prestigeConstants';
 
 type CompanyCapitalInput = {
   cashBalance: number;

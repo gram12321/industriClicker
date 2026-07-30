@@ -2,15 +2,7 @@ import { ALL_RECIPES } from '../recipes/recipeConstants';
 import { RecipeName, type Recipe } from '../recipes/recipeTypes';
 import { FacilityType } from './facilityTypes';
 
-export const FACILITY_TYPES = [
-  FacilityType.Farm,
-  FacilityType.Bakery,
-  FacilityType.SmallUtilityWorks,
-  FacilityType.Mine,
-  FacilityType.WaterWell,
-  FacilityType.PowerPlant,
-] as const;
-
+export const FACILITY_TYPES = [FacilityType.Farm, FacilityType.Bakery, FacilityType.SmallUtilityWorks, FacilityType.Mine, FacilityType.WaterWell, FacilityType.PowerPlant] as const;
 export const FACILITY_UPGRADE_COST_GROWTH = 1.5;
 export const FACILITY_SPEED_MAXIMUM_BONUS = 0.8;
 export const FACILITY_SPEED_BONUS_RATE = 0.22;

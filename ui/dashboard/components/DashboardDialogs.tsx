@@ -5,7 +5,6 @@ import type { Finance } from '@/game/finance/finance';
 import type { FacilityCollection } from '@/game/facilities/facilityCollection';
 import { FACILITY_TYPES, getFacilityDefinition } from '@/game/facilities/facilityConstants';
 import type { FacilityType } from '@/game/facilities/facilityTypes';
-import type { Recipe } from '@/game/recipes/recipeTypes';
 import { clamp, formatCurrency } from '@/utils';
 import { styles } from '@/ui/dashboard/dashboard.styles';
 import { formatRecipeInputs, formatRecipeName, formatRecipeOutput } from '../helpers/recipeFormatters';

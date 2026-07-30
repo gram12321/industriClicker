@@ -3,12 +3,7 @@ import type { Inventory } from '../inventory/inventory';
 import { getRecipe } from '../recipes/recipeConstants';
 import { getFacilityDefinition } from './facilityConstants';
 import { FacilityType } from './facilityTypes';
-import {
-  getOutputUpgradeMultiplier,
-  getRequiredWorkers,
-  getSpeedUpgradeMultiplier,
-  getStaffingEfficiency,
-} from './facilityUpgrades';
+import { getOutputUpgradeMultiplier, getRequiredWorkers, getSpeedUpgradeMultiplier, getStaffingEfficiency } from './facilityUpgrades';
 
 const WORK_COMPLETION_EPSILON = 1e-9;
 
