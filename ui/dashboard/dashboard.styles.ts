@@ -60,6 +60,7 @@ export const styles = StyleSheet.create({
   header: { backgroundColor: colors.primary },
   headerActions: { alignItems: 'center', flexDirection: 'row' },
   inventoryHeading: { color: colors.charcoal, marginTop: 8 },
+  inventoryQualityValue: { alignItems: 'center', flexDirection: 'row', gap: 4 },
   largePlaceholder: {
     color: colors.charcoal,
     fontSize: 40,

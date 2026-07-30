@@ -31,6 +31,7 @@ export const APP_ICONS = {
   play: 'play-circle-outline',
   production: 'cog-outline',
   prestige: 'trophy-outline',
+  quality: 'star',
   reset: 'delete-outline',
   settings: 'cog-outline',
   shield: 'shield-crown-outline',

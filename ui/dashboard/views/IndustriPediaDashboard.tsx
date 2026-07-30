@@ -53,6 +53,7 @@ function ResourcesSection() {
         const resource = getResource(resourceType);
         return <List.Item description={getResourceSummary(resourceType)} key={resourceType} left={(props) => <List.Icon {...props} icon={APP_ICONS.package} />} title={`${getResourceIcon(resourceType)} ${resource.name}`} />;
       })}
+      <List.Item description="Quality belongs to each inventory entry. Its value is currently a placeholder until quality rules are designed." left={(props) => <List.Icon {...props} icon={APP_ICONS.quality} />} title="Resource quality" />
     </List.Section></Card.Content></Card>
   </>;
 }
