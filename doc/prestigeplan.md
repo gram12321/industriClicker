@@ -56,13 +56,13 @@ Prestige remains informational in v1. It does not change customer chance, produc
 
 Decay is included in v1, but it should use logical foreground game time rather than device wall-clock time. A paused or backgrounded game does not lose prestige; Fast-forward advances decay because it advances the same logical game clock.
 
-Do not make decay a hard-coded “per minute”, “per hour”, or “per 24 hours” rule. Store a named half-life in **prestige years** on each decaying event and derive its current contribution continuously:
+Store a named half-life in **active foreground hours** on each decaying event and derive its current contribution continuously:
 
 ```text
-prestigeYearsElapsed = (currentLogicalGameTimeMs - event.createdAtGameMs)
-  / foregroundMsPerPrestigeYear
+elapsedForegroundHours = (currentLogicalGameTimeMs - event.createdAtGameMs)
+  / 3,600,000
 
-currentAmount = baseAmount × 0.5 ^ (prestigeYearsElapsed / halfLifePrestigeYears)
+currentAmount = baseAmount × 0.5 ^ (elapsedForegroundHours / halfLifeForegroundHours)
 ```
 
 This preserves the Winemaker intent: an event can remain meaningful over an entire company lifecycle without tying game balance to real-world calendar time or requiring a later data migration.
@@ -72,17 +72,11 @@ Initial decay categories should be configuration, not duplicated formulas:
 | Event family | Initial decay direction |
 |---|---|
 | Company balance | Permanent; recalculated and upserted. |
-| Contract sales | Short-lived company memory; decays over a small number of prestige years. |
-| Achievements | Very long-lived; a 100-prestige-year half-life is the Winemaker-style reference point. |
+| Contract sales | Short-lived company memory; decays over a small number of active foreground hours. |
+| Achievements | Very long-lived; choose an event-specific half-life so a whole-lifecycle event is near zero at the 100-hour lifecycle reference. |
 | Future finance penalties | Long-lived negative brand scars, with explicit event-specific half-lives. |
 
-The one remaining calibration decision is the lifecycle mapping. Define `foregroundMsPerPrestigeYear` from an approved target:
-
-```text
-foregroundMsPerPrestigeYear = intendedForegroundLifecycleMs / 100
-```
-
-For example, if the intended lifecycle is 30 hours of active foreground play, one prestige year is 18 minutes. If the intended lifecycle is 100 foreground hours, one prestige year is one hour. We should choose that target before locking the initial sales half-life; the event data itself remains valid whichever target is selected.
+The intended lifecycle remains 100 foreground hours. This is a balancing reference, not a half-life: an event intended to fade over the entire company lifecycle should be near zero by 100 foreground hours. Decay is stored directly in active foreground hours, so no additional time-regime conversion is needed.
 
 Store immutable event base amounts and `createdAtGameMs`; derive decayed values from `lastProcessedAtMs`. This avoids rewriting every prestige row every second and keeps the calculation deterministic. Expired tiny events can be pruned only at deliberate save or game-time maintenance boundaries.
 
@@ -107,7 +101,7 @@ Avoid porting Winemaker04’s large vineyard/filter modal. It solves real comple
 
 ## Implementation sequence
 
-1. Add pure `game/prestige` types, ledger, summary selectors, formulas, and prestige-year decay helpers.
+1. Add pure `game/prestige` types, ledger, summary selectors, formulas, and active-hour decay helpers.
 2. Integrate atomic updates in the store for finance changes and contract fulfilment.
 3. Derive decay from logical foreground time and prune expired events at a deliberate maintenance boundary.
 4. Persist/restore/reset prestige with the game snapshot.
@@ -121,10 +115,11 @@ The project currently has no test runner configured—only `npm run typecheck`�
 
 - Prestige is informational until a future system deliberately consumes it.
 - Prestige decays through foreground logical game time, never background wall-clock time.
-- The event ledger supports very long, lifecycle-scale decay through prestige-year half-lives.
+- The event ledger supports very long, lifecycle-scale decay through event-specific active-hour half-lives.
 
 ## Confirmed lifecycle calibration
 
-- The intended lifecycle is 100 foreground hours for 100 prestige years.
-- One prestige year is one logical foreground hour.
-- Contract-sale prestige uses a five-prestige-year half-life in the first implementation.
+- The intended lifecycle is 100 foreground hours.
+- For whole-lifecycle decaying events, 100 foreground hours is the near-zero target rather than the half-life.
+- Decaying prestige events use active foreground-hour half-lives.
+- Contract-sale prestige uses a five-active-hour half-life in the first implementation.

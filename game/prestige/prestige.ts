@@ -2,7 +2,7 @@ import {
   PRESTIGE_COMPANY_BALANCE_SOURCE_ID,
   PRESTIGE_EVENT_MIN_AMOUNT,
   PRESTIGE_EVENT_TYPES,
-  PRESTIGE_SALES_HALF_LIFE_YEARS,
+  PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS,
 } from './prestigeConstants';
 import {
   calculateCurrentPrestigeAmount,
@@ -16,7 +16,7 @@ export type PrestigeEvent = {
   type: PrestigeEventType;
   amountBase: number;
   createdAtGameTimeMs: number;
-  decayHalfLifeYears: number | null;
+  decayHalfLifeForegroundHours: number | null;
   sourceId: string;
   description: string;
 };
@@ -52,10 +52,10 @@ function isPrestigeEvent(value: unknown): value is PrestigeEvent {
     && Number.isFinite(event.amountBase)
     && typeof event.createdAtGameTimeMs === 'number'
     && Number.isFinite(event.createdAtGameTimeMs)
-    && (event.decayHalfLifeYears === null
-      || (typeof event.decayHalfLifeYears === 'number'
-        && Number.isFinite(event.decayHalfLifeYears)
-        && event.decayHalfLifeYears > 0))
+    && (event.decayHalfLifeForegroundHours === null
+      || (typeof event.decayHalfLifeForegroundHours === 'number'
+        && Number.isFinite(event.decayHalfLifeForegroundHours)
+        && event.decayHalfLifeForegroundHours > 0))
     && typeof event.sourceId === 'string'
     && event.sourceId.length > 0
     && typeof event.description === 'string'
@@ -98,7 +98,7 @@ export class PrestigeLedger {
       type: 'company_balance',
       amountBase,
       createdAtGameTimeMs,
-      decayHalfLifeYears: null,
+      decayHalfLifeForegroundHours: null,
       sourceId: PRESTIGE_COMPANY_BALANCE_SOURCE_ID,
       description: 'Company cash balance',
     });
@@ -114,7 +114,7 @@ export class PrestigeLedger {
       type: 'sales_contract',
       amountBase,
       createdAtGameTimeMs,
-      decayHalfLifeYears: PRESTIGE_SALES_HALF_LIFE_YEARS,
+      decayHalfLifeForegroundHours: PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS,
       sourceId: `contract:${contractId}`,
       description: 'Customer contract fulfilled',
     });
@@ -136,7 +136,7 @@ export class PrestigeLedger {
 
   pruneExpired(currentGameTimeMs: number): boolean {
     const nextEvents = this.events.filter((event) => (
-      event.decayHalfLifeYears === null
+      event.decayHalfLifeForegroundHours === null
       || Math.abs(calculateCurrentPrestigeAmount(event, currentGameTimeMs)) >= PRESTIGE_EVENT_MIN_AMOUNT
     ));
 
@@ -184,8 +184,8 @@ export class PrestigeLedger {
       isPrestigeEventType(event.type)
       && Number.isFinite(event.amountBase)
       && Number.isFinite(event.createdAtGameTimeMs)
-      && (event.decayHalfLifeYears === null
-        || (Number.isFinite(event.decayHalfLifeYears) && event.decayHalfLifeYears > 0))
+      && (event.decayHalfLifeForegroundHours === null
+        || (Number.isFinite(event.decayHalfLifeForegroundHours) && event.decayHalfLifeForegroundHours > 0))
       && event.sourceId.length > 0
       && event.description.length > 0
     );

@@ -62,7 +62,8 @@ The concrete loop is still being established. The intended shape is:
 
 - Company prestige is an informational, event-derived measure of company standing. It does not modify gameplay in this version.
 - Company balance creates one permanent, recalculated prestige source. Fulfilled sales contracts create decaying prestige events; rejected contracts do not.
-- Prestige decay uses foreground logical game time only. One prestige year is one foreground hour, and background time grants no progress or decay.
+- Prestige decay uses foreground logical game time only. Decaying events use an explicit active-hour half-life; background time grants no progress or decay.
+- The estimated company lifecycle is 100 active foreground hours. This is a balancing reference, not a global event half-life: prestige intended to fade over a whole game should be near zero by 100 active hours.
 - The Prestige dialog exposes each selected event's original and current value, foreground-hour decay, half-life, retention, and future decay projections. IndustriPedia documents the rules and formula.
 
 ### Facility Upgrades and Staffing

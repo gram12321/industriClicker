@@ -3,8 +3,8 @@ import { INITIAL_BALANCE } from '@/game/finance/finance';
 import { safeNonNegative } from '@/utils';
 import {
   PRESTIGE_EVENT_MIN_AMOUNT,
-  PRESTIGE_DECAY_PROJECTION_YEARS,
-  PRESTIGE_FOREGROUND_MS_PER_YEAR,
+  PRESTIGE_DECAY_PROJECTION_FOREGROUND_HOURS,
+  PRESTIGE_FOREGROUND_HOUR_MS,
   PRESTIGE_ROUNDING_FACTOR,
   PRESTIGE_SALES_MAX_AMOUNT,
 } from './prestigeConstants';
@@ -29,9 +29,9 @@ export type CompanyPrestigeSummary = {
 export type PrestigeDecayDetails = {
   originalAmount: number;
   currentAmount: number;
-  decayPerPrestigeHourPercent: number | null;
-  halfLifePrestigeYears: number | null;
-  projections: Array<{ prestigeYearsFromNow: number; amount: number }>;
+  decayPerForegroundHourPercent: number | null;
+  halfLifeForegroundHours: number | null;
+  projections: Array<{ foregroundHoursFromNow: number; amount: number }>;
 };
 
 function roundPrestige(value: number): number {
@@ -58,41 +58,41 @@ export function calculateSalesContractPrestige(reward: number): number {
 }
 
 export function calculateCurrentPrestigeAmount(event: PrestigeEvent, currentGameTimeMs: number): number {
-  if (event.decayHalfLifeYears === null || !Number.isFinite(currentGameTimeMs)) {
+  if (event.decayHalfLifeForegroundHours === null || !Number.isFinite(currentGameTimeMs)) {
     return event.amountBase;
   }
 
-  const elapsedYears = Math.max(0, currentGameTimeMs - event.createdAtGameTimeMs) / PRESTIGE_FOREGROUND_MS_PER_YEAR;
-  return roundPrestige(event.amountBase * Math.pow(0.5, elapsedYears / event.decayHalfLifeYears));
+  const elapsedForegroundHours = Math.max(0, currentGameTimeMs - event.createdAtGameTimeMs) / PRESTIGE_FOREGROUND_HOUR_MS;
+  return roundPrestige(event.amountBase * Math.pow(0.5, elapsedForegroundHours / event.decayHalfLifeForegroundHours));
 }
 
 export function calculatePrestigeDecayDetails(
   event: PrestigeEvent,
   currentGameTimeMs: number,
 ): PrestigeDecayDetails {
-  if (event.decayHalfLifeYears === null) {
+  if (event.decayHalfLifeForegroundHours === null) {
     return {
       originalAmount: event.amountBase,
       currentAmount: event.amountBase,
-      decayPerPrestigeHourPercent: null,
-      halfLifePrestigeYears: null,
+      decayPerForegroundHourPercent: null,
+      halfLifeForegroundHours: null,
       projections: [],
     };
   }
 
   const currentAmount = calculateCurrentPrestigeAmount(event, currentGameTimeMs);
-  const hourlyRetention = Math.pow(0.5, 1 / event.decayHalfLifeYears);
+  const hourlyRetention = Math.pow(0.5, 1 / event.decayHalfLifeForegroundHours);
 
   return {
     originalAmount: event.amountBase,
     currentAmount,
-    decayPerPrestigeHourPercent: roundPrestige((1 - hourlyRetention) * 100),
-    halfLifePrestigeYears: event.decayHalfLifeYears,
-    projections: PRESTIGE_DECAY_PROJECTION_YEARS.map((prestigeYearsFromNow) => ({
-      prestigeYearsFromNow,
+    decayPerForegroundHourPercent: roundPrestige((1 - hourlyRetention) * 100),
+    halfLifeForegroundHours: event.decayHalfLifeForegroundHours,
+    projections: PRESTIGE_DECAY_PROJECTION_FOREGROUND_HOURS.map((foregroundHoursFromNow) => ({
+      foregroundHoursFromNow,
       amount: calculateCurrentPrestigeAmount(
         event,
-        currentGameTimeMs + prestigeYearsFromNow * PRESTIGE_FOREGROUND_MS_PER_YEAR,
+        currentGameTimeMs + foregroundHoursFromNow * PRESTIGE_FOREGROUND_HOUR_MS,
       ),
     })),
   };

@@ -76,7 +76,8 @@ These are working definitions, not confirmation that every system will be used:
 | Snapshot | The deliberate local-save representation of durable game state. |
 | Runtime store | Zustand-managed in-memory state. |
 | Local save | The device-local Expo SQLite record used to restore a current-version game snapshot. |
-| Prestige year | One foreground logical hour. One hundred prestige years equal the intended 100 foreground-hour company lifecycle. |
+| Prestige decay half-life | The number of active foreground hours required for a decaying prestige event to retain half of its original value. |
+| Prestige lifecycle reference | The estimated 100 active foreground-hour lifetime of one company. It is a tuning reference: an event intended to fade across the whole game should be near zero, not at its half-life, by this point. |
 
 ## UI and Mobile Language
 

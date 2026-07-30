@@ -18,7 +18,7 @@ import { PrestigeLedger } from '@/game/prestige/prestige';
 import {
   calculateCompanyBalancePrestige,
 } from '@/game/prestige/prestigeCalculator';
-import { PRESTIGE_FOREGROUND_MS_PER_YEAR } from '@/game/prestige/prestigeConstants';
+import { PRESTIGE_FOREGROUND_HOUR_MS } from '@/game/prestige/prestigeConstants';
 import { create } from 'zustand';
 
 type GameState = {
@@ -268,8 +268,8 @@ export const useGameStore = create<GameState>((set, get) => {
     const nextGameTimeMs = previousGameTimeMs + elapsedMs;
     let prestige = get().prestige;
 
-    if (Math.floor(previousGameTimeMs / PRESTIGE_FOREGROUND_MS_PER_YEAR)
-      < Math.floor(nextGameTimeMs / PRESTIGE_FOREGROUND_MS_PER_YEAR)) {
+    if (Math.floor(previousGameTimeMs / PRESTIGE_FOREGROUND_HOUR_MS)
+      < Math.floor(nextGameTimeMs / PRESTIGE_FOREGROUND_HOUR_MS)) {
       const nextPrestige = prestige.clone();
       if (nextPrestige.pruneExpired(nextGameTimeMs)) {
         prestige = nextPrestige;
