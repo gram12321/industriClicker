@@ -33,7 +33,7 @@ Player action or time event
 | `facility.speedUpgradeLevel` | Purchased speed-upgrade count | Stored | `Facility` in Zustand | Accepted Speed upgrade | Upgrade UI and production speed | Yes, via facility snapshot | Implemented |
 | `facility.outputUpgradeLevel` | Purchased output-upgrade count | Stored | `Facility` in Zustand | Accepted Output upgrade | Upgrade UI and recipe output | Yes, via facility snapshot | Implemented |
 | `facility.assignedWorkers` | Local workers allocated to one facility | Stored | `Facility` in Zustand | Player staffing command | Staffing UI and efficiency | Yes, via facility snapshot | Implemented |
-| `salesContracts.offered` | Unfulfilled customer resource contracts | Stored | `SalesContracts` in Zustand | Successful foreground-minute offer roll | Sales UI and fulfilment validation | Yes, via `SalesContractsSnapshot` | Implemented |
+| `salesContracts.offered` | Unfulfilled customer resource contracts | Stored | `SalesContracts` in Zustand | Successful foreground-minute offer roll or admin contract request | Sales UI and fulfilment validation | Yes, via `SalesContractsSnapshot` | Implemented |
 | `salesContracts.completed` | Fulfilled customer contracts | Stored | `SalesContracts` in Zustand | Accepted contract fulfilment | Completed sales UI | Yes, via `SalesContractsSnapshot` | Implemented |
 | `salesContracts.nextCustomerNumber` | Number assigned to the next generated customer | Stored | `SalesContracts` in Zustand | Contract generation | Customer label and contract identifier | Yes, via `SalesContractsSnapshot` | Implemented |
 | `customerPipelineProgress` | Visual 0–1 estimate toward the next customer | Stored | Zustand game store | Global foreground-time advance or successful offer | Sales pipeline progress bar | Yes, via `GameTimeSnapshot` | Implemented |
@@ -74,6 +74,7 @@ Player action or time event
 | `fastForwardOneMinute` | None | Global time | Logical time, partial sales time, pipeline, facilities, inventory, sales contracts | Invokes one minute of one-second simulation steps after measuring real foreground time | Batched save | Implemented |
 | `fulfillSalesContract` | Contract is unfulfilled; inventory covers its full requested quantity | Contract, inventory, finance | Sales contracts, inventory, finance | Completed contract and positive finance transaction | No immediate save | Implemented |
 | `rejectSalesContract` | Contract is offered | Contract | Sales contracts | Rejected contract history entry | No immediate save | Implemented |
+| `createSalesContractRequest` | Valid resource type and integer quantity from 1 through 10 | Selected resource and quantity | Sales contracts and customer pipeline | Creates an open admin-requested contract and resets the pipeline | No immediate save | Implemented development tool |
 
 ## Time Effects
 

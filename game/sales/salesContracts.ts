@@ -111,6 +111,19 @@ export class SalesContracts {
     return contract ? cloneContract(contract) : null;
   }
 
+  /** Creates one development-requested offer for the selected resource. */
+  createOfferForResource(resourceType: ResourceType, quantity: number): SalesContract | null {
+    if (!Number.isInteger(quantity)
+      || quantity < SALES_CONTRACT_MIN_REQUEST_QUANTITY
+      || quantity > SALES_CONTRACT_MAX_REQUEST_QUANTITY) {
+      return null;
+    }
+
+    const offer = this.createOffer([resourceType], Math.random, quantity);
+    this.offered.push(offer);
+    return cloneContract(offer);
+  }
+
   advanceTime(elapsedMinutes: number, resourceTypes: readonly ResourceType[], random = Math.random): number {
     if (!Number.isInteger(elapsedMinutes) || elapsedMinutes <= 0 || resourceTypes.length === 0) {
       return 0;
@@ -176,14 +189,16 @@ export class SalesContracts {
     return new SalesContracts(snapshot);
   }
 
-  private createOffer(resourceTypes: readonly ResourceType[], random: () => number): SalesContract {
+  private createOffer(resourceTypes: readonly ResourceType[], random: () => number, requestedQuantity?: number): SalesContract {
     const resourceRoll = clampRandom(random());
-    const quantityRoll = clampRandom(random());
     const resourceIndex = Math.floor(resourceRoll * resourceTypes.length);
-    const quantity = Math.min(
-      SALES_CONTRACT_MAX_REQUEST_QUANTITY,
-      SALES_CONTRACT_MIN_REQUEST_QUANTITY + Math.floor(quantityRoll * SALES_CONTRACT_MAX_REQUEST_QUANTITY),
-    );
+    const quantity = requestedQuantity ?? (() => {
+      const quantityRoll = clampRandom(random());
+      return Math.min(
+        SALES_CONTRACT_MAX_REQUEST_QUANTITY,
+        SALES_CONTRACT_MIN_REQUEST_QUANTITY + Math.floor(quantityRoll * SALES_CONTRACT_MAX_REQUEST_QUANTITY),
+      );
+    })();
     const customerNumber = this.nextCustomerNumber;
     this.nextCustomerNumber += 1;
 

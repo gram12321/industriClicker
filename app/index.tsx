@@ -51,6 +51,7 @@ export default function HomeScreen() {
   const setFacilityWorkers = useGameStore((state) => state.setFacilityWorkers);
   const upgradeFacility = useGameStore((state) => state.upgradeFacility);
   const fastForwardOneMinute = useGameStore((state) => state.fastForwardOneMinute);
+  const createSalesContractRequest = useGameStore((state) => state.createSalesContractRequest);
   const fulfillSalesContract = useGameStore((state) => state.fulfillSalesContract);
   const rejectSalesContract = useGameStore((state) => state.rejectSalesContract);
   const resetGame = useGameStore((state) => state.resetGame);
@@ -123,7 +124,7 @@ export default function HomeScreen() {
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
-          {activeView === 'admin' && isAdminDashboardAvailable ? <AdminDashboard onResetCompany={resetCompany} /> : activeView === 'profile' ? <ProfileDashboard onResetCompany={resetCompany} /> : (
+          {activeView === 'admin' && isAdminDashboardAvailable ? <AdminDashboard onCreateContractRequest={createSalesContractRequest} onResetCompany={resetCompany} /> : activeView === 'profile' ? <ProfileDashboard onResetCompany={resetCompany} /> : (
             <DashboardContent
               activeTab={activeView === 'admin' ? 'company' : activeView}
               openConstructionYard={() => setIsConstructionYardOpen(true)}
