@@ -1,6 +1,7 @@
 import { ALL_RECIPES } from '../recipes/recipes';
 import { RecipeName, Recipe } from '../recipes/recipeTypes';
 import { FacilityType } from './facilityTypes';
+import { APP_ICONS } from '@/icons';
 
 export type FacilityDefinition = {
   type: FacilityType;
@@ -19,7 +20,7 @@ export const facilities: Readonly<Record<FacilityType, FacilityDefinition>> = {
   [FacilityType.Farm]: {
     type: FacilityType.Farm,
     name: 'Farm',
-    icon: 'tractor',
+    icon: APP_ICONS.facilityFarm,
     constructionCost: 60,
     baseWorkers: 2,
     recipes: [ALL_RECIPES[RecipeName.GrowGrain], ALL_RECIPES[RecipeName.GrowSugar]],
@@ -27,7 +28,7 @@ export const facilities: Readonly<Record<FacilityType, FacilityDefinition>> = {
   [FacilityType.Bakery]: {
     type: FacilityType.Bakery,
     name: 'Bakery',
-    icon: 'bread-slice-outline',
+    icon: APP_ICONS.facilityBakery,
     constructionCost: 300,
     baseWorkers: 3,
     recipes: [ALL_RECIPES[RecipeName.BakeBread], ALL_RECIPES[RecipeName.BakeCake]],
@@ -35,7 +36,7 @@ export const facilities: Readonly<Record<FacilityType, FacilityDefinition>> = {
   [FacilityType.SmallUtilityWorks]: {
     type: FacilityType.SmallUtilityWorks,
     name: 'Small Utility Works',
-    icon: 'flash-outline',
+    icon: APP_ICONS.facilityUtilityWorks,
     constructionCost: 500,
     baseWorkers: 1,
     recipes: [ALL_RECIPES[RecipeName.ProduceWater], ALL_RECIPES[RecipeName.ProduceElectricity]],
@@ -43,7 +44,7 @@ export const facilities: Readonly<Record<FacilityType, FacilityDefinition>> = {
   [FacilityType.Mine]: {
     type: FacilityType.Mine,
     name: 'Mine',
-    icon: 'pickaxe',
+    icon: APP_ICONS.facilityMine,
     constructionCost: 150,
     baseWorkers: 10,
     recipes: [ALL_RECIPES[RecipeName.MineCoal]],
@@ -51,7 +52,7 @@ export const facilities: Readonly<Record<FacilityType, FacilityDefinition>> = {
   [FacilityType.WaterWell]: {
     type: FacilityType.WaterWell,
     name: 'Water Well',
-    icon: 'water-well',
+    icon: APP_ICONS.facilityWaterWell,
     constructionCost: 100,
     baseWorkers: 1,
     recipes: [ALL_RECIPES[RecipeName.ManualPumping], ALL_RECIPES[RecipeName.ElectricPumping]],
@@ -59,7 +60,7 @@ export const facilities: Readonly<Record<FacilityType, FacilityDefinition>> = {
   [FacilityType.PowerPlant]: {
     type: FacilityType.PowerPlant,
     name: 'Power Plant',
-    icon: 'factory',
+    icon: APP_ICONS.facilityPowerPlant,
     constructionCost: 500,
     baseWorkers: 18,
     recipes: [ALL_RECIPES[RecipeName.CoalPower], ALL_RECIPES[RecipeName.SolarPower]],

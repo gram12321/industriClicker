@@ -1,3 +1,4 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { Pressable, ScrollView, View, type StyleProp, type ViewStyle } from 'react-native';
@@ -21,6 +22,7 @@ import { useGameStore } from '@/stores/gameStore';
 import { resetGameSave } from '@/game/core/persistence/gameSaveRepository';
 import { calculateCompanyPrestigeSummary } from '@/game/prestige/prestigeCalculator';
 import { styles } from '@/ui/dashboard/dashboard.styles';
+import { APP_ICONS } from '@/icons';
 
 type DashboardView = DashboardTab | 'admin' | 'profile' | 'pedia';
 
@@ -77,23 +79,23 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View style={styles.topBar}>
             <View style={styles.balanceInline}>
-              <Text accessibilityLabel="Balance icon" style={styles.coinIcon}>🪙</Text>
+              <MaterialCommunityIcons accessibilityLabel="Balance icon" color={colors.onDark} name={APP_ICONS.currency} size={21} />
               <Text style={styles.balanceInlineValue}>{formatCurrency(finance.getBalance())}</Text>
               <Pressable accessibilityLabel="Open company prestige" accessibilityRole="button" onPress={() => setIsPrestigeOpen(true)} style={styles.prestigeInline}>
-                <Text style={styles.prestigeIcon}>🏆</Text>
+                <MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.achievements} size={17} />
                 <Text style={styles.prestigeInlineValue}>{formatNumber(prestigeSummary.totalPrestige, { smartDecimals: true })}</Text>
               </Pressable>
             </View>
             <View style={styles.headerActions}>
               <IconButton
                 accessibilityLabel="Fast-forward one minute"
-                icon="fast-forward"
+                icon={APP_ICONS.fastForward}
                 iconColor={colors.onDark}
                 onPress={fastForwardOneMinute}
               />
               <IconButton
                 accessibilityLabel="Open company prestige"
-                icon="trophy-outline"
+                icon={APP_ICONS.achievements}
                 iconColor={colors.onDark}
                 onPress={() => setIsPrestigeOpen(true)}
               />
@@ -112,26 +114,26 @@ export default function HomeScreen() {
                 visible={isProfileMenuOpen}
               >
                 <Menu.Item
-                  leadingIcon="account-outline"
+                  leadingIcon={APP_ICONS.account}
                   onPress={() => { setIsProfileMenuOpen(false); setActiveView('profile'); }}
                   title="Profile"
                 />
-                <Menu.Item leadingIcon="cog-outline" onPress={() => setIsProfileMenuOpen(false)} title="Settings" />
+                <Menu.Item leadingIcon={APP_ICONS.settings} onPress={() => setIsProfileMenuOpen(false)} title="Settings" />
                 <Menu.Item
-                  leadingIcon="book-open-variant"
+                  leadingIcon={APP_ICONS.help}
                   onPress={() => { setIsProfileMenuOpen(false); setActiveView('pedia'); }}
                   title="IndustriPedia"
                 />
-                <Menu.Item leadingIcon="trophy-outline" onPress={() => setIsProfileMenuOpen(false)} title="Achievements" />
+                <Menu.Item leadingIcon={APP_ICONS.achievements} onPress={() => setIsProfileMenuOpen(false)} title="Achievements" />
                 {isAdminDashboardAvailable && (
                   <Menu.Item
-                    leadingIcon="shield-crown-outline"
+                    leadingIcon={APP_ICONS.shield}
                     onPress={() => { setIsProfileMenuOpen(false); setActiveView('admin'); }}
                     title="Admin Dashboard"
                   />
                 )}
                 <Divider />
-                <Menu.Item leadingIcon="logout" onPress={() => setIsProfileMenuOpen(false)} title="Log out" />
+                <Menu.Item leadingIcon={APP_ICONS.logout} onPress={() => setIsProfileMenuOpen(false)} title="Log out" />
               </Menu>
             </View>
           </View>

@@ -1,68 +1,52 @@
 # Project Information
 
-This is the factual implementation map for Industri Clicker: repository shape, commands, routes, stack, and verified implementation status. Product direction belongs in `design.md`; mechanics belong in `gameflow.md`; stable terms belong in `CONTEXT.md`.
+Verified repository facts for Industri Clicker. Product choices belong in [design.md](design.md) and mechanics in [gameflow.md](gameflow.md).
 
 ## Current Status
 
-- Project stage: foundation.
+- Stage: foundation.
 - Product: single-player, mobile-first industrial clicker for Android.
-- Implemented foundation: dashboard shell, resource/inventory, facilities, finance, sales contracts, foreground production, company prestige, IndustriPedia, and local saves.
-- Deferred: offline catch-up, markets, additional staffing factors, and cloud services.
+- Implemented foundation: dashboard shell, inventory, facilities, finance, sales contracts, foreground production, company prestige, IndustriPedia, and local saves.
+- Deferred: offline catch-up, markets, broader staffing factors, and cloud services.
 
-## Code Size At 0.00053
+## Code Size
 
-Measured from the latest repository commit (`89309b4`, version `0.00053`, dated 2026-07-30):
+Measured from the current working tree on 2026-07-30:
 
-- Application source: **3,486 non-empty TypeScript lines** across 45 `.ts`/`.tsx` files.
-- Project configuration: **96 non-empty lines** across `metro.config.js`, `app.json`, `package.json`, and `tsconfig.json`.
-- Combined application source and project configuration: **3,582 non-empty lines**.
+- Application source: 3,652 non-empty TypeScript lines across 46 `.ts` and `.tsx` files.
+- Project configuration: 96 non-empty lines across `metro.config.js`, `app.json`, `package.json`, and `tsconfig.json`.
+- Combined: 3,748 non-empty lines, excluding documentation, skills, lockfiles, and generated output.
 
-These counts exclude Markdown documentation, agent skills, dependency lockfiles, and generated `.tmp-web-export` output.
+## Stack
 
-## Locked Stack
-
-- Expo SDK 54 with React Native, TypeScript, and Expo Router.
+- Expo SDK 54, React Native, TypeScript, and Expo Router.
 - React Native Paper and React Native core components.
-- Zustand for runtime state.
-- Expo SQLite for deliberate local saves.
-- Supabase is deferred until an approved cloud requirement exists.
+- Zustand for runtime state and Expo SQLite for deliberate local saves.
+- No cloud backend.
 
 ## Repository Shape
 
 ```text
-readme.md                         Project overview and stack decision
-docs/WorkingDocs/                 Canonical working documentation
-skills/                           Router and local specialist skills
-olditerations/                    Archived predecessor reference material
-app/                              Expo Router screens and root provider
-ui/dashboard/                     Dashboard views, reusable components, and UI helpers
-theme.ts                          Shared visual tokens and Paper theme
-game/                             Resource, recipe, facility, finance, sales, prestige, time, math, and persistence logic
-stores/                           Zustand runtime state
-assets/                           Expo application icons and splash asset
-app.json                          Expo application configuration
-package.json                      Dependencies and development commands
+app/                  Expo Router screens and providers
+ui/dashboard/         Dashboard views, components, and UI helpers
+game/                 Game rules, catalogues, time, math, and persistence
+stores/               Zustand runtime state
+docs/WorkingDocs/     Canonical working documentation
+theme.ts              Shared Paper theme and visual tokens
 ```
 
-## Current App Routes
+## Routes and Commands
 
 - `/` — dashboard with Company, Inventory, Production, Finance, Profile, and IndustriPedia views.
-
-## Available Commands
-
-- `npm run start` — start Expo development server.
-- `npm run android` — optional emulator shortcut; physical devices use Expo Go through `npm run start`.
-- `npm run web` — start browser development preview.
+- `npm run start` — Expo development server for Expo Go.
+- `npm run android` — optional Android emulator shortcut.
+- `npm run web` — local browser development preview.
 - `npm run typecheck` — TypeScript validation without emitting files.
 
-## Documentation Map
+## Documentation
 
-- [CONTEXT.md](CONTEXT.md) — canonical domain language.
-- [design.md](design.md) — durable player-facing direction and decisions.
-- [gameflow.md](gameflow.md) — mechanics, formulas, tick order, state, and persistence flow.
-- [VariableRelationshipMap.md](VariableRelationshipMap.md) — concrete variable ownership and dependencies.
-- [AIpromt_docs.md](AIpromt_docs.md) — documentation boundaries and maintenance rules.
-
-## Maintenance Notes
-
-Update this document when the scaffold, source layout, commands, routes, or verified implementation status changes. Do not copy detailed product rules here; link to the owning working document instead.
+- [CONTEXT.md](CONTEXT.md): terminology.
+- [design.md](design.md): player-facing direction.
+- [gameflow.md](gameflow.md): system rules and lifecycle.
+- [VariableRelationshipMap.md](VariableRelationshipMap.md): variable relationships.
+- [AIpromt_docs.md](AIpromt_docs.md): documentation ownership rules.

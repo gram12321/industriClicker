@@ -1,105 +1,39 @@
 # Industri Clicker Variable Relationship Map
 
-This document maps concrete variables, commands, dependencies, time effects, and persistence representations. Player-facing rationale belongs in `design.md`; system flow and formulas belong in `gameflow.md`.
+Concrete data relationships for rules defined in [gameflow.md](gameflow.md). This map owns variable-level state and command effects, not player rationale or full formulas.
 
-## How To Use This Map
+## Stored and Runtime State
 
-- Add a variable when it becomes part of an approved mechanic, formula, save, or player-facing display.
-- Record the source of truth rather than duplicating values without a reason.
-- Mark primary state as **stored** and calculated values as **derived**.
-- Update this map with `gameflow.md` whenever an action, tick, formula, or save boundary changes.
-
-## Relationship Overview
-
-```text
-Player action or time event
-    -> command inputs
-    -> game-rule calculation
-    -> source-of-truth state
-    -> derived values and UI feedback
-    -> deliberate local save at a save boundary
-```
-
-## Variable Register
-
-| Variable | Meaning and unit | Kind | Source of truth | Changes when | Used by | Saved? | Status |
-|---|---|---|---|---|---|---|---|
-| `inventory.entries[ResourceType].quantity` | Amount of a resource held by the player | Stored | `Inventory` in Zustand | Resource command, production completion, or admin inventory setting | Inventory and UI | Yes, via `InventorySnapshot` | Implemented |
-| `inventory.entries[ResourceType].quality` | Quality associated with a held resource | Stored | `Inventory` in Zustand | Inventory initialization; future quality rules | Inventory and UI | Yes, via `InventorySnapshot` | Placeholder `1` |
-| `finance.balance` | Available company funds in euros | Stored | `Finance` in Zustand | Accepted finance transaction | Header, finance view, construction validation | Yes, via `FinanceSnapshot` | Implemented |
-| `finance.transactions` | Accepted balance changes | Stored | `Finance` in Zustand | Accepted finance transaction | Finance view | Yes, via `FinanceSnapshot` | Implemented |
-| `facilities[FacilityType]` | Player-constructed facility state | Stored | `FacilityCollection` in Zustand | Construction, recipe change, or production advance | Facility UI and production rules | Yes, via `FacilityCollectionSnapshot` | Implemented |
-| `facility.recipeProgress[RecipeName]` | Work completed on a facility recipe | Stored | `Facility` in Zustand | Foreground elapsed minute or fast-forward | Production view and recipe completion | Yes, via facility snapshot | Implemented |
-| `facility.speedUpgradeLevel` | Purchased speed-upgrade count | Stored | `Facility` in Zustand | Accepted Speed upgrade | Upgrade UI and production speed | Yes, via facility snapshot | Implemented |
-| `facility.outputUpgradeLevel` | Purchased output-upgrade count | Stored | `Facility` in Zustand | Accepted Output upgrade | Upgrade UI and recipe output | Yes, via facility snapshot | Implemented |
-| `facility.assignedWorkers` | Local workers allocated to one facility | Stored | `Facility` in Zustand | Player staffing command | Staffing UI and efficiency | Yes, via facility snapshot | Implemented |
-| `salesContracts.offered` | Unfulfilled customer resource contracts | Stored | `SalesContracts` in Zustand | Successful foreground-minute offer roll or admin contract request | Sales UI and fulfilment validation | Yes, via `SalesContractsSnapshot` | Implemented |
-| `salesContracts.completed` | Fulfilled customer contracts | Stored | `SalesContracts` in Zustand | Accepted contract fulfilment | Completed sales UI | Yes, via `SalesContractsSnapshot` | Implemented |
-| `salesContracts.nextCustomerNumber` | Number assigned to the next generated customer | Stored | `SalesContracts` in Zustand | Contract generation | Customer label and contract identifier | Yes, via `SalesContractsSnapshot` | Implemented |
-| `customerPipelineProgress` | Visual 0–1 estimate toward the next customer | Stored | Zustand game store | Global foreground-time advance or successful offer | Sales pipeline progress bar | Yes, via `GameTimeSnapshot` | Implemented |
-| `lastProcessedAtMs` | Logical foreground game time in epoch milliseconds | Stored | Zustand game store | Realtime or fast-forward global-time advance | Snapshot, global-time command | Yes, via `GameTimeSnapshot` | Foreground-only |
-| `lastObservedAtMs` | Last foreground wall-clock observation in epoch milliseconds | Runtime state | Zustand game store | Foreground timer or lifecycle transition | `TimeManager` | No | Foreground-only |
-| `unprocessedWorkMs` | Foreground milliseconds retained until a complete sales minute | Stored | Zustand game store | Global foreground-time advance | Sales timing | Yes, via `GameTimeSnapshot` | Implemented |
-| `prestige.events` | Company prestige source events and their decay definitions | Stored | `PrestigeLedger` in Zustand | Balance-changing commands and contract fulfilment | Header and prestige dialog | Yes, via `PrestigeLedgerSnapshot` | Implemented |
-
-## Dependency Table
-
-| Output variable | Depends on | Relationship/formula | Limits and rounding | Update trigger |
+| State | Kind | Owner | Changes through | Saved as |
 |---|---|---|---|---|
-| Inventory quantity | Resource command or completed recipe | Add/remove the requested finite amount | Removal requires sufficient quantity | Command or production completion |
-| Inventory entry quality | Resource type | Placeholder value `1` | Must be finite and greater than zero when restored | Inventory construction or restore |
-| Facility recipe catalogue | Facility type | Code-owned recipe list for each facility | Not player-mutable in runtime | Catalogue load |
-| Company balance | Prior balance, signed transaction amount | `balanceAfter = balance + amount` | Balance must remain finite and at least €0 | Accepted transaction |
-| Recipe progress | Prior progress, work units, recipe work amount | Progress advances by one work unit per eligible tick | Completion resets progress and grants output | Production tick |
-| Required workers | Facility base workers, speed level, output level | `base + levels + ceil(base × 1.15^levels - base)` | Non-negative integer | Construction or accepted upgrade |
-| Staffing efficiency | Assigned workers, required workers | Understaffing uses a power penalty; overstaffing uses a capped exponential bonus | Minimum 1%; above-target bonus is below 25% | Staffing command or accepted upgrade |
-| Production work | Base work, staffing efficiency, speed level | `baseWork × staffingEfficiency × speedMultiplier` | Positive fractional work is supported | Production tick |
-| Production output | Recipe inputs, output level, completion state | `baseOutput × outputMultiplier` after required work | Inputs are paid at cycle start; missing inputs stall | Cycle start or completion |
-| Contract reward | Requested quantity | `quantity × €1` | Quantity is an integer from 1 through 10 | Contract generation |
-| Customer offer chance | Unfulfilled contract count, Sales control points | `1 - asymmetricalScaler(controlPointNormalize(unfulfilledContracts))` | 0, 3, 5, 10, and 1,000,000 contracts map to approximately 100%, 63%, 30%, 8%, and effectively 0% chance | Each foreground minute |
-| Company prestige | Prestige events and logical foreground time | Sum current event amounts; decaying rows use a named active-hour half-life | Background time does not decay prestige; display excludes values below `0.001` | Balance change, sales fulfilment, or UI render |
+| `inventory.entries.*.quantity`, `.quality` | Stored | `Inventory` | Resource commands and production | `InventorySnapshot` |
+| `finance.balance`, `.transactions` | Stored | `Finance` | Accepted transactions | `FinanceSnapshot` |
+| `facilities[FacilityType]` and recipe progress | Stored | `FacilityCollection` | Construction, setup, upgrades, and production | Facility snapshot |
+| Facility upgrade levels and assigned workers | Stored | `Facility` | Upgrade and staffing commands | Facility snapshot |
+| `salesContracts.offered`, `.completed`, `.nextCustomerNumber` | Stored | `SalesContracts` | Offers and contract actions | `SalesContractsSnapshot` |
+| `prestige.events` | Stored | `PrestigeLedger` | Balance changes and fulfilled sales | `PrestigeLedgerSnapshot` |
+| `lastProcessedAtMs`, `unprocessedWorkMs`, `customerPipelineProgress` | Stored | Zustand game store | Global time advance | `GameTimeSnapshot` |
+| `lastObservedAtMs` | Runtime | Zustand game store | Foreground observation and lifecycle | No |
+
+Derived values include staffing efficiency, production work/output, contract reward and offer chance, current prestige, and UI view models.
 
 ## Command Effects
 
-| Command | Preconditions | Reads | Writes | Derived effects | Save boundary | Status |
-|---|---|---|---|---|---|---|
-| `addResource` | Amount finite and positive | Resource type, amount | Inventory | UI renders new quantity | No immediate save | Implemented |
-| `removeResource` | Amount finite and positive; sufficient quantity | Resource type, amount | Inventory | UI renders new quantity | No immediate save | Implemented |
-| `setInventoryAmount` | Amount finite and non-negative | Resource type, amount | Inventory | Replaces the selected resource quantity | No immediate save | Implemented development tool |
-| `buildFacility` | Type unconstructed; balance covers code-defined cost | Facility type, cost, balance | Facilities and Finance | Construction transaction and UI update | No immediate save | Implemented |
-| `destroyFacility` | Facility is constructed | Facility type | Facilities | Facility disappears; no refund | No immediate save | Implemented |
-| `setFacilityRecipe` | Facility constructed; recipe belongs to definition | Facility type, recipe | Facilities | Production UI updates | No immediate save | Implemented |
-| `setFacilityWorkers` | Facility constructed; non-negative integer worker count | Facility type, worker count | Facilities | Recalculates derived efficiency | No immediate save | Implemented |
-| `upgradeFacility` | Facility constructed; balance covers the next code-defined money cost | Facility type, upgrade kind, balance, current level | Facilities and Finance | Upgrade transaction, worker requirement, and production modifiers update | No immediate save | Implemented |
-| `recordTransaction` | Valid amount, description, timestamp, and non-negative result | Transaction data | Finance | Balance and ledger update | No immediate save | Implemented |
-| `advanceRealtime` | Finite foreground clock input | Observation anchor and global time | Logical time, partial sales time, pipeline, facilities, inventory, sales contracts | Measures elapsed foreground time, then invokes `advanceGameTime` | Batched save | Implemented |
-| `advanceGameTime` | Finite elapsed foreground milliseconds | Global time, partial sales time, facilities, inventory, sales contracts | Logical time, partial sales time, pipeline, facilities, inventory, sales contracts | Simulates production in one-second steps and sales per whole minute | Batched save | Implemented |
-| `fastForwardOneMinute` | None | Global time | Logical time, partial sales time, pipeline, facilities, inventory, sales contracts | Invokes one minute of one-second simulation steps after measuring real foreground time | Batched save | Implemented |
-| `fulfillSalesContract` | Contract is unfulfilled; inventory covers its full requested quantity | Contract, inventory, finance | Sales contracts, inventory, finance | Completed contract and positive finance transaction | No immediate save | Implemented |
-| `rejectSalesContract` | Contract is offered | Contract | Sales contracts | Rejected contract history entry | No immediate save | Implemented |
-| `createSalesContractRequest` | Valid resource type and integer quantity from 1 through 10 | Selected resource and quantity | Sales contracts and customer pipeline | Creates an open admin-requested contract and resets the pipeline | No immediate save | Implemented development tool |
+| Command | Reads | Writes |
+|---|---|---|
+| `addResource`, `removeResource`, `setInventoryAmount` | Resource and amount | Inventory |
+| `buildFacility`, `destroyFacility`, `setFacilityRecipe`, `setFacilityWorkers`, `upgradeFacility` | Facility definition; balance where applicable | Facilities; Finance where applicable |
+| `recordTransaction` | Transaction data and current balance | Finance |
+| `advanceRealtime`, `advanceGameTime`, `fastForwardOneMinute` | Time anchors and all timed state | Game time, pipeline, facilities, inventory, sales contracts |
+| `fulfillSalesContract`, `rejectSalesContract` | Contract; inventory and finance where applicable | Sales contracts; inventory and finance where applicable |
+| `createSalesContractRequest` | Selected resource and quantity | Sales contracts and pipeline |
 
-## Time Effects
+All normal state changes batch persistence; background and explicit checkpoints flush it. UI issues commands and does not mutate state directly.
 
-| Event | Time input | Variables affected | Limits | Status |
-|---|---|---|---|---|
-| Global foreground-time advance | Measured foreground milliseconds or 60,000 milliseconds from fast-forward | Logical time, partial sales time, pipeline, facility progress, inventory, and sales contracts | Production resolves in one-second steps; sales resolve on whole minutes | Implemented |
-| Resume/background transition | Lifecycle event | Observation anchor and complete save snapshot | Final active time is processed before saving; background minutes produce no work | Implemented foreground-only |
-| Offline catch-up | Not approved | None yet | Cap and device-clock policy required | Deferred |
+## Persistence Mapping
 
-## Persistence Map
-
-| State group | Runtime owner | Local-save representation | Save trigger | Restore behavior | Status |
-|---|---|---|---|---|---|
-| Resource inventory | Zustand game store | `InventorySnapshot` inside `GameSnapshot` | Batched after changes; immediate on background | Restore valid current-version snapshot | Implemented |
-| Finance | Zustand game store | `FinanceSnapshot` inside `GameSnapshot` | Batched after changes; immediate on background | Restore valid current-version snapshot | Implemented |
-| Constructed facilities | Zustand game store | `FacilityCollectionSnapshot` inside `GameSnapshot` | Batched after changes; immediate on background | Restore valid current-version snapshot | Implemented |
-| Sales contracts | Zustand game store | `SalesContractsSnapshot` inside `GameSnapshot` | Batched after changes; immediate on background | Restore valid current-version snapshot | Implemented |
-| Foreground game time | Zustand game store | `GameTimeSnapshot` inside `GameSnapshot` | Batched every up to five seconds during active changes; final active interval on background/cleanup | Restore logical time, partial sales time, and pipeline; reset wall-clock observation anchor | Implemented |
-| Code-owned catalogues | Typed TypeScript definitions | Not saved | App version | Loaded from code | Implemented |
-
-## Map Rules
-
-- UI issues commands; it does not directly mutate rules-owned state.
-- Derived display values should be recalculated from source-of-truth state where practical.
-- Persistence rows contain snapshots, not live class instances or code-owned catalogues.
+| State group | Save representation | Restore |
+|---|---|---|
+| Inventory, finance, facilities, sales contracts, prestige | Respective snapshot inside `GameSnapshot` | Restore a valid current-version snapshot |
+| Foreground game time and pipeline | `GameTimeSnapshot` | Restore logical/partial time and pipeline; reset observation anchor |
+| Catalogues and balance configuration | Typed code definitions | Reload from the app version; never save |

@@ -129,4 +129,6 @@ export const styles = StyleSheet.create({
   transactionCost: { color: colors.error, fontWeight: '700' },
   transactionDetails: { flex: 1, gap: 2, paddingRight: 12 },
   transactionIncome: { color: colors.primary, fontWeight: '700' },
+  workMetric: { alignItems: 'center', flexDirection: 'row', gap: 4 },
+  workMetricIcon: { color: colors.muted },
 });

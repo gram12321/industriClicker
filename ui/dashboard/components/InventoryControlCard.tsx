@@ -5,6 +5,7 @@ import { getResourceIcon } from '@/game/resources/resourceIcons';
 import { getResource } from '@/game/resources/resourcesRegistry';
 import { RESOURCE_TYPES, type ResourceType } from '@/game/resources/resourceTypes';
 import { styles } from '@/ui/dashboard/dashboard.styles';
+import { APP_ICONS } from '@/icons';
 
 export function InventoryControlCard({
   onSetInventoryAmount,
@@ -34,7 +35,7 @@ export function InventoryControlCard({
         <View style={styles.adminContractControls}>
           <Menu
             anchor={(
-              <Button icon="chevron-down" mode="outlined" onPress={() => setIsResourceMenuOpen(true)}>
+              <Button icon={APP_ICONS.expand} mode="outlined" onPress={() => setIsResourceMenuOpen(true)}>
                 {`${getResourceIcon(selectedResourceType)} ${selectedResource.name}`}
               </Button>
             )}
@@ -59,7 +60,7 @@ export function InventoryControlCard({
             style={styles.adminContractAmountInput}
             value={amountText}
           />
-          <Button disabled={!isAmountValid} icon="pencil" mode="contained" onPress={setInventoryAmount}>
+          <Button disabled={!isAmountValid} icon={APP_ICONS.pencil} mode="contained" onPress={setInventoryAmount}>
             Set amount
           </Button>
         </View>

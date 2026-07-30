@@ -1,18 +1,18 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, List, Text } from 'react-native-paper';
-import { getFacilityDefinition } from '@/game/facilities/facilityRegistry';
+import { getFacilityDefinition } from '@/game/facilities/facilityConstants';
 import { FACILITY_TYPES } from '@/game/facilities/facilityTypes';
 import { INITIAL_BALANCE } from '@/game/finance/finance';
 import { PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS } from '@/game/prestige/prestigeConstants';
-import { ALL_RECIPES } from '@/game/recipes/recipes';
+import { ALL_RECIPES } from '@/game/recipes/recipeConstants';
 import { formatRecipeInputs, formatRecipeName, formatRecipeOutput } from '@/ui/dashboard/helpers/recipeFormatters';
-import { getResourceIcon } from '@/game/resources/resourceIcons';
-import { getResource } from '@/game/resources/resourcesRegistry';
+import { getResource, getResourceIcon } from '@/game/resources/resourceConstants';
 import { RESOURCE_TYPES } from '@/game/resources/resourceTypes';
 import { formatCurrency, formatNumber } from '@/utils';
 import { styles } from '@/ui/dashboard/dashboard.styles';
-import { SectionHeading } from '../components/DashboardViewComponents';
+import { SectionHeading, WorkMetric } from '../components/DashboardViewComponents';
+import { APP_ICONS } from '@/icons';
 
 export function IndustriPediaDashboard() {
   const [activeSection, setActiveSection] = useState<IndustriPediaSection>('resources');
@@ -50,7 +50,7 @@ function ResourcesSection() {
     <Card mode="contained" style={styles.featureCard}><Card.Content><List.Section>
       {RESOURCE_TYPES.map((resourceType) => {
         const resource = getResource(resourceType);
-        return <List.Item description={getResourceSummary(resourceType)} key={resourceType} left={(props) => <List.Icon {...props} icon="package-variant-closed" />} title={`${getResourceIcon(resourceType)} ${resource.name}`} />;
+        return <List.Item description={getResourceSummary(resourceType)} key={resourceType} left={(props) => <List.Icon {...props} icon={APP_ICONS.package} />} title={`${getResourceIcon(resourceType)} ${resource.name}`} />;
       })}
     </List.Section></Card.Content></Card>
   </>;
@@ -78,9 +78,9 @@ function RecipesSection() {
     <SectionHeading eyebrow="RECIPES" title="Production recipes" subtitle="Inputs are paid at the start of each cycle. A facility pauses when the required inputs are unavailable." />
     <Card mode="contained" style={styles.featureCard}><Card.Content><List.Section>
       {Object.values(ALL_RECIPES).map((recipe) => <List.Item
-        description={`${formatRecipeInputs(recipe)} → ${formatRecipeOutput(recipe)} · ${formatNumber(recipe.workAmount, { smartDecimals: true })} work`}
+        description={<View><Text style={styles.cardDescription}>{`${formatRecipeInputs(recipe)} → ${formatRecipeOutput(recipe)}`}</Text><WorkMetric value={formatNumber(recipe.workAmount, { smartDecimals: true })} /></View>}
         key={recipe.name}
-        left={(props) => <List.Icon {...props} icon="cog-outline" />}
+        left={(props) => <List.Icon {...props} icon={APP_ICONS.production} />}
         title={formatRecipeName(recipe)}
       />)}
     </List.Section></Card.Content></Card>
@@ -94,7 +94,7 @@ function FinanceSection() {
       <Text style={styles.cardKicker}>STARTING CAPITAL</Text><Text style={styles.balanceValue}>{formatCurrency(INITIAL_BALANCE)}</Text>
       <Text style={styles.cardDescription}>Facilities can only be constructed when the full construction cost is available. Destroying a facility does not refund its cost.</Text>
     </Card.Content></Card>
-    <Card mode="contained" style={styles.featureCard}><Card.Content><List.Item description="Each fulfilled unit pays €1. The requested quantity must be fully available in inventory before a contract can be supplied." left={(props) => <List.Icon {...props} icon="handshake-outline" />} title="Customer contracts" /><List.Item description="Each facility has separate Speed and Output upgrades. The next level costs more than the previous one." left={(props) => <List.Icon {...props} icon="trending-up" />} title="Facility upgrades" /><List.Item description="Every accepted cost and income is recorded in the Finance activity list." left={(props) => <List.Icon {...props} icon="text-box-outline" />} title="Transaction history" /></Card.Content></Card>
+    <Card mode="contained" style={styles.featureCard}><Card.Content><List.Item description="Each fulfilled unit pays €1. The requested quantity must be fully available in inventory before a contract can be supplied." left={(props) => <List.Icon {...props} icon={APP_ICONS.contracts} />} title="Customer contracts" /><List.Item description="Each facility has separate Speed and Output upgrades. The next level costs more than the previous one." left={(props) => <List.Icon {...props} icon={APP_ICONS.speed} />} title="Facility upgrades" /><List.Item description="Every accepted cost and income is recorded in the Finance activity list." left={(props) => <List.Icon {...props} icon={APP_ICONS.financeHistory} />} title="Transaction history" /></Card.Content></Card>
   </>;
 }
 
@@ -102,8 +102,8 @@ function PrestigeSection() {
   return <>
     <SectionHeading eyebrow="PRESTIGE" title="Company standing" subtitle="How company standing is recorded and fades over time." />
     <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text style={styles.cardKicker}>WHAT IT IS</Text><Text style={styles.cardDescription}>Prestige is an informational company-standing score. It does not affect production, pricing, or customer offers yet.</Text></Card.Content></Card>
-    <Card mode="contained" style={styles.featureCard}><Card.Content><List.Item description="A permanent, recalculated source based on current company cash." left={(props) => <List.Icon {...props} icon="bank-outline" />} title="Company balance" /><List.Item description={`Each fulfilled contract creates a fading event. Its half-life is ${formatNumber(PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS, { smartDecimals: true })} hours.`} left={(props) => <List.Icon {...props} icon="handshake-outline" />} title="Contract sales" /></Card.Content></Card>
-    <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text style={styles.cardKicker}>DECAY</Text><Text style={styles.cardDescription}>Prestige decays while the game is open. Background time does not decay prestige; Fast-forward does.</Text><Text style={styles.cardDescription}>For a fading event: current = original × 0.5^(hours ÷ half-life). Select an event in the Prestige dialog to see its original value, current value, hourly decay, and projections.</Text></Card.Content></Card>
+    <Card mode="contained" style={styles.featureCard}><Card.Content><List.Item description="A permanent, recalculated source based on current company cash." left={(props) => <List.Icon {...props} icon={APP_ICONS.bank} />} title="Company balance" /><List.Item description={`Each fulfilled contract creates a fading event. Its half-life is ${formatNumber(PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS, { smartDecimals: true })} foreground hours.`} left={(props) => <List.Icon {...props} icon={APP_ICONS.contracts} />} title="Contract sales" /></Card.Content></Card>
+    <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text style={styles.cardKicker}>DECAY</Text><Text style={styles.cardDescription}>Prestige decay uses active foreground game time. Background time does not decay prestige; Fast-forward does.</Text><Text style={styles.cardDescription}>For a fading event: current = original × 0.5^(foreground hours ÷ half-life). Select an event in the Prestige dialog to see its original value, current value, hourly decay, and projections.</Text></Card.Content></Card>
   </>;
 }
 
