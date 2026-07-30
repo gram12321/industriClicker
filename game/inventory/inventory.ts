@@ -81,6 +81,15 @@ export class Inventory {
     return true;
   }
 
+  setAmount(resourceType: ResourceType, amount: number): boolean {
+    if (!Number.isFinite(amount) || amount < 0) {
+      return false;
+    }
+
+    this.entries[resourceType].quantity = amount;
+    return true;
+  }
+
   clear(): void {
     this.entries = createEmptyEntries();
   }

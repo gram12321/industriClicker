@@ -70,6 +70,7 @@ Current foundation rules:
 - `ManualPumping` produces 1 Water after 1 work unit; `ElectricPumping` consumes 1 Electricity and produces 5 Water after 0.5 work units.
 - `CoalPower` consumes 1 Coal and 2 Water and produces 10 Electricity after 5 work units; `SolarPower` produces 1 Electricity after 10 work units.
 - Inputs are paid at cycle start. If inputs are missing, the facility stalls and does not bank work.
+- The localhost-only Admin Dashboard can directly set a selected inventory resource to any finite non-negative amount.
 
 ## Facility Upgrade and Staffing Rules
 

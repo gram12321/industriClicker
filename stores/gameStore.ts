@@ -36,6 +36,7 @@ type GameState = {
   customerPipelineProgress: number;
   addResource: (resourceType: ResourceType, amount?: number) => boolean;
   removeResource: (resourceType: ResourceType, amount?: number) => boolean;
+  setInventoryAmount: (resourceType: ResourceType, amount: number) => boolean;
   buildFacility: (facilityType: FacilityType) => boolean;
   destroyFacility: (facilityType: FacilityType) => boolean;
   setFacilityRecipe: (facilityType: FacilityType, recipeName: RecipeName | null) => boolean;
@@ -101,6 +102,16 @@ export const useGameStore = create<GameState>((set, get) => {
     const inventory = get().inventory.clone();
 
     if (!inventory.remove(resourceType, amount)) {
+      return false;
+    }
+
+    set({ inventory });
+    return true;
+  },
+  setInventoryAmount: (resourceType, amount) => {
+    const inventory = get().inventory.clone();
+
+    if (!inventory.setAmount(resourceType, amount)) {
       return false;
     }
 

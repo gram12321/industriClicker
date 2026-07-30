@@ -1,0 +1,74 @@
+import { useState } from 'react';
+import { View } from 'react-native';
+import { Button, Card, Menu, Text, TextInput } from 'react-native-paper';
+import { getResourceIcon } from '@/game/resources/resourceIcons';
+import { getResource } from '@/game/resources/resourcesRegistry';
+import { RESOURCE_TYPES, type ResourceType } from '@/game/resources/resourceTypes';
+import { styles } from '@/ui/dashboard/dashboard.styles';
+
+export function InventoryControlCard({
+  onSetInventoryAmount,
+}: {
+  onSetInventoryAmount: (resourceType: ResourceType, amount: number) => boolean;
+}) {
+  const [selectedResourceType, setSelectedResourceType] = useState<ResourceType>(RESOURCE_TYPES[0]);
+  const [amountText, setAmountText] = useState('0');
+  const [isResourceMenuOpen, setIsResourceMenuOpen] = useState(false);
+  const [updatedResourceType, setUpdatedResourceType] = useState<ResourceType | null>(null);
+  const selectedResource = getResource(selectedResourceType);
+  const amount = Number(amountText);
+  const isAmountValid = amountText.trim().length > 0 && Number.isFinite(amount) && amount >= 0;
+
+  const setInventoryAmount = () => {
+    if (isAmountValid && onSetInventoryAmount(selectedResourceType, amount)) {
+      setUpdatedResourceType(selectedResourceType);
+    }
+  };
+
+  return (
+    <Card mode="contained" style={styles.featureCard}>
+      <Card.Content style={styles.cardContent}>
+        <Text style={styles.cardKicker}>INVENTORY</Text>
+        <Text variant="titleLarge">Set inventory amount</Text>
+        <Text style={styles.cardDescription}>Set the selected resource to any non-negative amount.</Text>
+        <View style={styles.adminContractControls}>
+          <Menu
+            anchor={(
+              <Button icon="chevron-down" mode="outlined" onPress={() => setIsResourceMenuOpen(true)}>
+                {`${getResourceIcon(selectedResourceType)} ${selectedResource.name}`}
+              </Button>
+            )}
+            onDismiss={() => setIsResourceMenuOpen(false)}
+            visible={isResourceMenuOpen}
+          >
+            {RESOURCE_TYPES.map((resourceType) => (
+              <Menu.Item
+                key={resourceType}
+                onPress={() => { setSelectedResourceType(resourceType); setIsResourceMenuOpen(false); }}
+                title={`${getResourceIcon(resourceType)} ${getResource(resourceType).name}`}
+              />
+            ))}
+          </Menu>
+          <TextInput
+            accessibilityLabel="Inventory amount"
+            dense
+            keyboardType="decimal-pad"
+            label="Amount"
+            mode="outlined"
+            onChangeText={(value) => setAmountText(value.replace(/[^0-9.]/g, ''))}
+            style={styles.adminContractAmountInput}
+            value={amountText}
+          />
+          <Button disabled={!isAmountValid} icon="pencil" mode="contained" onPress={setInventoryAmount}>
+            Set amount
+          </Button>
+        </View>
+        {updatedResourceType && (
+          <Text style={styles.adminSuccessMessage}>
+            {`Updated ${getResource(updatedResourceType).name} inventory.`}
+          </Text>
+        )}
+      </Card.Content>
+    </Card>
+  );
+}

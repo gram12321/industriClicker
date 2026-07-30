@@ -24,7 +24,7 @@ Player action or time event
 
 | Variable | Meaning and unit | Kind | Source of truth | Changes when | Used by | Saved? | Status |
 |---|---|---|---|---|---|---|---|
-| `inventory.entries[ResourceType].quantity` | Amount of a resource held by the player | Stored | `Inventory` in Zustand | Resource command or production completion | Inventory and UI | Yes, via `InventorySnapshot` | Implemented |
+| `inventory.entries[ResourceType].quantity` | Amount of a resource held by the player | Stored | `Inventory` in Zustand | Resource command, production completion, or admin inventory setting | Inventory and UI | Yes, via `InventorySnapshot` | Implemented |
 | `inventory.entries[ResourceType].quality` | Quality associated with a held resource | Stored | `Inventory` in Zustand | Inventory initialization; future quality rules | Inventory and UI | Yes, via `InventorySnapshot` | Placeholder `1` |
 | `finance.balance` | Available company funds in euros | Stored | `Finance` in Zustand | Accepted finance transaction | Header, finance view, construction validation | Yes, via `FinanceSnapshot` | Implemented |
 | `finance.transactions` | Accepted balance changes | Stored | `Finance` in Zustand | Accepted finance transaction | Finance view | Yes, via `FinanceSnapshot` | Implemented |
@@ -65,6 +65,7 @@ Player action or time event
 |---|---|---|---|---|---|---|
 | `addResource` | Amount finite and positive | Resource type, amount | Inventory | UI renders new quantity | No immediate save | Implemented |
 | `removeResource` | Amount finite and positive; sufficient quantity | Resource type, amount | Inventory | UI renders new quantity | No immediate save | Implemented |
+| `setInventoryAmount` | Amount finite and non-negative | Resource type, amount | Inventory | Replaces the selected resource quantity | No immediate save | Implemented development tool |
 | `buildFacility` | Type unconstructed; balance covers code-defined cost | Facility type, cost, balance | Facilities and Finance | Construction transaction and UI update | No immediate save | Implemented |
 | `destroyFacility` | Facility is constructed | Facility type | Facilities | Facility disappears; no refund | No immediate save | Implemented |
 | `setFacilityRecipe` | Facility constructed; recipe belongs to definition | Facility type, recipe | Facilities | Production UI updates | No immediate save | Implemented |
