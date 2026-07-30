@@ -13,8 +13,9 @@ import { getResourceIcon } from '@/game/resources/resourceIcons';
 import { getResource } from '@/game/resources/resourcesRegistry';
 import { clamp, formatCurrency, formatDuration, formatNumber, formatPercent } from '@/utils';
 import { styles } from '@/ui/dashboard/dashboard.styles';
-import { PlaceholderRow, SectionHeading } from '../components/DashboardViewComponents';
+import { PlaceholderRow, SectionHeading, WorkMetric } from '../components/DashboardViewComponents';
 import { formatRecipeInputs, formatRecipeName } from '../helpers/recipeFormatters';
+import { APP_ICONS } from '@/icons';
 
 export function ProductionDashboard({
   facilities, finance, inventory, openConstructionYard, requestFacilityDestruction, setFacilityRecipe, setFacilityWorkers, upgradeFacility,
@@ -33,7 +34,7 @@ export function ProductionDashboard({
   return (
     <>
       <SectionHeading eyebrow="OPERATIONS" title="Facilities" subtitle="Manage your constructed facilities and build new ones." />
-      <Button icon="plus" mode="contained" onPress={openConstructionYard}>Build facility</Button>
+      <Button icon={APP_ICONS.add} mode="contained" onPress={openConstructionYard}>Build facility</Button>
       {FACILITY_TYPES.filter((facilityType) => facilities.has(facilityType)).map((facilityType) => {
         const definition = getFacilityDefinition(facilityType);
         const facility = facilities.get(facilityType);
@@ -53,9 +54,9 @@ export function ProductionDashboard({
           <Card key={facilityType} mode="contained" style={styles.featureCard}>
             <Card.Content>
               <List.Item
-                description={activeRecipe ? `${formatRecipeName(activeRecipe)} · Work ${formatNumber(facility?.getRecipeProgress(activeRecipe.name) ?? 0, { smartDecimals: true })}/${formatNumber(activeRecipe.workAmount, { smartDecimals: true })}` : 'No active recipe'}
+                description={activeRecipe ? <View><Text style={styles.cardDescription}>{formatRecipeName(activeRecipe)}</Text><WorkMetric value={`${formatNumber(facility?.getRecipeProgress(activeRecipe.name) ?? 0, { smartDecimals: true })}/${formatNumber(activeRecipe.workAmount, { smartDecimals: true })}`} /></View> : 'No active recipe'}
                 left={(props) => <List.Icon {...props} icon={definition.icon} />}
-                right={(props) => <IconButton {...props} accessibilityLabel={`${isExpanded ? 'Collapse' : 'Expand'} ${definition.name}`} icon={isExpanded ? 'chevron-up' : 'chevron-down'} onPress={() => setCollapsedFacilities((current) => ({ ...current, [facilityType]: isExpanded }))} />}
+                right={(props) => <IconButton {...props} accessibilityLabel={`${isExpanded ? 'Collapse' : 'Expand'} ${definition.name}`} icon={isExpanded ? APP_ICONS.collapse : APP_ICONS.expand} onPress={() => setCollapsedFacilities((current) => ({ ...current, [facilityType]: isExpanded }))} />}
                 title={definition.name}
                 titleStyle={styles.facilityTitle}
               />
@@ -72,12 +73,12 @@ export function ProductionDashboard({
                 <FacilityProductionStatus efficiency={facility?.getEfficiency() ?? 0} progress={activeRecipe ? facility?.getRecipeProgress(activeRecipe.name) ?? 0 : 0} missingInputs={missingInputs} recipe={activeRecipe ?? null} speedMultiplier={facility?.getSpeedMultiplier() ?? 1} status={productionStatus} />
                 <Text style={styles.constructionYardRecipeLabel}>Staffing</Text>
                 <View style={styles.facilityStaffingControls}>
-                  <IconButton accessibilityLabel={`Remove worker from ${definition.name}`} disabled={assignedWorkers === 0} icon="minus" onPress={() => setFacilityWorkers(facilityType, assignedWorkers - 1)} />
+                  <IconButton accessibilityLabel={`Remove worker from ${definition.name}`} disabled={assignedWorkers === 0} icon={APP_ICONS.minus} onPress={() => setFacilityWorkers(facilityType, assignedWorkers - 1)} />
                   <View style={styles.facilityStaffingSummary}>
                     <Text style={styles.facilityStaffingValue}>{formatNumber(assignedWorkers)} / {formatNumber(requiredWorkers)} workers</Text>
                     <Text style={styles.facilityStaffingDetail}>Efficiency {formatPercent(facility?.getEfficiency() ?? 0, { decimals: 0 })}</Text>
                   </View>
-                  <IconButton accessibilityLabel={`Add worker to ${definition.name}`} icon="plus" onPress={() => setFacilityWorkers(facilityType, assignedWorkers + 1)} />
+                  <IconButton accessibilityLabel={`Add worker to ${definition.name}`} icon={APP_ICONS.add} onPress={() => setFacilityWorkers(facilityType, assignedWorkers + 1)} />
                 </View>
                 <Button compact mode="text" onPress={() => setFacilityWorkers(facilityType, requiredWorkers)}>Set required staffing</Button>
                 <Text style={styles.constructionYardRecipeLabel}>Upgrades</Text>
@@ -86,7 +87,7 @@ export function ProductionDashboard({
                   <Button compact disabled={!finance.canAfford(speedUpgradeCost)} mode="outlined" onPress={() => upgradeFacility(facilityType, 'speed')}>{`Speed L${formatNumber(speedUpgradeLevel + 1)} · ${formatCurrency(speedUpgradeCost)}`}</Button>
                   <Button compact disabled={!finance.canAfford(outputUpgradeCost)} mode="outlined" onPress={() => upgradeFacility(facilityType, 'output')}>{`Output L${formatNumber(outputUpgradeLevel + 1)} · ${formatCurrency(outputUpgradeCost)}`}</Button>
                 </View>
-                <View style={styles.facilityActions}><IconButton accessibilityLabel={`Destroy ${definition.name}`} icon="trash-can-outline" iconColor={colors.error} onPress={() => requestFacilityDestruction(facilityType)} size={22} /></View>
+                <View style={styles.facilityActions}><IconButton accessibilityLabel={`Destroy ${definition.name}`} icon={APP_ICONS.destroy} iconColor={colors.error} onPress={() => requestFacilityDestruction(facilityType)} size={22} /></View>
               </>}
             </Card.Content>
           </Card>

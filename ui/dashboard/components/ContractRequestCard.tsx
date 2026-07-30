@@ -6,6 +6,7 @@ import { getResource } from '@/game/resources/resourcesRegistry';
 import { RESOURCE_TYPES, type ResourceType } from '@/game/resources/resourceTypes';
 import { SALES_CONTRACT_MAX_REQUEST_QUANTITY, SALES_CONTRACT_MIN_REQUEST_QUANTITY } from '@/game/sales/salesContracts';
 import { styles } from '@/ui/dashboard/dashboard.styles';
+import { APP_ICONS } from '@/icons';
 
 export function ContractRequestCard({
   onCreateContractRequest,
@@ -39,7 +40,7 @@ export function ContractRequestCard({
         <View style={styles.adminContractControls}>
           <Menu
             anchor={(
-              <Button icon="chevron-down" mode="outlined" onPress={() => setIsResourceMenuOpen(true)}>
+              <Button icon={APP_ICONS.expand} mode="outlined" onPress={() => setIsResourceMenuOpen(true)}>
                 {`${getResourceIcon(selectedResourceType)} ${selectedResource.name}`}
               </Button>
             )}
@@ -68,7 +69,7 @@ export function ContractRequestCard({
             style={styles.adminContractAmountInput}
             value={quantityText}
           />
-          <Button disabled={!isQuantityValid} icon="plus" mode="contained" onPress={createRequest}>
+          <Button disabled={!isQuantityValid} icon={APP_ICONS.add} mode="contained" onPress={createRequest}>
             Create request
           </Button>
         </View>

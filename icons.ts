@@ -1,0 +1,51 @@
+import { ResourceType } from '@/game/resources/resourceTypes';
+
+/** Shared Material Community icon names used by the app UI. */
+export const APP_ICONS = {
+  add: 'plus',
+  account: 'account-outline',
+  achievements: 'trophy-outline',
+  back: 'chevron-left',
+  bank: 'bank-outline',
+  building: 'factory',
+  collapse: 'chevron-up',
+  contracts: 'handshake-outline',
+  currency: 'cash-multiple',
+  delete: 'delete-outline',
+  destroy: 'trash-can-outline',
+  expand: 'chevron-down',
+  fastForward: 'fast-forward',
+  facilityBakery: 'bread-slice-outline',
+  facilityFarm: 'tractor',
+  facilityMine: 'pickaxe',
+  facilityPowerPlant: 'factory',
+  facilityUtilityWorks: 'flash-outline',
+  facilityWaterWell: 'water-well',
+  financeHistory: 'text-box-outline',
+  help: 'book-open-variant',
+  logout: 'logout',
+  minus: 'minus',
+  next: 'chevron-right',
+  package: 'package-variant-closed',
+  pencil: 'pencil',
+  play: 'play-circle-outline',
+  production: 'cog-outline',
+  prestige: 'trophy-outline',
+  reset: 'delete-outline',
+  settings: 'cog-outline',
+  shield: 'shield-crown-outline',
+  close: 'close',
+  speed: 'trending-up',
+  work: 'progress-clock',
+} as const;
+
+/** Shared emoji resource symbols used in compact inventory and recipe labels. */
+export const RESOURCE_ICONS: Readonly<Record<ResourceType, string>> = {
+  [ResourceType.Grain]: '🌾',
+  [ResourceType.Bread]: '🍞',
+  [ResourceType.Water]: '💧',
+  [ResourceType.Electricity]: '⚡',
+  [ResourceType.Sugar]: '🍬',
+  [ResourceType.Coal]: '🪨',
+  [ResourceType.Cake]: '🍰',
+};

@@ -1,4 +1,5 @@
 import type { Recipe } from '@/game/recipes/recipeTypes';
+import { getResourceIcon } from '@/game/resources/resourceIcons';
 import { getResource } from '@/game/resources/resourcesRegistry';
 import { formatNumber } from '@/utils';
 
@@ -6,7 +7,7 @@ export function formatRecipeInputs(recipe: Recipe): string {
   if (recipe.inputs.length === 0) return 'No inputs';
 
   return recipe.inputs
-    .map(({ resourceType, amount }) => `${getResource(resourceType).name} ×${formatNumber(amount, { smartDecimals: true })}`)
+    .map(({ resourceType, amount }) => `${getResourceIcon(resourceType)} ${getResource(resourceType).name} ×${formatNumber(amount, { smartDecimals: true })}`)
     .join(' + ');
 }
 
@@ -28,6 +29,6 @@ export function formatRecipeName(recipe: Recipe): string {
 }
 
 export function formatRecipeOutput(recipe: Recipe): string {
-  return `${getResource(recipe.output.resourceType).name} ×${formatNumber(recipe.output.amount, { smartDecimals: true })}`;
+  return `${getResourceIcon(recipe.output.resourceType)} ${getResource(recipe.output.resourceType).name} ×${formatNumber(recipe.output.amount, { smartDecimals: true })}`;
 }
 

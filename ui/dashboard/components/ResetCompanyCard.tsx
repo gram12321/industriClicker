@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button, Card, Dialog, Portal, Text } from 'react-native-paper';
 import { colors } from '@/theme';
 import { styles } from '@/ui/dashboard/dashboard.styles';
+import { APP_ICONS } from '@/icons';
 
 export function ResetCompanyCard({ onResetCompany }: { onResetCompany: () => Promise<void> }) {
   const [isResetConfirmationOpen, setIsResetConfirmationOpen] = useState(false);
@@ -34,7 +35,7 @@ export function ResetCompanyCard({ onResetCompany }: { onResetCompany: () => Pro
           {resetError && <Text style={styles.productionError}>{resetError}</Text>}
         </Card.Content>
         <Card.Actions>
-          <Button icon="delete-outline" onPress={() => setIsResetConfirmationOpen(true)}>
+      <Button icon={APP_ICONS.reset} onPress={() => setIsResetConfirmationOpen(true)}>
             Reset company
           </Button>
         </Card.Actions>
