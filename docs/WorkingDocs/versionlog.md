@@ -53,6 +53,187 @@ Write clear, factual release notes that explain what changed, where, and why it 
 
 ---
 
+## Version 0.00053e through 0.00053d - UI cleanup and polish
+**Date:** 2026-07-30 | **Commit(s):** 5facb01ccd5f1c02e4861607f4fa09d020abf7a4, 53606e447df40299d33d95c0511e3554384d30fc, b4934e0ddeac55159bbdf9a34660859c80f4b2bb, 89d7573dcb96debead6f58e83e00c4483df92265, e146ca514776c7ce692b91cfdff22034a845c6e1 | **Stats:** +573 / -770
+
+### Summary
+
+- Refined the sales dashboard and icon presentation.
+- Cleaned imports and extracted domain balance values into named constants.
+- Removed obsolete UI and documentation code while keeping the active app flow coherent.
+
+### Changes
+
+- `ui/dashboard/views/SalesDashboard.tsx` and `ui/dashboard/dashboard.styles.ts` - Improved the sales dashboard layout and interaction presentation.
+- `icons.ts`, `ui/dashboard/views/IndustriPediaDashboard.tsx`, and `ui/dashboard/views/InventoryDashboard.tsx` - Refined icon quality and corrected icon usage in the reference and inventory dashboards.
+- `game/core/index.ts`, `game/index.ts`, `ui/index.ts`, and `game/core/stores/gameStore.ts` - Added and adopted public barrel surfaces while cleaning internal imports.
+- `game/facilities/facilityConstants.ts`, `game/facilities/facilityUpgrades.ts`, `game/prestige/`, `game/sales/`, `game/core/time/timeConstants.ts`, and related `*Constants.ts` files - Moved balance and domain configuration into named constants modules.
+- `game/core/persistence/gameSaveRepository.ts` and `game/core/state/gameSnapshot.ts` - Updated save and snapshot consumers during the store cleanup.
+- `ui/dashboard/components/ContractRequestCard.tsx`, `DashboardDialogs.tsx`, and `InventoryControlCard.tsx` - Simplified dashboard components and corrected their imports.
+- `docs/WorkingDocs/PROJECT_INFO.md`, `docs/WorkingDocs/gameflow.md`, `readme.md`, and `docs/plans/prestigeplan.md` - Updated implementation status, flow notes, and the prestige plan.
+
+### Notes
+
+- These commits were completed asynchronously and are grouped because they form one UI and code-cleanup pass.
+
+---
+
+## Version 0.00054 through 0.00053 - Prestige and reference content
+**Date:** 2026-07-30 | **Commit(s):** e98cd740544c0bafbaeecee1e2c89f6cd3ea0953, 88bf69b0dd4d6b60a56914ffbb59bb5e9d2f875c, ea623abe5a39e3f0420a12313eec1fafc77f4304, 89309b43a2536c8c923c933e8322062c8160eade | **Stats:** +150 / -19
+
+### Summary
+
+- Improved prestige presentation and expanded Industripedia content.
+- Tuned production UI and corrected a related production display issue.
+
+### Changes
+
+- `ui/dashboard/components/PrestigeDialog.tsx` - Improved the prestige dialog and its player-facing progression presentation.
+- `ui/dashboard/views/IndustriPediaDashboard.tsx` and `ui/dashboard/helpers/recipeFormatters.ts` - Expanded Industripedia content and improved recipe formatting.
+- `ui/dashboard/views/SalesDashboard.tsx` and `ui/dashboard/dashboard.styles.ts` - Tuned production/sales presentation and corrected the related layout behavior.
+- `docs/WorkingDocs/AIpromt_docs.md`, `docs/WorkingDocs/PROJECT_INFO.md`, and `readme.md` - Updated the documentation references affected by the UI changes.
+
+### Notes
+
+- Grouped from the reviewed commits because all changes affect player-facing progression or production presentation.
+
+---
+
+## Version 0.0006 through 0.00052a - Admin and prestige systems
+**Date:** 2026-07-30 | **Commit(s):** ac4d98560038b0c6bccafa9aa91926a6043d2136, 2d148d9ccacd593488228cd240ebfa789b366483, 4f6675907e649ff0307c25e6973aa1fd81af6a94, d7f3651d7a60eb0199eb85b67fc4fa5d3ba56240, 8635878eae3eee558e023ef5417b781343a0e86d, 95b17fcb2a10198cfea6a232deaf055ddb278ae1 | **Stats:** +982 / -114
+
+### Summary
+
+- Added admin inventory controls and expanded admin options.
+- Added prestige progression and refined prestige timing, cost, and lifecycle behavior.
+- Tuned constants and corrected the near-zero long-duration prestige calculation.
+
+### Changes
+
+- `ui/dashboard/views/AdminDashboard.tsx`, `ui/dashboard/components/InventoryControlCard.tsx`, `game/inventory/inventory.ts`, and `stores/gameStore.ts` - Added admin inventory controls and the state operations needed to set inventory values.
+- `game/prestige/prestige.ts`, `game/prestige/prestigeCalculator.ts`, and `game/prestige/prestigeConstants.ts` - Added prestige progression calculations and tuned prestige constants.
+- `ui/dashboard/components/PrestigeDialog.tsx` and `ui/dashboard/views/IndustriPediaDashboard.tsx` - Exposed prestige actions and status in the dashboard UI.
+- `game/sales/salesContracts.ts`, `ui/dashboard/components/ContractRequestCard.tsx`, and `ui/dashboard/views/AdminDashboard.tsx` - Added admin contract-related options and controls.
+- `app/index.tsx`, `app/_layout.tsx`, `utils.ts`, and `stores/gameStore.ts` - Connected the new admin and prestige behavior to application lifecycle and state handling.
+- `docs/WorkingDocs/CONTEXT.md`, `design.md`, `gameflow.md`, `PROJECT_INFO.md`, `VariableRelationshipMap.md`, and `doc/prestigeplan.md` - Recorded the new progression, timing, and admin behavior.
+
+### Notes
+
+- These commits are grouped by the shared admin/progression domain despite their non-sequential version labels.
+
+---
+
+## Version 0.00051b through 0.00051 - Dashboard and administration
+**Date:** 2026-07-30 | **Commit(s):** df9272a5c15b0bcbae38f28b160de4755c9da472, d9e00b959b3f82ac16f4f88cc71fa0c71cf145b9, 8d6ca64bb39db7e8761ee6ccdec9d59e9be82fdf | **Stats:** +573 / -662
+
+### Summary
+
+- Added the admin dashboard and reorganized the main dashboard UI.
+- Fixed dashboard behavior and presentation issues discovered during the refactor.
+
+### Changes
+
+- `app/dashboard/DashboardContent.tsx`, `app/dashboard/DashboardView.tsx`, and `app/dashboard/AdminDashboard.tsx` - Split dashboard content and administration into dedicated route-level modules.
+- `ui/dashboard/views/CompanyDashboard.tsx`, `FinanceDashboard.tsx`, `InventoryDashboard.tsx`, `ProductionDashboard.tsx`, `ProfileDashboard.tsx`, and `SalesDashboard.tsx` - Added and organized the dashboard views.
+- `ui/dashboard/components/DashboardDialogs.tsx`, `DashboardViewComponents.tsx`, and `ResetCompanyCard.tsx` - Extracted shared dashboard controls, dialogs, and reset behavior.
+- `ui/dashboard/helpers/devAdminGate.ts` and `recipeFormatters.ts` - Added development-only admin gating and shared recipe formatting.
+- `app/_layout.tsx`, `app/index.tsx`, `stores/gameStore.ts`, and `docs/WorkingDocs/` - Connected the dashboard refactor to app state and updated flow documentation.
+
+### Notes
+
+- The commits are grouped because they are one dashboard/admin UI stream.
+
+---
+
+## Version 0.0005 through 0.00043 - Persistence and authoritative time
+**Date:** 2026-07-29 | **Commit(s):** 316a1f59978ba18afb27dea8ec2d666cf36b8c23, 8deb33cd3409bcd64bd80e7ceaaa788dd693752d, 082c2f1ad1969716371f5f865aac2004cb022a60, cf3f9364655b0a5504b7bf0109bbda0df3fb4286 | **Stats:** +329 / -196
+
+### Summary
+
+- Removed persistence-version handling that was no longer part of the local save design.
+- Made seconds the authoritative unit for elapsed time and corrected true-time progression.
+- Added rejection handling for invalid contract progression.
+
+### Changes
+
+- `game/core/time/timeManager.ts` and `game/facilities/advanceProduction.ts` - Made elapsed seconds authoritative for production and realtime progression.
+- `game/core/persistence/gameSaveRepository.ts`, `game/core/state/gameSnapshot.ts`, and `stores/gameStore.ts` - Adjusted local persistence and snapshot handling, including removal of the obsolete persistence version.
+- `game/sales/salesContracts.ts` and `app/dashboard/DashboardContent.tsx` - Added contract rejection behavior and connected it to the dashboard flow.
+- `app/_layout.tsx`, `app/index.tsx`, `app/index.styles.ts`, and `app/dashboard/DashboardContent.tsx` - Updated lifecycle and dashboard integration for true elapsed-time progression.
+- `docs/WorkingDocs/CONTEXT.md`, `design.md`, `gameflow.md`, `PROJECT_INFO.md`, and `VariableRelationshipMap.md` - Documented the authoritative seconds model and persistence boundaries.
+
+### Notes
+
+- These commits establish the timing assumptions used by later production and prestige work.
+
+---
+
+## Version 0.00042 through 0.0004 - Sales progression
+**Date:** 2026-07-29 | **Commit(s):** 55c8b85fd7d84d4c21e26bafc8931207810eacab, cedfd2a2917a07d3eca101fe161086068889ce50, 907c30e92a0482f5b95f1bde3793334d482fc783, 0c7f525dc44951e5b654ced800830af30e7be0bc | **Stats:** +688 / -79
+
+### Summary
+
+- Added customer progress indicators and sales probability behavior.
+- Implemented sales progression and refined its probability mathematics.
+
+### Changes
+
+- `game/sales/salesContracts.ts` - Added customer sales contracts, progress state, and probability calculations.
+- `game/core/math/scaling.ts` - Added the scaling helper used by sales probability math.
+- `app/dashboard/DashboardContent.tsx`, `app/index.tsx`, and `app/index.styles.ts` - Added the sales interaction and customer progress-bar presentation.
+- `app/_layout.tsx` and `stores/gameStore.ts` - Connected sales progression to realtime state updates and persistence.
+- `docs/WorkingDocs/CONTEXT.md`, `design.md`, `gameflow.md`, `PROJECT_INFO.md`, and `VariableRelationshipMap.md` - Defined the sales terms, formulas, state ownership, and flow.
+
+### Notes
+
+- The commits are grouped because they build one continuous sales-system implementation.
+
+---
+
+## Version 0.00055 through 0.00031 - Facility UI and shared utilities
+**Date:** 2026-07-29 | **Commit(s):** 975cd1c6342a5d8c72553f866cafde5e7dd76348, 1bf8f9646a5c8445fdb892392f187b9080f8ea9e, 27a4613ddfd605bd0f13826a32af50b29eed9fa3, a1eca2a112f0aaca70b8281351142e59fec4a4a3, 8f851f48e44e3af0dede35b02d84528c362690d4, 7d3fc85a82f4e066e6233d1f7d6c7171b3016098, f38089e393783fb4dcd685b066681be50ee81a09, a37e53e80e39651adc5f45990a57d1ac5827e565 | **Stats:** +1383 / -571
+
+### Summary
+
+- Improved the facility UI and added more facility and resource presentation.
+- Introduced shared utility functions and migrated callers to them.
+- Added speed/output improvements and fixed a small UI issue.
+
+### Changes
+
+- `app/dashboard/DashboardContent.tsx`, `app/dashboard/DashboardDialogs.tsx`, `app/dashboard/dashboardFormatters.ts`, and `app/index.tsx` - Refactored dashboard rendering, formatting, and dialog composition.
+- `game/facilities/facility.ts`, `facilityRegistry.ts`, `facilityUpgrades.ts`, and `game/inventory/inventory.ts` - Added more facility/resource presentation and connected upgrade and inventory data.
+- `game/facilities/advanceProduction.ts`, `game/recipes/recipes.ts`, `game/recipes/recipeTypes.ts`, `game/resources/resourceIcons.ts`, `resourcesRegistry.ts`, and `resourceTypes.ts` - Expanded facility production and resource catalogues.
+- `utils.ts`, `app/dashboard/recipeFormatters.ts`, and `app/dashboard/dashboardFormatters.ts` - Added shared formatting and utility functions, then migrated dashboard callers to them.
+- `game/core/math/scaling.ts` and `stores/gameStore.ts` - Centralized shared scaling and updated store integration.
+- `docs/WorkingDocs/CONTEXT.md`, `design.md`, `gameflow.md`, `PROJECT_INFO.md`, and `VariableRelationshipMap.md` - Updated the domain documentation for the expanded facility UI and utilities.
+
+### Notes
+
+- This group combines the reviewed facility/UI and utility refactors; all eight commits are listed to preserve history.
+
+---
+
+## Version 0.0006c through 0.0006b - Documentation updates
+**Date:** 2026-07-27 | **Commit(s):** 6666f358904de2e93efa7cfd35dc9791d9e79899, 60ffe219daea22962668afcfcadd0f151106c6bd | **Stats:** +446 / -424
+
+### Summary
+
+- Updated the working documentation for the evolving facility and time systems.
+- Corrected documentation structure and implementation descriptions.
+
+### Changes
+
+- `docs/WorkingDocs/PROJECT_INFO.md` - Updated the implementation map and current project status.
+- `docs/WorkingDocs/AIpromt_docs.md`, `CONTEXT.md`, `design.md`, `gameflow.md`, and `VariableRelationshipMap.md` - Revised the AI guidance, glossary, product direction, system flow, and variable ownership documentation.
+- `docs/WorkingDocs/versionlog.md` - Updated the release-history documentation itself.
+
+### Notes
+
+- These documentation commits are grouped because they update the same working-document surface.
+
+---
+
 ## Version 0.0006a - Realtime manager fixes
 **Date:** 2026-07-27 | **Commit(s):** 84d1189409f70caf731050642d7cb8b1a2dc4680 | **Stats:** +1511 / -90
 
