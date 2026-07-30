@@ -13,7 +13,7 @@ Use this guide when updating the canonical Industri Clicker working documents.
 | `PROJECT_INFO.md` | Verified repository layout, commands, routes, stack, and implementation status. | Design authority or detailed mechanics. |
 | `readme.md` | Short project overview, setup, and documentation entry points. | Working-document detail. |
 
-Supporting documents such as `AIDescriptions_coregame.md`, `AI_AGENT_INSTRUCTIONS.md`, and `versionlog.md` keep their own narrower roles; do not copy their content into these six documents.
+Supporting documents such as `AIDescriptions_coregame.md`, `AIpromt_codecleaning.md`, and `versionlog.md` keep their own narrower roles; do not copy their content into these six documents.
 
 ## Update Rules
 
@@ -23,6 +23,7 @@ Supporting documents such as `AIDescriptions_coregame.md`, `AI_AGENT_INSTRUCTION
 - Keep planned, deferred, and implemented claims distinct. `PROJECT_INFO.md` may call something implemented only when the repository supports that claim.
 - Use repository-relative links that resolve from the document containing them.
 - Remove stale names and obsolete claims instead of documenting compatibility aliases.
+- Do not repeat a complete mechanic in more than one document: link to the owning document and keep only the context needed to use the link.
 
 ## Verification
 
