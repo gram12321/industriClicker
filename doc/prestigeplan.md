@@ -122,4 +122,4 @@ The project currently has no test runner configuredâ€”only `npm run typecheck`â€
 - The intended lifecycle is 100 foreground hours.
 - For whole-lifecycle decaying events, 100 foreground hours is the near-zero target rather than the half-life.
 - Decaying prestige events use active foreground-hour half-lives.
-- Contract-sale prestige uses a five-active-hour half-life in the first implementation.
+- Contract-sale prestige uses a five-active-hour half-life in the first implementation. Its `1,000,000` maximum is only a theoretical safety ceiling, not a balancing limit.

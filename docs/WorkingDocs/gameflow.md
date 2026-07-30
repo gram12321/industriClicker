@@ -103,7 +103,7 @@ Invalid-input behavior: Reject non-finite transaction amounts and empty descript
 
 - Prestige is stored as a ledger of company events. Its current total is derived; it is informational only.
 - Company balance prestige is permanent and recalculated as `ln(1 + max(0, cashBalance + assetBookValue - liabilities) / INITIAL_BALANCE)`. Asset book value and liabilities are `0` until finance owns them.
-- A fulfilled sales contract creates one idempotent event with `0.1 + 0.15 × ln(1 + reward)`, capped at `0.5`, and a five-active-hour half-life.
+- A fulfilled sales contract creates one idempotent event with `0.1 + 0.15 × ln(1 + reward)`, capped at the theoretical safety ceiling `1,000,000`, and a five-active-hour half-life.
 - One active foreground hour equals `3,600,000` milliseconds of logical game time. Decaying amounts use `baseAmount × 0.5^(elapsedForegroundHours / halfLifeForegroundHours)`.
 - The 100-active-hour company lifecycle is documentation for balancing individual event half-lives; it is not used by the decay calculation.
 - Background time does not decay prestige. Fast-forward does because it advances logical game time.
