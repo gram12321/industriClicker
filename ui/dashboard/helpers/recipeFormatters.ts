@@ -16,6 +16,13 @@ export function formatRecipeName(recipe: Recipe): string {
     case 'bake-bread': return 'Bake bread';
     case 'produce-water': return 'Produce water';
     case 'produce-electricity': return 'Produce electricity';
+    case 'grow-sugar': return 'Grow sugar';
+    case 'mine-coal': return 'Mine coal';
+    case 'bake-cake': return 'Bake cake';
+    case 'manual-pumping': return 'Manual pumping';
+    case 'electric-pumping': return 'Electric pumping';
+    case 'coal-power': return 'Coal power';
+    case 'solar-power': return 'Solar power';
     default: return recipe.name;
   }
 }
