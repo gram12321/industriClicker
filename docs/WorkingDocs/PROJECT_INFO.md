@@ -9,13 +9,13 @@ This is the factual implementation map for Industri Clicker: repository shape, c
 - Implemented foundation: dashboard shell, resource/inventory, facilities, finance, sales contracts, foreground production, company prestige, IndustriPedia, and local saves.
 - Deferred: offline catch-up, markets, additional staffing factors, and cloud services.
 
-## Code Size At 0.0006a
+## Code Size At 0.00053
 
-Measured from the latest recorded version tree (`84d1189409f70caf731050642d7cb8b1a2dc4680`, dated 2026-07-27):
+Measured from the latest repository commit (`89309b4`, version `0.00053`, dated 2026-07-30):
 
-- Application source: **1,646 non-empty TypeScript lines** across 21 `.ts`/`.tsx` files.
+- Application source: **3,486 non-empty TypeScript lines** across 45 `.ts`/`.tsx` files.
 - Project configuration: **96 non-empty lines** across `metro.config.js`, `app.json`, `package.json`, and `tsconfig.json`.
-- Combined application source and project configuration: **1,742 non-empty lines**.
+- Combined application source and project configuration: **3,582 non-empty lines**.
 
 These counts exclude Markdown documentation, agent skills, dependency lockfiles, and generated `.tmp-web-export` output.
 
@@ -37,7 +37,7 @@ olditerations/                    Archived predecessor reference material
 app/                              Expo Router screens and root provider
 ui/dashboard/                     Dashboard views, reusable components, and UI helpers
 theme.ts                          Shared visual tokens and Paper theme
-game/                             Resource, recipe, facility, finance, time, and persistence logic
+game/                             Resource, recipe, facility, finance, sales, prestige, time, math, and persistence logic
 stores/                           Zustand runtime state
 assets/                           Expo application icons and splash asset
 app.json                          Expo application configuration
