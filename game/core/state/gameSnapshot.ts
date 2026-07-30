@@ -9,7 +9,7 @@ export type GameTimeSnapshot = {
   lastProcessedAtMs: number;
   /** Foreground milliseconds retained until they form a whole sales minute. */
   unprocessedWorkMs: number;
-  /** Current visual estimate towards the next customer offer. */
+  /** Estimated customer-wait intervals elapsed since the last customer offer. */
   customerPipelineProgress: number;
 };
 

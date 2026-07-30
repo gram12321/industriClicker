@@ -29,6 +29,7 @@ type GameState = {
   lastObservedAtMs: number;
   /** Foreground time that has not yet formed a whole sales minute. */
   unprocessedWorkMs: number;
+  /** Estimated customer-wait intervals elapsed since the last offer. */
   customerPipelineProgress: number;
   addResource: (resourceType: ResourceType, amount?: number) => boolean;
   removeResource: (resourceType: ResourceType, amount?: number) => boolean;
@@ -249,10 +250,7 @@ export const useGameStore = create<GameState>((set, get) => {
 
       const currentSalesContracts = salesContracts ?? get().salesContracts;
       const offerChance = calculateSalesContractOfferChance(currentSalesContracts.getOfferedContracts().length);
-      customerPipelineProgress = Math.min(
-        1,
-        customerPipelineProgress + (stepMs / 1_000) * offerChance / 60,
-      );
+      customerPipelineProgress += (stepMs / 1_000) * offerChance / 60;
 
       const totalSalesMs = unprocessedWorkMs + stepMs;
       const completedSalesMinutes = Math.floor(totalSalesMs / REALTIME_WORK_MINUTE_MS);

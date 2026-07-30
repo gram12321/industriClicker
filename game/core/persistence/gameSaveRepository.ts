@@ -26,8 +26,7 @@ function isGameTimeSnapshot(value: unknown): boolean {
     && value.unprocessedWorkMs < 60_000
     && typeof value.customerPipelineProgress === 'number'
     && Number.isFinite(value.customerPipelineProgress)
-    && value.customerPipelineProgress >= 0
-    && value.customerPipelineProgress <= 1;
+    && value.customerPipelineProgress >= 0;
 }
 
 function isGameSnapshot(value: unknown): value is GameSnapshot {
