@@ -18,7 +18,7 @@ Foreground elapsed time -> advanceGameTime -> registered timed rules
 |---|---|---|
 | Balance values and catalogues | Typed TypeScript definitions | No |
 | Current game state | Zustand | Through `GameSnapshot` |
-| Finance, inventory, facilities, sales contracts, prestige, logical game time | Domain models in the store | Yes |
+| Finance, inventory, facilities, sales contracts, achievements, production statistics, prestige, logical game time | Domain models in the store | Yes |
 | Foreground wall-clock observation anchor and derived UI data | Store/runtime helpers | No |
 | Durable snapshot | `gameSaveRepository` Expo SQLite adapter | Yes |
 | Cloud state | None | No |
@@ -53,6 +53,8 @@ Levels and worker counts are non-negative integers. A zero-worker requirement ha
 
 - Construction requires funds and applies `newBalance = currentBalance - constructionCost`; balance cannot become negative.
 - Prestige is informational. Its total is derived from a permanent balance event and decaying fulfilled-sales events using foreground logical time; background time does not decay it.
+- Achievements are evaluated from post-command state. Facility/finance changes check their categories immediately; completed production updates lifetime output before production checks; fulfilled sales check sales, finance, and prestige after their normal prestige event; time checks run after completed foreground minutes.
+- An achievement unlock is durable and creates one source-keyed `achievement:<id>` prestige event. The evaluator sees normal post-command prestige but not prestige rewards from other unlocks in that same pass, so prestige tiers cannot recursively chain.
 - Each foreground minute may offer one contract. Offer chance falls from 100% as unfulfilled contracts grow, using sales control points `0→0`, `3→0.25`, `5→0.50`, `10→0.75`, and `1,000,000→almost 1`, then `1 - calculateAsymmetricalScaler01(...)`.
 - A contract requests a random catalogue resource and quantity 1–10, pays `quantity × €1`, and can be fulfilled only with the full inventory amount. Rejection changes neither inventory nor finance.
 - The customer pipeline is visual only and does not affect offer rolls. It fills green through one estimated wait interval, then refills in red for each additional estimated interval until an offer resets it.
@@ -61,7 +63,7 @@ Levels and worker counts are non-negative integers. A zero-worker requirement ha
 
 1. `TimeManager` measures active wall-clock time from `lastObservedAtMs`.
 2. `advanceGameTime` splits it into one-second simulation steps.
-3. Each step advances logical time and pipeline, then gives active facilities `elapsedSeconds / 60` base work in fixed order.
+3. Each step advances logical time and pipeline, then gives active facilities `elapsedSeconds / 60` base work in fixed order. Completed recipe output is also recorded in lifetime production statistics after output multipliers apply.
 4. Sales offers resolve only for completed foreground minutes; retained partial time carries between ticks.
 5. Fast-forward first processes real foreground time, then simulates 60 seconds through the same path.
 6. Background processes the final active interval and saves; resume resets the observation anchor. Inactive time awards no work, offers, or prestige decay.
@@ -78,4 +80,4 @@ Offline catch-up is deferred and must use this rule path when approved.
 | Invalid snapshot | Start fresh and leave it untouched until a successful save. |
 | Admin reset | Delete the snapshot and restore the starting company. |
 
-No save-version compatibility layer exists: a changed persisted shape may deliberately discard older local data.
+No save-version compatibility layer exists: a changed persisted shape may deliberately discard older local data. Achievement ledger, production statistics, and company-start logical time are required snapshot fields.

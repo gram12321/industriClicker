@@ -21,6 +21,9 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Building efficiency | The production-speed multiplier derived from staffing. |
 | Company prestige | An informational company-standing value derived from prestige events. |
 | Prestige event | A company-level prestige source that may decay with active foreground time. |
+| Achievement | A durable company milestone defined in code and unlocked once when its typed condition is met. |
+| Achievement unlock | The persisted achievement ID and logical foreground time at which its condition was first met. |
+| Production statistics | Lifetime facility output totals by resource, recorded only when a recipe completes output. |
 
 ## Time, State, and Persistence
 

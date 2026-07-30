@@ -16,6 +16,7 @@ import {
 } from '@/game';
 import {
   AdminDashboard,
+  AchievementsDashboard,
   DashboardContent,
   DashboardDialogs,
   IndustriPediaDashboard,
@@ -28,7 +29,7 @@ import {
 import { formatCurrency, formatNumber } from '@/utils';
 import { APP_ICONS } from '@/icons';
 
-type DashboardView = DashboardTab | 'admin' | 'profile' | 'pedia';
+type DashboardView = DashboardTab | 'achievements' | 'admin' | 'profile' | 'pedia';
 
 const tabs: Array<{ key: DashboardTab; label: string; symbol: string }> = [
   { key: 'company', label: 'Company', symbol: '⌂' },
@@ -54,7 +55,10 @@ export default function HomeScreen() {
   const facilities = useGameStore((state) => state.facilities);
   const finance = useGameStore((state) => state.finance);
   const salesContracts = useGameStore((state) => state.salesContracts);
+  const achievements = useGameStore((state) => state.achievements);
+  const productionStatistics = useGameStore((state) => state.productionStatistics);
   const prestige = useGameStore((state) => state.prestige);
+  const companyStartedAtGameTimeMs = useGameStore((state) => state.companyStartedAtGameTimeMs);
   const lastProcessedAtMs = useGameStore((state) => state.lastProcessedAtMs);
   const customerPipelineProgress = useGameStore((state) => state.customerPipelineProgress);
   const buildFacility = useGameStore((state) => state.buildFacility);
@@ -128,7 +132,7 @@ export default function HomeScreen() {
                   onPress={() => { setIsProfileMenuOpen(false); setActiveView('pedia'); }}
                   title="IndustriPedia"
                 />
-                <Menu.Item leadingIcon={APP_ICONS.achievements} onPress={() => setIsProfileMenuOpen(false)} title="Achievements" />
+                <Menu.Item leadingIcon={APP_ICONS.achievements} onPress={() => { setIsProfileMenuOpen(false); setActiveView('achievements'); }} title="Achievements" />
                 {isAdminDashboardAvailable && (
                   <Menu.Item
                     leadingIcon={APP_ICONS.shield}
@@ -147,7 +151,7 @@ export default function HomeScreen() {
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
-          {activeView === 'admin' && isAdminDashboardAvailable ? <AdminDashboard onCreateContractRequest={createSalesContractRequest} onResetCompany={resetCompany} onSetInventoryAmount={setInventoryAmount} /> : activeView === 'profile' ? <ProfileDashboard onResetCompany={resetCompany} /> : activeView === 'pedia' ? <IndustriPediaDashboard /> : (
+          {activeView === 'admin' && isAdminDashboardAvailable ? <AdminDashboard onCreateContractRequest={createSalesContractRequest} onResetCompany={resetCompany} onSetInventoryAmount={setInventoryAmount} /> : activeView === 'achievements' ? <AchievementsDashboard achievements={achievements} companyStartedAtGameTimeMs={companyStartedAtGameTimeMs} currentGameTimeMs={lastProcessedAtMs} facilities={facilities} finance={finance} prestige={prestige} productionStatistics={productionStatistics} salesContracts={salesContracts} /> : activeView === 'profile' ? <ProfileDashboard onResetCompany={resetCompany} /> : activeView === 'pedia' ? <IndustriPediaDashboard /> : (
             <DashboardContent
               activeTab={activeView === 'admin' ? 'company' : activeView}
               openConstructionYard={() => setIsConstructionYardOpen(true)}

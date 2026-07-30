@@ -19,6 +19,7 @@ Industri Clicker is a single-player, mobile-first industrial clicker for native 
 - Facilities are built with company funds; destroying one gives no refund.
 - Sales contracts let players exchange available inventory for money. They remain available until fulfilled or rejected, and their retained history remains visible.
 - Company prestige is informational only in this version.
+- Achievements show company milestones across facilities, production, sales, finance, foreground time, and prestige. Their only v1 reward is a decaying prestige event; they do not change production, pricing, staffing, contracts, or finance rules.
 - Speed and Output upgrades improve a facility independently. Staffing is the first efficiency factor; broader workforce systems are deferred.
 - Production progresses only while the app is foregrounded. The temporary one-minute fast-forward follows the same rule; offline progression is not yet approved.
 

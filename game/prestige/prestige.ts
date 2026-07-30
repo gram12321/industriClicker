@@ -112,6 +112,23 @@ export class PrestigeLedger {
     });
   }
 
+  recordAchievement(input: {
+    achievementId: string;
+    name: string;
+    prestigeAmount: number;
+    decayHalfLifeForegroundHours: number;
+    createdAtGameTimeMs: number;
+  }): void {
+    this.recordIfAbsent({
+      type: 'achievement',
+      amountBase: input.prestigeAmount,
+      createdAtGameTimeMs: input.createdAtGameTimeMs,
+      decayHalfLifeForegroundHours: input.decayHalfLifeForegroundHours,
+      sourceId: `achievement:${input.achievementId}`,
+      description: `Achievement unlocked: ${input.name}`,
+    });
+  }
+
   recordIfAbsent(eventInput: PrestigeEventInput): boolean {
     if (!this.isValidInput(eventInput)
       || this.events.some((event) => event.type === eventInput.type && event.sourceId === eventInput.sourceId)) {
