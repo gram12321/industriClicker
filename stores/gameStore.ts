@@ -45,6 +45,7 @@ type GameState = {
   advanceGameTime: (elapsedMilliseconds: number) => number;
   advanceRealtime: (nowMs: number) => number;
   fastForwardOneMinute: () => boolean;
+  createSalesContractRequest: (resourceType: ResourceType, quantity: number) => boolean;
   fulfillSalesContract: (contractId: string) => boolean;
   rejectSalesContract: (contractId: string) => boolean;
   resetRealtimeClock: (nowMs: number) => void;
@@ -297,6 +298,15 @@ export const useGameStore = create<GameState>((set, get) => {
   fastForwardOneMinute: () => {
     get().advanceRealtime(Date.now());
     return get().advanceGameTime(REALTIME_WORK_MINUTE_MS) > 0;
+  },
+  createSalesContractRequest: (resourceType, quantity) => {
+    const salesContracts = get().salesContracts.clone();
+    if (!salesContracts.createOfferForResource(resourceType, quantity)) {
+      return false;
+    }
+
+    set({ salesContracts, customerPipelineProgress: 0 });
+    return true;
   },
   fulfillSalesContract: (contractId) => {
     const salesContracts = get().salesContracts.clone();

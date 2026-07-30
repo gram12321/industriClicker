@@ -114,6 +114,7 @@ Invalid-input behavior: Reject non-finite transaction amounts and empty descript
 - The estimated wait is `1 / currentCustomerChance` foreground minutes; individual waits remain random.
 - Customer pipeline progress adds `currentCustomerChance / 60` each foreground second, clamps at 100%, and resets to 0 whenever an offer is created. It is visual runtime state and does not affect the customer roll.
 - The requested resource is randomly selected from the code-owned resource catalogue. Quantity is a random integer from 1 through 10.
+- The localhost-only Admin Dashboard can create one open contract for a selected resource and integer quantity from 1 through 10. It uses the same reward, customer-number, and persistence rules as a timed offer, but bypasses the foreground-minute chance.
 - Reward is `quantity × €1`.
 - Fulfilment first verifies the complete inventory quantity. It then removes the requested resource, records the positive finance transaction, and moves the contract from unfulfilled to completed.
 - Rejection moves the offered contract to retained rejected history without changing inventory or finance.

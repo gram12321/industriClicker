@@ -36,6 +36,7 @@ This is the canonical glossary for Industri Clicker. Use it for stable game, UI,
 | Euro (€) | The initial player currency. | Implemented foundation |
 | Finance | Player balance plus an append-only record of balance-changing transactions. | Implemented model |
 | Sales contract | A customer request for one resource and an integer quantity. A contract remains offered until the player fulfils or rejects it, then moves to retained completed/rejected history. | Implemented foundation |
+| Admin contract request | A development-only command that creates one open sales contract for a selected resource and integer quantity. | Implemented development tool |
 | Speed upgrade | A money-funded facility level that raises production work rate with diminishing returns and raises staffing requirements. | Implemented model |
 | Output upgrade | A money-funded facility level that raises recipe output with diminishing returns and raises staffing requirements. | Implemented model |
 | Assigned workers | The local worker count allocated to one facility. It may be below or above that facility's requirement. | Implemented model |
