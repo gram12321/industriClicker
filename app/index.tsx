@@ -9,16 +9,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/theme';
 import type { Finance } from '@/game/finance/finance';
 import type { FacilityType } from '@/game/facilities/facilityTypes';
-import { DashboardContent } from './dashboard/DashboardContent';
-import { DashboardDialogs } from './dashboard/DashboardDialogs';
-import { AdminDashboard } from './dashboard/AdminDashboard';
-import { isDevAdminSurfaceAvailable } from './dashboard/devAdminGate';
+import { DashboardContent, type DashboardTab } from '@/ui/dashboard/DashboardView';
+import { DashboardDialogs } from '@/ui/dashboard/components/DashboardDialogs';
+import { AdminDashboard } from '@/ui/dashboard/views/AdminDashboard';
+import { ProfileDashboard } from '@/ui/dashboard/views/ProfileDashboard';
+import { isDevAdminSurfaceAvailable } from '@/ui/dashboard/helpers/devAdminGate';
 import { formatCurrency } from '@/utils';
 import { useGameStore } from '@/stores/gameStore';
+import { resetGameSave } from '@/game/core/persistence/gameSaveRepository';
 import { styles } from './index.styles';
 
-type DashboardTab = 'company' | 'inventory' | 'production' | 'sales' | 'finance';
-type DashboardView = DashboardTab | 'admin';
+type DashboardView = DashboardTab | 'admin' | 'profile';
 
 const tabs: Array<{ key: DashboardTab; label: string; symbol: string }> = [
   { key: 'company', label: 'Company', symbol: '⌂' },
@@ -52,7 +53,13 @@ export default function HomeScreen() {
   const fastForwardOneMinute = useGameStore((state) => state.fastForwardOneMinute);
   const fulfillSalesContract = useGameStore((state) => state.fulfillSalesContract);
   const rejectSalesContract = useGameStore((state) => state.rejectSalesContract);
+  const resetGame = useGameStore((state) => state.resetGame);
   const isAdminDashboardAvailable = isDevAdminSurfaceAvailable();
+
+  const resetCompany = async () => {
+    await resetGameSave();
+    resetGame();
+  };
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -91,7 +98,11 @@ export default function HomeScreen() {
                 onDismiss={() => setIsProfileMenuOpen(false)}
                 visible={isProfileMenuOpen}
               >
-                <Menu.Item leadingIcon="account-outline" onPress={() => setIsProfileMenuOpen(false)} title="Profile" />
+                <Menu.Item
+                  leadingIcon="account-outline"
+                  onPress={() => { setIsProfileMenuOpen(false); setActiveView('profile'); }}
+                  title="Profile"
+                />
                 <Menu.Item leadingIcon="cog-outline" onPress={() => setIsProfileMenuOpen(false)} title="Settings" />
                 <Menu.Item leadingIcon="trophy-outline" onPress={() => setIsProfileMenuOpen(false)} title="Achievements" />
                 {isAdminDashboardAvailable && (
@@ -112,7 +123,7 @@ export default function HomeScreen() {
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
-          {activeView === 'admin' && isAdminDashboardAvailable ? <AdminDashboard /> : (
+          {activeView === 'admin' && isAdminDashboardAvailable ? <AdminDashboard onResetCompany={resetCompany} /> : activeView === 'profile' ? <ProfileDashboard onResetCompany={resetCompany} /> : (
             <DashboardContent
               activeTab={activeView === 'admin' ? 'company' : activeView}
               openConstructionYard={() => setIsConstructionYardOpen(true)}

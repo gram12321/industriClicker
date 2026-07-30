@@ -132,7 +132,7 @@ Offline catch-up is not part of this flow yet. When designed, it must validate e
 | App background/resume | Process the final active interval, flush the snapshot, reset the wall-clock observation anchor, and award no background work. | Implemented foreground-only |
 | App launch | Restore a valid snapshot, including logical time and retained partial sales time, before interaction; apply no catch-up. | Implemented |
 | Invalid/corrupt save | Ignore it and start fresh; leave it untouched until a successful save. | Implemented |
-| Admin reset | Delete the single local snapshot, so the next launch starts fresh. | Implemented adapter |
+| Admin reset | Delete the single local snapshot and restore the starting company state. | Implemented development admin surface |
 
 There is no save-version compatibility layer. When a persisted shape changes, existing local data may be discarded deliberately.
 

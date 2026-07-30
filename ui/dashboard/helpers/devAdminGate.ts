@@ -16,3 +16,4 @@ export function isDevAdminSurfaceAvailable(): boolean {
     && typeof window !== 'undefined'
     && isLoopbackHostname(window.location.hostname);
 }
+

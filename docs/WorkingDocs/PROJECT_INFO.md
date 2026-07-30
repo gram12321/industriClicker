@@ -35,6 +35,7 @@ docs/WorkingDocs/                 Canonical working documentation
 skills/                           Router and local specialist skills
 olditerations/                    Archived predecessor reference material
 app/                              Expo Router screens and root provider
+ui/dashboard/                     Dashboard views, reusable components, and UI helpers
 theme.ts                          Shared visual tokens and Paper theme
 game/                             Resource, recipe, facility, finance, time, and persistence logic
 stores/                           Zustand runtime state
@@ -53,22 +54,6 @@ package.json                      Dependencies and development commands
 - `npm run android` — optional emulator shortcut; physical devices use Expo Go through `npm run start`.
 - `npm run web` — start browser development preview.
 - `npm run typecheck` — TypeScript validation without emitting files.
-
-## Verified Implementation Map
-
-| Area | Current fact | Verification/status |
-|---|---|---|
-| Dashboard | `/` renders the safe-area-aware dashboard and locally switches Company, Inventory, Production, Sales, and Finance views. | Implemented; typechecked |
-| Resources | `ResourceType` contains Grain, Bread, Water, Electricity, Sugar, Coal, and Cake; definitions are code-owned. | Implemented |
-| Inventory | Zustand owns an `Inventory` with quantity and placeholder quality; typed add/remove commands exist. | Implemented |
-| Facilities | Farm, Bakery, Small Utility Works, Mine, Water Well, and Power Plant definitions plus constructed facility state exist. | Implemented |
-| Facility upgrades | Each facility supports money-funded Speed and Output upgrades, locally assigned workers, and staffing-based production efficiency. | Implemented; typechecked |
-| Finance | Starts at €10,000 and records accepted signed transactions; Farm and Bakery cost €60 and €300. | Implemented |
-| Foreground game time | One global foreground-time command advances logical game time, production in one-second steps, whole-minute sales, and the customer pipeline; fast-forward uses the identical one-second simulation. | Implemented |
-| Sales contracts | Each foreground minute rolls a diminishing chance to create a random resource contract; a visual per-second pipeline estimate resets after each created offer. Valid fulfilment removes inventory, credits €1 per unit, and retains a completed record. | Implemented |
-| Sales history | The Sales view separates Open and Closed contracts, with Completed/Rejected filtering inside Closed. | Implemented |
-| Local save | One versioned `GameSnapshot` persists finance, inventory, facilities/recipes/progress, sales, logical game time, retained partial sales time, and pipeline progress in Expo SQLite. Saves batch for up to five seconds and processes then flushes time on background/provider cleanup. | Implemented |
-| Offline production | Background/offline time grants no work. | Deferred |
 
 ## Documentation Map
 

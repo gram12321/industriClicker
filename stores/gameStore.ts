@@ -44,6 +44,7 @@ type GameState = {
   resetRealtimeClock: (nowMs: number) => void;
   createSnapshot: () => GameSnapshot;
   restoreSnapshot: (snapshot: GameSnapshot) => void;
+  resetGame: () => void;
   resetInventory: () => void;
 };
 
@@ -313,5 +314,19 @@ export const useGameStore = create<GameState>((set, get) => ({
     unprocessedWorkMs: snapshot.time.unprocessedWorkMs,
     customerPipelineProgress: snapshot.time.customerPipelineProgress,
   }),
+  resetGame: () => {
+    const now = Date.now();
+
+    set({
+      finance: new Finance(),
+      inventory: new Inventory(),
+      facilities: new FacilityCollection(),
+      salesContracts: new SalesContracts(),
+      lastProcessedAtMs: now,
+      lastObservedAtMs: now,
+      unprocessedWorkMs: 0,
+      customerPipelineProgress: 0,
+    });
+  },
   resetInventory: () => set({ inventory: new Inventory() }),
 }));
