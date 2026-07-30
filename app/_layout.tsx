@@ -89,6 +89,7 @@ function GamePersistence({ children }: { children: ReactNode }) {
         && state.inventory === previousState.inventory
         && state.facilities === previousState.facilities
         && state.salesContracts === previousState.salesContracts
+        && state.prestige === previousState.prestige
       ) {
         return;
       }

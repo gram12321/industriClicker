@@ -40,6 +40,7 @@ Player action or time event
 | `lastProcessedAtMs` | Logical foreground game time in epoch milliseconds | Stored | Zustand game store | Realtime or fast-forward global-time advance | Snapshot, global-time command | Yes, via `GameTimeSnapshot` | Foreground-only |
 | `lastObservedAtMs` | Last foreground wall-clock observation in epoch milliseconds | Runtime state | Zustand game store | Foreground timer or lifecycle transition | `TimeManager` | No | Foreground-only |
 | `unprocessedWorkMs` | Foreground milliseconds retained until a complete sales minute | Stored | Zustand game store | Global foreground-time advance | Sales timing | Yes, via `GameTimeSnapshot` | Implemented |
+| `prestige.events` | Company prestige source events and their decay definitions | Stored | `PrestigeLedger` in Zustand | Balance-changing commands and contract fulfilment | Header and prestige dialog | Yes, via `PrestigeLedgerSnapshot` | Implemented |
 
 ## Dependency Table
 
@@ -56,6 +57,7 @@ Player action or time event
 | Production output | Recipe inputs, output level, completion state | `baseOutput × outputMultiplier` after required work | Inputs are paid at cycle start; missing inputs stall | Cycle start or completion |
 | Contract reward | Requested quantity | `quantity × €1` | Quantity is an integer from 1 through 10 | Contract generation |
 | Customer offer chance | Unfulfilled contract count, Sales control points | `1 - asymmetricalScaler(controlPointNormalize(unfulfilledContracts))` | 0, 3, 5, 10, and 1,000,000 contracts map to approximately 100%, 63%, 30%, 8%, and effectively 0% chance | Each foreground minute |
+| Company prestige | Prestige events and logical foreground time | Sum current event amounts; decaying rows use a named prestige-year half-life | One prestige year is one foreground hour; display excludes values below `0.001` | Balance change, sales fulfilment, or UI render |
 
 ## Command Effects
 

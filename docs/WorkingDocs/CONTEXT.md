@@ -42,6 +42,8 @@ This is the canonical glossary for Industri Clicker. Use it for stable game, UI,
 | Required workers | The calculated staffing target for a facility's base staffing plus its speed and output upgrade levels. | Implemented model |
 | Building efficiency | The production-speed multiplier currently calculated from assigned versus required workers. Other efficiency factors are deferred. | Implemented model |
 | Progression | A durable increase in available options, capacity, efficiency, or player reach. | Generic term |
+| Company prestige | An informational company-standing score derived from persistent prestige events. It has no gameplay effect in the first version. | Implemented model |
+| Prestige event | A company-level source with a base amount and optional foreground-time decay half-life. | Implemented model |
 
 ## Economy Language
 
@@ -73,6 +75,7 @@ These are working definitions, not confirmation that every system will be used:
 | Snapshot | The deliberate local-save representation of durable game state. |
 | Runtime store | Zustand-managed in-memory state. |
 | Local save | The device-local Expo SQLite record used to restore a current-version game snapshot. |
+| Prestige year | One foreground logical hour. One hundred prestige years equal the intended 100 foreground-hour company lifecycle. |
 
 ## UI and Mobile Language
 

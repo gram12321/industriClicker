@@ -11,15 +11,18 @@ import type { Finance } from '@/game/finance/finance';
 import type { FacilityType } from '@/game/facilities/facilityTypes';
 import { DashboardContent, type DashboardTab } from '@/ui/dashboard/DashboardView';
 import { DashboardDialogs } from '@/ui/dashboard/components/DashboardDialogs';
+import { PrestigeDialog } from '@/ui/dashboard/components/PrestigeDialog';
 import { AdminDashboard } from '@/ui/dashboard/views/AdminDashboard';
 import { ProfileDashboard } from '@/ui/dashboard/views/ProfileDashboard';
+import { IndustriPediaDashboard } from '@/ui/dashboard/views/IndustriPediaDashboard';
 import { isDevAdminSurfaceAvailable } from '@/ui/dashboard/helpers/devAdminGate';
-import { formatCurrency } from '@/utils';
+import { formatCurrency, formatNumber } from '@/utils';
 import { useGameStore } from '@/stores/gameStore';
 import { resetGameSave } from '@/game/core/persistence/gameSaveRepository';
+import { calculateCompanyPrestigeSummary } from '@/game/prestige/prestigeCalculator';
 import { styles } from '@/ui/dashboard/dashboard.styles';
 
-type DashboardView = DashboardTab | 'admin' | 'profile';
+type DashboardView = DashboardTab | 'admin' | 'profile' | 'pedia';
 
 const tabs: Array<{ key: DashboardTab; label: string; symbol: string }> = [
   { key: 'company', label: 'Company', symbol: '⌂' },
@@ -38,12 +41,15 @@ export default function HomeScreen() {
   const [activeView, setActiveView] = useState<DashboardView>('company');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isConstructionYardOpen, setIsConstructionYardOpen] = useState(false);
+  const [isPrestigeOpen, setIsPrestigeOpen] = useState(false);
   const [pendingConstruction, setPendingConstruction] = useState<FacilityType | null>(null);
   const [pendingDestruction, setPendingDestruction] = useState<FacilityType | null>(null);
   const inventory = useGameStore((state) => state.inventory);
   const facilities = useGameStore((state) => state.facilities);
   const finance = useGameStore((state) => state.finance);
   const salesContracts = useGameStore((state) => state.salesContracts);
+  const prestige = useGameStore((state) => state.prestige);
+  const lastProcessedAtMs = useGameStore((state) => state.lastProcessedAtMs);
   const customerPipelineProgress = useGameStore((state) => state.customerPipelineProgress);
   const buildFacility = useGameStore((state) => state.buildFacility);
   const destroyFacility = useGameStore((state) => state.destroyFacility);
@@ -55,6 +61,7 @@ export default function HomeScreen() {
   const rejectSalesContract = useGameStore((state) => state.rejectSalesContract);
   const resetGame = useGameStore((state) => state.resetGame);
   const isAdminDashboardAvailable = isDevAdminSurfaceAvailable();
+  const prestigeSummary = calculateCompanyPrestigeSummary(prestige.getEvents(), lastProcessedAtMs);
 
   const resetCompany = async () => {
     await resetGameSave();
@@ -70,6 +77,10 @@ export default function HomeScreen() {
             <View style={styles.balanceInline}>
               <Text accessibilityLabel="Balance icon" style={styles.coinIcon}>🪙</Text>
               <Text style={styles.balanceInlineValue}>{formatCurrency(finance.getBalance())}</Text>
+              <Pressable accessibilityLabel="Open company prestige" accessibilityRole="button" onPress={() => setIsPrestigeOpen(true)} style={styles.prestigeInline}>
+                <Text style={styles.prestigeIcon}>🏆</Text>
+                <Text style={styles.prestigeInlineValue}>{formatNumber(prestigeSummary.totalPrestige, { smartDecimals: true })}</Text>
+              </Pressable>
             </View>
             <View style={styles.headerActions}>
               <IconButton
@@ -79,10 +90,10 @@ export default function HomeScreen() {
                 onPress={fastForwardOneMinute}
               />
               <IconButton
-                accessibilityLabel="Notifications placeholder"
-                icon="bell-outline"
+                accessibilityLabel="Open company prestige"
+                icon="trophy-outline"
                 iconColor={colors.onDark}
-                onPress={() => undefined}
+                onPress={() => setIsPrestigeOpen(true)}
               />
               <Menu
                 anchor={
@@ -104,6 +115,11 @@ export default function HomeScreen() {
                   title="Profile"
                 />
                 <Menu.Item leadingIcon="cog-outline" onPress={() => setIsProfileMenuOpen(false)} title="Settings" />
+                <Menu.Item
+                  leadingIcon="book-open-variant"
+                  onPress={() => { setIsProfileMenuOpen(false); setActiveView('pedia'); }}
+                  title="IndustriPedia"
+                />
                 <Menu.Item leadingIcon="trophy-outline" onPress={() => setIsProfileMenuOpen(false)} title="Achievements" />
                 {isAdminDashboardAvailable && (
                   <Menu.Item
@@ -123,7 +139,7 @@ export default function HomeScreen() {
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
-          {activeView === 'admin' && isAdminDashboardAvailable ? <AdminDashboard onResetCompany={resetCompany} /> : activeView === 'profile' ? <ProfileDashboard onResetCompany={resetCompany} /> : (
+          {activeView === 'admin' && isAdminDashboardAvailable ? <AdminDashboard onResetCompany={resetCompany} /> : activeView === 'profile' ? <ProfileDashboard onResetCompany={resetCompany} /> : activeView === 'pedia' ? <IndustriPediaDashboard /> : (
             <DashboardContent
               activeTab={activeView === 'admin' ? 'company' : activeView}
               openConstructionYard={() => setIsConstructionYardOpen(true)}
@@ -167,6 +183,7 @@ export default function HomeScreen() {
         onDismissConstruction={() => setPendingConstruction(null)}
         onDismissDestruction={() => setPendingDestruction(null)}
       />
+      <PrestigeDialog currentGameTimeMs={lastProcessedAtMs} isOpen={isPrestigeOpen} onClose={() => setIsPrestigeOpen(false)} summary={prestigeSummary} />
     </SafeAreaView>
   );
 }

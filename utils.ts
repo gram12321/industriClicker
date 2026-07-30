@@ -59,6 +59,10 @@ export function clamp01(value: number): number {
   return clamp(value, 0, 1);
 }
 
+export function safeNonNegative(value: number): number {
+  return Number.isFinite(value) ? Math.max(0, value) : 0;
+}
+
 export function randomInRange(minimum: number, maximum: number): number {
   return minimum + Math.random() * (maximum - minimum);
 }

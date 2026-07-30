@@ -6,7 +6,7 @@ This is the factual implementation map for Industri Clicker: repository shape, c
 
 - Project stage: foundation.
 - Product: single-player, mobile-first industrial clicker for Android.
-- Implemented foundation: dashboard shell, resource/inventory, facilities, finance, sales contracts, foreground production, and versioned local saves.
+- Implemented foundation: dashboard shell, resource/inventory, facilities, finance, sales contracts, foreground production, company prestige, IndustriPedia, and local saves.
 - Deferred: offline catch-up, markets, additional staffing factors, and cloud services.
 
 ## Code Size At 0.0006a
@@ -46,7 +46,7 @@ package.json                      Dependencies and development commands
 
 ## Current App Routes
 
-- `/` — dashboard with Company, Inventory, Production, and Finance views.
+- `/` — dashboard with Company, Inventory, Production, Finance, Profile, and IndustriPedia views.
 
 ## Available Commands
 

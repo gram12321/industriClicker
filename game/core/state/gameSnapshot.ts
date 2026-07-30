@@ -2,6 +2,7 @@ import { type FinanceSnapshot } from '../../finance/finance';
 import { type InventorySnapshot } from '../../inventory/inventory';
 import { type FacilityCollectionSnapshot } from '../../facilities/facilityCollection';
 import { type SalesContractsSnapshot } from '../../sales/salesContracts';
+import { type PrestigeLedgerSnapshot } from '../../prestige/prestige';
 
 export type GameTimeSnapshot = {
   /** Logical foreground game time. Fast-forward deliberately advances it. */
@@ -21,5 +22,6 @@ export type GameSnapshot = {
   inventory: InventorySnapshot;
   facilities: FacilityCollectionSnapshot;
   salesContracts: SalesContractsSnapshot;
+  prestige: PrestigeLedgerSnapshot;
   time: GameTimeSnapshot;
 };

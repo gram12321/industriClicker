@@ -14,6 +14,11 @@ import {
   REALTIME_WORK_MINUTE_MS,
 } from '@/game/core/time/timeManager';
 import { calculateSalesContractOfferChance, SalesContracts } from '@/game/sales/salesContracts';
+import { PrestigeLedger } from '@/game/prestige/prestige';
+import {
+  calculateCompanyBalancePrestige,
+} from '@/game/prestige/prestigeCalculator';
+import { PRESTIGE_FOREGROUND_MS_PER_YEAR } from '@/game/prestige/prestigeConstants';
 import { create } from 'zustand';
 
 type GameState = {
@@ -21,6 +26,7 @@ type GameState = {
   inventory: Inventory;
   facilities: FacilityCollection;
   salesContracts: SalesContracts;
+  prestige: PrestigeLedger;
   /** Logical game time; it advances for realtime and fast-forward time alike. */
   lastProcessedAtMs: number;
   /** Last foreground wall-clock observation; deliberately not persisted. */
@@ -48,14 +54,36 @@ type GameState = {
   resetInventory: () => void;
 };
 
+function syncCompanyBalancePrestige(
+  prestige: PrestigeLedger,
+  finance: Finance,
+  currentGameTimeMs: number,
+): void {
+  prestige.syncCompanyBalance(
+    calculateCompanyBalancePrestige({ cashBalance: finance.getBalance() }),
+    currentGameTimeMs,
+  );
+}
+
+function createStartingPrestige(finance: Finance, currentGameTimeMs: number): PrestigeLedger {
+  const prestige = new PrestigeLedger();
+  syncCompanyBalancePrestige(prestige, finance, currentGameTimeMs);
+  return prestige;
+}
+
 /** Runtime owner of player progress. Durable SQLite saves are introduced separately. */
-export const useGameStore = create<GameState>((set, get) => ({
-  finance: new Finance(),
+export const useGameStore = create<GameState>((set, get) => {
+  const initialGameTimeMs = Date.now();
+  const initialFinance = new Finance();
+
+  return ({
+  finance: initialFinance,
   inventory: new Inventory(),
   facilities: new FacilityCollection(),
   salesContracts: new SalesContracts(),
-  lastProcessedAtMs: Date.now(),
-  lastObservedAtMs: Date.now(),
+  prestige: createStartingPrestige(initialFinance, initialGameTimeMs),
+  lastProcessedAtMs: initialGameTimeMs,
+  lastObservedAtMs: initialGameTimeMs,
   unprocessedWorkMs: 0,
   customerPipelineProgress: 0,
   addResource: (resourceType, amount) => {
@@ -96,7 +124,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       return false;
     }
 
-    set({ facilities, finance });
+    const prestige = get().prestige.clone();
+    syncCompanyBalancePrestige(prestige, finance, get().lastProcessedAtMs);
+    set({ facilities, finance, prestige });
     return true;
   },
   destroyFacility: (facilityType) => {
@@ -168,7 +198,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       return false;
     }
 
-    set({ facilities, finance });
+    const prestige = get().prestige.clone();
+    syncCompanyBalancePrestige(prestige, finance, get().lastProcessedAtMs);
+    set({ facilities, finance, prestige });
     return true;
   },
   recordTransaction: (amount, description) => {
@@ -178,7 +210,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       return false;
     }
 
-    set({ finance });
+    const prestige = get().prestige.clone();
+    syncCompanyBalancePrestige(prestige, finance, get().lastProcessedAtMs);
+    set({ finance, prestige });
     return true;
   },
   advanceGameTime: (elapsedMilliseconds) => {
@@ -229,12 +263,25 @@ export const useGameStore = create<GameState>((set, get) => ({
       remainingMs -= stepMs;
     }
 
+    const previousGameTimeMs = get().lastProcessedAtMs;
+    const nextGameTimeMs = previousGameTimeMs + elapsedMs;
+    let prestige = get().prestige;
+
+    if (Math.floor(previousGameTimeMs / PRESTIGE_FOREGROUND_MS_PER_YEAR)
+      < Math.floor(nextGameTimeMs / PRESTIGE_FOREGROUND_MS_PER_YEAR)) {
+      const nextPrestige = prestige.clone();
+      if (nextPrestige.pruneExpired(nextGameTimeMs)) {
+        prestige = nextPrestige;
+      }
+    }
+
     set({
-      lastProcessedAtMs: get().lastProcessedAtMs + elapsedMs,
+      lastProcessedAtMs: nextGameTimeMs,
       unprocessedWorkMs,
       customerPipelineProgress,
       ...(hasProducingFacility ? { facilities, inventory } : {}),
       ...(salesContracts ? { salesContracts } : {}),
+      ...(prestige !== get().prestige ? { prestige } : {}),
     });
     return elapsedMinutes;
   },
@@ -273,7 +320,12 @@ export const useGameStore = create<GameState>((set, get) => ({
       return false;
     }
 
-    set({ inventory, finance, salesContracts });
+    const prestige = get().prestige.clone();
+    const currentGameTimeMs = get().lastProcessedAtMs;
+    syncCompanyBalancePrestige(prestige, finance, currentGameTimeMs);
+    prestige.recordSalesContract(contract.id, contract.reward, currentGameTimeMs);
+
+    set({ inventory, finance, salesContracts, prestige });
     return true;
   },
   rejectSalesContract: (contractId) => {
@@ -297,31 +349,41 @@ export const useGameStore = create<GameState>((set, get) => ({
     inventory: get().inventory.toSnapshot(),
     facilities: get().facilities.toSnapshot(),
     salesContracts: get().salesContracts.toSnapshot(),
+    prestige: get().prestige.toSnapshot(),
     time: {
       lastProcessedAtMs: get().lastProcessedAtMs,
       unprocessedWorkMs: get().unprocessedWorkMs,
       customerPipelineProgress: get().customerPipelineProgress,
     },
   }),
-  restoreSnapshot: (snapshot) => set({
-    finance: Finance.fromSnapshot(snapshot.finance),
+  restoreSnapshot: (snapshot) => {
+    const finance = Finance.fromSnapshot(snapshot.finance);
+    const prestige = PrestigeLedger.fromSnapshot(snapshot.prestige);
+    syncCompanyBalancePrestige(prestige, finance, snapshot.time.lastProcessedAtMs);
+
+    set({
+    finance,
     inventory: Inventory.fromSnapshot(snapshot.inventory),
     facilities: FacilityCollection.fromSnapshot(snapshot.facilities),
     salesContracts: SalesContracts.fromSnapshot(snapshot.salesContracts),
+    prestige,
     // Offline progress is planned; observe a restored foreground session from now.
     lastProcessedAtMs: snapshot.time.lastProcessedAtMs,
     lastObservedAtMs: Date.now(),
     unprocessedWorkMs: snapshot.time.unprocessedWorkMs,
     customerPipelineProgress: snapshot.time.customerPipelineProgress,
-  }),
+    });
+  },
   resetGame: () => {
     const now = Date.now();
+    const finance = new Finance();
 
     set({
-      finance: new Finance(),
+      finance,
       inventory: new Inventory(),
       facilities: new FacilityCollection(),
       salesContracts: new SalesContracts(),
+      prestige: createStartingPrestige(finance, now),
       lastProcessedAtMs: now,
       lastObservedAtMs: now,
       unprocessedWorkMs: 0,
@@ -329,4 +391,5 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
   },
   resetInventory: () => set({ inventory: new Inventory() }),
-}));
+  });
+});

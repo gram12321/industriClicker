@@ -58,6 +58,13 @@ The concrete loop is still being established. The intended shape is:
 - Fast-forward 1 minute advances contract time; background time does not.
 - The Sales tab shows a visual customer-pipeline estimate. It fills over the calculated expected wait, but does not determine when the random customer roll succeeds.
 
+### Company Prestige
+
+- Company prestige is an informational, event-derived measure of company standing. It does not modify gameplay in this version.
+- Company balance creates one permanent, recalculated prestige source. Fulfilled sales contracts create decaying prestige events; rejected contracts do not.
+- Prestige decay uses foreground logical game time only. One prestige year is one foreground hour, and background time grants no progress or decay.
+- The Prestige dialog exposes each selected event's original and current value, foreground-hour decay, half-life, retention, and future decay projections. IndustriPedia documents the rules and formula.
+
 ### Facility Upgrades and Staffing
 
 - Each constructed facility has independently purchasable Speed and Output upgrades, funded only with euros in this first version.

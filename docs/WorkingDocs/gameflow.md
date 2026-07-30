@@ -99,6 +99,14 @@ Rounding and limits: Costs are whole euros. Reject construction when the current
 
 Invalid-input behavior: Reject non-finite transaction amounts and empty descriptions.
 
+## Company Prestige Rule
+
+- Prestige is stored as a ledger of company events. Its current total is derived; it is informational only.
+- Company balance prestige is permanent and recalculated as `ln(1 + max(0, cashBalance + assetBookValue - liabilities) / INITIAL_BALANCE)`. Asset book value and liabilities are `0` until finance owns them.
+- A fulfilled sales contract creates one idempotent event with `0.1 + 0.15 × ln(1 + reward)`, capped at `0.5`, and a five-prestige-year half-life.
+- One prestige year equals `3,600,000` milliseconds of logical foreground game time. Decaying amounts use `baseAmount × 0.5^(elapsedPrestigeYears / halfLifePrestigeYears)`.
+- Background time does not decay prestige. Fast-forward does because it advances logical game time.
+
 ## Sales Contract Rule
 
 - Each foreground minute rolls the current chance to create one unfulfilled contract for `Customer #n`. With no unfulfilled contracts the chance is 100%.
