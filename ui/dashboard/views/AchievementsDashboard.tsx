@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import { Card, ProgressBar, Text } from 'react-native-paper';
+import { Card, List, ProgressBar, Text } from 'react-native-paper';
 import type { AchievementLedger } from '@/game/achievements/achievement';
 import { ACHIEVEMENT_CATEGORIES, type AchievementCategory } from '@/game/achievements/achievementConstants';
 import { createAchievementEvaluationContext, filterAchievementSeriesForDisplay, getAchievementDisplay } from '@/game/achievements/achievementEvaluator';
@@ -77,7 +77,13 @@ export function AchievementsDashboard({
               return (
                 <Card key={achievement.id} mode="contained" style={dashboardStyles.featureCard}>
                   <Card.Content style={dashboardStyles.cardContent}>
-                    <View style={localStyles.header}><Text variant="titleMedium">{`${achievement.icon} ${achievement.name}`}</Text><Text style={achievement.isUnlocked ? localStyles.unlocked : localStyles.locked}>{achievement.isUnlocked ? 'Unlocked' : `Tier ${achievement.tier}`}</Text></View>
+                    <View style={localStyles.header}>
+                      <View style={localStyles.title}>
+                        <List.Icon color={achievement.isUnlocked ? colors.primary : colors.muted} icon={achievement.icon} />
+                        <Text numberOfLines={1} style={localStyles.titleText} variant="titleMedium">{achievement.name}</Text>
+                      </View>
+                      <Text style={achievement.isUnlocked ? localStyles.unlocked : localStyles.locked}>{achievement.isUnlocked ? 'Unlocked' : `Tier ${achievement.tier}`}</Text>
+                    </View>
                     <Text style={dashboardStyles.cardDescription}>{achievement.description}</Text>
                     <View style={localStyles.progressHeader}><Text style={dashboardStyles.cardKicker}>PROGRESS</Text><Text style={dashboardStyles.cardKicker}>{`${formatNumber(Math.min(achievement.currentValue, achievement.threshold), { smartDecimals: true })} / ${formatNumber(achievement.threshold)}`}</Text></View>
                     <ProgressBar accessible accessibilityLabel={`Progress toward ${achievement.name}`} color={achievement.isUnlocked ? colors.primary : colors.muted} progress={progress} style={localStyles.progress} />
@@ -98,5 +104,7 @@ const localStyles = StyleSheet.create({
   locked: { color: colors.muted, fontSize: 12, fontWeight: '700' },
   progress: { borderRadius: 6, height: 8 },
   progressHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
+  title: { alignItems: 'center', flex: 1, flexDirection: 'row', minWidth: 0 },
+  titleText: { flexShrink: 1 },
   unlocked: { color: colors.primary, fontSize: 12, fontWeight: '700' },
 });
