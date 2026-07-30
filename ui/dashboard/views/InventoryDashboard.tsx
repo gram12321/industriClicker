@@ -17,11 +17,10 @@ export function InventoryDashboard({ inventory }: { inventory: Inventory }) {
           <PlaceholderRow
             key={resourceType}
             label={`${getResourceIcon(resourceType)} ${resource.name}`}
-            value={`${formatNumber(entry.quantity, { smartDecimals: true })} Â· Quality ${formatNumber(entry.quality, { smartDecimals: true })}`}
+            value={`${formatNumber(entry.quantity, { smartDecimals: true })} \u20AC · Quality ${formatNumber(entry.quality, { smartDecimals: true })}`}
           />
         );
       })}
     </>
   );
 }
-

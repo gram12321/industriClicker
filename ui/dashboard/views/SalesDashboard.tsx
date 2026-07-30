@@ -7,7 +7,7 @@ import { calculateSalesContractEstimatedWaitMinutes, calculateSalesContractOffer
 import { getResourceIcon } from '@/game/resources/resourceIcons';
 import { getResource } from '@/game/resources/resourcesRegistry';
 import { formatCurrency, formatDate, formatNumber } from '@/utils';
-import { styles } from '@/app/index.styles';
+import { styles } from '@/ui/dashboard/dashboard.styles';
 import { PlaceholderRow, SectionHeading } from '../components/DashboardViewComponents';
 
 export function SalesDashboard({ customerPipelineProgress, fulfillSalesContract, inventory, rejectSalesContract, salesContracts }: { customerPipelineProgress: number; fulfillSalesContract: (id: string) => boolean; inventory: Inventory; rejectSalesContract: (id: string) => boolean; salesContracts: SalesContracts }) {

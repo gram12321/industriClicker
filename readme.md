@@ -8,7 +8,7 @@ Industri Clicker is an early-stage, single-player industrial clicker game for An
 - Keep gameplay, economy, progression, and time-controlled tick processing deterministic, explicit, and testable outside the UI.
 - Keep the first release local-first and single-player. Cloud services are a later product decision, not a foundation requirement.
 - Use established, code-acquirable UI primitives instead of custom artwork or manually designed visual assets.
-- Keep shared visual tokens and the React Native Paper theme in `theme.ts`; keep screen-specific layout rules in a sibling styles file such as `app/index.styles.ts`.
+- Keep shared visual tokens and the React Native Paper theme in `theme.ts`; keep dashboard-specific layout rules in `ui/dashboard/dashboard.styles.ts`.
 - Treat predecessor-project documents as references only. They do not define Industri Clicker's domain, implementation status, routes, or persistence.
 
 ## Locked Technology Stack

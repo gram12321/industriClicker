@@ -1,8 +1,21 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Stack } from 'expo-router';
-import { AppState, View } from 'react-native';
+import { ActivityIndicator, AppState, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { ActivityIndicator, PaperProvider } from 'react-native-paper';
+import { PaperProvider } from 'react-native-paper';
+
+if (__DEV__ && globalThis.window) {
+  const ignoredWarning = 'props.pointerEvents is deprecated. Use style.pointerEvents';
+  const originalWarn = console.warn;
+
+  console.warn = (...args) => {
+    if (args[0] === ignoredWarning) {
+      return;
+    }
+
+    originalWarn(...args);
+  };
+}
 
 import { loadGameSnapshot, saveGameSnapshot } from '@/game/core/persistence/gameSaveRepository';
 import { useGameStore } from '@/stores/gameStore';
@@ -108,7 +121,7 @@ function GamePersistence({ children }: { children: ReactNode }) {
   if (!isReady) {
     return (
       <View style={{ alignItems: 'center', flex: 1, justifyContent: 'center' }}>
-        <ActivityIndicator accessibilityLabel="Loading local save" />
+        <ActivityIndicator accessibilityLabel="Loading local save" color={paperTheme.colors.primary} />
       </View>
     );
   }

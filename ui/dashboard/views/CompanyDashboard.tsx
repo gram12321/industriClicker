@@ -1,5 +1,5 @@
 import { Card, Text } from 'react-native-paper';
-import { styles } from '@/app/index.styles';
+import { styles } from '@/ui/dashboard/dashboard.styles';
 import { SectionHeading } from '../components/DashboardViewComponents';
 
 export function CompanyDashboard() {

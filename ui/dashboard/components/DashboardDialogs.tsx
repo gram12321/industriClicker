@@ -7,7 +7,7 @@ import { FACILITY_TYPES, type FacilityType } from '@/game/facilities/facilityTyp
 import { getFacilityDefinition } from '@/game/facilities/facilityRegistry';
 import type { Recipe } from '@/game/recipes/recipeTypes';
 import { clamp, formatCurrency } from '@/utils';
-import { styles } from '@/app/index.styles';
+import { styles } from '@/ui/dashboard/dashboard.styles';
 import { formatRecipeInputs, formatRecipeName, formatRecipeOutput } from '../helpers/recipeFormatters';
 import { PlaceholderRow } from './DashboardViewComponents';
 
@@ -81,7 +81,7 @@ export function ConstructionYardDialog({
                     <Text style={styles.constructionYardRecipeLabel}>Available recipes</Text>
                     {definition.recipes.map((recipe) => (
                       <Text key={recipe.name} style={styles.constructionYardRecipe}>
-                        {formatRecipeName(recipe)}: {formatRecipeInputs(recipe)} â†’ {formatRecipeOutput(recipe)}
+                        {formatRecipeName(recipe)}: {formatRecipeInputs(recipe)} → {formatRecipeOutput(recipe)}
                       </Text>
                     ))}
                   </Card.Content>
@@ -145,7 +145,7 @@ export function ConstructionDialog({
             <List.Item
               key={recipe.name}
               title={formatRecipeName(recipe)}
-              description={`${formatRecipeInputs(recipe)} â†’ ${formatRecipeOutput(recipe)} Â· Work ${recipe.workAmount}`}
+              description={`${formatRecipeInputs(recipe)} → ${formatRecipeOutput(recipe)} · Work ${recipe.workAmount}`}
               left={(props) => <List.Icon {...props} icon="play-circle-outline" />}
             />
           ))}

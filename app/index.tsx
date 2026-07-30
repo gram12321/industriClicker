@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, View, type StyleProp, type ViewStyle } from 'react-native';
 import {
   Avatar,
-  Divider, IconButton, Menu, Surface, Text,
+  Divider, IconButton, Menu, Text,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/theme';
@@ -17,7 +17,7 @@ import { isDevAdminSurfaceAvailable } from '@/ui/dashboard/helpers/devAdminGate'
 import { formatCurrency } from '@/utils';
 import { useGameStore } from '@/stores/gameStore';
 import { resetGameSave } from '@/game/core/persistence/gameSaveRepository';
-import { styles } from './index.styles';
+import { styles } from '@/ui/dashboard/dashboard.styles';
 
 type DashboardView = DashboardTab | 'admin' | 'profile';
 
@@ -25,7 +25,7 @@ const tabs: Array<{ key: DashboardTab; label: string; symbol: string }> = [
   { key: 'company', label: 'Company', symbol: '⌂' },
   { key: 'inventory', label: 'Inventory', symbol: '▣' },
   { key: 'production', label: 'Production', symbol: '⚙' },
-  { key: 'finance', label: 'Finance', symbol: '¤' },
+  { key: 'finance', label: 'Finance', symbol: '\u20AC' },
 ];
 
 const salesTab: { key: DashboardTab; label: string; symbol: string } = {
@@ -142,7 +142,7 @@ export default function HomeScreen() {
           )}
         </ScrollView>
 
-        <Surface elevation={3} style={styles.bottomNavigation}>
+        <View style={styles.bottomNavigation}>
           {[...tabs.slice(0, 3), salesTab, ...tabs.slice(3)].map((tab) => (
             <BottomNavigationItem
               active={activeView === tab.key}
@@ -152,7 +152,7 @@ export default function HomeScreen() {
               symbol={tab.symbol}
             />
           ))}
-        </Surface>
+        </View>
       </View>
       <DashboardDialogs
         facilities={facilities}

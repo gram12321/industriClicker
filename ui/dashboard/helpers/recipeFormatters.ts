@@ -6,7 +6,7 @@ export function formatRecipeInputs(recipe: Recipe): string {
   if (recipe.inputs.length === 0) return 'No inputs';
 
   return recipe.inputs
-    .map(({ resourceType, amount }) => `${getResource(resourceType).name} Ã—${formatNumber(amount, { smartDecimals: true })}`)
+    .map(({ resourceType, amount }) => `${getResource(resourceType).name} ×${formatNumber(amount, { smartDecimals: true })}`)
     .join(' + ');
 }
 
@@ -21,6 +21,6 @@ export function formatRecipeName(recipe: Recipe): string {
 }
 
 export function formatRecipeOutput(recipe: Recipe): string {
-  return `${getResource(recipe.output.resourceType).name} Ã—${formatNumber(recipe.output.amount, { smartDecimals: true })}`;
+  return `${getResource(recipe.output.resourceType).name} ×${formatNumber(recipe.output.amount, { smartDecimals: true })}`;
 }
 

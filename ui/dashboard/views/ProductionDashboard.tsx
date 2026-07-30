@@ -12,7 +12,7 @@ import type { Recipe } from '@/game/recipes/recipeTypes';
 import { getResourceIcon } from '@/game/resources/resourceIcons';
 import { getResource } from '@/game/resources/resourcesRegistry';
 import { clamp, formatCurrency, formatDuration, formatNumber, formatPercent } from '@/utils';
-import { styles } from '@/app/index.styles';
+import { styles } from '@/ui/dashboard/dashboard.styles';
 import { PlaceholderRow, SectionHeading } from '../components/DashboardViewComponents';
 import { formatRecipeInputs, formatRecipeName } from '../helpers/recipeFormatters';
 
@@ -53,7 +53,7 @@ export function ProductionDashboard({
           <Card key={facilityType} mode="contained" style={styles.featureCard}>
             <Card.Content>
               <List.Item
-                description={activeRecipe ? `${formatRecipeName(activeRecipe)} Â· Work ${formatNumber(facility?.getRecipeProgress(activeRecipe.name) ?? 0, { smartDecimals: true })}/${formatNumber(activeRecipe.workAmount, { smartDecimals: true })}` : 'No active recipe'}
+                description={activeRecipe ? `${formatRecipeName(activeRecipe)} · Work ${formatNumber(facility?.getRecipeProgress(activeRecipe.name) ?? 0, { smartDecimals: true })}/${formatNumber(activeRecipe.workAmount, { smartDecimals: true })}` : 'No active recipe'}
                 left={(props) => <List.Icon {...props} icon={definition.icon} />}
                 right={(props) => <IconButton {...props} accessibilityLabel={`${isExpanded ? 'Collapse' : 'Expand'} ${definition.name}`} icon={isExpanded ? 'chevron-up' : 'chevron-down'} onPress={() => setCollapsedFacilities((current) => ({ ...current, [facilityType]: isExpanded }))} />}
                 title={definition.name}
@@ -81,10 +81,10 @@ export function ProductionDashboard({
                 </View>
                 <Button compact mode="text" onPress={() => setFacilityWorkers(facilityType, requiredWorkers)}>Set required staffing</Button>
                 <Text style={styles.constructionYardRecipeLabel}>Upgrades</Text>
-                <Text style={styles.facilityUpgradeSummary}>Speed Ã—{formatNumber(facility?.getSpeedMultiplier() ?? 1, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })} Â· Output Ã—{formatNumber(facility?.getOutputMultiplier() ?? 1, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })}</Text>
+                <Text style={styles.facilityUpgradeSummary}>Speed ×{formatNumber(facility?.getSpeedMultiplier() ?? 1, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })} · Output ×{formatNumber(facility?.getOutputMultiplier() ?? 1, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })}</Text>
                 <View style={styles.facilityUpgradeControls}>
-                  <Button compact disabled={!finance.canAfford(speedUpgradeCost)} mode="outlined" onPress={() => upgradeFacility(facilityType, 'speed')}>{`Speed L${formatNumber(speedUpgradeLevel + 1)} Â· ${formatCurrency(speedUpgradeCost)}`}</Button>
-                  <Button compact disabled={!finance.canAfford(outputUpgradeCost)} mode="outlined" onPress={() => upgradeFacility(facilityType, 'output')}>{`Output L${formatNumber(outputUpgradeLevel + 1)} Â· ${formatCurrency(outputUpgradeCost)}`}</Button>
+                  <Button compact disabled={!finance.canAfford(speedUpgradeCost)} mode="outlined" onPress={() => upgradeFacility(facilityType, 'speed')}>{`Speed L${formatNumber(speedUpgradeLevel + 1)} · ${formatCurrency(speedUpgradeCost)}`}</Button>
+                  <Button compact disabled={!finance.canAfford(outputUpgradeCost)} mode="outlined" onPress={() => upgradeFacility(facilityType, 'output')}>{`Output L${formatNumber(outputUpgradeLevel + 1)} · ${formatCurrency(outputUpgradeCost)}`}</Button>
                 </View>
                 <View style={styles.facilityActions}><IconButton accessibilityLabel={`Destroy ${definition.name}`} icon="trash-can-outline" iconColor={colors.error} onPress={() => requestFacilityDestruction(facilityType)} size={22} /></View>
               </>}

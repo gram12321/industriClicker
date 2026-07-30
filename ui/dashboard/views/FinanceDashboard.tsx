@@ -1,7 +1,7 @@
 import { Card, Text } from 'react-native-paper';
 import type { Finance } from '@/game/finance/finance';
 import { formatCurrency } from '@/utils';
-import { styles } from '@/app/index.styles';
+import { styles } from '@/ui/dashboard/dashboard.styles';
 import { PlaceholderRow, SectionHeading, TransactionRow } from '../components/DashboardViewComponents';
 
 export function FinanceDashboard({ finance }: { finance: Finance }) {

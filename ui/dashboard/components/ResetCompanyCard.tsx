@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, Card, Dialog, Portal, Text } from 'react-native-paper';
 import { colors } from '@/theme';
-import { styles } from '@/app/index.styles';
+import { styles } from '@/ui/dashboard/dashboard.styles';
 
 export function ResetCompanyCard({ onResetCompany }: { onResetCompany: () => Promise<void> }) {
   const [isResetConfirmationOpen, setIsResetConfirmationOpen] = useState(false);

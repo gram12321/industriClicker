@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 import { Text } from 'react-native-paper';
-import { styles } from '@/app/index.styles';
+import { styles } from '@/ui/dashboard/dashboard.styles';
 import { ResetCompanyCard } from '../components/ResetCompanyCard';
 
 export function AdminDashboard({ onResetCompany }: { onResetCompany: () => Promise<void> }) {
