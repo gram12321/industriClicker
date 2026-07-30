@@ -4,8 +4,7 @@ import { Button, Card, IconButton, ProgressBar, Text } from 'react-native-paper'
 import { colors } from '@/theme';
 import type { Inventory } from '@/game/inventory/inventory';
 import { calculateSalesContractEstimatedWaitMinutes, calculateSalesContractOfferChance, type SalesContracts } from '@/game/sales/salesContracts';
-import { getResourceIcon } from '@/game/resources/resourceIcons';
-import { getResource } from '@/game/resources/resourcesRegistry';
+import { getResource, getResourceIcon } from '@/game/resources/resourceConstants';
 import { formatCurrency, formatDate, formatNumber } from '@/utils';
 import { styles } from '@/ui/dashboard/dashboard.styles';
 import { APP_ICONS } from '@/icons';

@@ -1,6 +1,5 @@
 import type { Recipe } from '@/game/recipes/recipeTypes';
-import { getResourceIcon } from '@/game/resources/resourceIcons';
-import { getResource } from '@/game/resources/resourcesRegistry';
+import { getResource, getResourceIcon } from '@/game/resources/resourceConstants';
 import { formatNumber } from '@/utils';
 
 export function formatRecipeInputs(recipe: Recipe): string {

@@ -1,5 +1,4 @@
-/** Baseclicker-compatible opening funds for a new company. */
-export const INITIAL_BALANCE = 10_000;
+import { FINANCE_INITIAL_BALANCE } from './financeConstants';
 
 export type FinanceTransaction = {
   amount: number;
@@ -24,7 +23,7 @@ function isValidBalance(value: number): boolean {
  * Callers record a signed amount: positive for income and negative for a cost.
  */
 export class Finance {
-  private balance = INITIAL_BALANCE;
+  private balance = FINANCE_INITIAL_BALANCE;
   private transactions: FinanceTransaction[] = [];
 
   constructor(snapshot?: FinanceSnapshot) {
@@ -77,7 +76,7 @@ export class Finance {
   }
 
   private restore(snapshot: FinanceSnapshot): void {
-    this.balance = isValidBalance(snapshot.balance) ? snapshot.balance : INITIAL_BALANCE;
+    this.balance = isValidBalance(snapshot.balance) ? snapshot.balance : FINANCE_INITIAL_BALANCE;
     this.transactions = snapshot.transactions
       .filter((transaction) => (
         Number.isFinite(transaction.amount)

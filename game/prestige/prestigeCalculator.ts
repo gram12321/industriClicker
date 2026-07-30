@@ -1,5 +1,5 @@
 import type { PrestigeEvent } from './prestige';
-import { INITIAL_BALANCE } from '@/game/finance/finance';
+import { FINANCE_INITIAL_BALANCE } from '@/game/finance/financeConstants';
 import { safeNonNegative } from '@/utils';
 import {
   PRESTIGE_EVENT_MIN_AMOUNT,
@@ -43,7 +43,7 @@ export function calculateCompanyBalancePrestige(input: CompanyCapitalInput): num
     + safeNonNegative(input.assetBookValue ?? 0)
     - safeNonNegative(input.liabilities ?? 0);
 
-  return roundPrestige(Math.log(1 + Math.max(0, companyCapital) / INITIAL_BALANCE));
+  return roundPrestige(Math.log(1 + Math.max(0, companyCapital) / FINANCE_INITIAL_BALANCE));
 }
 
 export function calculateSalesContractPrestige(reward: number): number {

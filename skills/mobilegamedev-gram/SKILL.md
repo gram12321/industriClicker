@@ -49,6 +49,14 @@ Escalate to another specialist skill only when the user explicitly asks for it o
 
 ## Session Start And Context
 
+Start user-facing work with a short AI check message:
+
+```text
+AI check: <1-5> - <brief reason>
+```
+
+Use `1` for a clear, low-risk request and `5` for ambiguous or broad work.
+
 Before a change, extended research is normally required. Read at least the following context: Then decide what codefiles the change will impact and these should be read as context. Relevant interrelated coding should also be read for Context. Use this order when the listed documents apply:
 
 1. `readme.md` when it exists; otherwise inspect the root project overview files.

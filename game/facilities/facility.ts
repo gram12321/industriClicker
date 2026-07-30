@@ -1,7 +1,7 @@
 import { RecipeName, type RecipeInput } from '../recipes/recipeTypes';
 import type { Inventory } from '../inventory/inventory';
-import { getRecipe } from '../recipes/recipes';
-import { getFacilityDefinition } from './facilityRegistry';
+import { getRecipe } from '../recipes/recipeConstants';
+import { getFacilityDefinition } from './facilityConstants';
 import { FacilityType } from './facilityTypes';
 import {
   getOutputUpgradeMultiplier,

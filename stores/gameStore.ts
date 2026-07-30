@@ -2,17 +2,20 @@ import { Finance } from '@/game/finance/finance';
 import { Inventory } from '@/game/inventory/inventory';
 import { FacilityCollection } from '@/game/facilities/facilityCollection';
 import type { FacilityType } from '@/game/facilities/facilityTypes';
-import { getFacilityDefinition } from '@/game/facilities/facilityRegistry';
+import { getFacilityDefinition } from '@/game/facilities/facilityConstants';
 import { advanceProduction as advanceFacilityProduction } from '@/game/facilities/advanceProduction';
 import { getFacilityUpgradeCost, type FacilityUpgradeKind } from '@/game/facilities/facilityUpgrades';
 import type { RecipeName } from '@/game/recipes/recipeTypes';
-import { RESOURCE_TYPES, type ResourceType } from '@/game/resources/resourceTypes';
+import { RESOURCE_TYPES } from '@/game/resources/resourceConstants';
+import type { ResourceType } from '@/game/resources/resourceTypes';
 import type { GameSnapshot } from '@/game/core/state/gameSnapshot';
 import {
   calculateRealtimeAdvance,
+} from '@/game/core/time/timeManager';
+import {
   FOREGROUND_SIMULATION_STEP_MS,
   REALTIME_WORK_MINUTE_MS,
-} from '@/game/core/time/timeManager';
+} from '@/game/core/time/timeConstants';
 import { calculateSalesContractOfferChance, SalesContracts } from '@/game/sales/salesContracts';
 import { PrestigeLedger } from '@/game/prestige/prestige';
 import {

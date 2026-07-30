@@ -1,6 +1,4 @@
-import { getResourceIcon } from '@/game/resources/resourceIcons';
-import { RESOURCE_TYPES } from '@/game/resources/resourceTypes';
-import { getResource } from '@/game/resources/resourcesRegistry';
+import { getResource, getResourceIcon, RESOURCE_TYPES } from '@/game/resources/resourceConstants';
 import type { Inventory } from '@/game/inventory/inventory';
 import { formatNumber } from '@/utils';
 import { PlaceholderRow, SectionHeading } from '../components/DashboardViewComponents';

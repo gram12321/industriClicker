@@ -1,19 +1,6 @@
 import type { FacilityCollection } from './facilityCollection';
-import { FacilityType } from './facilityTypes';
 import type { Inventory } from '../inventory/inventory';
-
-/**
- * Fixed order keeps production deterministic. Utilities run before
- * consumers so Water and Electricity can be used by Farm and Bakery work.
- */
-const PRODUCTION_ORDER = [
-  FacilityType.SmallUtilityWorks,
-  FacilityType.Farm,
-  FacilityType.Bakery,
-  FacilityType.Mine,
-  FacilityType.WaterWell,
-  FacilityType.PowerPlant,
-] as const;
+import { FACILITY_PRODUCTION_ORDER } from './facilityConstants';
 
 /** Applies one or more already-approved work units to all active facilities. */
 export function advanceProduction(
@@ -25,7 +12,7 @@ export function advanceProduction(
     return;
   }
 
-  for (const facilityType of PRODUCTION_ORDER) {
+  for (const facilityType of FACILITY_PRODUCTION_ORDER) {
     facilities.get(facilityType)?.advanceProduction(inventory, workAmount);
   }
 }

@@ -13,13 +13,3 @@ export enum ResourceType {
   Coal = 'coal',
   Cake = 'cake',
 }
-
-export const RESOURCE_TYPES = [
-  ResourceType.Grain,
-  ResourceType.Bread,
-  ResourceType.Water,
-  ResourceType.Electricity,
-  ResourceType.Sugar,
-  ResourceType.Coal,
-  ResourceType.Cake,
-] as const;
