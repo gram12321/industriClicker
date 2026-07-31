@@ -8,6 +8,7 @@ export type MarketAutomation = {
   autoSellEnabled: boolean;
   autoSellMaxPerMinute: number;
   autoSellMinKeep: number;
+  autoSellMinUnitPrice: number;
 };
 
 export type MarketSnapshot = {
@@ -16,7 +17,7 @@ export type MarketSnapshot = {
   automation: Record<ResourceType, MarketAutomation>;
 };
 
-export type MarketTradeMultiplier = 1 | 10 | 100 | 'all';
+export type MarketTradeMultiplier = number | 'all';
 export type MarketTradeResult = { success: boolean; amount: number; unitPrice: number; quality: number };
 export type MarketDiffusionDirection = 'to-local' | 'to-global' | 'none';
 export type MarketDiffusionInfo = { direction: MarketDiffusionDirection; amount: number; localPrice: number; globalPrice: number };

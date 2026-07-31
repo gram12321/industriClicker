@@ -4,6 +4,7 @@ import {
   MARKET_AUTOBUY_DEFAULT_MAX_PRICE_MULTIPLIER,
   MARKET_AUTOSELL_DEFAULT_MAX_PER_MINUTE,
   MARKET_AUTOSELL_DEFAULT_MIN_KEEP,
+  MARKET_AUTOSELL_DEFAULT_MIN_PRICE,
   MARKET_DEFAULT_QUALITY,
   MARKET_DIFFUSION_DIVISOR,
   MARKET_RESOURCE_DEFINITIONS,
@@ -38,6 +39,7 @@ function createAutomation(local: Record<ResourceType, MarketPoolEntry>): Record<
       autoSellEnabled: false,
       autoSellMaxPerMinute: MARKET_AUTOSELL_DEFAULT_MAX_PER_MINUTE,
       autoSellMinKeep: MARKET_AUTOSELL_DEFAULT_MIN_KEEP,
+      autoSellMinUnitPrice: MARKET_AUTOSELL_DEFAULT_MIN_PRICE,
     };
     return automation;
   }, {} as Record<ResourceType, MarketAutomation>);
@@ -121,7 +123,7 @@ export class Market {
   setAutomation(resourceType: ResourceType, updates: Partial<MarketAutomation>): boolean {
     const current = this.automation[resourceType];
     const next = { ...current, ...updates };
-    if (!isNonNegativeFinite(next.autoBuyMaxUnitPrice) || !isNonNegativeFinite(next.autoSellMaxPerMinute) || !isNonNegativeFinite(next.autoSellMinKeep)) return false;
+    if (!isNonNegativeFinite(next.autoBuyMaxUnitPrice) || !isNonNegativeFinite(next.autoSellMaxPerMinute) || !isNonNegativeFinite(next.autoSellMinKeep) || !isNonNegativeFinite(next.autoSellMinUnitPrice)) return false;
     this.automation[resourceType] = next;
     return true;
   }
@@ -145,7 +147,7 @@ export class Market {
       if (local && isNonNegativeFinite(local.supply) && isPositiveFinite(local.quality)) this.local[resourceType] = { ...local };
       if (global && isNonNegativeFinite(global.supply) && isPositiveFinite(global.quality)) this.global[resourceType] = { ...global };
       if (automation && typeof automation.autoBuyEnabled === 'boolean' && typeof automation.autoSellEnabled === 'boolean'
-        && isNonNegativeFinite(automation.autoBuyMaxUnitPrice) && isNonNegativeFinite(automation.autoSellMaxPerMinute) && isNonNegativeFinite(automation.autoSellMinKeep)) this.automation[resourceType] = { ...automation };
+        && isNonNegativeFinite(automation.autoBuyMaxUnitPrice) && isNonNegativeFinite(automation.autoSellMaxPerMinute) && isNonNegativeFinite(automation.autoSellMinKeep) && isNonNegativeFinite(automation.autoSellMinUnitPrice)) this.automation[resourceType] = { ...automation };
     }
   }
 }

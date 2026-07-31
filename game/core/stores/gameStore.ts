@@ -422,11 +422,12 @@ export const useGameStore = create<GameState>((set, get) => {
         if (inventory === get().inventory) inventory = inventory.clone();
         for (const resourceType of RESOURCE_TYPES) {
           const automation = activeMarket.getAutomation(resourceType);
+          const currentPrice = activeMarket.getLocalPrice(resourceType);
           const amount = Math.min(
             automation.autoSellMaxPerMinute,
             Math.max(0, inventory.getAmount(resourceType) - automation.autoSellMinKeep),
           );
-          if (!automation.autoSellEnabled || amount <= 0) continue;
+          if (!automation.autoSellEnabled || amount <= 0 || currentPrice < automation.autoSellMinUnitPrice) continue;
           const trade = activeMarket.sellToLocal(resourceType, amount, inventory.getQuality(resourceType));
           if (trade.success && inventory.remove(resourceType, amount)) {
             marketFinance.applyTransaction(
