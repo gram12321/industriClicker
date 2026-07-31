@@ -5,6 +5,7 @@ import { type SalesContractsSnapshot } from '../../sales/salesContracts';
 import { type AchievementLedgerSnapshot } from '../../achievements/achievement';
 import { type ProductionStatisticsSnapshot } from '../../achievements/productionStatistics';
 import { type PrestigeLedgerSnapshot } from '../../prestige/prestige';
+import { type MarketSnapshot } from '../../market/marketTypes';
 
 export type GameTimeSnapshot = {
   /** Logical foreground time when the current company began. */
@@ -24,6 +25,7 @@ export type GameTimeSnapshot = {
 export type GameSnapshot = {
   finance: FinanceSnapshot;
   inventory: InventorySnapshot;
+  market: MarketSnapshot;
   facilities: FacilityCollectionSnapshot;
   salesContracts: SalesContractsSnapshot;
   achievements: AchievementLedgerSnapshot;

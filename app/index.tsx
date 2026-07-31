@@ -26,7 +26,7 @@ import {
   styles,
   type DashboardTab,
 } from '@/ui';
-import { formatCurrency, formatNumber } from '@/utils';
+import { formatCurrency, formatElapsedTime, formatNumber } from '@/utils';
 import { APP_ICONS } from '@/icons';
 
 type DashboardView = DashboardTab | 'achievements' | 'admin' | 'profile' | 'pedia';
@@ -35,6 +35,7 @@ const tabs: Array<{ key: DashboardTab; label: string; symbol: string }> = [
   { key: 'company', label: 'Company', symbol: '⌂' },
   { key: 'inventory', label: 'Inventory', symbol: '▣' },
   { key: 'production', label: 'Production', symbol: '⚙' },
+  { key: 'market', label: 'Market', symbol: 'M' },
   { key: 'finance', label: 'Finance', symbol: '\u20AC' },
 ];
 
@@ -52,6 +53,7 @@ export default function HomeScreen() {
   const [pendingConstruction, setPendingConstruction] = useState<FacilityType | null>(null);
   const [pendingDestruction, setPendingDestruction] = useState<FacilityType | null>(null);
   const inventory = useGameStore((state) => state.inventory);
+  const market = useGameStore((state) => state.market);
   const facilities = useGameStore((state) => state.facilities);
   const finance = useGameStore((state) => state.finance);
   const salesContracts = useGameStore((state) => state.salesContracts);
@@ -69,11 +71,15 @@ export default function HomeScreen() {
   const fastForwardOneMinute = useGameStore((state) => state.fastForwardOneMinute);
   const createSalesContractRequest = useGameStore((state) => state.createSalesContractRequest);
   const setInventoryAmount = useGameStore((state) => state.setInventoryAmount);
+  const buyMarketResource = useGameStore((state) => state.buyMarketResource);
+  const sellMarketResource = useGameStore((state) => state.sellMarketResource);
+  const setMarketAutomation = useGameStore((state) => state.setMarketAutomation);
   const fulfillSalesContract = useGameStore((state) => state.fulfillSalesContract);
   const rejectSalesContract = useGameStore((state) => state.rejectSalesContract);
   const resetGame = useGameStore((state) => state.resetGame);
   const isAdminDashboardAvailable = isDevAdminSurfaceAvailable();
   const prestigeSummary = calculateCompanyPrestigeSummary(prestige.getEvents(), lastProcessedAtMs);
+  const elapsedForegroundTimeMs = Math.max(0, lastProcessedAtMs - companyStartedAtGameTimeMs);
 
   const resetCompany = async () => {
     await resetGameSave();
@@ -101,12 +107,10 @@ export default function HomeScreen() {
                 iconColor={colors.onDark}
                 onPress={fastForwardOneMinute}
               />
-              <IconButton
-                accessibilityLabel="Open company prestige"
-                icon={APP_ICONS.achievements}
-                iconColor={colors.onDark}
-                onPress={() => setIsPrestigeOpen(true)}
-              />
+              <View accessibilityLabel={`Elapsed foreground time ${formatElapsedTime(elapsedForegroundTimeMs)}`} style={styles.headerElapsedTime}>
+                <MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.elapsedTime} size={17} />
+                <Text style={styles.headerElapsedTimeValue}>{formatElapsedTime(elapsedForegroundTimeMs)}</Text>
+              </View>
               <Menu
                 anchor={
                   <Pressable
@@ -160,6 +164,10 @@ export default function HomeScreen() {
               finance={finance}
               fulfillSalesContract={fulfillSalesContract}
               inventory={inventory}
+              market={market}
+              buyMarketResource={buyMarketResource}
+              sellMarketResource={sellMarketResource}
+              setMarketAutomation={setMarketAutomation}
               salesContracts={salesContracts}
               rejectSalesContract={rejectSalesContract}
               customerPipelineProgress={customerPipelineProgress}

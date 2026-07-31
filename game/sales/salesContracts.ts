@@ -1,6 +1,6 @@
 import type { ResourceType } from '../resources/resourceTypes';
 import { calculateAsymmetricalScaler01, normalizeWithControlPoints01 } from '../core/math/scaling';
-import { SALES_CONTRACT_MAX_REQUEST_QUANTITY, SALES_CONTRACT_MIN_REQUEST_QUANTITY, SALES_CONTRACT_UNFULFILLED_CHANCE_CONTROL_POINTS, SALES_CONTRACT_UNIT_PRICE_EUROS } from './salesConstants';
+import { SALES_CONTRACT_MAX_REQUEST_QUANTITY, SALES_CONTRACT_MIN_REQUEST_QUANTITY, SALES_CONTRACT_UNFULFILLED_CHANCE_CONTROL_POINTS } from './salesConstants';
 export type SalesContractStatus = 'offered' | 'fulfilled' | 'rejected';
 
 export type SalesContract = {
@@ -31,7 +31,7 @@ function isContract(value: SalesContract): boolean {
     && value.quantity >= SALES_CONTRACT_MIN_REQUEST_QUANTITY
     && value.quantity <= SALES_CONTRACT_MAX_REQUEST_QUANTITY
     && Number.isFinite(value.reward)
-    && value.reward === value.quantity * SALES_CONTRACT_UNIT_PRICE_EUROS
+    && value.reward >= 0
     && value.offeredAt.length > 0
   );
 }
@@ -96,19 +96,19 @@ export class SalesContracts {
   }
 
   /** Creates one development-requested offer for the selected resource. */
-  createOfferForResource(resourceType: ResourceType, quantity: number): SalesContract | null {
+  createOfferForResource(resourceType: ResourceType, quantity: number, unitReward: number): SalesContract | null {
     if (!Number.isInteger(quantity)
       || quantity < SALES_CONTRACT_MIN_REQUEST_QUANTITY
       || quantity > SALES_CONTRACT_MAX_REQUEST_QUANTITY) {
       return null;
     }
 
-    const offer = this.createOffer([resourceType], Math.random, quantity);
+    const offer = this.createOffer([resourceType], Math.random, unitReward, quantity);
     this.offered.push(offer);
     return cloneContract(offer);
   }
 
-  advanceTime(elapsedMinutes: number, resourceTypes: readonly ResourceType[], random = Math.random): number {
+  advanceTime(elapsedMinutes: number, resourceTypes: readonly ResourceType[], getUnitReward: (resourceType: ResourceType) => number, random = Math.random): number {
     if (!Number.isInteger(elapsedMinutes) || elapsedMinutes <= 0 || resourceTypes.length === 0) {
       return 0;
     }
@@ -117,7 +117,9 @@ export class SalesContracts {
 
     for (let minute = 0; minute < elapsedMinutes; minute += 1) {
       if (clampRandom(random()) < calculateSalesContractOfferChance(this.offered.length)) {
-        this.offered.push(this.createOffer(resourceTypes, random));
+        const resourceRoll = clampRandom(random());
+        const resourceType = resourceTypes[Math.floor(resourceRoll * resourceTypes.length)];
+        this.offered.push(this.createOffer([resourceType], random, getUnitReward(resourceType)));
         contractsCreated += 1;
       }
     }
@@ -173,7 +175,10 @@ export class SalesContracts {
     return new SalesContracts(snapshot);
   }
 
-  private createOffer(resourceTypes: readonly ResourceType[], random: () => number, requestedQuantity?: number): SalesContract {
+  private createOffer(resourceTypes: readonly ResourceType[], random: () => number, unitReward: number, requestedQuantity?: number): SalesContract {
+    if (!Number.isFinite(unitReward) || unitReward < 0) {
+      throw new Error('Sales contract unit reward must be a non-negative finite number.');
+    }
     const resourceRoll = clampRandom(random());
     const resourceIndex = Math.floor(resourceRoll * resourceTypes.length);
     const quantity = requestedQuantity ?? (() => {
@@ -192,7 +197,7 @@ export class SalesContracts {
       status: 'offered',
       resourceType: resourceTypes[resourceIndex],
       quantity,
-      reward: quantity * SALES_CONTRACT_UNIT_PRICE_EUROS,
+      reward: quantity * unitReward,
       offeredAt: new Date().toISOString(),
     };
   }

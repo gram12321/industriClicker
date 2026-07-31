@@ -86,11 +86,16 @@ function GamePersistence({ children }: { children: ReactNode }) {
       if (
         state.finance === previousState.finance
         && state.inventory === previousState.inventory
+        && state.market === previousState.market
         && state.facilities === previousState.facilities
         && state.salesContracts === previousState.salesContracts
         && state.achievements === previousState.achievements
         && state.productionStatistics === previousState.productionStatistics
         && state.prestige === previousState.prestige
+        && state.companyStartedAtGameTimeMs === previousState.companyStartedAtGameTimeMs
+        && state.lastProcessedAtMs === previousState.lastProcessedAtMs
+        && state.unprocessedWorkMs === previousState.unprocessedWorkMs
+        && state.customerPipelineProgress === previousState.customerPipelineProgress
       ) {
         return;
       }

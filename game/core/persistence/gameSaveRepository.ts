@@ -34,7 +34,7 @@ function isGameTimeSnapshot(value: unknown): boolean {
 }
 
 function isGameSnapshot(value: unknown): value is GameSnapshot {
-  if (!isRecord(value) || !isRecord(value.finance) || !isRecord(value.inventory) || !isRecord(value.facilities) || !isRecord(value.salesContracts) || !isRecord(value.achievements) || !isRecord(value.productionStatistics) || !isRecord(value.prestige) || !isRecord(value.time)) {
+  if (!isRecord(value) || !isRecord(value.finance) || !isRecord(value.inventory) || !isRecord(value.market) || !isRecord(value.facilities) || !isRecord(value.salesContracts) || !isRecord(value.achievements) || !isRecord(value.productionStatistics) || !isRecord(value.prestige) || !isRecord(value.time)) {
     return false;
   }
 
@@ -42,6 +42,9 @@ function isGameSnapshot(value: unknown): value is GameSnapshot {
     typeof value.finance.balance === 'number'
     && Array.isArray(value.finance.transactions)
     && isRecord(value.inventory.entries)
+    && isRecord(value.market.local)
+    && isRecord(value.market.global)
+    && isRecord(value.market.automation)
     && Array.isArray(value.facilities.facilities)
     && Array.isArray(value.salesContracts.offered)
     && Array.isArray(value.salesContracts.completed)

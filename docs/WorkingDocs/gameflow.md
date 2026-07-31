@@ -49,6 +49,13 @@ For `levels = speedLevel + outputLevel`:
 
 Levels and worker counts are non-negative integers. A zero-worker requirement has 100% efficiency; above-target staffing cannot reach a 25% bonus.
 
+## Market
+
+- Each resource has persisted local/global supply and quality. Local and global prices are `benchmarkSupply / max(supply, 1) × marketQuality`.
+- Foreground minute completion creates price-locked sales offers, autosells enabled inventory to the local market, then source-capped diffusion balances every resource between local and global reservoirs. Offline time does none of these.
+- Manual buys/sells trade only with the local market. A fulfilled sales contract adds the delivered inventory and its quality directly to the global reservoir; its reward was locked at offer time from global price × 1.20.
+- Autobuy may purchase missing recipe inputs from the local market only when enabled and under its saved finite maximum unit price.
+
 ## Finance, Prestige, and Sales
 
 - Construction requires funds and applies `newBalance = currentBalance - constructionCost`; balance cannot become negative.
