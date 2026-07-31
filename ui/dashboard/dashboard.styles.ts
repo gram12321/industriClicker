@@ -61,6 +61,8 @@ export const styles = StyleSheet.create({
   facilityUpgradeSummary: { color: colors.muted, marginTop: 4 },
   header: { backgroundColor: colors.primary },
   headerActions: { alignItems: 'center', flexDirection: 'row' },
+  headerElapsedTime: { alignItems: 'center', flexDirection: 'row', gap: 3, minHeight: 44, paddingHorizontal: 4 },
+  headerElapsedTimeValue: { color: colors.onDark, fontSize: 13, fontWeight: '700' },
   inventoryHeading: { color: colors.charcoal, marginTop: 8 },
   marketActionButton: { margin: 0 },
   marketAutomationInput: { marginBottom: 8 },

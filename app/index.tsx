@@ -26,7 +26,7 @@ import {
   styles,
   type DashboardTab,
 } from '@/ui';
-import { formatCurrency, formatNumber } from '@/utils';
+import { formatCurrency, formatElapsedTime, formatNumber } from '@/utils';
 import { APP_ICONS } from '@/icons';
 
 type DashboardView = DashboardTab | 'achievements' | 'admin' | 'profile' | 'pedia';
@@ -79,6 +79,7 @@ export default function HomeScreen() {
   const resetGame = useGameStore((state) => state.resetGame);
   const isAdminDashboardAvailable = isDevAdminSurfaceAvailable();
   const prestigeSummary = calculateCompanyPrestigeSummary(prestige.getEvents(), lastProcessedAtMs);
+  const elapsedForegroundTimeMs = Math.max(0, lastProcessedAtMs - companyStartedAtGameTimeMs);
 
   const resetCompany = async () => {
     await resetGameSave();
@@ -106,12 +107,10 @@ export default function HomeScreen() {
                 iconColor={colors.onDark}
                 onPress={fastForwardOneMinute}
               />
-              <IconButton
-                accessibilityLabel="Open company prestige"
-                icon={APP_ICONS.achievements}
-                iconColor={colors.onDark}
-                onPress={() => setIsPrestigeOpen(true)}
-              />
+              <View accessibilityLabel={`Elapsed foreground time ${formatElapsedTime(elapsedForegroundTimeMs)}`} style={styles.headerElapsedTime}>
+                <MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.elapsedTime} size={17} />
+                <Text style={styles.headerElapsedTimeValue}>{formatElapsedTime(elapsedForegroundTimeMs)}</Text>
+              </View>
               <Menu
                 anchor={
                   <Pressable

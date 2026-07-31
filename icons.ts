@@ -14,6 +14,7 @@ export const APP_ICONS = {
   delete: 'delete-outline',
   destroy: 'trash-can-outline',
   expand: 'chevron-down',
+  elapsedTime: 'timer-outline',
   fastForward: 'fast-forward',
   facilityBakery: 'bread-slice-outline',
   facilityFarm: 'tractor',

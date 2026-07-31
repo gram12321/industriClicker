@@ -228,6 +228,18 @@ export function formatDuration(minutes: number): string {
     : `${formattedHours} h ${formatNumber(remainingMinutes, { smartDecimals: true })} min`;
 }
 
+/** Formats logical foreground time compactly for persistent header display. */
+export function formatElapsedTime(milliseconds: number): string {
+  if (!Number.isFinite(milliseconds) || milliseconds <= 0) return '0:00';
+
+  const totalSeconds = Math.floor(milliseconds / 1_000);
+  const hours = Math.floor(totalSeconds / 3_600);
+  const minutes = Math.floor(totalSeconds % 3_600 / 60);
+  const seconds = totalSeconds % 60;
+  const minuteAndSecond = `${String(minutes).padStart(hours > 0 ? 2 : 1, '0')}:${String(seconds).padStart(2, '0')}`;
+  return hours > 0 ? `${hours}:${minuteAndSecond}` : minuteAndSecond;
+}
+
 /** Returns a React Native-ready hex color for a normalized 0-1 rating. */
 export function getColorClass(value: number): string {
   if (!Number.isFinite(value)) return '#61716B';
