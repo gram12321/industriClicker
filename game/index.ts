@@ -10,6 +10,7 @@ export * from './finance/finance';
 export * from './finance/financeConstants';
 export * from './inventory/inventory';
 export * from './inventory/inventoryConstants';
+export * from './market';
 export * from './prestige/prestige';
 export * from './prestige/prestigeCalculator';
 export * from './prestige/prestigeConstants';

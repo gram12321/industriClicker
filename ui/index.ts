@@ -14,6 +14,7 @@ export * from './dashboard/views/CompanyDashboard';
 export * from './dashboard/views/FinanceDashboard';
 export * from './dashboard/views/IndustriPediaDashboard';
 export * from './dashboard/views/InventoryDashboard';
+export * from './dashboard/views/MarketDashboard';
 export * from './dashboard/views/ProductionDashboard';
 export * from './dashboard/views/ProfileDashboard';
 export * from './dashboard/views/SalesDashboard';

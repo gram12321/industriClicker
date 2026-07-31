@@ -35,6 +35,7 @@ const tabs: Array<{ key: DashboardTab; label: string; symbol: string }> = [
   { key: 'company', label: 'Company', symbol: '⌂' },
   { key: 'inventory', label: 'Inventory', symbol: '▣' },
   { key: 'production', label: 'Production', symbol: '⚙' },
+  { key: 'market', label: 'Market', symbol: 'M' },
   { key: 'finance', label: 'Finance', symbol: '\u20AC' },
 ];
 
@@ -52,6 +53,7 @@ export default function HomeScreen() {
   const [pendingConstruction, setPendingConstruction] = useState<FacilityType | null>(null);
   const [pendingDestruction, setPendingDestruction] = useState<FacilityType | null>(null);
   const inventory = useGameStore((state) => state.inventory);
+  const market = useGameStore((state) => state.market);
   const facilities = useGameStore((state) => state.facilities);
   const finance = useGameStore((state) => state.finance);
   const salesContracts = useGameStore((state) => state.salesContracts);
@@ -69,6 +71,9 @@ export default function HomeScreen() {
   const fastForwardOneMinute = useGameStore((state) => state.fastForwardOneMinute);
   const createSalesContractRequest = useGameStore((state) => state.createSalesContractRequest);
   const setInventoryAmount = useGameStore((state) => state.setInventoryAmount);
+  const buyMarketResource = useGameStore((state) => state.buyMarketResource);
+  const sellMarketResource = useGameStore((state) => state.sellMarketResource);
+  const setMarketAutomation = useGameStore((state) => state.setMarketAutomation);
   const fulfillSalesContract = useGameStore((state) => state.fulfillSalesContract);
   const rejectSalesContract = useGameStore((state) => state.rejectSalesContract);
   const resetGame = useGameStore((state) => state.resetGame);
@@ -160,6 +165,10 @@ export default function HomeScreen() {
               finance={finance}
               fulfillSalesContract={fulfillSalesContract}
               inventory={inventory}
+              market={market}
+              buyMarketResource={buyMarketResource}
+              sellMarketResource={sellMarketResource}
+              setMarketAutomation={setMarketAutomation}
               salesContracts={salesContracts}
               rejectSalesContract={rejectSalesContract}
               customerPipelineProgress={customerPipelineProgress}

@@ -9,6 +9,5 @@ export const SALES_CONTRACT_UNFULFILLED_CHANCE_CONTROL_POINTS = [
   { input: 10, normalized: 0.75 },
   { input: SALES_CONTRACT_UNFULFILLED_THEORETICAL_MAXIMUM, normalized: 1 - Number.EPSILON },
 ] as const satisfies readonly NormalizationControlPoint[];
-export const SALES_CONTRACT_UNIT_PRICE_EUROS = 1;
 export const SALES_CONTRACT_MIN_REQUEST_QUANTITY = 1;
 export const SALES_CONTRACT_MAX_REQUEST_QUANTITY = 10;

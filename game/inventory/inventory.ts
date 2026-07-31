@@ -62,12 +62,18 @@ export class Inventory {
     return isValidQuantity(amount) && this.getAmount(resourceType) >= amount;
   }
 
-  add(resourceType: ResourceType, amount = 1): boolean {
+  add(resourceType: ResourceType, amount = 1, quality = INVENTORY_DEFAULT_RESOURCE_QUALITY): boolean {
     if (!isValidQuantity(amount)) {
       return false;
     }
 
-    this.entries[resourceType].quantity += amount;
+    if (!Number.isFinite(quality) || quality <= 0) {
+      return false;
+    }
+
+    const entry = this.entries[resourceType];
+    entry.quality = (entry.quantity * entry.quality + amount * quality) / (entry.quantity + amount);
+    entry.quantity += amount;
     return true;
   }
 

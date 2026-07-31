@@ -22,6 +22,7 @@ Industri Clicker is a single-player, mobile-first industrial clicker for native 
 - Achievements show company milestones across facilities, production, sales, finance, foreground time, and prestige. Their only v1 reward is a decaying prestige event; they do not change production, pricing, staffing, contracts, or finance rules.
 - Speed and Output upgrades improve a facility independently. Staffing is the first efficiency factor; broader workforce systems are deferred.
 - Production progresses only while the app is foregrounded. The temporary one-minute fast-forward follows the same rule; offline progression is not yet approved.
+- The local market is player-facing; the global market is a device-local reservoir that supplies price diffusion. Sales contracts lock a global-price offer with a 20% premium and deposit fulfilled goods into that reservoir.
 
 ## Interaction Direction
 
@@ -34,7 +35,6 @@ Industri Clicker is a single-player, mobile-first industrial clicker for native 
 | Topic | Decision |
 |---|---|
 | Cloud backend | No cloud service until an approved need exists. |
-| Market | Outside the initial resource foundation. |
 | Offline catch-up | Needs an approved cap, clock policy, and resume feedback. |
 | Monetization and broader progression | To be designed after the first playable loop. |
 | Save compatibility | Older snapshot versions may be discarded unless a migration is explicitly approved. |
