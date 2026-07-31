@@ -9,6 +9,7 @@ export * from './dashboard/dashboard.styles';
 export * from './dashboard/helpers/devAdminGate';
 export * from './dashboard/helpers/recipeFormatters';
 export * from './dashboard/views/AdminDashboard';
+export * from './dashboard/views/AchievementsDashboard';
 export * from './dashboard/views/CompanyDashboard';
 export * from './dashboard/views/FinanceDashboard';
 export * from './dashboard/views/IndustriPediaDashboard';

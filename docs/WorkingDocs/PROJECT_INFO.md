@@ -6,16 +6,16 @@ Verified repository facts for Industri Clicker. Product choices belong in [desig
 
 - Stage: foundation.
 - Product: single-player, mobile-first industrial clicker for Android.
-- Implemented foundation: dashboard shell, inventory, facilities, finance, sales contracts, foreground production, company prestige, IndustriPedia, and local saves.
+- Implemented foundation: dashboard shell, inventory, facilities, finance, sales contracts, foreground production, tiered company achievements, company prestige, IndustriPedia, and local saves.
 - Deferred: offline catch-up, markets, broader staffing factors, and cloud services.
 
 ## Code Size
 
-Measured from the current working tree on 2026-07-30:
+Measured from the current working tree on 2026-07-31:
 
-- Application source: 3,652 non-empty TypeScript lines across 46 `.ts` and `.tsx` files.
+- Application source: 4,281 non-empty TypeScript lines across 58 `.ts` and `.tsx` files.
 - Project configuration: 96 non-empty lines across `metro.config.js`, `app.json`, `package.json`, and `tsconfig.json`.
-- Combined: 3,748 non-empty lines, excluding documentation, skills, lockfiles, and generated output.
+- Combined: 4,377 non-empty lines, excluding documentation, skills, lockfiles, and generated output.
 
 ## Stack
 
@@ -39,7 +39,7 @@ theme.ts              Shared Paper theme and visual tokens
 
 ## Routes and Commands
 
-- `/` — dashboard with Company, Inventory, Production, Finance, Profile, and IndustriPedia views.
+- `/` — dashboard with Company, Inventory, Production, Finance, Profile, Achievements, and IndustriPedia views.
 - `npm run start` — Expo development server for Expo Go.
 - `npm run android` — optional Android emulator shortcut.
 - `npm run web` — local browser development preview.

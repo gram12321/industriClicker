@@ -2,6 +2,8 @@ import * as SQLite from 'expo-sqlite';
 
 import type { GameSnapshot } from '../state/gameSnapshot';
 import { isPrestigeLedgerSnapshot } from '../../prestige/prestige';
+import { isAchievementLedgerSnapshot } from '../../achievements/achievement';
+import { isProductionStatisticsSnapshot } from '../../achievements/productionStatistics';
 
 const DATABASE_NAME = 'industri-clicker.db';
 const SAVE_ROW_ID = 1;
@@ -18,6 +20,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isGameTimeSnapshot(value: unknown): boolean {
   return isRecord(value)
+    && typeof value.companyStartedAtGameTimeMs === 'number'
+    && Number.isFinite(value.companyStartedAtGameTimeMs)
     && typeof value.lastProcessedAtMs === 'number'
     && Number.isFinite(value.lastProcessedAtMs)
     && typeof value.unprocessedWorkMs === 'number'
@@ -30,7 +34,7 @@ function isGameTimeSnapshot(value: unknown): boolean {
 }
 
 function isGameSnapshot(value: unknown): value is GameSnapshot {
-  if (!isRecord(value) || !isRecord(value.finance) || !isRecord(value.inventory) || !isRecord(value.facilities) || !isRecord(value.salesContracts) || !isRecord(value.prestige) || !isRecord(value.time)) {
+  if (!isRecord(value) || !isRecord(value.finance) || !isRecord(value.inventory) || !isRecord(value.facilities) || !isRecord(value.salesContracts) || !isRecord(value.achievements) || !isRecord(value.productionStatistics) || !isRecord(value.prestige) || !isRecord(value.time)) {
     return false;
   }
 
@@ -42,6 +46,8 @@ function isGameSnapshot(value: unknown): value is GameSnapshot {
     && Array.isArray(value.salesContracts.offered)
     && Array.isArray(value.salesContracts.completed)
     && typeof value.salesContracts.nextCustomerNumber === 'number'
+    && isAchievementLedgerSnapshot(value.achievements)
+    && isProductionStatisticsSnapshot(value.productionStatistics)
     && isPrestigeLedgerSnapshot(value.prestige)
     && isGameTimeSnapshot(value.time)
   );

@@ -18,6 +18,13 @@ export type FacilitySnapshot = {
   assignedWorkers?: number;
 };
 
+export type ProductionOutput = {
+  facilityType: FacilityType;
+  recipeName: RecipeName;
+  resourceType: ReturnType<typeof getRecipe>['output']['resourceType'];
+  amount: number;
+};
+
 /** Player-owned state for one constructed facility. */
 export class Facility {
   private activeRecipeName: RecipeName | null = null;
@@ -144,14 +151,15 @@ export class Facility {
    * Applies work to the selected recipe. Inputs are paid at the beginning of
    * each cycle, matching the Baseclicker production rule.
    */
-  advanceProduction(inventory: Inventory, workAmount: number): void {
+  advanceProduction(inventory: Inventory, workAmount: number): ProductionOutput[] {
+    const outputs: ProductionOutput[] = [];
     if (!Number.isFinite(workAmount) || workAmount <= 0 || !this.active || !this.activeRecipeName) {
-      return;
+      return outputs;
     }
 
     const recipe = getRecipe(this.activeRecipeName);
     if (!recipe || recipe.workAmount <= 0) {
-      return;
+      return outputs;
     }
 
     let remainingWork = workAmount * this.getEfficiency() * this.getSpeedMultiplier();
@@ -173,12 +181,15 @@ export class Facility {
       remainingWork -= appliedWork;
 
       if (progress + WORK_COMPLETION_EPSILON >= recipe.workAmount) {
-        inventory.add(recipe.output.resourceType, recipe.output.amount * this.getOutputMultiplier());
+        const amount = recipe.output.amount * this.getOutputMultiplier();
+        inventory.add(recipe.output.resourceType, amount);
+        outputs.push({ facilityType: this.facilityType, recipeName: recipe.name, resourceType: recipe.output.resourceType, amount });
         progress = 0;
       }
     }
 
     this.recipeProgress[recipe.name] = progress;
+    return outputs;
   }
 
   clone(): Facility {

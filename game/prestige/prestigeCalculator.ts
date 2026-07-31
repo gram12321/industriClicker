@@ -17,6 +17,7 @@ export type CompanyPrestigeSummary = {
   totalPrestige: number;
   balancePrestige: number;
   salesPrestige: number;
+  achievementPrestige: number;
   events: CurrentPrestigeEvent[];
 };
 
@@ -105,11 +106,15 @@ export function calculateCompanyPrestigeSummary(
   const salesPrestige = currentEvents
     .filter((event) => event.type === 'sales_contract')
     .reduce((sum, event) => sum + event.currentAmount, 0);
+  const achievementPrestige = currentEvents
+    .filter((event) => event.type === 'achievement')
+    .reduce((sum, event) => sum + event.currentAmount, 0);
 
   return {
     totalPrestige: roundPrestige(currentEvents.reduce((sum, event) => sum + event.currentAmount, 0)),
     balancePrestige: roundPrestige(balancePrestige),
     salesPrestige: roundPrestige(salesPrestige),
+    achievementPrestige: roundPrestige(achievementPrestige),
     events: currentEvents,
   };
 }
