@@ -11,14 +11,14 @@ import { paperTheme } from '@/theme';
 const ACTIVE_SAVE_BATCH_MS = 5_000;
 
 function LocalSessionBootstrap({ children }: { children: ReactNode }) {
-  const status = useCompanySessionStore((state) => state.status);
+  const isInitialized = useCompanySessionStore((state) => state.isInitialized);
   const initialize = useCompanySessionStore((state) => state.initialize);
 
   useEffect(() => {
     void initialize();
   }, [initialize]);
 
-  if (status === 'loading') {
+  if (!isInitialized) {
     return (
       <View style={{ alignItems: 'center', flex: 1, justifyContent: 'center' }}>
         <ActivityIndicator accessibilityLabel="Loading local player data" color={paperTheme.colors.primary} />

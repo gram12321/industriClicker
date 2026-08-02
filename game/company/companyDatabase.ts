@@ -104,12 +104,6 @@ export async function listCompaniesForProfile(profileId: string): Promise<LocalC
   )).map(mapCompany);
 }
 
-export async function getCompany(companyId: string): Promise<LocalCompany | null> {
-  const database = await getDatabase();
-  const row = await database.getFirstAsync<CompanyRow>('SELECT id, owner_profile_id, display_name, starting_condition_id, created_at, updated_at FROM companies WHERE id = ?', companyId);
-  return row ? mapCompany(row) : null;
-}
-
 export async function createCompanyWithSave(input: { company: LocalCompany; snapshot: GameSnapshot }): Promise<void> {
   const database = await getDatabase();
   const normalizedName = input.company.displayName.toLocaleLowerCase();
@@ -141,10 +135,6 @@ export async function saveCompanySnapshot(companyId: string, snapshot: GameSnaps
      ON CONFLICT(company_id) DO UPDATE SET snapshot_json = excluded.snapshot_json, updated_at = excluded.updated_at`,
     companyId, JSON.stringify(snapshot), new Date().toISOString(),
   );
-}
-
-export async function resetCompanySnapshot(companyId: string, snapshot: GameSnapshot): Promise<void> {
-  await saveCompanySnapshot(companyId, snapshot);
 }
 
 export async function loadCompanyTutorialState(companyId: string): Promise<CompanyTutorialState> {
