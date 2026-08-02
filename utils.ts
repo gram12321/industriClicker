@@ -2,6 +2,24 @@
 export const DISPLAY_LOCALE = 'da-DK';
 export const DISPLAY_CURRENCY = 'EUR';
 
+export const ACHIEVEMENT_MASTERY_NAMES = [
+  'First Shift',
+  'Factory Hand',
+  'Industrial Veteran',
+  'Plant Supervisor',
+  'Industry Legend',
+  'Process Pioneer',
+  'Production Architect',
+  'Titan of Industry',
+  'Industrial Icon',
+  'Legacy Builder',
+] as const;
+
+export function getAchievementMasteryName(tier: number): string {
+  const index = Math.max(0, Math.min(ACHIEVEMENT_MASTERY_NAMES.length - 1, Math.floor(tier) - 1));
+  return ACHIEVEMENT_MASTERY_NAMES[index];
+}
+
 export interface NumberFormatOptions {
   decimals?: number;
   forceDecimals?: boolean;
