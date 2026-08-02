@@ -47,7 +47,7 @@ Use `../toolsskills/small-steps/SKILL.md` as the default for routine work. Start
 
 Escalate to another specialist skill only when the user explicitly asks for it or the task clearly requires its discipline: for example, material product choices need brainstorming, an approved plan needs execution guidance, a defect needs debugging, or a schema/backend change needs explicit review.
 
-## Session Start And Context
+## Session Start, Context, and AI check message
 
 Start user-facing work with a short AI check message:
 
@@ -57,6 +57,12 @@ AI check: <1-5> - <brief reason>
 
 Use `1` for a clear, low-risk request and `5` for ambiguous or broad work.
 
+The AI must always choose exactly one of the following statements after its AI check message:
+
+1. `This is a research, feedback, or game-design/brainstorming task. I will not edit any code files (.ts/.tsx).`
+2. `This task requires a change or addition of code files. I will read the required .md files(listed in mobilegamedev skill) and all relevant context before making any edit to the codebase.`
+3. `This task requires a change or addition to database-connecting code. I will read this project's strict policy on isolation of CRUD operations in *Database.ts files. (found in readme.md)`
+
 Before a change, extended research is normally required. Read at least the following context: Then decide what codefiles the change will impact and these should be read as context. Relevant interrelated coding should also be read for Context. Use this order when the listed documents apply:
 
 1. `readme.md` when it exists; otherwise inspect the root project overview files.
@@ -64,14 +70,18 @@ Before a change, extended research is normally required. Read at least the follo
 3. `docs/WorkingDocs/design.md` for product or mechanic direction.
 4. `docs/WorkingDocs/PROJECT_INFO.md` for the selected stack, repository map, commands, and current implementation facts.
 5. `docs/WorkingDocs/gameflow.md` for a change to mechanics, economy, tick order, state flow, or persistence.
+6. `docs/WorkingDocs/version-log.md` for the last change to the relevant files. (Most recent commit is often sufficient context)
+7. `docs/WorkingDocs/VariableRelationshipMap.md` For a overview of all variable and parameters and thier relationships.
+8. `docs/WorkingDocs/AIDescriptions_coregame.md` for the current AI description of the core game.
 
 
 ## Core Rules
 
 - Keep services, database CRUD operation and UI separated in different files. Do not put business logic, validation, calculations, or persistence orchestration in UI components.
+- Database-interacting code is allowed only in dedicated, domain-bounded `*Database.ts` files (for example, `production/productionDatabase.ts`). Those files own CRUD operations; business files access database operations only by importing functions from the relevant `*Database.ts` file.
 - Keep source-of-truth state explicit. Persist primary state, derive display values where practical, and document save boundaries.
 - Prefer the smallest change that serves the current stage of the project. Do not introduce backend changes unless the user explicitly approves them.
-- Do not preserve legacy data shapes, database tables, or persistence keys unless the user explicitly requests it. Do not create compatibility branches or wrappers for old names; correct consumers to use the new names.
+- Do not preserve legacy data shapes, database tables, rows, schemas, or persistence keys unless the user explicitly requests it. Database edits must deliberately drop anything made obsolete, invalidating older local saves rather than retaining legacy data or compatibility paths.
 - Do not commit, push, launch a development server, or run broad validation by default. The human owns commits unless they explicitly delegate them.
 
 ## Mobile-First Rules

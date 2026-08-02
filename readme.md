@@ -60,6 +60,8 @@ React Native UI -> hooks/view models -> game commands/services -> state and pers
 - Pure TypeScript engine/service modules own gameplay formulas, progression, tick order, validation, and derived values.
 - Zustand holds active source-of-truth runtime state. Derive view data instead of persisting every display value.
 - Expo SQLite adapters own durable local reads and writes. Save deliberately at meaningful checkpoints or batched intervals.
+- Database-interacting code is allowed only in dedicated, domain-bounded `*Database.ts` files (for example, `production/productionDatabase.ts`). These files own CRUD operations; business files must import their database functions to access persistence and must not perform database operations directly.
+- Do not retain legacy database tables, rows, schemas, or save shapes. When a database edit makes data obsolete, deliberately drop it and invalidate older local saves instead of adding compatibility paths.
 - Keep balance values named, centralized, and easy to tune. Do not hide tunable values in UI components.
 - Keep code-owned domain catalogues, balance values, and deterministic game configuration in the owning domain's named `*Constants.ts` module. Leave only technical implementation details, such as numerical tolerances and persistence identifiers, local to their module.
 - Use `game/core/index.ts`, `game/index.ts`, and `ui/index.ts` as the public barrel surfaces. Prefer wildcard re-exports in those barrels; keep internal implementation imports on leaf modules when using the barrel would create a dependency cycle.
