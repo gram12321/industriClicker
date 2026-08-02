@@ -1,17 +1,21 @@
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, ProgressBar, Text } from 'react-native-paper';
 import type { Finance } from '@/game/finance/finance';
 import { RESEARCH_PROJECTS, type ResearchChainId, type ResearchLedger, type ResearchProjectDefinition, type ResearchProjectId } from '@/game/research';
+import type { GateRequirement } from '@/game/gates';
 import type { ResearchAvailability } from '@/game/core/stores/gameStore';
 import { colors } from '@/theme';
 import { formatCurrency, formatElapsedTime } from '@/utils';
 import { SectionHeading } from '../components/GameViewComponents';
 import { styles as dashboardStyles } from '../helpers/dashboard.styles';
 
-const CHAIN_DETAILS: Record<ResearchChainId, { eyebrow: string; title: string; subtitle: string }> = {
-  'capital-grants': { eyebrow: 'CAPITAL', title: 'Capital grants', subtitle: 'Fund staged company investment with one-time research grants.' },
-  'sales-capacity': { eyebrow: 'SALES', title: 'Sales capacity', subtitle: 'Increase the number of customer contracts your company may keep open.' },
+const CHAIN_DETAILS: Record<ResearchChainId, { eyebrow: string; icon: string; title: string; subtitle: string }> = {
+  'capital-grants': { eyebrow: 'CAPITAL', icon: 'bank-outline', title: 'Capital grants', subtitle: 'Fund staged company investment with one-time research grants.' },
+  'sales-capacity': { eyebrow: 'SALES', icon: 'handshake-outline', title: 'Sales capacity', subtitle: 'Increase the number of customer contracts your company may keep open.' },
 };
+
+const RESEARCH_CHAIN_IDS: readonly ResearchChainId[] = ['capital-grants', 'sales-capacity'];
 
 export function ResearchView({
   finance,
@@ -26,14 +30,32 @@ export function ResearchView({
   onStart: (projectId: ResearchProjectId) => boolean;
   research: ResearchLedger;
 }) {
+  const [selectedChain, setSelectedChain] = useState<ResearchChainId | 'all'>('all');
+  const [showCompletedTiers, setShowCompletedTiers] = useState(false);
   const active = research.getActiveProject();
   const completedIds = research.getCompletedProjectIds();
   const activeProject = active ? RESEARCH_PROJECTS.find((project) => project.id === active.projectId) ?? null : null;
+  const completedCount = completedIds.length;
+  const completion = RESEARCH_PROJECTS.length === 0 ? 0 : completedCount / RESEARCH_PROJECTS.length;
+  const visibleChains = selectedChain === 'all' ? RESEARCH_CHAIN_IDS : [selectedChain];
 
   return (
     <View style={localStyles.layout}>
       <View style={localStyles.pageHeading}>
         <SectionHeading eyebrow="RESEARCH" title="Company research" subtitle="Research advances while you play. One project can run at a time." />
+      </View>
+      <View style={localStyles.researchCard}>
+        <View style={localStyles.overviewHeader}>
+          <View style={localStyles.overviewTitle}>
+            <Text style={dashboardStyles.cardKicker}>PROGRESS OVERVIEW</Text>
+            <Text variant="titleLarge">{`${completedCount} of ${RESEARCH_PROJECTS.length} completed`}</Text>
+          </View>
+          <View>
+            <Text style={localStyles.completionPercent}>{`${Math.round(completion * 100)}%`}</Text>
+            <Text style={localStyles.completionLabel}>Complete</Text>
+          </View>
+        </View>
+        <ProgressBar accessible accessibilityLabel={`${completedCount} of ${RESEARCH_PROJECTS.length} research projects completed`} color={colors.primary} progress={completion} style={localStyles.overviewProgress} />
       </View>
       {active && activeProject && (
         <View style={localStyles.researchCard}>
@@ -48,14 +70,27 @@ export function ResearchView({
           </View>
         </View>
       )}
-      {(['capital-grants', 'sales-capacity'] as const).map((chainId) => {
+      <View style={[localStyles.researchCard, localStyles.filters]}>
+        <Button compact icon="view-grid-outline" mode={selectedChain === 'all' ? 'contained' : 'outlined'} onPress={() => setSelectedChain('all')}>{`All (${RESEARCH_PROJECTS.length})`}</Button>
+        {RESEARCH_CHAIN_IDS.map((chainId) => {
+          const chain = CHAIN_DETAILS[chainId];
+          const projectCount = RESEARCH_PROJECTS.filter((project) => project.chainId === chainId).length;
+          return <Button compact icon={chain.icon} key={chainId} mode={selectedChain === chainId ? 'contained' : 'outlined'} onPress={() => setSelectedChain(chainId)}>{`${chain.title} (${projectCount})`}</Button>;
+        })}
+        <Button compact icon={showCompletedTiers ? 'chevron-up' : 'history'} mode={showCompletedTiers ? 'contained' : 'outlined'} onPress={() => setShowCompletedTiers((current) => !current)}>{showCompletedTiers ? 'Hide completed tiers' : 'Show completed tiers'}</Button>
+      </View>
+      {visibleChains.map((chainId) => {
         const chain = CHAIN_DETAILS[chainId];
+        const chainProjects = RESEARCH_PROJECTS.filter((project) => project.chainId === chainId);
+        const displayedProjects = showCompletedTiers
+          ? chainProjects
+          : [chainProjects.find((project) => !completedIds.includes(project.id)) ?? chainProjects[chainProjects.length - 1]];
         return (
           <View key={chainId} style={localStyles.chain}>
             <View style={localStyles.chainHeading}>
               <SectionHeading eyebrow={chain.eyebrow} title={chain.title} subtitle={chain.subtitle} />
             </View>
-            {RESEARCH_PROJECTS.filter((project) => project.chainId === chainId).map((project) => (
+            {displayedProjects.map((project) => (
               <View key={project.id} style={localStyles.projectCardWrap}>
                 <ResearchProjectCard
                   activeProjectId={active?.projectId ?? null}
@@ -88,12 +123,23 @@ function ResearchProjectCard({ activeProjectId, availability, completed, onStart
       <View style={localStyles.cardBody}>
         <View style={localStyles.projectHeader}><View style={localStyles.projectTitle}><Text variant="titleMedium">{project.name}</Text><Text style={dashboardStyles.cardDescription}>{`${formatCurrency(project.cost)} · ${formatElapsedTime(project.durationMs)}`}</Text></View><Text style={[localStyles.status, completed ? localStyles.completedStatus : availability.startable ? localStyles.readyStatus : localStyles.lockedStatus]}>{status}</Text></View>
         <Text style={[dashboardStyles.cardDescription, localStyles.reward]}>{project.effect.kind === 'grant' ? `Completion reward: ${formatCurrency(project.effect.amount)}` : `Completion reward: maximum ${project.effect.maximum} open contracts`}</Text>
-        {!completed && !isActive && !availability.startable && availability.unmetReasons.map((reason) => <Text accessibilityLabel={`Locked condition: ${reason}`} key={reason} style={localStyles.requirement}>{reason}</Text>)}
+        <Text style={[dashboardStyles.cardKicker, localStyles.requirementsHeading]}>REQUIREMENTS</Text>
+        {project.requirements.map((requirement) => <Text key={`${requirement.kind}-${getRequirementDescription(requirement)}`} style={localStyles.requirement}>{getRequirementDescription(requirement)}</Text>)}
+        {!completed && !isActive && !availability.startable && availability.unmetReasons.map((reason) => <Text accessibilityLabel={`Locked condition: ${reason}`} key={reason} style={localStyles.unmetRequirement}>{reason}</Text>)}
         {completed && <Text style={localStyles.completedStatus}>Reward applied permanently.</Text>}
         {!completed && !isActive && <Button accessibilityLabel={`Start ${project.name}`} disabled={!availability.startable} mode="contained" onPress={() => onStart(project.id)} style={localStyles.startButton}>Start research</Button>}
       </View>
     </View>
   );
+}
+
+function getRequirementDescription(requirement: GateRequirement): string {
+  switch (requirement.kind) {
+    case 'achievement': return `Achievement: ${requirement.label}`;
+    case 'minimum-prestige': return `Prestige: ${requirement.minimumPrestige}`;
+    case 'research': return `Research: ${requirement.label}`;
+    case 'starting-condition': return `Starting condition: ${requirement.label}`;
+  }
 }
 
 const localStyles = StyleSheet.create({
@@ -104,11 +150,17 @@ const localStyles = StyleSheet.create({
   cardBody: { width: '100%' },
   chain: { marginTop: 20 },
   chainHeading: { marginBottom: 8 },
+  completionLabel: { color: colors.muted, fontSize: 12, textAlign: 'right' },
+  completionPercent: { color: colors.primary, fontSize: 24, fontWeight: '700', textAlign: 'right' },
+  filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   completedStatus: { color: colors.primary, fontSize: 12, fontWeight: '700' },
   lockedCard: { opacity: 0.72 },
   lockedStatus: { color: colors.muted },
   layout: { width: '100%' },
   pageHeading: { marginBottom: 12 },
+  overviewHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  overviewProgress: { borderRadius: 6, height: 8, marginTop: 12 },
+  overviewTitle: { flex: 1 },
   paidCost: { marginTop: 12 },
   progress: { borderRadius: 6, height: 8, marginTop: 10 },
   projectCardWrap: { marginBottom: 12 },
@@ -118,7 +170,9 @@ const localStyles = StyleSheet.create({
   researchCard: { backgroundColor: colors.surface, borderRadius: 12, padding: 16, width: '100%' },
   requirement: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: 8 },
   reward: { marginTop: 10 },
+  requirementsHeading: { marginTop: 12 },
   status: { fontSize: 12, fontWeight: '700', textAlign: 'right' },
   startButton: { marginTop: 12 },
   timeLabel: { marginTop: 4 },
+  unmetRequirement: { color: colors.error, fontSize: 12, lineHeight: 18, marginTop: 6 },
 });
