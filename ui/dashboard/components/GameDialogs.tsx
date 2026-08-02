@@ -30,7 +30,7 @@ export function GameDialogs(props: {
     <DestructionDialog facilityType={props.pendingDestruction} onConfirm={props.onConfirmDestruction} onDismiss={props.onDismissDestruction} />
   </>;
 }
-export function ConstructionYardDialog({
+function ConstructionYardDialog({
   facilities,
   finance,
   onDismiss,
@@ -107,7 +107,7 @@ export function ConstructionYardDialog({
   );
 }
 
-export function ConstructionDialog({
+function ConstructionDialog({
   facilities,
   facilityType,
   finance,
@@ -159,7 +159,7 @@ export function ConstructionDialog({
   );
 }
 
-export function DestructionDialog({
+function DestructionDialog({
   facilityType,
   onConfirm,
   onDismiss,

@@ -12,7 +12,6 @@ export const styles = StyleSheet.create({
   balanceInline: { alignItems: 'center', flexDirection: 'row', gap: 8 },
   balanceInlineValue: { color: colors.onDark, fontSize: 20, fontWeight: '700' },
   balanceValue: { color: colors.charcoal, fontSize: 36, fontWeight: '700', lineHeight: 42 },
-  coinIcon: { fontSize: 21 },
   bottomNavigation: {
     backgroundColor: colors.surface,
     flexDirection: 'row',
@@ -123,7 +122,6 @@ export const styles = StyleSheet.create({
   productionProgressHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   productionTimeLeft: { alignSelf: 'flex-end', color: colors.muted, fontSize: 12, marginBottom: 8 },
   productionValuePlaceholder: { color: colors.primary, fontSize: 12, fontWeight: '700' },
-  prestigeIcon: { fontSize: 17 },
   prestigeInline: { alignItems: 'center', flexDirection: 'row', gap: 3, minHeight: 44, paddingHorizontal: 4 },
   prestigeInlineValue: { color: colors.onDark, fontSize: 14, fontWeight: '700' },
   profileButton: { borderRadius: 22, padding: 2 },
