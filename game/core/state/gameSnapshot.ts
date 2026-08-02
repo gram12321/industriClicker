@@ -2,13 +2,10 @@ import { type FinanceSnapshot } from '../../finance/finance';
 import { type InventorySnapshot } from '../../inventory/inventory';
 import { type FacilityCollectionSnapshot } from '../../facilities/facilityCollection';
 import { type SalesContractsSnapshot } from '../../sales/salesContracts';
-import { type AchievementLedgerSnapshot } from '../../achievements/achievement';
-import { type ProductionStatisticsSnapshot } from '../../achievements/productionStatistics';
-import { type PrestigeLedgerSnapshot } from '../../prestige/prestige';
+import { isAchievementLedgerSnapshot, type AchievementLedgerSnapshot } from '../../achievements/achievement';
+import { isProductionStatisticsSnapshot, type ProductionStatisticsSnapshot } from '../../achievements/productionStatistics';
+import { isPrestigeLedgerSnapshot, type PrestigeLedgerSnapshot } from '../../prestige/prestige';
 import { type MarketSnapshot } from '../../market/marketTypes';
-import { isAchievementLedgerSnapshot } from '../../achievements/achievement';
-import { isProductionStatisticsSnapshot } from '../../achievements/productionStatistics';
-import { isPrestigeLedgerSnapshot } from '../../prestige/prestige';
 
 export type GameTimeSnapshot = {
   /** Logical foreground time when the current company began. */

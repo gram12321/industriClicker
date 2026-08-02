@@ -42,8 +42,6 @@ type GameState = {
   unprocessedWorkMs: number;
   /** Estimated customer-wait intervals elapsed since the last offer. */
   customerPipelineProgress: number;
-  addResource: (resourceType: ResourceType, amount?: number) => boolean;
-  removeResource: (resourceType: ResourceType, amount?: number) => boolean;
   setInventoryAmount: (resourceType: ResourceType, amount: number) => boolean;
   buyMarketResource: (resourceType: ResourceType, amount: number) => boolean;
   sellMarketResource: (resourceType: ResourceType, amount: number) => boolean;
@@ -53,7 +51,6 @@ type GameState = {
   setFacilityRecipe: (facilityType: FacilityType, recipeName: RecipeName | null) => boolean;
   setFacilityWorkers: (facilityType: FacilityType, workerCount: number) => boolean;
   upgradeFacility: (facilityType: FacilityType, upgradeKind: FacilityUpgradeKind) => boolean;
-  recordTransaction: (amount: number, description: string) => boolean;
   advanceGameTime: (elapsedMilliseconds: number) => number;
   advanceRealtime: (nowMs: number) => number;
   fastForwardOneMinute: () => boolean;
@@ -63,8 +60,6 @@ type GameState = {
   resetRealtimeClock: (nowMs: number) => void;
   createSnapshot: () => GameSnapshot;
   restoreSnapshot: (snapshot: GameSnapshot) => void;
-  resetGame: () => void;
-  resetInventory: () => void;
 };
 
 function syncCompanyBalancePrestige(
@@ -168,26 +163,6 @@ export const useGameStore = create<GameState>((set, get) => {
   lastObservedAtMs: initialGameTimeMs,
   unprocessedWorkMs: 0,
   customerPipelineProgress: 0,
-  addResource: (resourceType, amount) => {
-    const inventory = get().inventory.clone();
-
-    if (!inventory.add(resourceType, amount)) {
-      return false;
-    }
-
-    set({ inventory });
-    return true;
-  },
-  removeResource: (resourceType, amount) => {
-    const inventory = get().inventory.clone();
-
-    if (!inventory.remove(resourceType, amount)) {
-      return false;
-    }
-
-    set({ inventory });
-    return true;
-  },
   setInventoryAmount: (resourceType, amount) => {
     const inventory = get().inventory.clone();
 
@@ -349,29 +324,6 @@ export const useGameStore = create<GameState>((set, get) => {
       categories: ['facilities', 'finance', 'prestige'],
     });
     set({ facilities, finance, ...achievementResult });
-    return true;
-  },
-  recordTransaction: (amount, description) => {
-    const finance = get().finance.clone();
-
-    if (!finance.applyTransaction(amount, description, new Date().toISOString())) {
-      return false;
-    }
-
-    const prestige = get().prestige.clone();
-    syncCompanyBalancePrestige(prestige, finance, get().lastProcessedAtMs);
-    const achievementResult = applyAchievementUnlocks({
-      achievements: get().achievements,
-      productionStatistics: get().productionStatistics,
-      facilities: get().facilities,
-      finance,
-      salesContracts: get().salesContracts,
-      prestige,
-      companyStartedAtGameTimeMs: get().companyStartedAtGameTimeMs,
-      currentGameTimeMs: get().lastProcessedAtMs,
-      categories: ['finance', 'prestige'],
-    });
-    set({ finance, ...achievementResult });
     return true;
   },
   advanceGameTime: (elapsedMilliseconds) => {
@@ -658,26 +610,5 @@ export const useGameStore = create<GameState>((set, get) => {
     customerPipelineProgress: snapshot.time.customerPipelineProgress,
     });
   },
-  resetGame: () => {
-    const now = Date.now();
-    const finance = new Finance();
-
-    set({
-      finance,
-      inventory: new Inventory(),
-      market: new Market(),
-      facilities: new FacilityCollection(),
-      salesContracts: new SalesContracts(),
-      achievements: new AchievementLedger(),
-      productionStatistics: new ProductionStatistics(),
-      prestige: createStartingPrestige(finance, now),
-      companyStartedAtGameTimeMs: now,
-      lastProcessedAtMs: now,
-      lastObservedAtMs: now,
-      unprocessedWorkMs: 0,
-      customerPipelineProgress: 0,
-    });
-  },
-  resetInventory: () => set({ inventory: new Inventory() }),
   });
 });
