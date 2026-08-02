@@ -4,103 +4,66 @@ import { ActivityIndicator, AppState, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PaperProvider } from 'react-native-paper';
 
-if (__DEV__ && globalThis.window) {
-  const ignoredWarning = 'props.pointerEvents is deprecated. Use style.pointerEvents';
-  const originalWarn = console.warn;
-
-  console.warn = (...args) => {
-    if (args[0] === ignoredWarning) {
-      return;
-    }
-
-    originalWarn(...args);
-  };
-}
-
-import { loadGameSnapshot, saveGameSnapshot, useGameStore } from '@/game/core';
+import { useCompanySessionStore, useGameStore } from '@/game';
+import { saveCompanySnapshot } from '@/game/company/companyDatabase';
 import { paperTheme } from '@/theme';
 
-const INITIAL_SAVE_LOAD_TIMEOUT_MS = 10_000;
 const ACTIVE_SAVE_BATCH_MS = 5_000;
 
-function loadInitialSnapshot() {
-  return new Promise<Awaited<ReturnType<typeof loadGameSnapshot>>>((resolve) => {
-    const timeout = setTimeout(() => resolve(null), INITIAL_SAVE_LOAD_TIMEOUT_MS);
-
-    void loadGameSnapshot().then(
-      (snapshot) => {
-        clearTimeout(timeout);
-        resolve(snapshot);
-      },
-      () => {
-        clearTimeout(timeout);
-        resolve(null);
-      },
-    );
-  });
-}
-
-function GamePersistence({ children }: { children: ReactNode }) {
-  const [isReady, setIsReady] = useState(false);
+function LocalSessionBootstrap({ children }: { children: ReactNode }) {
+  const status = useCompanySessionStore((state) => state.status);
+  const initialize = useCompanySessionStore((state) => state.initialize);
 
   useEffect(() => {
-    let isMounted = true;
+    void initialize();
+  }, [initialize]);
+
+  if (status === 'loading') {
+    return (
+      <View style={{ alignItems: 'center', flex: 1, justifyContent: 'center' }}>
+        <ActivityIndicator accessibilityLabel="Loading local player data" color={paperTheme.colors.primary} />
+      </View>
+    );
+  }
+
+  return <>{children}</>;
+}
+
+/** Batches only the snapshot belonging to the currently active company. */
+function CompanyGamePersistence({ children }: { children: ReactNode }) {
+  const activeCompanyId = useCompanySessionStore((state) => state.activeCompany?.id ?? null);
+
+  useEffect(() => {
+    if (!activeCompanyId) return undefined;
     let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
     const saveNow = (shouldProcessForegroundTime = AppState.currentState !== 'background' && AppState.currentState !== 'inactive') => {
-      // Process the final active interval before reading the snapshot. This
-      // keeps a background transition from saving state that predates a just-
-      // completed foreground work minute.
-      if (shouldProcessForegroundTime) {
-        useGameStore.getState().advanceRealtime(Date.now());
-      }
-      return saveGameSnapshot(useGameStore.getState().createSnapshot()).catch(() => undefined);
+      if (useCompanySessionStore.getState().activeCompany?.id !== activeCompanyId) return Promise.resolve();
+      if (shouldProcessForegroundTime) useGameStore.getState().advanceRealtime(Date.now());
+      return saveCompanySnapshot(activeCompanyId, useGameStore.getState().createSnapshot()).catch(() => undefined);
     };
     const scheduleSave = () => {
-      if (saveTimeout) {
-        return;
-      }
-
+      if (saveTimeout) return;
       saveTimeout = setTimeout(() => {
         saveTimeout = null;
         void saveNow();
       }, ACTIVE_SAVE_BATCH_MS);
     };
-
-    const initialize = async () => {
-      try {
-        const snapshot = await loadInitialSnapshot();
-        if (snapshot) {
-          useGameStore.getState().restoreSnapshot(snapshot);
-        }
-      } finally {
-        if (isMounted) {
-          setIsReady(true);
-        }
-      }
-    };
-
-    void initialize();
-
     const unsubscribe = useGameStore.subscribe((state, previousState) => {
       if (
-        state.finance === previousState.finance
-        && state.inventory === previousState.inventory
-        && state.market === previousState.market
-        && state.facilities === previousState.facilities
-        && state.salesContracts === previousState.salesContracts
-        && state.achievements === previousState.achievements
-        && state.productionStatistics === previousState.productionStatistics
-        && state.prestige === previousState.prestige
-        && state.companyStartedAtGameTimeMs === previousState.companyStartedAtGameTimeMs
-        && state.lastProcessedAtMs === previousState.lastProcessedAtMs
-        && state.unprocessedWorkMs === previousState.unprocessedWorkMs
-        && state.customerPipelineProgress === previousState.customerPipelineProgress
-      ) {
-        return;
-      }
-
-      scheduleSave();
+        state.finance !== previousState.finance
+        || state.inventory !== previousState.inventory
+        || state.market !== previousState.market
+        || state.facilities !== previousState.facilities
+        || state.salesContracts !== previousState.salesContracts
+        || state.achievements !== previousState.achievements
+        || state.productionStatistics !== previousState.productionStatistics
+        || state.prestige !== previousState.prestige
+        || state.companyStartedAtGameTimeMs !== previousState.companyStartedAtGameTimeMs
+        || state.lastProcessedAtMs !== previousState.lastProcessedAtMs
+        || state.unprocessedWorkMs !== previousState.unprocessedWorkMs
+        || state.customerPipelineProgress !== previousState.customerPipelineProgress
+      ) scheduleSave();
     });
     const appStateSubscription = AppState.addEventListener('change', (nextAppState) => {
       if (nextAppState !== 'active') {
@@ -113,60 +76,36 @@ function GamePersistence({ children }: { children: ReactNode }) {
     });
 
     return () => {
-      isMounted = false;
-      if (saveTimeout) {
-        clearTimeout(saveTimeout);
-      }
-      // Fast Refresh and page reload unmount this provider without an AppState
-      // transition. Persist the most recent state rather than cancelling it.
-      void saveNow();
+      if (saveTimeout) clearTimeout(saveTimeout);
       unsubscribe();
       appStateSubscription.remove();
     };
-  }, []);
-
-  if (!isReady) {
-    return (
-      <View style={{ alignItems: 'center', flex: 1, justifyContent: 'center' }}>
-        <ActivityIndicator accessibilityLabel="Loading local save" color={paperTheme.colors.primary} />
-      </View>
-    );
-  }
+  }, [activeCompanyId]);
 
   return <>{children}</>;
 }
 
 function ForegroundRealtimeClock() {
+  const activeCompanyId = useCompanySessionStore((state) => state.activeCompany?.id ?? null);
   const advanceRealtime = useGameStore((state) => state.advanceRealtime);
   const resetRealtimeClock = useGameStore((state) => state.resetRealtimeClock);
 
   useEffect(() => {
-    // AppState can be null during startup. Treat that brief unknown state as
-    // foreground so the minute timer begins before the first active event.
+    if (!activeCompanyId) return undefined;
     let isForeground = AppState.currentState !== 'background' && AppState.currentState !== 'inactive';
     resetRealtimeClock(Date.now());
-
     const interval = setInterval(() => {
-      if (isForeground) {
-        advanceRealtime(Date.now());
-      }
+      if (isForeground) advanceRealtime(Date.now());
     }, 1_000);
-
     const subscription = AppState.addEventListener('change', (nextAppState) => {
-      if (nextAppState === 'active') {
-        // Offline progress is planned, but background time intentionally does
-        // not grant work in this first foreground-only implementation.
-        resetRealtimeClock(Date.now());
-      }
-
+      if (nextAppState === 'active') resetRealtimeClock(Date.now());
       isForeground = nextAppState === 'active';
     });
-
     return () => {
       clearInterval(interval);
       subscription.remove();
     };
-  }, [advanceRealtime, resetRealtimeClock]);
+  }, [activeCompanyId, advanceRealtime, resetRealtimeClock]);
 
   return null;
 }
@@ -175,10 +114,12 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <PaperProvider theme={paperTheme}>
-        <GamePersistence>
-          <ForegroundRealtimeClock />
-          <Stack screenOptions={{ headerShown: false }} />
-        </GamePersistence>
+        <LocalSessionBootstrap>
+          <CompanyGamePersistence>
+            <ForegroundRealtimeClock />
+            <Stack screenOptions={{ headerShown: false }} />
+          </CompanyGamePersistence>
+        </LocalSessionBootstrap>
       </PaperProvider>
     </SafeAreaProvider>
   );

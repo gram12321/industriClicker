@@ -18,6 +18,7 @@ export type DashboardTab = 'company' | 'inventory' | 'market' | 'production' | '
 
 export function DashboardContent({
   activeTab,
+  companyName,
   customerPipelineProgress,
   facilities,
   finance,
@@ -36,6 +37,7 @@ export function DashboardContent({
   upgradeFacility,
 }: {
   activeTab: DashboardTab;
+  companyName: string;
   customerPipelineProgress: number;
   facilities: FacilityCollection;
   finance: Finance;
@@ -54,7 +56,7 @@ export function DashboardContent({
   upgradeFacility: (facilityType: FacilityType, upgradeKind: FacilityUpgradeKind) => boolean;
 }) {
   switch (activeTab) {
-    case 'company': return <CompanyDashboard />;
+    case 'company': return <CompanyDashboard companyName={companyName} />;
     case 'inventory': return <InventoryDashboard inventory={inventory} />;
     case 'market': return <MarketDashboard buyMarketResource={buyMarketResource} finance={finance} inventory={inventory} market={market} sellMarketResource={sellMarketResource} setMarketAutomation={setMarketAutomation} />;
     case 'production': return <ProductionDashboard facilities={facilities} finance={finance} inventory={inventory} openConstructionYard={openConstructionYard} requestFacilityDestruction={requestFacilityDestruction} setFacilityRecipe={setFacilityRecipe} setFacilityWorkers={setFacilityWorkers} upgradeFacility={upgradeFacility} />;

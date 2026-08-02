@@ -84,6 +84,27 @@ function createStartingPrestige(finance: Finance, currentGameTimeMs: number): Pr
   return prestige;
 }
 
+/** Produces a fresh, current-version company snapshot without touching runtime state. */
+export function createStartingGameSnapshot(nowMs = Date.now()): GameSnapshot {
+  const finance = new Finance();
+  return {
+    finance: finance.toSnapshot(),
+    inventory: new Inventory().toSnapshot(),
+    market: new Market().toSnapshot(),
+    facilities: new FacilityCollection().toSnapshot(),
+    salesContracts: new SalesContracts().toSnapshot(),
+    achievements: new AchievementLedger().toSnapshot(),
+    productionStatistics: new ProductionStatistics().toSnapshot(),
+    prestige: createStartingPrestige(finance, nowMs).toSnapshot(),
+    time: {
+      companyStartedAtGameTimeMs: nowMs,
+      lastProcessedAtMs: nowMs,
+      unprocessedWorkMs: 0,
+      customerPipelineProgress: 0,
+    },
+  };
+}
+
 function applyAchievementUnlocks(input: {
   achievements: AchievementLedger;
   productionStatistics: ProductionStatistics;

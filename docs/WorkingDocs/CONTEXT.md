@@ -20,6 +20,10 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Assigned workers / Required workers | The local worker count and calculated staffing target for a facility. |
 | Building efficiency | The production-speed multiplier derived from staffing. |
 | Company prestige | An informational company-standing value derived from prestige events. |
+| Local player profile | A device-local, non-authenticated profile that groups one or more companies. |
+| Active company | The selected company whose snapshot is restored into runtime state and may advance foreground game time. |
+| Device session | The persisted local selection of a player profile and active company; logging out clears this selection only. |
+| Starting condition | The named setup definition used when a company is created. `standard` is the only approved condition in v1. |
 | Prestige event | A company-level prestige source that may decay with active foreground time. |
 | Achievement | A durable company milestone defined in code and unlocked once when its typed condition is met. |
 | Achievement unlock | The persisted achievement ID and logical foreground time at which its condition was first met. |
@@ -38,6 +42,7 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Command | A typed request from UI or a system event to change game state. |
 | Snapshot | The durable representation of current-version game state. |
 | Runtime store / Local save | The Zustand-managed state / the device-local Expo SQLite snapshot. |
+| Company save | The validated `GameSnapshot` keyed by one local company ID. |
 
 ## UI Terms
 

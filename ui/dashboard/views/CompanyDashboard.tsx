@@ -2,16 +2,16 @@ import { Card, Text } from 'react-native-paper';
 import { styles } from '@/ui/dashboard/dashboard.styles';
 import { SectionHeading } from '../components/DashboardViewComponents';
 
-export function CompanyDashboard() {
+export function CompanyDashboard({ companyName }: { companyName: string }) {
   return (
     <>
-      <SectionHeading eyebrow="COMPANY" title="Company overview" subtitle="Your starting dashboard for the Industri Clicker prototype." />
+      <SectionHeading eyebrow="COMPANY" title="Company overview" subtitle="Your active local industrial company." />
       <Card mode="contained" style={styles.featureCard}>
         <Card.Content style={styles.cardContent}>
           <Text style={styles.cardKicker}>COMPANY PROFILE</Text>
-          <Text variant="titleLarge">Starter Company</Text>
+          <Text variant="titleLarge">{companyName}</Text>
           <Text style={styles.cardDescription}>
-            The company profile is a visual placeholder while the player identity system is planned.
+            This company is saved separately from every other company on this device.
           </Text>
         </Card.Content>
       </Card>

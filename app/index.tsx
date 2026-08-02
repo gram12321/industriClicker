@@ -1,57 +1,59 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View, type StyleProp, type ViewStyle } from 'react-native';
-import {
-  Avatar,
-  Divider, IconButton, Menu, Text,
-} from 'react-native-paper';
+import { Avatar, Divider, IconButton, Menu, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { APP_ICONS } from '@/icons';
+import { calculateCompanyPrestigeSummary, useCompanySessionStore, useGameStore } from '@/game';
 import { colors } from '@/theme';
-import type { FacilityType, Finance } from '@/game';
-import {
-  calculateCompanyPrestigeSummary,
-  resetGameSave,
-  useGameStore,
-} from '@/game';
 import {
   AdminDashboard,
   AchievementsDashboard,
   DashboardContent,
   DashboardDialogs,
+  DocumentationDialog,
   IndustriPediaDashboard,
   isDevAdminSurfaceAvailable,
+  LeaderboardDashboard,
   PrestigeDialog,
   ProfileDashboard,
+  SettingsDashboard,
   styles,
+  TutorialGuideDialog,
   type DashboardTab,
+  type DocumentationKind,
+  WelcomeScreen,
 } from '@/ui';
 import { formatCurrency, formatElapsedTime, formatNumber } from '@/utils';
-import { APP_ICONS } from '@/icons';
 
-type DashboardView = DashboardTab | 'achievements' | 'admin' | 'profile' | 'pedia';
+type DashboardView = DashboardTab | 'achievements' | 'admin' | 'profile' | 'pedia' | 'settings' | 'leaderboard';
 
 const tabs: Array<{ key: DashboardTab; label: string; symbol: string }> = [
   { key: 'company', label: 'Company', symbol: '⌂' },
   { key: 'inventory', label: 'Inventory', symbol: '▣' },
   { key: 'production', label: 'Production', symbol: '⚙' },
   { key: 'market', label: 'Market', symbol: 'M' },
-  { key: 'finance', label: 'Finance', symbol: '\u20AC' },
+  { key: 'finance', label: 'Finance', symbol: '€' },
 ];
 
-const salesTab: { key: DashboardTab; label: string; symbol: string } = {
-  key: 'sales',
-  label: 'Sales',
-  symbol: '$',
-};
+const salesTab: { key: DashboardTab; label: string; symbol: string } = { key: 'sales', label: 'Sales', symbol: '$' };
 
 export default function HomeScreen() {
+  const activeCompany = useCompanySessionStore((state) => state.activeCompany);
+  return activeCompany ? <DashboardScreen companyName={activeCompany.displayName} /> : <WelcomeScreen />;
+}
+
+function DashboardScreen({ companyName }: { companyName: string }) {
   const [activeView, setActiveView] = useState<DashboardView>('company');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isConstructionYardOpen, setIsConstructionYardOpen] = useState(false);
   const [isPrestigeOpen, setIsPrestigeOpen] = useState(false);
-  const [pendingConstruction, setPendingConstruction] = useState<FacilityType | null>(null);
-  const [pendingDestruction, setPendingDestruction] = useState<FacilityType | null>(null);
+  const [documentationKind, setDocumentationKind] = useState<DocumentationKind>(null);
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+  const [pendingConstruction, setPendingConstruction] = useState<import('@/game').FacilityType | null>(null);
+  const [pendingDestruction, setPendingDestruction] = useState<import('@/game').FacilityType | null>(null);
   const inventory = useGameStore((state) => state.inventory);
   const market = useGameStore((state) => state.market);
   const facilities = useGameStore((state) => state.facilities);
@@ -76,161 +78,67 @@ export default function HomeScreen() {
   const setMarketAutomation = useGameStore((state) => state.setMarketAutomation);
   const fulfillSalesContract = useGameStore((state) => state.fulfillSalesContract);
   const rejectSalesContract = useGameStore((state) => state.rejectSalesContract);
-  const resetGame = useGameStore((state) => state.resetGame);
+  const playerName = useCompanySessionStore((state) => state.selectedProfile?.displayName ?? 'Local player');
+  const tutorial = useCompanySessionStore((state) => state.tutorial);
+  const resetActiveCompany = useCompanySessionStore((state) => state.resetActiveCompany);
+  const logout = useCompanySessionStore((state) => state.logout);
+  const completeWelcomeTutorial = useCompanySessionStore((state) => state.completeWelcomeTutorial);
+  const reopenWelcomeTutorial = useCompanySessionStore((state) => state.reopenWelcomeTutorial);
   const isAdminDashboardAvailable = isDevAdminSurfaceAvailable();
   const prestigeSummary = calculateCompanyPrestigeSummary(prestige.getEvents(), lastProcessedAtMs);
   const elapsedForegroundTimeMs = Math.max(0, lastProcessedAtMs - companyStartedAtGameTimeMs);
 
-  const resetCompany = async () => {
-    await resetGameSave();
-    resetGame();
-  };
+  useEffect(() => {
+    setIsTutorialOpen(!tutorial.completedWelcome);
+  }, [tutorial.completedWelcome]);
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <StatusBar style="light" />
       <View style={styles.screen}>
-        <View style={styles.header}>
-          <View style={styles.topBar}>
-            <View style={styles.balanceInline}>
-              <MaterialCommunityIcons accessibilityLabel="Balance icon" color={colors.onDark} name={APP_ICONS.currency} size={21} />
-              <Text style={styles.balanceInlineValue}>{formatCurrency(finance.getBalance())}</Text>
-              <Pressable accessibilityLabel="Open company prestige" accessibilityRole="button" onPress={() => setIsPrestigeOpen(true)} style={styles.prestigeInline}>
-                <MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.achievements} size={17} />
-                <Text style={styles.prestigeInlineValue}>{formatNumber(prestigeSummary.totalPrestige, { smartDecimals: true })}</Text>
-              </Pressable>
-            </View>
-            <View style={styles.headerActions}>
-              <IconButton
-                accessibilityLabel="Fast-forward one minute"
-                icon={APP_ICONS.fastForward}
-                iconColor={colors.onDark}
-                onPress={fastForwardOneMinute}
-              />
-              <View accessibilityLabel={`Elapsed foreground time ${formatElapsedTime(elapsedForegroundTimeMs)}`} style={styles.headerElapsedTime}>
-                <MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.elapsedTime} size={17} />
-                <Text style={styles.headerElapsedTimeValue}>{formatElapsedTime(elapsedForegroundTimeMs)}</Text>
-              </View>
-              <Menu
-                anchor={
-                  <Pressable
-                    accessibilityLabel="Open profile menu"
-                    accessibilityRole="button"
-                    onPress={() => setIsProfileMenuOpen(true)}
-                    style={styles.profileButton}
-                  >
-                    <Avatar.Text label="IC" size={38} style={styles.avatar} />
-                  </Pressable>
-                }
-                onDismiss={() => setIsProfileMenuOpen(false)}
-                visible={isProfileMenuOpen}
-              >
-                <Menu.Item
-                  leadingIcon={APP_ICONS.account}
-                  onPress={() => { setIsProfileMenuOpen(false); setActiveView('profile'); }}
-                  title="Profile"
-                />
-                <Menu.Item leadingIcon={APP_ICONS.settings} onPress={() => setIsProfileMenuOpen(false)} title="Settings" />
-                <Menu.Item
-                  leadingIcon={APP_ICONS.help}
-                  onPress={() => { setIsProfileMenuOpen(false); setActiveView('pedia'); }}
-                  title="IndustriPedia"
-                />
-                <Menu.Item leadingIcon={APP_ICONS.achievements} onPress={() => { setIsProfileMenuOpen(false); setActiveView('achievements'); }} title="Achievements" />
-                {isAdminDashboardAvailable && (
-                  <Menu.Item
-                    leadingIcon={APP_ICONS.shield}
-                    onPress={() => { setIsProfileMenuOpen(false); setActiveView('admin'); }}
-                    title="Admin Dashboard"
-                  />
-                )}
-                <Divider />
-                <Menu.Item leadingIcon={APP_ICONS.logout} onPress={() => setIsProfileMenuOpen(false)} title="Log out" />
-              </Menu>
-            </View>
+        <View style={styles.header}><View style={styles.topBar}>
+          <View style={styles.balanceInline}>
+            <MaterialCommunityIcons accessibilityLabel="Balance icon" color={colors.onDark} name={APP_ICONS.currency} size={21} />
+            <Text style={styles.balanceInlineValue}>{formatCurrency(finance.getBalance())}</Text>
+            <Pressable accessibilityLabel="Open company prestige" accessibilityRole="button" onPress={() => setIsPrestigeOpen(true)} style={styles.prestigeInline}><MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.achievements} size={17} /><Text style={styles.prestigeInlineValue}>{formatNumber(prestigeSummary.totalPrestige, { smartDecimals: true })}</Text></Pressable>
           </View>
-        </View>
-
-        <ScrollView
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
-        >
-          {activeView === 'admin' && isAdminDashboardAvailable ? <AdminDashboard onCreateContractRequest={createSalesContractRequest} onResetCompany={resetCompany} onSetInventoryAmount={setInventoryAmount} /> : activeView === 'achievements' ? <AchievementsDashboard achievements={achievements} companyStartedAtGameTimeMs={companyStartedAtGameTimeMs} currentGameTimeMs={lastProcessedAtMs} facilities={facilities} finance={finance} prestige={prestige} productionStatistics={productionStatistics} salesContracts={salesContracts} /> : activeView === 'profile' ? <ProfileDashboard onResetCompany={resetCompany} /> : activeView === 'pedia' ? <IndustriPediaDashboard /> : (
-            <DashboardContent
-              activeTab={activeView === 'admin' ? 'company' : activeView}
-              openConstructionYard={() => setIsConstructionYardOpen(true)}
-              requestFacilityDestruction={setPendingDestruction}
-              facilities={facilities}
-              finance={finance}
-              fulfillSalesContract={fulfillSalesContract}
-              inventory={inventory}
-              market={market}
-              buyMarketResource={buyMarketResource}
-              sellMarketResource={sellMarketResource}
-              setMarketAutomation={setMarketAutomation}
-              salesContracts={salesContracts}
-              rejectSalesContract={rejectSalesContract}
-              customerPipelineProgress={customerPipelineProgress}
-              setFacilityRecipe={setFacilityRecipe}
-              setFacilityWorkers={setFacilityWorkers}
-              upgradeFacility={upgradeFacility}
-            />
-          )}
+          <View style={styles.headerActions}>
+            <IconButton accessibilityLabel="Fast-forward one minute" icon={APP_ICONS.fastForward} iconColor={colors.onDark} onPress={fastForwardOneMinute} />
+            <View accessibilityLabel={`Elapsed foreground time ${formatElapsedTime(elapsedForegroundTimeMs)}`} style={styles.headerElapsedTime}><MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.elapsedTime} size={17} /><Text style={styles.headerElapsedTimeValue}>{formatElapsedTime(elapsedForegroundTimeMs)}</Text></View>
+            <Menu anchor={<Pressable accessibilityLabel="Open profile menu" accessibilityRole="button" onPress={() => setIsProfileMenuOpen(true)} style={styles.profileButton}><Avatar.Text label={companyName.slice(0, 2).toUpperCase()} size={38} style={styles.avatar} /></Pressable>} onDismiss={() => setIsProfileMenuOpen(false)} visible={isProfileMenuOpen}>
+              <Menu.Item leadingIcon={APP_ICONS.account} onPress={() => { setIsProfileMenuOpen(false); setActiveView('profile'); }} title="Profile" />
+              <Menu.Item leadingIcon={APP_ICONS.settings} onPress={() => { setIsProfileMenuOpen(false); setActiveView('settings'); }} title="Settings" />
+              <Menu.Item leadingIcon="format-list-numbered" onPress={() => { setIsProfileMenuOpen(false); setActiveView('leaderboard'); }} title="Leaderboard" />
+              <Menu.Item leadingIcon={APP_ICONS.help} onPress={() => { setIsProfileMenuOpen(false); setActiveView('pedia'); }} title="IndustriPedia" />
+              <Menu.Item leadingIcon="file-document-outline" onPress={() => { setIsProfileMenuOpen(false); setDocumentationKind('readme'); }} title="README" />
+              <Menu.Item leadingIcon="history" onPress={() => { setIsProfileMenuOpen(false); setDocumentationKind('version-log'); }} title="Version log" />
+              <Menu.Item leadingIcon={APP_ICONS.achievements} onPress={() => { setIsProfileMenuOpen(false); setActiveView('achievements'); }} title="Achievements" />
+              {isAdminDashboardAvailable && <Menu.Item leadingIcon={APP_ICONS.shield} onPress={() => { setIsProfileMenuOpen(false); setActiveView('admin'); }} title="Admin Dashboard" />}
+              <Divider />
+              <Menu.Item leadingIcon={APP_ICONS.logout} onPress={() => { setIsProfileMenuOpen(false); void logout(); }} title="Log out" />
+            </Menu>
+          </View>
+        </View></View>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          {activeView === 'admin' && isAdminDashboardAvailable ? <AdminDashboard onCreateContractRequest={createSalesContractRequest} onResetCompany={async () => { await resetActiveCompany(); }} onSetInventoryAmount={setInventoryAmount} />
+            : activeView === 'achievements' ? <AchievementsDashboard achievements={achievements} companyStartedAtGameTimeMs={companyStartedAtGameTimeMs} currentGameTimeMs={lastProcessedAtMs} facilities={facilities} finance={finance} prestige={prestige} productionStatistics={productionStatistics} salesContracts={salesContracts} />
+              : activeView === 'profile' ? <ProfileDashboard companyName={companyName} onManageCompanies={logout} onResetCompany={async () => { await resetActiveCompany(); }} playerName={playerName} />
+                : activeView === 'settings' ? <SettingsDashboard onLogout={logout} onReplayTutorial={reopenWelcomeTutorial} />
+                  : activeView === 'leaderboard' ? <LeaderboardDashboard />
+                    : activeView === 'pedia' ? <IndustriPediaDashboard />
+                      : <DashboardContent activeTab={activeView === 'admin' ? 'company' : activeView} buyMarketResource={buyMarketResource} companyName={companyName} customerPipelineProgress={customerPipelineProgress} facilities={facilities} finance={finance} fulfillSalesContract={fulfillSalesContract} inventory={inventory} market={market} openConstructionYard={() => setIsConstructionYardOpen(true)} rejectSalesContract={rejectSalesContract} requestFacilityDestruction={setPendingDestruction} salesContracts={salesContracts} sellMarketResource={sellMarketResource} setFacilityRecipe={setFacilityRecipe} setFacilityWorkers={setFacilityWorkers} setMarketAutomation={setMarketAutomation} upgradeFacility={upgradeFacility} />}
         </ScrollView>
-
-        <View style={styles.bottomNavigation}>
-          {[...tabs.slice(0, 3), salesTab, ...tabs.slice(3)].map((tab) => (
-            <BottomNavigationItem
-              active={activeView === tab.key}
-              key={tab.key}
-              label={tab.label}
-              onPress={() => setActiveView(tab.key)}
-              symbol={tab.symbol}
-            />
-          ))}
-        </View>
+        <View style={styles.bottomNavigation}>{[...tabs.slice(0, 3), salesTab, ...tabs.slice(3)].map((tab) => <BottomNavigationItem active={activeView === tab.key} key={tab.key} label={tab.label} onPress={() => setActiveView(tab.key)} symbol={tab.symbol} />)}</View>
       </View>
-      <DashboardDialogs
-        facilities={facilities}
-        finance={finance}
-        pendingConstruction={pendingConstruction}
-        pendingDestruction={pendingDestruction}
-        isConstructionYardOpen={isConstructionYardOpen}
-        onCloseConstructionYard={() => setIsConstructionYardOpen(false)}
-        onSelectFacility={(facilityType) => { setIsConstructionYardOpen(false); setPendingConstruction(facilityType); }}
-        onConfirmConstruction={() => { if (pendingConstruction && buildFacility(pendingConstruction)) setPendingConstruction(null); }}
-        onConfirmDestruction={() => { if (pendingDestruction && destroyFacility(pendingDestruction)) setPendingDestruction(null); }}
-        onDismissConstruction={() => setPendingConstruction(null)}
-        onDismissDestruction={() => setPendingDestruction(null)}
-      />
+      <DashboardDialogs facilities={facilities} finance={finance} isConstructionYardOpen={isConstructionYardOpen} onCloseConstructionYard={() => setIsConstructionYardOpen(false)} onConfirmConstruction={() => { if (pendingConstruction && buildFacility(pendingConstruction)) setPendingConstruction(null); }} onConfirmDestruction={() => { if (pendingDestruction && destroyFacility(pendingDestruction)) setPendingDestruction(null); }} onDismissConstruction={() => setPendingConstruction(null)} onDismissDestruction={() => setPendingDestruction(null)} onSelectFacility={(facilityType) => { setIsConstructionYardOpen(false); setPendingConstruction(facilityType); }} pendingConstruction={pendingConstruction} pendingDestruction={pendingDestruction} />
       <PrestigeDialog currentGameTimeMs={lastProcessedAtMs} isOpen={isPrestigeOpen} onClose={() => setIsPrestigeOpen(false)} summary={prestigeSummary} />
+      <TutorialGuideDialog onComplete={() => { void completeWelcomeTutorial(); }} visible={isTutorialOpen} />
+      <DocumentationDialog kind={documentationKind} onClose={() => setDocumentationKind(null)} />
     </SafeAreaView>
   );
 }
-function BottomNavigationItem({
-  active,
-  label,
-  onPress,
-  symbol,
-}: {
-  active: boolean;
-  label: string;
-  onPress: () => void;
-  symbol: string;
-}) {
+
+function BottomNavigationItem({ active, label, onPress, symbol }: { active: boolean; label: string; onPress: () => void; symbol: string }) {
   const activeStyle: StyleProp<ViewStyle> = active ? styles.activeNavigationItem : undefined;
-
-  return (
-    <Pressable
-      accessibilityLabel={`${label} tab`}
-      accessibilityRole="tab"
-      accessibilityState={{ selected: active }}
-      onPress={onPress}
-      style={[styles.navigationItem, activeStyle]}
-    >
-      <Text style={[styles.navigationSymbol, active && styles.activeNavigationText]}>{symbol}</Text>
-      <Text style={[styles.navigationLabel, active && styles.activeNavigationText]}>{label}</Text>
-    </Pressable>
-  );
+  return <Pressable accessibilityLabel={`${label} tab`} accessibilityRole="tab" accessibilityState={{ selected: active }} onPress={onPress} style={[styles.navigationItem, activeStyle]}><Text style={[styles.navigationSymbol, active && styles.activeNavigationText]}>{symbol}</Text><Text style={[styles.navigationLabel, active && styles.activeNavigationText]}>{label}</Text></Pressable>;
 }
-

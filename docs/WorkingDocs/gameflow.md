@@ -18,9 +18,10 @@ Foreground elapsed time -> advanceGameTime -> registered timed rules
 |---|---|---|
 | Balance values and catalogues | Typed TypeScript definitions | No |
 | Current game state | Zustand | Through `GameSnapshot` |
+| Local player/company/session metadata | Company domain and SQLite adapters | Yes, separately from `GameSnapshot` |
 | Finance, inventory, facilities, sales contracts, achievements, production statistics, prestige, logical game time | Domain models in the store | Yes |
 | Foreground wall-clock observation anchor and derived UI data | Store/runtime helpers | No |
-| Durable snapshot | `gameSaveRepository` Expo SQLite adapter | Yes |
+| Durable snapshot | Company-keyed Expo SQLite adapter | Yes |
 | Cloud state | None | No |
 
 ## Production and Facilities
@@ -83,8 +84,9 @@ Offline catch-up is deferred and must use this rule path when approved.
 |---|---|
 | Normal change | Batch the current snapshot for up to five seconds. |
 | Checkpoint or background | Flush one current snapshot after processing final active time. |
-| Launch | Restore a valid snapshot before interaction; apply no catch-up. |
-| Invalid snapshot | Start fresh and leave it untouched until a successful save. |
-| Admin reset | Delete the snapshot and restore the starting company. |
+| Launch | Restore the persisted device session, then the valid snapshot for its active company before interaction; apply no catch-up. |
+| Company switch/logout | Flush the outgoing company's snapshot before changing session; a logout clears only the selected local session. |
+| Invalid snapshot | Start only that company fresh and leave other company saves untouched. |
+| Reset company | Replace only the active company's snapshot with the standard starting snapshot. |
 
-No save-version compatibility layer exists: a changed persisted shape may deliberately discard older local data. Achievement ledger, production statistics, and company-start logical time are required snapshot fields.
+No save-version compatibility layer exists: the old singleton save is deliberately discarded in favour of company-keyed snapshots. Achievement ledger, production statistics, and company-start logical time are required snapshot fields.

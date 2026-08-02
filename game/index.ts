@@ -1,4 +1,5 @@
 export * from './core';
+export * from './company';
 export * from './achievements';
 export * from './facilities/advanceProduction';
 export * from './facilities/facility';
