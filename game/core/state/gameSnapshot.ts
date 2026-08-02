@@ -22,7 +22,7 @@ export type GameTimeSnapshot = {
 };
 
 /**
- * Plain game data written to the single Expo SQLite save record. Code-owned
+ * Plain game data written to the active company's Expo SQLite save record. Code-owned
  * definitions and class methods are intentionally absent.
  */
 export type GameSnapshot = {

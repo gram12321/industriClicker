@@ -8,7 +8,7 @@ export type InventoryEntry = {
   quality: number;
 };
 
-/** Plain, JSON-safe representation stored by the SQLite game-save adapter. */
+/** Plain, JSON-safe representation stored by the company-scoped SQLite save adapter. */
 export type InventorySnapshot = {
   entries: Record<ResourceType, InventoryEntry>;
 };

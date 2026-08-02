@@ -7,7 +7,7 @@ export type FinanceTransaction = {
   occurredAt: string;
 };
 
-/** Plain, JSON-safe representation stored in the Expo SQLite game save. */
+/** Plain, JSON-safe representation stored in the active company's SQLite game save. */
 export type FinanceSnapshot = {
   balance: number;
   transactions: FinanceTransaction[];

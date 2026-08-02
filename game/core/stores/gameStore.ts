@@ -149,7 +149,7 @@ function applyAchievementUnlocks(input: {
   return { achievements, prestige };
 }
 
-/** Runtime owner of player progress. Durable SQLite saves are introduced separately. */
+/** Runtime owner of the active company's progress. The company session owns durable saves. */
 export const useGameStore = create<GameState>((set, get) => {
   const initialGameTimeMs = Date.now();
   const initialFinance = new Finance();
