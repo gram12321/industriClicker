@@ -17,7 +17,7 @@ Device session
 
 ```
 
-The app opens either the local welcome/selection flow or the saved active company. Logging out returns to selection and preserves every local profile and company. Resetting resets only the active company's progress. Deleting a company is a separate, later destructive action.
+The app opens either the local welcome/selection flow or the saved active company. Logging out returns to selection and preserves every local profile and company. Deleting the active company returns to selection and removes only that company's record, snapshot, and tutorial state.
 
 ## Research direction
 
@@ -69,7 +69,7 @@ Company switching is a persistence boundary, not merely a UI state change:
 
 Creation should write the profile/company metadata and its starting snapshot as one deliberate local operation before activation. On failure, do not leave a selectable half-created company.
 
-The existing reset card becomes **Reset this company**: it deletes/recreates only the active company save, then restores starting state while retaining its name, owner, selected start, tutorial state, and other companies. A future **Delete company** action must remove that company record and snapshot only after a stronger confirmation.
+The destructive company action is **Delete company**: after confirmation it removes the active company record and its cascaded snapshot/tutorial rows, preserves other companies and the selected local profile, then returns to company selection. The development-only admin screen also offers a separate confirmed action to clear all local player data while retaining the empty schema.
 
 ## Mobile-first UI direction
 
@@ -107,7 +107,7 @@ Borrow the Simulus tutorial rhythm, not its assets:
 
 | Surface | v1 responsibility | Later connection |
 |---|---|---|
-| Profile | Show selected local player, active company, company portfolio, switching/creation entry point, and company reset. | Profile editing, company deletion, account/cloud migration. |
+| Profile | Show selected local player, active company, company portfolio, switching/creation entry point, and confirmed company deletion. | Profile editing and account/cloud migration. |
 | Settings | Tutorial replay, local-data explanation, and logout. | Notifications, accessibility preferences, theme selection, backup/sync controls. |
 | Leaderboard | Clearly labelled device-local placeholder or no-result state; never describe it as global. | Server-owned score submission, validation, ranking, and global views. |
 | Starting conditions | Persist and preview only `standard`. | Additional balanced starts and previews. |
@@ -118,10 +118,10 @@ Achievements, production statistics, prestige, and future research gates already
 ## Implementation sequence
 
 1. Define the player/company/session domain types, `standard` starting-condition constant, pure validation, and local SQLite `*Database.ts` boundaries.
-2. Replace singleton snapshot persistence with company-keyed saves and a queued active-company lifecycle; cover load, create, switch, background flush, reset, and invalid snapshot cases.
+2. Replace singleton snapshot persistence with company-keyed saves and a queued active-company lifecycle; cover load, create, switch, background flush, deletion, and invalid snapshot cases.
 3. Add the bootstrap gate so no game clock or game-save subscription runs before an active company exists.
 4. Implement the mobile welcome/profile/company-selection flow and company-creation setup template.
-5. Wire Profile, Settings, real local logout, tutorial replay, and reset-this-company behaviour.
+5. Wire Profile, Settings, real local logout, tutorial replay, company deletion, and admin local-data clearing.
 6. Add the compact guide tutorial placeholder and documentation dialogs/routes for the project README and version log.
 7. Add the device-local leaderboard placeholder, with no global claims or score persistence that would constrain the future server design.
 8. Update `CONTEXT.md`, `design.md`, `PROJECT_INFO.md`, `gameflow.md`, and `VariableRelationshipMap.md` after implementation decisions are verified.
@@ -131,7 +131,7 @@ Achievements, production statistics, prestige, and future research gates already
 - New profile/company creation persists distinct metadata and snapshots.
 - Switching A -> B -> A never leaks runtime state, queued saves, achievements, prestige, or tutorial completion between companies.
 - Logout clears only the device session; profiles and companies remain selectable.
-- Reset affects only the active company's progress and preserves its record.
+- Company deletion affects only the active company; other companies and the selected local profile remain available.
 - A malformed snapshot starts only that company fresh and leaves other companies untouched.
 - Portrait-phone selection, setup, dialogs, and tutorial controls remain reachable with text scaling and keyboard input.
 - README/version-log presentation handles long content with native scrolling and dismiss controls.

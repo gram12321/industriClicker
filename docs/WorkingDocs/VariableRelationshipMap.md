@@ -14,7 +14,7 @@ Concrete data relationships for rules defined in [gameflow.md](gameflow.md). Thi
 | `achievements.unlocks` | Stored | `AchievementLedger` | Post-command achievement evaluation | `AchievementLedgerSnapshot` |
 | `productionStatistics.producedByResource` | Stored | `ProductionStatistics` | Completed facility recipe output only | `ProductionStatisticsSnapshot` |
 | `prestige.events` | Stored | `PrestigeLedger` | Balance changes and fulfilled sales | `PrestigeLedgerSnapshot` |
-| `companyStartedAtGameTimeMs`, `lastProcessedAtMs`, `unprocessedWorkMs`, `customerPipelineProgress` | Stored | Zustand game store | Company reset and global time advance | `GameTimeSnapshot` |
+| `companyStartedAtGameTimeMs`, `lastProcessedAtMs`, `unprocessedWorkMs`, `customerPipelineProgress` | Stored | Zustand game store | Company creation, deletion, and global time advance | `GameTimeSnapshot` |
 | `lastObservedAtMs` | Runtime | Zustand game store | Foreground observation and lifecycle | No |
 | Local profile, company record, tutorial state, device session | Stored | Company domain SQLite adapters | Local player/company commands | Dedicated local tables |
 
@@ -32,7 +32,8 @@ Derived values include staffing efficiency, production work/output, contract rew
 | Achievement evaluation | Post-command domain state | Achievement unlocks; idempotent achievement prestige events |
 | `createSalesContractRequest` | Selected resource and quantity | Sales contracts and pipeline |
 | `activateCompany` | Selected profile, outgoing snapshot, requested company snapshot | Device session; complete runtime game state |
-| `resetActiveCompany` | Active company ID | Active company's snapshot and runtime game state |
+| `deleteActiveCompany` | Active company ID | Removes the active company and returns to local company selection |
+| `clearAllLocalData` | All local records | Clears profiles, companies, saves, tutorials, and the device session |
 
 All normal state changes batch persistence; background and explicit checkpoints flush it. UI issues commands and does not mutate state directly.
 

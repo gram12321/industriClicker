@@ -117,6 +117,21 @@ export async function createCompanyWithSave(input: { company: LocalCompany; snap
   });
 }
 
+/** Deletes one company and its company-scoped save and tutorial rows via foreign-key cascades. */
+export async function deleteCompany(companyId: string): Promise<void> {
+  const database = await getDatabase();
+  await database.runAsync('DELETE FROM companies WHERE id = ?', companyId);
+}
+
+/** Clears all player-owned local data while keeping the current empty schema ready for a new session. */
+export async function clearLocalData(): Promise<void> {
+  const database = await getDatabase();
+  await database.withTransactionAsync(async () => {
+    await database.runAsync('DELETE FROM device_session');
+    await database.runAsync('DELETE FROM local_profiles');
+  });
+}
+
 export async function loadCompanySnapshot(companyId: string): Promise<GameSnapshot | null> {
   const database = await getDatabase();
   const row = await database.getFirstAsync<SaveRow>('SELECT snapshot_json FROM company_saves WHERE company_id = ?', companyId);

@@ -87,6 +87,7 @@ Offline catch-up is deferred and must use this rule path when approved.
 | Launch | Restore the persisted device session, then the valid snapshot for its active company before interaction; apply no catch-up. |
 | Company switch/logout | Flush the outgoing company's snapshot before changing session; a logout clears only the selected local session. |
 | Invalid snapshot | Start only that company fresh and leave other company saves untouched. |
-| Reset company | Replace only the active company's snapshot with the standard starting snapshot. |
+| Delete company | Delete the active company record and its cascaded local save/tutorial rows, then return to local company selection. |
+| Clear local data (admin) | Delete every local profile, company, save, tutorial row, and device session while retaining the empty SQLite schema. |
 
 No save-version compatibility layer exists: the old singleton save is deliberately discarded in favour of company-keyed snapshots. Achievement ledger, production statistics, and company-start logical time are required snapshot fields.

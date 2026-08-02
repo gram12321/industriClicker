@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { isGameSnapshot } from '@/game/core/state/gameSnapshot';
 import { createStartingGameSnapshot, useGameStore } from '@/game/core/stores/gameStore';
-import { createCompanyWithSave, createLocalProfile, listCompaniesForProfile, listLocalProfiles, loadCompanySnapshot, loadCompanyTutorialState, loadDeviceSession, saveCompanySnapshot, saveCompanyTutorialState, saveDeviceSession } from './companyDatabase';
+import { clearLocalData, createCompanyWithSave, createLocalProfile, deleteCompany, listCompaniesForProfile, listLocalProfiles, loadCompanySnapshot, loadCompanyTutorialState, loadDeviceSession, saveCompanySnapshot, saveCompanyTutorialState, saveDeviceSession } from './companyDatabase';
 import { STARTING_CONDITIONS } from './companyConstants';
 import { createLocalId, DEFAULT_COMPANY_TUTORIAL_STATE, EMPTY_DEVICE_SESSION, normalizeDisplayName, type CompanyTutorialState, type LocalCompany, type LocalPlayerProfile, type StartingConditionId, validateDisplayName } from './companyTypes';
 
@@ -19,7 +19,8 @@ type CompanySessionState = {
   selectProfile: (profileId: string) => Promise<void>;
   createCompany: (displayName: string, startingConditionId?: StartingConditionId) => Promise<boolean>;
   activateCompany: (companyId: string) => Promise<boolean>;
-  resetActiveCompany: () => Promise<boolean>;
+  deleteActiveCompany: () => Promise<boolean>;
+  clearAllLocalData: () => Promise<boolean>;
   logout: () => Promise<void>;
   completeWelcomeTutorial: () => Promise<void>;
   reopenWelcomeTutorial: () => Promise<void>;
@@ -144,18 +145,34 @@ export const useCompanySessionStore = create<CompanySessionState>((set, get) => 
       set({ isSwitching: false });
     }
   },
-  resetActiveCompany: async () => {
+  deleteActiveCompany: async () => {
     const company = get().activeCompany;
-    if (!company) return false;
+    const selectedProfile = get().selectedProfile;
+    if (!company || !selectedProfile) return false;
     set({ isSwitching: true, error: null });
     try {
-      const snapshot = createStartingGameSnapshot();
-      useGameStore.getState().restoreSnapshot(snapshot);
-      await saveCompanySnapshot(company.id, snapshot);
-      set({ error: null });
+      await deleteCompany(company.id);
+      const companies = await listCompaniesForProfile(selectedProfile.id);
+      await saveDeviceSession({ selectedProfileId: selectedProfile.id, activeCompanyId: null });
+      useGameStore.getState().restoreSnapshot(createStartingGameSnapshot());
+      set({ companies, activeCompany: null, tutorial: DEFAULT_COMPANY_TUTORIAL_STATE, error: null });
       return true;
     } catch {
-      set({ error: 'The active company could not be reset.' });
+      set({ error: 'The active company could not be deleted.' });
+      return false;
+    } finally {
+      set({ isSwitching: false });
+    }
+  },
+  clearAllLocalData: async () => {
+    set({ isSwitching: true, error: null });
+    try {
+      await clearLocalData();
+      useGameStore.getState().restoreSnapshot(createStartingGameSnapshot());
+      set({ profiles: [], selectedProfile: null, companies: [], activeCompany: null, tutorial: DEFAULT_COMPANY_TUTORIAL_STATE, error: null });
+      return true;
+    } catch {
+      set({ error: 'All local player data could not be cleared.' });
       return false;
     } finally {
       set({ isSwitching: false });

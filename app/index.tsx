@@ -61,7 +61,8 @@ function GameShell({ companyName }: { companyName: string }) {
   const rejectSalesContract = useGameStore((state) => state.rejectSalesContract);
   const playerName = useCompanySessionStore((state) => state.selectedProfile?.displayName ?? 'Local player');
   const tutorial = useCompanySessionStore((state) => state.tutorial);
-  const resetActiveCompany = useCompanySessionStore((state) => state.resetActiveCompany);
+  const deleteActiveCompany = useCompanySessionStore((state) => state.deleteActiveCompany);
+  const clearAllLocalData = useCompanySessionStore((state) => state.clearAllLocalData);
   const logout = useCompanySessionStore((state) => state.logout);
   const completeWelcomeTutorial = useCompanySessionStore((state) => state.completeWelcomeTutorial);
   const reopenWelcomeTutorial = useCompanySessionStore((state) => state.reopenWelcomeTutorial);
@@ -99,9 +100,9 @@ function GameShell({ companyName }: { companyName: string }) {
           </View>
         </View></View>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          {activeView === 'admin' && isAdminDashboardAvailable ? <AdminDashboard onCreateContractRequest={createSalesContractRequest} onResetCompany={async () => { await resetActiveCompany(); }} onSetInventoryAmount={setInventoryAmount} />
+          {activeView === 'admin' && isAdminDashboardAvailable ? <AdminDashboard onClearAllLocalData={clearAllLocalData} onCreateContractRequest={createSalesContractRequest} onDeleteCompany={deleteActiveCompany} onSetInventoryAmount={setInventoryAmount} />
             : activeView === 'achievements' ? <AchievementsView achievements={achievements} companyStartedAtGameTimeMs={companyStartedAtGameTimeMs} currentGameTimeMs={lastProcessedAtMs} facilities={facilities} finance={finance} prestige={prestige} productionStatistics={productionStatistics} salesContracts={salesContracts} />
-              : activeView === 'profile' ? <ProfileScreen companyName={companyName} onManageCompanies={logout} onResetCompany={async () => { await resetActiveCompany(); }} playerName={playerName} />
+              : activeView === 'profile' ? <ProfileScreen companyName={companyName} onDeleteCompany={deleteActiveCompany} onManageCompanies={logout} playerName={playerName} />
                 : activeView === 'settings' ? <SettingsScreen onLogout={logout} onReplayTutorial={reopenWelcomeTutorial} />
                   : activeView === 'leaderboard' ? <LeaderboardScreen />
                     : activeView === 'pedia' ? <IndustriPediaView />
