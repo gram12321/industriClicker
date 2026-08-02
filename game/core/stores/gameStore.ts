@@ -20,9 +20,17 @@ import type { AchievementCategory } from '@/game/achievements/achievementConstan
 import { createAchievementEvaluationContext, evaluateAchievementUnlocks } from '@/game/achievements/achievementEvaluator';
 import { ProductionStatistics } from '@/game/achievements/productionStatistics';
 import { PrestigeLedger } from '@/game/prestige/prestige';
-import {   calculateCompanyBalancePrestige, } from '@/game/prestige/prestigeCalculator';
+import { calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary } from '@/game/prestige/prestigeCalculator';
 import { PRESTIGE_FOREGROUND_HOUR_MS } from '@/game/prestige/prestigeConstants';
+import { evaluateGateRequirements, type GateContext, type GateEvaluation } from '@/game/gates';
+import { getMaximumOpenSalesContracts, getResearchProject, ResearchLedger, type ResearchProjectId } from '@/game/research';
+import type { StartingConditionId } from '@/game/company/companyTypes';
 import { create } from 'zustand';
+
+export type ResearchAvailability = GateEvaluation & {
+  startable: boolean;
+  unmetReasons: string[];
+};
 
 type GameState = {
   finance: Finance;
@@ -33,6 +41,9 @@ type GameState = {
   achievements: AchievementLedger;
   productionStatistics: ProductionStatistics;
   prestige: PrestigeLedger;
+  research: ResearchLedger;
+  /** Company metadata injected by the session store, never persisted in GameSnapshot. */
+  startingConditionId: StartingConditionId | null;
   companyStartedAtGameTimeMs: number;
   /** Logical game time; it advances for realtime and fast-forward time alike. */
   lastProcessedAtMs: number;
@@ -57,6 +68,10 @@ type GameState = {
   createSalesContractRequest: (resourceType: ResourceType, quantity: number) => boolean;
   fulfillSalesContract: (contractId: string) => boolean;
   rejectSalesContract: (contractId: string) => boolean;
+  setStartingConditionId: (startingConditionId: StartingConditionId | null) => void;
+  getResearchAvailability: (projectId: ResearchProjectId) => ResearchAvailability;
+  startResearch: (projectId: ResearchProjectId) => boolean;
+  cancelResearch: () => boolean;
   resetRealtimeClock: (nowMs: number) => void;
   createSnapshot: () => GameSnapshot;
   restoreSnapshot: (snapshot: GameSnapshot) => void;
@@ -79,6 +94,40 @@ function createStartingPrestige(finance: Finance, currentGameTimeMs: number): Pr
   return prestige;
 }
 
+function createResearchGateContext(input: {
+  achievements: AchievementLedger;
+  research: ResearchLedger;
+  prestige: PrestigeLedger;
+  currentGameTimeMs: number;
+  startingConditionId: StartingConditionId | null;
+}): GateContext {
+  return {
+    completedAchievementIds: input.achievements.getUnlocks().map((unlock) => unlock.achievementId),
+    completedResearchProjectIds: input.research.getCompletedProjectIds(),
+    currentPrestige: calculateCompanyPrestigeSummary(input.prestige.getEvents(), input.currentGameTimeMs).totalPrestige,
+    startingConditionId: input.startingConditionId,
+  };
+}
+
+function getResearchAvailabilityForState(input: {
+  projectId: ResearchProjectId;
+  achievements: AchievementLedger;
+  research: ResearchLedger;
+  prestige: PrestigeLedger;
+  finance: Finance;
+  currentGameTimeMs: number;
+  startingConditionId: StartingConditionId | null;
+}): ResearchAvailability {
+  const project = getResearchProject(input.projectId);
+  if (!project) return { allowed: false, startable: false, unmetReasons: ['Unknown research project.'] };
+  if (input.research.hasCompleted(project.id)) return { allowed: false, startable: false, unmetReasons: ['Research already completed.'] };
+  if (input.research.getActiveProject()) return { allowed: false, startable: false, unmetReasons: ['Research in progress.'] };
+  const evaluation = evaluateGateRequirements(project.requirements, createResearchGateContext(input));
+  const unmetReasons = [...evaluation.unmetReasons];
+  if (!input.finance.canAfford(project.cost)) unmetReasons.push(`Requires €${project.cost.toLocaleString()} available.`);
+  return { allowed: evaluation.allowed, startable: unmetReasons.length === 0, unmetReasons };
+}
+
 /** Produces a fresh, current-version company snapshot without touching runtime state. */
 export function createStartingGameSnapshot(nowMs = Date.now()): GameSnapshot {
   const finance = new Finance();
@@ -91,6 +140,7 @@ export function createStartingGameSnapshot(nowMs = Date.now()): GameSnapshot {
     achievements: new AchievementLedger().toSnapshot(),
     productionStatistics: new ProductionStatistics().toSnapshot(),
     prestige: createStartingPrestige(finance, nowMs).toSnapshot(),
+    research: new ResearchLedger().toSnapshot(),
     time: {
       companyStartedAtGameTimeMs: nowMs,
       lastProcessedAtMs: nowMs,
@@ -158,6 +208,8 @@ export const useGameStore = create<GameState>((set, get) => {
   achievements: new AchievementLedger(),
   productionStatistics: new ProductionStatistics(),
   prestige: createStartingPrestige(initialFinance, initialGameTimeMs),
+  research: new ResearchLedger(),
+  startingConditionId: null,
   companyStartedAtGameTimeMs: initialGameTimeMs,
   lastProcessedAtMs: initialGameTimeMs,
   lastObservedAtMs: initialGameTimeMs,
@@ -339,6 +391,7 @@ export const useGameStore = create<GameState>((set, get) => {
     let salesContracts: SalesContracts | null = null;
     let market: Market | null = null;
     let marketFinance: Finance | null = null;
+    let research = get().research;
     let unprocessedWorkMs = get().unprocessedWorkMs;
     let customerPipelineProgress = get().customerPipelineProgress;
     let elapsedMinutes = 0;
@@ -390,6 +443,7 @@ export const useGameStore = create<GameState>((set, get) => {
           completedSalesMinutes,
           RESOURCE_TYPES,
           (resourceType) => activeMarket.getGlobalPrice(resourceType) * MARKET_SALES_CONTRACT_PREMIUM,
+          getMaximumOpenSalesContracts(research.getCompletedProjectIds()),
         );
         marketFinance ??= get().finance.clone();
         if (inventory === get().inventory) inventory = inventory.clone();
@@ -424,10 +478,30 @@ export const useGameStore = create<GameState>((set, get) => {
     const previousGameTimeMs = get().lastProcessedAtMs;
     const nextGameTimeMs = previousGameTimeMs + elapsedMs;
     let prestige = get().prestige;
+    let completedResearchProjectId: ResearchProjectId | null = null;
+
+    if (research.getActiveProject()) {
+      research = research.clone();
+      completedResearchProjectId = research.advance(elapsedMs);
+      if (completedResearchProjectId) {
+        research.complete(completedResearchProjectId, nextGameTimeMs);
+        const completedProject = getResearchProject(completedResearchProjectId);
+        if (completedProject?.effect.kind === 'grant') {
+          marketFinance ??= get().finance.clone();
+          marketFinance.applyTransaction(
+            completedProject.effect.amount,
+            `Research completed: ${completedProject.name}`,
+            new Date().toISOString(),
+          );
+          prestige = prestige.clone();
+          syncCompanyBalancePrestige(prestige, marketFinance, nextGameTimeMs);
+        }
+      }
+    }
 
     if (Math.floor(previousGameTimeMs / PRESTIGE_FOREGROUND_HOUR_MS)
       < Math.floor(nextGameTimeMs / PRESTIGE_FOREGROUND_HOUR_MS)) {
-      const nextPrestige = prestige.clone();
+      const nextPrestige = prestige === get().prestige ? prestige.clone() : prestige;
       if (nextPrestige.pruneExpired(nextGameTimeMs)) {
         prestige = nextPrestige;
       }
@@ -439,6 +513,9 @@ export const useGameStore = create<GameState>((set, get) => {
     }
     if (elapsedMinutes > 0) {
       achievementCategories.push('time');
+    }
+    if (completedResearchProjectId && getResearchProject(completedResearchProjectId)?.effect.kind === 'grant') {
+      achievementCategories.push('finance', 'prestige');
     }
     const achievementResult = achievementCategories.length > 0
       ? applyAchievementUnlocks({
@@ -464,6 +541,7 @@ export const useGameStore = create<GameState>((set, get) => {
       ...(productionStatistics !== get().productionStatistics ? { productionStatistics } : {}),
       ...(salesContracts ? { salesContracts } : {}),
       ...(market ? { market } : {}),
+      ...(research !== get().research ? { research } : {}),
       ...(achievementResult.achievements !== get().achievements ? { achievements: achievementResult.achievements } : {}),
       ...(achievementResult.prestige !== get().prestige ? { prestige: achievementResult.prestige } : {}),
     });
@@ -482,12 +560,80 @@ export const useGameStore = create<GameState>((set, get) => {
     get().advanceRealtime(Date.now());
     return get().advanceGameTime(REALTIME_WORK_MINUTE_MS) > 0;
   },
+  setStartingConditionId: (startingConditionId) => {
+    set({ startingConditionId });
+  },
+  getResearchAvailability: (projectId) => getResearchAvailabilityForState({
+    projectId,
+    achievements: get().achievements,
+    research: get().research,
+    prestige: get().prestige,
+    finance: get().finance,
+    currentGameTimeMs: get().lastProcessedAtMs,
+    startingConditionId: get().startingConditionId,
+  }),
+  startResearch: (projectId) => {
+    get().advanceRealtime(Date.now());
+    const state = get();
+    const project = getResearchProject(projectId);
+    if (!project || !getResearchAvailabilityForState({
+      projectId,
+      achievements: state.achievements,
+      research: state.research,
+      prestige: state.prestige,
+      finance: state.finance,
+      currentGameTimeMs: state.lastProcessedAtMs,
+      startingConditionId: state.startingConditionId,
+    }).startable) return false;
+
+    const research = state.research.clone();
+    const finance = state.finance.clone();
+    if (!research.start(projectId, project.cost)
+      || !finance.applyTransaction(-project.cost, `Research started: ${project.name}`, new Date().toISOString())) return false;
+
+    const prestige = state.prestige.clone();
+    syncCompanyBalancePrestige(prestige, finance, state.lastProcessedAtMs);
+    set({ research, finance, prestige });
+    return true;
+  },
+  cancelResearch: () => {
+    get().advanceRealtime(Date.now());
+    const state = get();
+    const research = state.research.clone();
+    const cancelled = research.cancel();
+    if (!cancelled) return false;
+
+    const project = getResearchProject(cancelled.projectId);
+    const finance = state.finance.clone();
+    if (!finance.applyTransaction(
+      cancelled.paidCost,
+      `Research cancelled: ${project?.name ?? cancelled.projectId}`,
+      new Date().toISOString(),
+    )) return false;
+
+    const prestige = state.prestige.clone();
+    syncCompanyBalancePrestige(prestige, finance, state.lastProcessedAtMs);
+    const achievementResult = applyAchievementUnlocks({
+      achievements: state.achievements,
+      productionStatistics: state.productionStatistics,
+      facilities: state.facilities,
+      finance,
+      salesContracts: state.salesContracts,
+      prestige,
+      companyStartedAtGameTimeMs: state.companyStartedAtGameTimeMs,
+      currentGameTimeMs: state.lastProcessedAtMs,
+      categories: ['finance', 'prestige'],
+    });
+    set({ research, finance, ...achievementResult });
+    return true;
+  },
   createSalesContractRequest: (resourceType, quantity) => {
     const salesContracts = get().salesContracts.clone();
     if (!salesContracts.createOfferForResource(
       resourceType,
       quantity,
       get().market.getGlobalPrice(resourceType) * MARKET_SALES_CONTRACT_PREMIUM,
+      getMaximumOpenSalesContracts(get().research.getCompletedProjectIds()),
     )) {
       return false;
     }
@@ -565,6 +711,7 @@ export const useGameStore = create<GameState>((set, get) => {
     achievements: get().achievements.toSnapshot(),
     productionStatistics: get().productionStatistics.toSnapshot(),
     prestige: get().prestige.toSnapshot(),
+    research: get().research.toSnapshot(),
     time: {
       companyStartedAtGameTimeMs: get().companyStartedAtGameTimeMs,
       lastProcessedAtMs: get().lastProcessedAtMs,
@@ -580,6 +727,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const achievements = AchievementLedger.fromSnapshot(snapshot.achievements);
     const productionStatistics = ProductionStatistics.fromSnapshot(snapshot.productionStatistics);
     const prestige = PrestigeLedger.fromSnapshot(snapshot.prestige);
+    const research = ResearchLedger.fromSnapshot(snapshot.research);
     syncCompanyBalancePrestige(prestige, finance, snapshot.time.lastProcessedAtMs);
     const achievementResult = applyAchievementUnlocks({
       achievements,
@@ -602,6 +750,7 @@ export const useGameStore = create<GameState>((set, get) => {
     achievements: achievementResult.achievements,
     productionStatistics,
     prestige: achievementResult.prestige,
+    research,
     companyStartedAtGameTimeMs: snapshot.time.companyStartedAtGameTimeMs,
     // Offline progress is planned; observe a restored foreground session from now.
     lastProcessedAtMs: snapshot.time.lastProcessedAtMs,

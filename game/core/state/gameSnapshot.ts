@@ -6,6 +6,7 @@ import { isAchievementLedgerSnapshot, type AchievementLedgerSnapshot } from '../
 import { isProductionStatisticsSnapshot, type ProductionStatisticsSnapshot } from '../../achievements/productionStatistics';
 import { isPrestigeLedgerSnapshot, type PrestigeLedgerSnapshot } from '../../prestige/prestige';
 import { type MarketSnapshot } from '../../market/marketTypes';
+import { isResearchLedgerSnapshot, type ResearchLedgerSnapshot } from '../../research/research';
 
 export type GameTimeSnapshot = {
   /** Logical foreground time when the current company began. */
@@ -31,6 +32,7 @@ export type GameSnapshot = {
   achievements: AchievementLedgerSnapshot;
   productionStatistics: ProductionStatisticsSnapshot;
   prestige: PrestigeLedgerSnapshot;
+  research: ResearchLedgerSnapshot;
   time: GameTimeSnapshot;
 };
 
@@ -58,7 +60,7 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
   if (!isRecord(value) || !isRecord(value.finance) || !isRecord(value.inventory)
     || !isRecord(value.market) || !isRecord(value.facilities) || !isRecord(value.salesContracts)
     || !isRecord(value.achievements) || !isRecord(value.productionStatistics)
-    || !isRecord(value.prestige) || !isGameTimeSnapshot(value.time)) {
+    || !isRecord(value.prestige) || !isResearchLedgerSnapshot(value.research) || !isGameTimeSnapshot(value.time)) {
     return false;
   }
 

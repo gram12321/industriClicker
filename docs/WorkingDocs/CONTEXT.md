@@ -28,6 +28,10 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Achievement | A durable company milestone defined in code and unlocked once when its typed condition is met. |
 | Achievement unlock | The persisted achievement ID and logical foreground time at which its condition was first met. |
 | Production statistics | Lifetime facility output totals by resource, recorded only when a recipe completes output. |
+| Progression gate | A pure all-of requirement check over achievements, current prestige, completed research, and a starting condition. |
+| Research project | A code-defined, one-time company project with an up-front cost, foreground duration, requirements, and completion effect. |
+| Active research | The one paid research project currently accumulating foreground milliseconds for its company. |
+| Sales capacity | The derived maximum number of open customer contracts. It starts at one and is raised by completed Sales Capacity research. |
 
 ## Time, State, and Persistence
 

@@ -35,6 +35,7 @@ export const APP_ICONS = {
   prestige: 'trophy-outline',
   quality: 'star',
   reset: 'delete-outline',
+  research: 'flask-outline',
   settings: 'cog-outline',
   shield: 'shield-crown-outline',
   globalMarket: 'earth',

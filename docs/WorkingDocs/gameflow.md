@@ -19,7 +19,7 @@ Foreground elapsed time -> advanceGameTime -> registered timed rules
 | Balance values and catalogues | Typed TypeScript definitions | No |
 | Current game state | Zustand | Through `GameSnapshot` |
 | Local player/company/session metadata | Company domain and SQLite adapters | Yes, separately from `GameSnapshot` |
-| Finance, inventory, facilities, sales contracts, achievements, production statistics, prestige, logical game time | Domain models in the store | Yes |
+| Finance, inventory, facilities, sales contracts, achievements, production statistics, prestige, research, logical game time | Domain models in the store | Yes |
 | Foreground wall-clock observation anchor and derived UI data | Store/runtime helpers | No |
 | Durable snapshot | Company-keyed Expo SQLite adapter | Yes |
 | Cloud state | None | No |
@@ -66,15 +66,18 @@ Levels and worker counts are non-negative integers. A zero-worker requirement ha
 - Each foreground minute may offer one contract. Offer chance falls from 100% as unfulfilled contracts grow, using sales control points `0→0`, `3→0.25`, `5→0.50`, `10→0.75`, and `1,000,000→almost 1`, then `1 - calculateAsymmetricalScaler01(...)`.
 - A contract requests a random catalogue resource and quantity 1–10, pays `quantity × €1`, and can be fulfilled only with the full inventory amount. Rejection changes neither inventory nor finance.
 - The customer pipeline is visual only and does not affect offer rolls. It fills green through one estimated wait interval, then refills in red for each additional estimated interval until an offer resets it.
+- Research has two five-tier chains: Capital Grants pay one-time money rewards, while Sales Capacity raises the derived open-contract maximum from its base of one to 2, 3, 5, 7, or 10. Capacity blocks only newly created offers; existing offers remain actionable.
+- A research project requires all of its gates at start, deducts its full configured cost immediately, and is the only active project for its company. Completion is durable and applies its grant/effect once. Cancelling refunds the recorded full paid cost and discards partial progress.
 
 ## Foreground Time
 
 1. `TimeManager` measures active wall-clock time from `lastObservedAtMs`.
 2. `advanceGameTime` splits it into one-second simulation steps.
 3. Each step advances logical time and pipeline, then gives active facilities `elapsedSeconds / 60` base work in fixed order. Completed recipe output is also recorded in lifetime production statistics after output multipliers apply.
-4. Sales offers resolve only for completed foreground minutes; retained partial time carries between ticks.
-5. Fast-forward first processes real foreground time, then simulates 60 seconds through the same path.
-6. Background processes the final active interval and saves; resume resets the observation anchor. Inactive time awards no work, offers, or prestige decay.
+4. Active research advances by the same foreground elapsed milliseconds; background/resume time adds none. A completed project clears the active record and applies its one-time effect atomically.
+5. Sales offers resolve only for completed foreground minutes and may be created only while below derived sales capacity; retained partial time carries between ticks.
+6. Fast-forward first processes real foreground time, then simulates 60 seconds through the same path.
+7. Background processes the final active interval and saves; resume resets the observation anchor. Inactive time awards no work, offers, research progress, or prestige decay.
 
 Offline catch-up is deferred and must use this rule path when approved.
 
@@ -90,4 +93,4 @@ Offline catch-up is deferred and must use this rule path when approved.
 | Delete company | Delete the active company record and its cascaded local save/tutorial rows, then return to local company selection. |
 | Clear local data (admin) | Delete every local profile, company, save, tutorial row, and device session while retaining the empty SQLite schema. |
 
-No save-version compatibility layer exists: the old singleton save is deliberately discarded in favour of company-keyed snapshots. Achievement ledger, production statistics, and company-start logical time are required snapshot fields.
+No save-version compatibility layer exists: the old singleton save is deliberately discarded in favour of company-keyed snapshots. Achievement ledger, production statistics, research ledger, and company-start logical time are required snapshot fields.

@@ -8,6 +8,7 @@ export * from './dashboard/views/userpages/AdminDashboard';
 export * from './dashboard/views/userpages/AchievementsView';
 export * from './dashboard/views/userpages/IndustriPediaView';
 export * from './dashboard/views/userpages/ProfileScreen';
+export * from './dashboard/views/ResearchView';
 export * from './dashboard/views/userpages/SettingsScreen';
 export * from './dashboard/views/userpages/LeaderboardScreen';
 export * from './dashboard/views/userpages/LoginView';
