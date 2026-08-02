@@ -1,5 +1,5 @@
 import type { ResourceType } from '../resources/resourceTypes';
-import { RESOURCE_ICONS, RESOURCES, RESOURCE_TYPES } from '../resources/resourceConstants';
+import { RESOURCES, RESOURCE_TYPES } from '../resources/resourceConstants';
 
 export const ACHIEVEMENT_CATEGORIES = [
   'facilities',
@@ -78,7 +78,7 @@ export function createResourceProductionAchievements(resourceType: ResourceType,
 export const ACHIEVEMENT_DEFINITIONS: readonly AchievementDefinition[] = [
   ...createTieredAchievements({ seriesId: 'facility_portfolio', category: 'facilities', name: 'Industrial Footprint', description: 'Own {threshold} facilities.', icon: 'factory', metric: 'facility-count', thresholds: [1, 3, 6] }),
   ...createTieredAchievements({ seriesId: 'facility_upgrades', category: 'facilities', name: 'Moderniser', description: 'Buy {threshold} facility upgrades.', icon: 'trending-up', metric: 'upgrade-levels', thresholds: [1, 5, 15] }),
-  ...RESOURCE_TYPES.flatMap((resourceType) => createResourceProductionAchievements(resourceType, RESOURCES[resourceType].name, RESOURCE_ICONS[resourceType])),
+  ...RESOURCE_TYPES.flatMap((resourceType) => createResourceProductionAchievements(resourceType, RESOURCES[resourceType].name, RESOURCES[resourceType].icon)),
   ...createTieredAchievements({ seriesId: 'total_production', category: 'production', name: 'Production Line', description: 'Complete {threshold} total output.', icon: 'package-variant', metric: 'total-produced', thresholds: [1, 100, 1_000] }),
   ...createTieredAchievements({ seriesId: 'fulfilled_contracts', category: 'sales', name: 'Contract Closer', description: 'Fulfil {threshold} customer contracts.', icon: 'handshake-outline', metric: 'fulfilled-contract-count', thresholds: [1, 10, 50] }),
   ...createTieredAchievements({ seriesId: 'fulfilled_quantity', category: 'sales', name: 'Reliable Supplier', description: 'Deliver {threshold} contract units.', icon: 'truck-delivery-outline', metric: 'fulfilled-contract-quantity', thresholds: [10, 100, 1_000] }),

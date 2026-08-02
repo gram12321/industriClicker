@@ -103,7 +103,7 @@ export class SalesContracts {
       return null;
     }
 
-    const offer = this.createOffer([resourceType], Math.random, unitReward, quantity);
+    const offer = this.createOffer(resourceType, Math.random, unitReward, quantity);
     this.offered.push(offer);
     return cloneContract(offer);
   }
@@ -119,7 +119,7 @@ export class SalesContracts {
       if (clampRandom(random()) < calculateSalesContractOfferChance(this.offered.length)) {
         const resourceRoll = clampRandom(random());
         const resourceType = resourceTypes[Math.floor(resourceRoll * resourceTypes.length)];
-        this.offered.push(this.createOffer([resourceType], random, getUnitReward(resourceType)));
+        this.offered.push(this.createOffer(resourceType, random, getUnitReward(resourceType)));
         contractsCreated += 1;
       }
     }
@@ -175,12 +175,10 @@ export class SalesContracts {
     return new SalesContracts(snapshot);
   }
 
-  private createOffer(resourceTypes: readonly ResourceType[], random: () => number, unitReward: number, requestedQuantity?: number): SalesContract {
+  private createOffer(resourceType: ResourceType, random: () => number, unitReward: number, requestedQuantity?: number): SalesContract {
     if (!Number.isFinite(unitReward) || unitReward < 0) {
       throw new Error('Sales contract unit reward must be a non-negative finite number.');
     }
-    const resourceRoll = clampRandom(random());
-    const resourceIndex = Math.floor(resourceRoll * resourceTypes.length);
     const quantity = requestedQuantity ?? (() => {
       const quantityRoll = clampRandom(random());
       return Math.min(
@@ -195,7 +193,7 @@ export class SalesContracts {
       id: `sales-contract-${customerNumber}`,
       customerName: `Customer #${customerNumber}`,
       status: 'offered',
-      resourceType: resourceTypes[resourceIndex],
+      resourceType,
       quantity,
       reward: quantity * unitReward,
       offeredAt: new Date().toISOString(),

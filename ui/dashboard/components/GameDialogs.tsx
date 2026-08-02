@@ -8,7 +8,7 @@ import type { FacilityType } from '@/game/facilities/facilityTypes';
 import { clamp, formatCurrency } from '@/utils';
 import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { formatRecipeInputs, formatRecipeName, formatRecipeOutput } from '../helpers/recipeFormatters';
-import { PlaceholderRow, WorkMetric } from './GameViewComponents';
+import { DetailRow, WorkMetric } from './GameViewComponents';
 import { APP_ICONS } from '@/icons';
 
 export function GameDialogs(props: {
@@ -137,8 +137,8 @@ export function ConstructionDialog({
             This confirms the construction cost before the facility is added to your company.
           </Text>
           <View style={styles.dialogSummary}>
-            <PlaceholderRow label="Construction cost" value={formatCurrency(definition.constructionCost)} />
-            <PlaceholderRow label="Balance after construction" value={formatCurrency(balanceAfterConstruction)} />
+            <DetailRow label="Construction cost" value={formatCurrency(definition.constructionCost)} />
+            <DetailRow label="Balance after construction" value={formatCurrency(balanceAfterConstruction)} />
           </View>
           <Text variant="titleMedium" style={styles.dialogSectionHeading}>Available recipes</Text>
           {definition.recipes.map((recipe) => (

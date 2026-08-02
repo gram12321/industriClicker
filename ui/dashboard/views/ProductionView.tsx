@@ -4,7 +4,7 @@ import { Button, Card, IconButton, List, ProgressBar, Text } from 'react-native-
 import { colors } from '@/theme';
 import type { Finance } from '@/game/finance/finance';
 import type { FacilityCollection } from '@/game/facilities/facilityCollection';
-import { FACILITY_TYPES, getFacilityDefinition } from '@/game/facilities/facilityConstants';
+import { getFacilityDefinition } from '@/game/facilities/facilityConstants';
 import type { FacilityType } from '@/game/facilities/facilityTypes';
 import { getFacilityUpgradeCost, type FacilityUpgradeKind } from '@/game/facilities/facilityUpgrades';
 import type { Inventory } from '@/game/inventory/inventory';
@@ -12,7 +12,7 @@ import type { Recipe } from '@/game/recipes/recipeTypes';
 import { getResource, getResourceIcon } from '@/game/resources/resourceConstants';
 import { clamp, formatCurrency, formatDuration, formatNumber, formatPercent } from '@/utils';
 import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
-import { PlaceholderRow, SectionHeading, WorkMetric } from '../components/GameViewComponents';
+import { DetailRow, SectionHeading, WorkMetric } from '../components/GameViewComponents';
 import { formatRecipeInputs, formatRecipeName } from '../helpers/recipeFormatters';
 import { APP_ICONS } from '@/icons';
 
@@ -29,22 +29,23 @@ export function ProductionView({
   upgradeFacility: (facilityType: FacilityType, upgradeKind: FacilityUpgradeKind) => boolean;
 }) {
   const [collapsedFacilities, setCollapsedFacilities] = useState<Partial<Record<FacilityType, boolean>>>({});
+  const builtFacilities = facilities.getAll();
 
   return (
     <>
       <SectionHeading eyebrow="OPERATIONS" title="Facilities" subtitle="Manage your constructed facilities and build new ones." />
       <Button icon={APP_ICONS.add} mode="contained" onPress={openConstructionYard}>Build facility</Button>
-      {FACILITY_TYPES.filter((facilityType) => facilities.has(facilityType)).map((facilityType) => {
+      {builtFacilities.map((facility) => {
+        const facilityType = facility.facilityType;
         const definition = getFacilityDefinition(facilityType);
-        const facility = facilities.get(facilityType);
-        const activeRecipeName = facility?.getActiveRecipeName() ?? null;
+        const activeRecipeName = facility.getActiveRecipeName();
         const activeRecipe = definition.recipes.find((recipe) => recipe.name === activeRecipeName);
-        const productionStatus = facility?.getProductionStatus(inventory) ?? 'not-started';
-        const missingInputs = facility?.getMissingInputs(inventory) ?? [];
-        const assignedWorkers = facility?.getAssignedWorkers() ?? 0;
-        const requiredWorkers = facility?.getRequiredWorkers() ?? 0;
-        const speedUpgradeLevel = facility?.getSpeedUpgradeLevel() ?? 0;
-        const outputUpgradeLevel = facility?.getOutputUpgradeLevel() ?? 0;
+        const productionStatus = facility.getProductionStatus(inventory);
+        const missingInputs = facility.getMissingInputs(inventory);
+        const assignedWorkers = facility.getAssignedWorkers();
+        const requiredWorkers = facility.getRequiredWorkers();
+        const speedUpgradeLevel = facility.getSpeedUpgradeLevel();
+        const outputUpgradeLevel = facility.getOutputUpgradeLevel();
         const speedUpgradeCost = getFacilityUpgradeCost(definition.constructionCost, speedUpgradeLevel);
         const outputUpgradeCost = getFacilityUpgradeCost(definition.constructionCost, outputUpgradeLevel);
         const isExpanded = collapsedFacilities[facilityType] !== true;
@@ -53,35 +54,35 @@ export function ProductionView({
           <Card key={facilityType} mode="contained" style={styles.featureCard}>
             <Card.Content>
               <List.Item
-                description={activeRecipe ? <View><Text style={styles.cardDescription}>{formatRecipeName(activeRecipe)}</Text><WorkMetric value={`${formatNumber(facility?.getRecipeProgress(activeRecipe.name) ?? 0, { smartDecimals: true })}/${formatNumber(activeRecipe.workAmount, { smartDecimals: true })}`} /></View> : 'No active recipe'}
+                description={activeRecipe ? <View><Text style={styles.cardDescription}>{formatRecipeName(activeRecipe)}</Text><WorkMetric value={`${formatNumber(facility.getRecipeProgress(activeRecipe.name), { smartDecimals: true })}/${formatNumber(activeRecipe.workAmount, { smartDecimals: true })}`} /></View> : 'No active recipe'}
                 left={(props) => <List.Icon {...props} icon={definition.icon} />}
                 right={(props) => <IconButton {...props} accessibilityLabel={`${isExpanded ? 'Collapse' : 'Expand'} ${definition.name}`} icon={isExpanded ? APP_ICONS.collapse : APP_ICONS.expand} onPress={() => setCollapsedFacilities((current) => ({ ...current, [facilityType]: isExpanded }))} />}
                 title={definition.name}
                 titleStyle={styles.facilityTitle}
               />
-              {!isExpanded && activeRecipe && <FacilityProductionStatus compact efficiency={facility?.getEfficiency() ?? 0} progress={facility?.getRecipeProgress(activeRecipe.name) ?? 0} missingInputs={missingInputs} recipe={activeRecipe} speedMultiplier={facility?.getSpeedMultiplier() ?? 1} status={productionStatus} />}
+              {!isExpanded && activeRecipe && <FacilityProductionStatus compact efficiency={facility.getEfficiency()} progress={facility.getRecipeProgress(activeRecipe.name)} missingInputs={missingInputs} recipe={activeRecipe} speedMultiplier={facility.getSpeedMultiplier()} status={productionStatus} />}
               {isExpanded && <>
                 <Text style={styles.constructionYardRecipeLabel}>Production recipe</Text>
                 <View style={styles.facilityRecipeControls}>
                   {definition.recipes.map((recipe) => {
-                    const isSelected = activeRecipeName === recipe.name && facility?.isActive();
+                    const isSelected = activeRecipeName === recipe.name && facility.isActive();
                     return <Button compact key={recipe.name} mode={isSelected ? 'contained' : 'outlined'} onPress={() => setFacilityRecipe(facilityType, isSelected ? null : recipe.name)}>{isSelected ? `Stop ${formatRecipeName(recipe)}` : `Run ${formatRecipeName(recipe)}`}</Button>;
                   })}
                 </View>
-                {activeRecipe && <FacilityResourceSummary outputMultiplier={facility?.getOutputMultiplier() ?? 1} recipe={activeRecipe} />}
-                <FacilityProductionStatus efficiency={facility?.getEfficiency() ?? 0} progress={activeRecipe ? facility?.getRecipeProgress(activeRecipe.name) ?? 0 : 0} missingInputs={missingInputs} recipe={activeRecipe ?? null} speedMultiplier={facility?.getSpeedMultiplier() ?? 1} status={productionStatus} />
+                {activeRecipe && <FacilityResourceSummary outputMultiplier={facility.getOutputMultiplier()} recipe={activeRecipe} />}
+                <FacilityProductionStatus efficiency={facility.getEfficiency()} progress={activeRecipe ? facility.getRecipeProgress(activeRecipe.name) : 0} missingInputs={missingInputs} recipe={activeRecipe ?? null} speedMultiplier={facility.getSpeedMultiplier()} status={productionStatus} />
                 <Text style={styles.constructionYardRecipeLabel}>Staffing</Text>
                 <View style={styles.facilityStaffingControls}>
                   <IconButton accessibilityLabel={`Remove worker from ${definition.name}`} disabled={assignedWorkers === 0} icon={APP_ICONS.minus} onPress={() => setFacilityWorkers(facilityType, assignedWorkers - 1)} />
                   <View style={styles.facilityStaffingSummary}>
                     <Text style={styles.facilityStaffingValue}>{formatNumber(assignedWorkers)} / {formatNumber(requiredWorkers)} workers</Text>
-                    <Text style={styles.facilityStaffingDetail}>Efficiency {formatPercent(facility?.getEfficiency() ?? 0, { decimals: 0 })}</Text>
+                    <Text style={styles.facilityStaffingDetail}>Efficiency {formatPercent(facility.getEfficiency(), { decimals: 0 })}</Text>
                   </View>
                   <IconButton accessibilityLabel={`Add worker to ${definition.name}`} icon={APP_ICONS.add} onPress={() => setFacilityWorkers(facilityType, assignedWorkers + 1)} />
                 </View>
                 <Button compact mode="text" onPress={() => setFacilityWorkers(facilityType, requiredWorkers)}>Set required staffing</Button>
                 <Text style={styles.constructionYardRecipeLabel}>Upgrades</Text>
-                <Text style={styles.facilityUpgradeSummary}>Speed ×{formatNumber(facility?.getSpeedMultiplier() ?? 1, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })} · Output ×{formatNumber(facility?.getOutputMultiplier() ?? 1, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })}</Text>
+                <Text style={styles.facilityUpgradeSummary}>Speed ×{formatNumber(facility.getSpeedMultiplier(), { decimals: 2, forceDecimals: true, adaptiveNearOne: false })} · Output ×{formatNumber(facility.getOutputMultiplier(), { decimals: 2, forceDecimals: true, adaptiveNearOne: false })}</Text>
                 <View style={styles.facilityUpgradeControls}>
                   <Button compact disabled={!finance.canAfford(speedUpgradeCost)} mode="outlined" onPress={() => upgradeFacility(facilityType, 'speed')}>{`Speed L${formatNumber(speedUpgradeLevel + 1)} · ${formatCurrency(speedUpgradeCost)}`}</Button>
                   <Button compact disabled={!finance.canAfford(outputUpgradeCost)} mode="outlined" onPress={() => upgradeFacility(facilityType, 'output')}>{`Output L${formatNumber(outputUpgradeLevel + 1)} · ${formatCurrency(outputUpgradeCost)}`}</Button>
@@ -92,7 +93,7 @@ export function ProductionView({
           </Card>
         );
       })}
-      {FACILITY_TYPES.every((facilityType) => !facilities.has(facilityType)) && <PlaceholderRow label="Constructed facilities" value="None yet" />}
+      {builtFacilities.length === 0 && <DetailRow label="Constructed facilities" value="None yet" />}
     </>
   );
 }

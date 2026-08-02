@@ -43,10 +43,6 @@ export class FacilityCollection {
     return true;
   }
 
-  clear(): void {
-    this.facilities = {};
-  }
-
   clone(): FacilityCollection {
     return FacilityCollection.fromSnapshot(this.toSnapshot());
   }

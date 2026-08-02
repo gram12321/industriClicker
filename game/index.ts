@@ -17,7 +17,6 @@ export * from './prestige/prestigeCalculator';
 export * from './prestige/prestigeConstants';
 export * from './recipes/recipeConstants';
 export * from './recipes/recipeTypes';
-export * from './resources/resource';
 export * from './resources/resourceConstants';
 export * from './resources/resourceTypes';
 export * from './sales/salesConstants';

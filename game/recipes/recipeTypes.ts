@@ -1,6 +1,5 @@
 import type { ResourceType } from '../resources/resourceTypes';
 
-/** Recipe identifiers for the initial Grain-to-Bread production chain. */
 export enum RecipeName {
   GrowGrain = 'grow-grain',
   BakeBread = 'bake-bread',

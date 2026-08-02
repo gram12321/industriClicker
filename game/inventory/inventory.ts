@@ -14,15 +14,10 @@ export type InventorySnapshot = {
 };
 
 function createEmptyEntries(): Record<ResourceType, InventoryEntry> {
-  return {
-    [ResourceType.Grain]: { quantity: 0, quality: INVENTORY_DEFAULT_RESOURCE_QUALITY },
-    [ResourceType.Bread]: { quantity: 0, quality: INVENTORY_DEFAULT_RESOURCE_QUALITY },
-    [ResourceType.Water]: { quantity: 0, quality: INVENTORY_DEFAULT_RESOURCE_QUALITY },
-    [ResourceType.Electricity]: { quantity: 0, quality: INVENTORY_DEFAULT_RESOURCE_QUALITY },
-    [ResourceType.Sugar]: { quantity: 0, quality: INVENTORY_DEFAULT_RESOURCE_QUALITY },
-    [ResourceType.Coal]: { quantity: 0, quality: INVENTORY_DEFAULT_RESOURCE_QUALITY },
-    [ResourceType.Cake]: { quantity: 0, quality: INVENTORY_DEFAULT_RESOURCE_QUALITY },
-  };
+  return RESOURCE_TYPES.reduce((entries, resourceType) => {
+    entries[resourceType] = { quantity: 0, quality: INVENTORY_DEFAULT_RESOURCE_QUALITY };
+    return entries;
+  }, {} as Record<ResourceType, InventoryEntry>);
 }
 
 function isValidQuantity(quantity: number): boolean {
@@ -58,11 +53,11 @@ export class Inventory {
     return { ...this.entries[resourceType] };
   }
 
-  has(resourceType: ResourceType, amount = 1): boolean {
+  has(resourceType: ResourceType, amount: number): boolean {
     return isValidQuantity(amount) && this.getAmount(resourceType) >= amount;
   }
 
-  add(resourceType: ResourceType, amount = 1, quality = INVENTORY_DEFAULT_RESOURCE_QUALITY): boolean {
+  add(resourceType: ResourceType, amount: number, quality = INVENTORY_DEFAULT_RESOURCE_QUALITY): boolean {
     if (!isValidQuantity(amount)) {
       return false;
     }
@@ -77,7 +72,7 @@ export class Inventory {
     return true;
   }
 
-  remove(resourceType: ResourceType, amount = 1): boolean {
+  remove(resourceType: ResourceType, amount: number): boolean {
     if (!this.has(resourceType, amount)) {
       return false;
     }
@@ -93,10 +88,6 @@ export class Inventory {
 
     this.entries[resourceType].quantity = amount;
     return true;
-  }
-
-  clear(): void {
-    this.entries = createEmptyEntries();
   }
 
   clone(): Inventory {

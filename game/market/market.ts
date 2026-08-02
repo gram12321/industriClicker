@@ -76,10 +76,10 @@ export class Market {
   getDiffusionInfo(resourceType: ResourceType): MarketDiffusionInfo {
     const localPrice = this.getLocalPrice(resourceType);
     const globalPrice = this.getGlobalPrice(resourceType);
-    if (localPrice === globalPrice || globalPrice <= 0) return { direction: 'none', amount: 0, localPrice, globalPrice };
+    if (localPrice === globalPrice || globalPrice <= 0) return { direction: 'none', amount: 0 };
     const base = MARKET_RESOURCE_DEFINITIONS[resourceType].localInitialSupply / MARKET_DIFFUSION_DIVISOR;
-    if (localPrice > globalPrice) return { direction: 'to-local', amount: (localPrice / globalPrice - 1) * base, localPrice, globalPrice };
-    return { direction: 'to-global', amount: (1 - localPrice / globalPrice) * base, localPrice, globalPrice };
+    if (localPrice > globalPrice) return { direction: 'to-local', amount: (localPrice / globalPrice - 1) * base };
+    return { direction: 'to-global', amount: (1 - localPrice / globalPrice) * base };
   }
 
   buyFromLocal(resourceType: ResourceType, requestedAmount: number): MarketTradeResult {

@@ -91,12 +91,6 @@ export const styles = StyleSheet.create({
   marketSliderTrack: { backgroundColor: '#D4DDD9', borderRadius: 3, height: 6, left: 0, position: 'absolute', right: 0, top: 14 },
   marketSliderFill: { backgroundColor: colors.primary, borderRadius: 3, height: 6, left: 0, position: 'absolute', top: 14 },
   inventoryQualityValue: { alignItems: 'center', flexDirection: 'row', gap: 4 },
-  largePlaceholder: {
-    color: colors.charcoal,
-    fontSize: 40,
-    fontWeight: '700',
-    lineHeight: 45,
-  },
   navigationItem: {
     alignItems: 'center',
     borderRadius: 12,
@@ -112,7 +106,7 @@ export const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 22,
   },
-  placeholderRow: {
+  detailRow: {
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderRadius: 12,
@@ -121,7 +115,7 @@ export const styles = StyleSheet.create({
     minHeight: 62,
     paddingHorizontal: 16,
   },
-  placeholderValue: { color: colors.muted },
+  detailValue: { color: colors.muted },
   productionError: { color: colors.error, lineHeight: 20, marginTop: 12 },
   productionPercent: { color: colors.muted, fontSize: 12 },
   productionProgress: { gap: 6, marginTop: 12 },

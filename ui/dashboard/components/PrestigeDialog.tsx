@@ -20,8 +20,6 @@ export function PrestigeDialog({ isOpen, onClose, summary, currentGameTimeMs }: 
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const { height } = useWindowDimensions();
   const events = useMemo(() => summary.events.filter((event) => filter === 'all' || event.type === filter).slice().reverse(), [filter, summary.events]);
-  const selectedEvent = summary.events.find((event) => event.id === selectedEventId);
-
   return <Portal><Dialog dismissable onDismiss={onClose} style={styles.dialog} visible={isOpen}>
     <Dialog.Title>Company prestige</Dialog.Title>
     <Dialog.Content><ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator style={[styles.dialogScroll, { maxHeight: Math.max(200, height - 190) }]}>

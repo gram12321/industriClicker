@@ -143,10 +143,6 @@ export class Facility {
     return true;
   }
 
-  deactivate(): void {
-    this.active = false;
-  }
-
   /**
    * Applies work to the selected recipe. Inputs are paid at the beginning of
    * each cycle, matching the Baseclicker production rule.
@@ -192,10 +188,6 @@ export class Facility {
     return outputs;
   }
 
-  clone(): Facility {
-    return Facility.fromSnapshot(this.toSnapshot());
-  }
-
   toSnapshot(): FacilitySnapshot {
     return {
       facilityType: this.facilityType,
@@ -220,7 +212,7 @@ export class Facility {
     this.setActiveRecipe(snapshot.activeRecipeName);
 
     if (!snapshot.isActive) {
-      this.deactivate();
+      this.active = false;
     }
 
     this.recipeProgress = {};

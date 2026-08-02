@@ -20,4 +20,4 @@ export type MarketSnapshot = {
 export type MarketTradeMultiplier = number | 'all';
 export type MarketTradeResult = { success: boolean; amount: number; unitPrice: number; quality: number };
 export type MarketDiffusionDirection = 'to-local' | 'to-global' | 'none';
-export type MarketDiffusionInfo = { direction: MarketDiffusionDirection; amount: number; localPrice: number; globalPrice: number };
+export type MarketDiffusionInfo = { direction: MarketDiffusionDirection; amount: number };

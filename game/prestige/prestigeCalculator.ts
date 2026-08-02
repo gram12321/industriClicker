@@ -1,7 +1,7 @@
 import type { PrestigeEvent } from './prestige';
 import { FINANCE_INITIAL_BALANCE } from '@/game/finance/financeConstants';
 import { safeNonNegative } from '@/utils';
-import { PRESTIGE_EVENT_MIN_AMOUNT, PRESTIGE_DECAY_PROJECTION_FOREGROUND_HOURS, PRESTIGE_FOREGROUND_HOUR_MS, PRESTIGE_ROUNDING_FACTOR, PRESTIGE_SALES_MAX_AMOUNT } from './prestigeConstants';
+import { PRESTIGE_EVENT_MIN_AMOUNT, PRESTIGE_DECAY_PROJECTION_FOREGROUND_HOURS, PRESTIGE_FOREGROUND_HOUR_MS, PRESTIGE_ROUNDING_FACTOR } from './prestigeConstants';
 
 type CompanyCapitalInput = {
   cashBalance: number;
@@ -46,10 +46,9 @@ export function calculateSalesContractPrestige(reward: number): number {
     return 0;
   }
 
-  return roundPrestige(Math.min(
-    PRESTIGE_SALES_MAX_AMOUNT,
-    0.1 + 0.15 * Math.log(1 + reward),
-  ));
+  // Prestige deliberately has no fixed maximum. Finite inputs keep this logarithmic
+  // formula finite; a cap adds no safety and would silently limit late-game progression.
+  return roundPrestige(0.1 + 0.15 * Math.log(1 + reward));
 }
 
 export function calculateCurrentPrestigeAmount(event: PrestigeEvent, currentGameTimeMs: number): number {

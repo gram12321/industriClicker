@@ -13,10 +13,8 @@ export type PrestigeEvent = {
   description: string;
 };
 
-export type PrestigeEventSnapshot = PrestigeEvent;
-
 export type PrestigeLedgerSnapshot = {
-  events: PrestigeEventSnapshot[];
+  events: PrestigeEvent[];
   nextEventNumber: number;
 };
 
@@ -129,7 +127,7 @@ export class PrestigeLedger {
     });
   }
 
-  recordIfAbsent(eventInput: PrestigeEventInput): boolean {
+  private recordIfAbsent(eventInput: PrestigeEventInput): boolean {
     if (!this.isValidInput(eventInput)
       || this.events.some((event) => event.type === eventInput.type && event.sourceId === eventInput.sourceId)) {
       return false;
