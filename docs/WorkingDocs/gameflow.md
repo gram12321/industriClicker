@@ -61,7 +61,7 @@ Levels and worker counts are non-negative integers. A zero-worker requirement ha
 
 - Construction requires funds and applies `newBalance = currentBalance - constructionCost`; balance cannot become negative.
 - Prestige is informational. Its total is derived from a permanent balance event and decaying fulfilled-sales events using foreground logical time; background time does not decay it.
-- Achievements are evaluated from post-command state. Facility/finance changes check their categories immediately; completed production updates lifetime output before production checks; fulfilled sales check sales, finance, and prestige after their normal prestige event; time checks run after completed foreground minutes.
+- Achievements are evaluated from post-command state. Facility/finance changes check their categories immediately; completed production updates lifetime total and per-resource output before production checks; fulfilled sales check sales, finance, and prestige after their normal prestige event; time checks run after completed foreground minutes.
 - An achievement unlock is durable and creates one source-keyed `achievement:<id>` prestige event. The evaluator sees normal post-command prestige but not prestige rewards from other unlocks in that same pass, so prestige tiers cannot recursively chain.
 - Each foreground minute may offer one contract. Offer chance falls from 100% as unfulfilled contracts grow, using sales control points `0→0`, `3→0.25`, `5→0.50`, `10→0.75`, and `1,000,000→almost 1`, then `1 - calculateAsymmetricalScaler01(...)`.
 - A contract requests a random catalogue resource and quantity 1–10, pays `quantity × €1`, and can be fulfilled only with the full inventory amount. Rejection changes neither inventory nor finance.

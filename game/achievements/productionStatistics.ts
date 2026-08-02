@@ -39,10 +39,6 @@ export class ProductionStatistics {
     }
   }
 
-  getProduced(resourceType: ResourceType): number {
-    return this.producedByResource[resourceType];
-  }
-
   getTotalProduced(): number {
     return RESOURCE_TYPES.reduce((total, resourceType) => total + this.producedByResource[resourceType], 0);
   }
