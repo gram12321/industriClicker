@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { isGameSnapshot } from '@/game/core/state/gameSnapshot';
 import { createStartingGameSnapshot, useGameStore } from '@/game/core/stores/gameStore';
-import { createCompanyWithSave, createLocalProfile, getCompany, listCompaniesForProfile, listLocalProfiles, loadCompanySnapshot, loadCompanyTutorialState, loadDeviceSession, loadProfilePreferences, resetCompanySnapshot, saveCompanySnapshot, saveCompanyTutorialState, saveDeviceSession, saveProfilePreferences } from './companyDatabase';
+import { createCompanyWithSave, createLocalProfile, getCompany, listCompaniesForProfile, listLocalProfiles, loadCompanySnapshot, loadCompanyTutorialState, loadDeviceSession, resetCompanySnapshot, saveCompanySnapshot, saveCompanyTutorialState, saveDeviceSession } from './companyDatabase';
 import { STARTING_CONDITIONS } from './companyConstants';
-import { createLocalId, DEFAULT_COMPANY_TUTORIAL_STATE, DEFAULT_PROFILE_PREFERENCES, EMPTY_DEVICE_SESSION, normalizeDisplayName, type CompanyTutorialState, type LocalCompany, type LocalPlayerProfile, type ProfilePreferences, type StartingConditionId, validateDisplayName } from './companyTypes';
+import { createLocalId, DEFAULT_COMPANY_TUTORIAL_STATE, EMPTY_DEVICE_SESSION, normalizeDisplayName, type CompanyTutorialState, type LocalCompany, type LocalPlayerProfile, type StartingConditionId, validateDisplayName } from './companyTypes';
 
 type SessionStatus = 'loading' | 'selection' | 'active';
 
@@ -15,7 +15,6 @@ type CompanySessionState = {
   selectedProfile: LocalPlayerProfile | null;
   companies: LocalCompany[];
   activeCompany: LocalCompany | null;
-  preferences: ProfilePreferences;
   tutorial: CompanyTutorialState;
   initialize: () => Promise<void>;
   createProfile: (displayName: string) => Promise<boolean>;
@@ -24,17 +23,13 @@ type CompanySessionState = {
   activateCompany: (companyId: string) => Promise<boolean>;
   resetActiveCompany: () => Promise<boolean>;
   logout: () => Promise<void>;
-  setTheme: (themeId: ProfilePreferences['themeId']) => Promise<void>;
   completeWelcomeTutorial: () => Promise<void>;
   reopenWelcomeTutorial: () => Promise<void>;
 };
 
 async function loadProfileContext(profile: LocalPlayerProfile) {
-  const [companies, preferences] = await Promise.all([
-    listCompaniesForProfile(profile.id),
-    loadProfilePreferences(profile.id),
-  ]);
-  return { companies, preferences };
+  const companies = await listCompaniesForProfile(profile.id);
+  return { companies };
 }
 
 export const useCompanySessionStore = create<CompanySessionState>((set, get) => ({
@@ -45,7 +40,6 @@ export const useCompanySessionStore = create<CompanySessionState>((set, get) => 
   selectedProfile: null,
   companies: [],
   activeCompany: null,
-  preferences: DEFAULT_PROFILE_PREFERENCES,
   tutorial: DEFAULT_COMPANY_TUTORIAL_STATE,
   initialize: async () => {
     set({ status: 'loading', error: null });
@@ -53,12 +47,12 @@ export const useCompanySessionStore = create<CompanySessionState>((set, get) => 
       const [profiles, persistedSession] = await Promise.all([listLocalProfiles(), loadDeviceSession()]);
       const selectedProfile = profiles.find((profile) => profile.id === persistedSession.selectedProfileId) ?? null;
       if (!selectedProfile) {
-        set({ status: 'selection', profiles, selectedProfile: null, companies: [], activeCompany: null, preferences: DEFAULT_PROFILE_PREFERENCES });
+        set({ status: 'selection', profiles, selectedProfile: null, companies: [], activeCompany: null });
         return;
       }
       const context = await loadProfileContext(selectedProfile);
       const activeCompany = context.companies.find((company) => company.id === persistedSession.activeCompanyId) ?? null;
-      set({ profiles, selectedProfile, companies: context.companies, preferences: context.preferences, activeCompany: null, status: 'selection' });
+      set({ profiles, selectedProfile, companies: context.companies, activeCompany: null, status: 'selection' });
       if (activeCompany) {
         await get().activateCompany(activeCompany.id);
       }
@@ -77,9 +71,8 @@ export const useCompanySessionStore = create<CompanySessionState>((set, get) => 
     try {
       await createLocalProfile(profile);
       const profiles = await listLocalProfiles();
-      const preferences = await loadProfilePreferences(profile.id);
       await saveDeviceSession({ selectedProfileId: profile.id, activeCompanyId: null });
-      set({ profiles, selectedProfile: profile, companies: [], activeCompany: null, preferences, tutorial: DEFAULT_COMPANY_TUTORIAL_STATE, status: 'selection', error: null });
+      set({ profiles, selectedProfile: profile, companies: [], activeCompany: null, tutorial: DEFAULT_COMPANY_TUTORIAL_STATE, status: 'selection', error: null });
       return true;
     } catch {
       set({ error: 'The local player profile could not be created.' });
@@ -91,7 +84,7 @@ export const useCompanySessionStore = create<CompanySessionState>((set, get) => 
     if (!profile) return;
     const context = await loadProfileContext(profile);
     await saveDeviceSession({ selectedProfileId: profile.id, activeCompanyId: null });
-    set({ selectedProfile: profile, companies: context.companies, activeCompany: null, preferences: context.preferences, tutorial: DEFAULT_COMPANY_TUTORIAL_STATE, status: 'selection', error: null });
+    set({ selectedProfile: profile, companies: context.companies, activeCompany: null, tutorial: DEFAULT_COMPANY_TUTORIAL_STATE, status: 'selection', error: null });
   },
   createCompany: async (displayName, startingConditionId = 'standard') => {
     const selectedProfile = get().selectedProfile;
@@ -182,14 +175,7 @@ export const useCompanySessionStore = create<CompanySessionState>((set, get) => 
       await saveCompanySnapshot(activeCompany.id, useGameStore.getState().createSnapshot());
     }
     await saveDeviceSession(EMPTY_DEVICE_SESSION);
-    set({ status: 'selection', selectedProfile: null, companies: [], activeCompany: null, preferences: DEFAULT_PROFILE_PREFERENCES, tutorial: DEFAULT_COMPANY_TUTORIAL_STATE, error: null });
-  },
-  setTheme: async (themeId) => {
-    const profile = get().selectedProfile;
-    if (!profile) return;
-    const preferences = { themeId };
-    await saveProfilePreferences(profile.id, preferences);
-    set({ preferences });
+    set({ status: 'selection', selectedProfile: null, companies: [], activeCompany: null, tutorial: DEFAULT_COMPANY_TUTORIAL_STATE, error: null });
   },
   completeWelcomeTutorial: async () => {
     const company = get().activeCompany;

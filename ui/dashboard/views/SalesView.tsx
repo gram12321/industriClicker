@@ -6,11 +6,11 @@ import type { Inventory } from '@/game/inventory/inventory';
 import { calculateSalesContractEstimatedWaitMinutes, calculateSalesContractOfferChance, type SalesContracts } from '@/game/sales/salesContracts';
 import { getResource, getResourceIcon } from '@/game/resources/resourceConstants';
 import { formatCurrency, formatDate, formatNumber } from '@/utils';
-import { styles } from '@/ui/dashboard/dashboard.styles';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS } from '@/icons';
-import { PlaceholderRow, SectionHeading } from '../components/DashboardViewComponents';
+import { PlaceholderRow, SectionHeading } from '../components/GameViewComponents';
 
-export function SalesDashboard({ customerPipelineProgress, fulfillSalesContract, inventory, rejectSalesContract, salesContracts }: { customerPipelineProgress: number; fulfillSalesContract: (id: string) => boolean; inventory: Inventory; rejectSalesContract: (id: string) => boolean; salesContracts: SalesContracts }) {
+export function SalesView({ customerPipelineProgress, fulfillSalesContract, inventory, rejectSalesContract, salesContracts }: { customerPipelineProgress: number; fulfillSalesContract: (id: string) => boolean; inventory: Inventory; rejectSalesContract: (id: string) => boolean; salesContracts: SalesContracts }) {
   const [salesList, setSalesList] = useState<'open' | 'closed'>('open');
   const [closedFilter, setClosedFilter] = useState<'completed' | 'rejected'>('completed');
   const openContracts = salesContracts.getOfferedContracts();

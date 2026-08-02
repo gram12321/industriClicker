@@ -1,16 +1,13 @@
 import { View } from 'react-native';
 import { Button, Card, List, Text } from 'react-native-paper';
 
-import { styles } from '@/ui/dashboard/dashboard.styles';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS } from '@/icons';
 
-export function SettingsDashboard({ onLogout, onReplayTutorial }: { onLogout: () => Promise<void>; onReplayTutorial: () => Promise<void> }) {
+export function SettingsScreen({ onLogout, onReplayTutorial }: { onLogout: () => Promise<void>; onReplayTutorial: () => Promise<void> }) {
   return (
     <>
-      <View style={styles.sectionHeading}><Text style={styles.sectionEyebrow}>SETTINGS</Text><Text variant="headlineSmall">Local preferences</Text><Text style={styles.sectionSubtitle}>These preferences stay on this device and are attached to your local player profile.</Text></View>
-      <Card mode="contained" style={styles.featureCard}>
-        <Card.Content><List.Item description="Industri light is active. Additional themes are planned." left={(props) => <List.Icon {...props} icon="palette-outline" />} title="Theme" /></Card.Content>
-      </Card>
+      <View style={styles.sectionHeading}><Text style={styles.sectionEyebrow}>SETTINGS</Text><Text variant="headlineSmall">Local game controls</Text><Text style={styles.sectionSubtitle}>Manage this local session and replay the company orientation.</Text></View>
       <Card mode="contained" style={styles.featureCard}>
         <Card.Content><List.Item description="Open the short company orientation again." left={(props) => <List.Icon {...props} icon={APP_ICONS.help} />} title="Tutorial" /></Card.Content>
         <Card.Actions><Button onPress={() => { void onReplayTutorial(); }}>Replay guide</Button></Card.Actions>

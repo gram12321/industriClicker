@@ -24,7 +24,7 @@ Industri Clicker is a single-player, mobile-first industrial clicker for native 
 - Production progresses only while the app is foregrounded. The temporary one-minute fast-forward follows the same rule; offline progression is not yet approved.
 - The local market is player-facing; the global market is a device-local reservoir that supplies price diffusion. Sales contracts lock a global-price offer with a 20% premium and deposit fulfilled goods into that reservoir.
 - A player can create device-local profiles and multiple independently saved companies. This is local selection, not an online account or authentication system.
-- The first company setup offers the single `Standard start` condition and Industri light theme. More conditions and themes require an approved design decision.
+- The first company setup offers the single `Standard start` condition. Additional starting conditions and any theme system require an approved design decision.
 
 ## Interaction Direction
 

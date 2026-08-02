@@ -8,8 +8,8 @@ import { formatCurrency, formatNumber } from '@/utils';
 import type { Inventory } from '@/game/inventory/inventory';
 import { colors } from '@/theme';
 import { APP_ICONS } from '@/icons';
-import { styles } from '@/ui/dashboard/dashboard.styles';
-import { SectionHeading } from '../components/DashboardViewComponents';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
+import { SectionHeading } from '../components/GameViewComponents';
 
 const multiplierSteps = [1, 10, 100, 1000] as const;
 const sliderMinimum = 1;
@@ -24,7 +24,7 @@ function sliderValue(position: number) {
   return Math.max(sliderMinimum, Math.min(sliderMaximum, Math.round(sliderMinimum * (sliderMaximum / sliderMinimum) ** clamped)));
 }
 
-export function MarketDashboard({ buyMarketResource, finance, inventory, market, sellMarketResource, setMarketAutomation }: {
+export function MarketView({ buyMarketResource, finance, inventory, market, sellMarketResource, setMarketAutomation }: {
   buyMarketResource: (resourceType: (typeof RESOURCE_TYPES)[number], amount: number) => boolean;
   finance: Finance;
   inventory: Inventory;

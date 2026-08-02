@@ -1,8 +1,8 @@
 import { View } from 'react-native';
 import { Button, Card, Text } from 'react-native-paper';
-import { styles } from '@/ui/dashboard/dashboard.styles';
-import { ResetCompanyCard } from '../components/ResetCompanyCard';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
+import { ResetCompanyCard } from '../../components/ResetCompanyCard';
 
-export function ProfileDashboard({ companyName, playerName, onManageCompanies, onResetCompany }: { companyName: string; playerName: string; onManageCompanies: () => Promise<void>; onResetCompany: () => Promise<void> }) {
+export function ProfileScreen({ companyName, playerName, onManageCompanies, onResetCompany }: { companyName: string; playerName: string; onManageCompanies: () => Promise<void>; onResetCompany: () => Promise<void> }) {
   return <><View style={styles.sectionHeading}><Text style={styles.sectionEyebrow}>PROFILE</Text><Text variant="headlineSmall">Local player profile</Text><Text style={styles.sectionSubtitle}>Manage the companies stored on this device.</Text></View><Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text style={styles.cardKicker}>LOCAL PLAYER</Text><Text variant="titleLarge">{playerName}</Text><Text style={styles.cardDescription}>Active company: {companyName}</Text></Card.Content><Card.Actions><Button onPress={() => { void onManageCompanies(); }}>Manage companies</Button></Card.Actions></Card><ResetCompanyCard onResetCompany={onResetCompany} /></>;
 }

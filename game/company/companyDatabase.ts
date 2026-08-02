@@ -3,22 +3,18 @@ import * as SQLite from 'expo-sqlite';
 import type { GameSnapshot } from '@/game/core/state/gameSnapshot';
 import {
   DEFAULT_COMPANY_TUTORIAL_STATE,
-  DEFAULT_PROFILE_PREFERENCES,
   EMPTY_DEVICE_SESSION,
   type CompanyTutorialState,
   type DeviceSession,
   type LocalCompany,
   type LocalPlayerProfile,
-  type ProfilePreferences,
   type StartingConditionId,
-  type ThemeId,
 } from './companyTypes';
 
 const DATABASE_NAME = 'industri-clicker.db';
 
 type ProfileRow = { id: string; display_name: string; created_at: string; updated_at: string };
 type CompanyRow = { id: string; owner_profile_id: string; display_name: string; starting_condition_id: StartingConditionId; created_at: string; updated_at: string };
-type PreferencesRow = { theme_id: ThemeId };
 type TutorialRow = { completed_welcome: number };
 type SessionRow = { selected_profile_id: string | null; active_company_id: string | null };
 type SaveRow = { snapshot_json: string };
@@ -46,6 +42,8 @@ async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
       await database.execAsync('PRAGMA foreign_keys = ON;');
       // The old singleton save is intentionally invalidated by this company-scoped save shape.
       await database.execAsync('DROP TABLE IF EXISTS game_save;');
+      // The temporary theme placeholder is intentionally discarded; themes are not a v1 feature.
+      await database.execAsync('DROP TABLE IF EXISTS profile_preferences;');
       await database.execAsync(`
         CREATE TABLE IF NOT EXISTS local_profiles (
           id TEXT PRIMARY KEY NOT NULL,
@@ -67,10 +65,6 @@ async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
           company_id TEXT PRIMARY KEY NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
           snapshot_json TEXT NOT NULL,
           updated_at TEXT NOT NULL
-        );
-        CREATE TABLE IF NOT EXISTS profile_preferences (
-          profile_id TEXT PRIMARY KEY NOT NULL REFERENCES local_profiles(id) ON DELETE CASCADE,
-          theme_id TEXT NOT NULL
         );
         CREATE TABLE IF NOT EXISTS company_tutorial_state (
           company_id TEXT PRIMARY KEY NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
@@ -99,10 +93,7 @@ export async function listLocalProfiles(): Promise<LocalPlayerProfile[]> {
 
 export async function createLocalProfile(profile: LocalPlayerProfile): Promise<void> {
   const database = await getDatabase();
-  await database.withTransactionAsync(async () => {
-    await database.runAsync('INSERT INTO local_profiles (id, display_name, created_at, updated_at) VALUES (?, ?, ?, ?)', profile.id, profile.displayName, profile.createdAt, profile.updatedAt);
-    await database.runAsync('INSERT INTO profile_preferences (profile_id, theme_id) VALUES (?, ?)', profile.id, DEFAULT_PROFILE_PREFERENCES.themeId);
-  });
+  await database.runAsync('INSERT INTO local_profiles (id, display_name, created_at, updated_at) VALUES (?, ?, ?, ?)', profile.id, profile.displayName, profile.createdAt, profile.updatedAt);
 }
 
 export async function listCompaniesForProfile(profileId: string): Promise<LocalCompany[]> {
@@ -154,21 +145,6 @@ export async function saveCompanySnapshot(companyId: string, snapshot: GameSnaps
 
 export async function resetCompanySnapshot(companyId: string, snapshot: GameSnapshot): Promise<void> {
   await saveCompanySnapshot(companyId, snapshot);
-}
-
-export async function loadProfilePreferences(profileId: string): Promise<ProfilePreferences> {
-  const database = await getDatabase();
-  const row = await database.getFirstAsync<PreferencesRow>('SELECT theme_id FROM profile_preferences WHERE profile_id = ?', profileId);
-  return row?.theme_id === 'industri-light' ? { themeId: row.theme_id } : DEFAULT_PROFILE_PREFERENCES;
-}
-
-export async function saveProfilePreferences(profileId: string, preferences: ProfilePreferences): Promise<void> {
-  const database = await getDatabase();
-  await database.runAsync(
-    `INSERT INTO profile_preferences (profile_id, theme_id) VALUES (?, ?)
-     ON CONFLICT(profile_id) DO UPDATE SET theme_id = excluded.theme_id`,
-    profileId, preferences.themeId,
-  );
 }
 
 export async function loadCompanyTutorialState(companyId: string): Promise<CompanyTutorialState> {

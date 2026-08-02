@@ -10,8 +10,8 @@ import type { PrestigeLedger } from '@/game/prestige/prestige';
 import type { SalesContracts } from '@/game/sales/salesContracts';
 import { colors } from '@/theme';
 import { formatNumber } from '@/utils';
-import { SectionHeading } from '../components/DashboardViewComponents';
-import { styles as dashboardStyles } from '../dashboard.styles';
+import { SectionHeading } from '../../components/GameViewComponents';
+import { styles as dashboardStyles } from '../../helpers/dashboard.styles';
 
 const CATEGORY_LABELS: Record<AchievementCategory, string> = {
   facilities: 'Facilities',
@@ -22,7 +22,7 @@ const CATEGORY_LABELS: Record<AchievementCategory, string> = {
   prestige: 'Prestige',
 };
 
-export function AchievementsDashboard({
+export function AchievementsView({
   achievements,
   companyStartedAtGameTimeMs,
   currentGameTimeMs,

@@ -2,7 +2,7 @@ import { View } from 'react-native';
 import { Avatar, Button, Dialog, Portal, Text } from 'react-native-paper';
 
 import { colors } from '@/theme';
-import { styles } from '../dashboard.styles';
+import { styles } from '../helpers/dashboard.styles';
 
 export function TutorialGuideDialog({ visible, onComplete }: { visible: boolean; onComplete: () => void }) {
   return (

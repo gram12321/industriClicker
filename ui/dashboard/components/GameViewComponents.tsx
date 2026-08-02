@@ -3,7 +3,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Surface, Text } from 'react-native-paper';
 import type { FinanceTransaction } from '@/game/finance/finance';
 import { formatCurrency, formatDate } from '@/utils';
-import { styles } from '@/ui/dashboard/dashboard.styles';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS } from '@/icons';
 import { RESOURCE_TYPES, getResource, getResourceIcon } from '@/game/resources/resourceConstants';
 

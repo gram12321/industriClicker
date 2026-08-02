@@ -6,9 +6,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { STARTING_CONDITIONS, useCompanySessionStore } from '@/game';
 import { colors } from '@/theme';
 import { APP_ICONS } from '@/icons';
-import { DocumentationDialog, type DocumentationKind } from '../dashboard/components/DocumentationDialog';
+import { DocumentationDialog, type DocumentationKind } from '../../components/DocumentationDialog';
 
-export function WelcomeScreen() {
+export function LoginView() {
   const [playerName, setPlayerName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [isCompanyDialogOpen, setIsCompanyDialogOpen] = useState(false);
@@ -119,7 +119,6 @@ export function WelcomeScreen() {
             <Text variant="titleMedium">{STARTING_CONDITIONS.standard.name}</Text>
             <Text style={styles.description}>{STARTING_CONDITIONS.standard.description}</Text>
             <Text style={styles.detail}>{STARTING_CONDITIONS.standard.openingFundsDescription}</Text>
-            <Text style={styles.detail}>Theme: Industri light (more visual themes are planned).</Text>
           </Dialog.Content>
           <Dialog.Actions>
             <Button disabled={isSwitching} onPress={() => setIsCompanyDialogOpen(false)}>Cancel</Button>

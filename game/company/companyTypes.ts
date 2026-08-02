@@ -1,6 +1,3 @@
-export const THEME_IDS = ['industri-light'] as const;
-export type ThemeId = (typeof THEME_IDS)[number];
-
 export const STARTING_CONDITION_IDS = ['standard'] as const;
 export type StartingConditionId = (typeof STARTING_CONDITION_IDS)[number];
 
@@ -20,8 +17,6 @@ export type LocalCompany = {
   updatedAt: string;
 };
 
-export type ProfilePreferences = { themeId: ThemeId };
-
 export type CompanyTutorialState = { completedWelcome: boolean };
 
 export type DeviceSession = {
@@ -29,7 +24,6 @@ export type DeviceSession = {
   activeCompanyId: string | null;
 };
 
-export const DEFAULT_PROFILE_PREFERENCES: ProfilePreferences = { themeId: 'industri-light' };
 export const DEFAULT_COMPANY_TUTORIAL_STATE: CompanyTutorialState = { completedWelcome: false };
 export const EMPTY_DEVICE_SESSION: DeviceSession = { selectedProfileId: null, activeCompanyId: null };
 

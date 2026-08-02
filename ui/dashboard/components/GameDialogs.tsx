@@ -6,12 +6,12 @@ import type { FacilityCollection } from '@/game/facilities/facilityCollection';
 import { FACILITY_TYPES, getFacilityDefinition } from '@/game/facilities/facilityConstants';
 import type { FacilityType } from '@/game/facilities/facilityTypes';
 import { clamp, formatCurrency } from '@/utils';
-import { styles } from '@/ui/dashboard/dashboard.styles';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { formatRecipeInputs, formatRecipeName, formatRecipeOutput } from '../helpers/recipeFormatters';
-import { PlaceholderRow, WorkMetric } from './DashboardViewComponents';
+import { PlaceholderRow, WorkMetric } from './GameViewComponents';
 import { APP_ICONS } from '@/icons';
 
-export function DashboardDialogs(props: {
+export function GameDialogs(props: {
   facilities: FacilityCollection;
   finance: Finance;
   pendingConstruction: FacilityType | null;

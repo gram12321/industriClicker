@@ -8,11 +8,11 @@ import { ALL_RECIPES } from '@/game/recipes/recipeConstants';
 import { formatRecipeInputs, formatRecipeName, formatRecipeOutput } from '@/ui/dashboard/helpers/recipeFormatters';
 import { getResource, getResourceIcon, RESOURCE_TYPES } from '@/game/resources/resourceConstants';
 import { formatCurrency, formatNumber } from '@/utils';
-import { styles } from '@/ui/dashboard/dashboard.styles';
-import { SectionHeading, WorkMetric } from '../components/DashboardViewComponents';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
+import { SectionHeading, WorkMetric } from '../../components/GameViewComponents';
 import { APP_ICONS } from '@/icons';
 
-export function IndustriPediaDashboard() {
+export function IndustriPediaView() {
   const [activeSection, setActiveSection] = useState<IndustriPediaSection>('resources');
 
   return <>

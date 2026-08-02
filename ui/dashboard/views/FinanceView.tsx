@@ -1,10 +1,10 @@
 import { Card, Text } from 'react-native-paper';
 import type { Finance } from '@/game/finance/finance';
 import { formatCurrency } from '@/utils';
-import { styles } from '@/ui/dashboard/dashboard.styles';
-import { PlaceholderRow, SectionHeading, TransactionRow } from '../components/DashboardViewComponents';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
+import { PlaceholderRow, SectionHeading, TransactionRow } from '../components/GameViewComponents';
 
-export function FinanceDashboard({ finance }: { finance: Finance }) {
+export function FinanceView({ finance }: { finance: Finance }) {
   return (
     <>
       <SectionHeading eyebrow="FINANCE" title="Financial overview" subtitle="Review your available funds and recent company transactions." />

@@ -4,33 +4,15 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Avatar, Divider, IconButton, Menu, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { APP_ICONS } from '@/icons';
 import { calculateCompanyPrestigeSummary, useCompanySessionStore, useGameStore } from '@/game';
 import { colors } from '@/theme';
-import {
-  AdminDashboard,
-  AchievementsDashboard,
-  DashboardContent,
-  DashboardDialogs,
-  DocumentationDialog,
-  IndustriPediaDashboard,
-  isDevAdminSurfaceAvailable,
-  LeaderboardDashboard,
-  PrestigeDialog,
-  ProfileDashboard,
-  SettingsDashboard,
-  styles,
-  TutorialGuideDialog,
-  type DashboardTab,
-  type DocumentationKind,
-  WelcomeScreen,
-} from '@/ui';
+import { AdminDashboard, AchievementsView, GameViewContent, GameDialogs, IndustriPediaView, isDevAdminSurfaceAvailable, LeaderboardScreen, PrestigeDialog, ProfileScreen, SettingsScreen, styles, TutorialGuideDialog, LoginView, type GameViewId } from '@/ui';
 import { formatCurrency, formatElapsedTime, formatNumber } from '@/utils';
 
-type DashboardView = DashboardTab | 'achievements' | 'admin' | 'profile' | 'pedia' | 'settings' | 'leaderboard';
+type ActiveScreen = GameViewId | 'achievements' | 'admin' | 'profile' | 'pedia' | 'settings' | 'leaderboard';
 
-const tabs: Array<{ key: DashboardTab; label: string; symbol: string }> = [
+const tabs: Array<{ key: GameViewId; label: string; symbol: string }> = [
   { key: 'company', label: 'Company', symbol: '⌂' },
   { key: 'inventory', label: 'Inventory', symbol: '▣' },
   { key: 'production', label: 'Production', symbol: '⚙' },
@@ -38,19 +20,18 @@ const tabs: Array<{ key: DashboardTab; label: string; symbol: string }> = [
   { key: 'finance', label: 'Finance', symbol: '€' },
 ];
 
-const salesTab: { key: DashboardTab; label: string; symbol: string } = { key: 'sales', label: 'Sales', symbol: '$' };
+const salesTab: { key: GameViewId; label: string; symbol: string } = { key: 'sales', label: 'Sales', symbol: '$' };
 
 export default function HomeScreen() {
   const activeCompany = useCompanySessionStore((state) => state.activeCompany);
-  return activeCompany ? <DashboardScreen companyName={activeCompany.displayName} /> : <WelcomeScreen />;
+  return activeCompany ? <GameShell companyName={activeCompany.displayName} /> : <LoginView />;
 }
 
-function DashboardScreen({ companyName }: { companyName: string }) {
-  const [activeView, setActiveView] = useState<DashboardView>('company');
+function GameShell({ companyName }: { companyName: string }) {
+  const [activeView, setActiveView] = useState<ActiveScreen>('company');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isConstructionYardOpen, setIsConstructionYardOpen] = useState(false);
   const [isPrestigeOpen, setIsPrestigeOpen] = useState(false);
-  const [documentationKind, setDocumentationKind] = useState<DocumentationKind>(null);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [pendingConstruction, setPendingConstruction] = useState<import('@/game').FacilityType | null>(null);
   const [pendingDestruction, setPendingDestruction] = useState<import('@/game').FacilityType | null>(null);
@@ -110,8 +91,6 @@ function DashboardScreen({ companyName }: { companyName: string }) {
               <Menu.Item leadingIcon={APP_ICONS.settings} onPress={() => { setIsProfileMenuOpen(false); setActiveView('settings'); }} title="Settings" />
               <Menu.Item leadingIcon="format-list-numbered" onPress={() => { setIsProfileMenuOpen(false); setActiveView('leaderboard'); }} title="Leaderboard" />
               <Menu.Item leadingIcon={APP_ICONS.help} onPress={() => { setIsProfileMenuOpen(false); setActiveView('pedia'); }} title="IndustriPedia" />
-              <Menu.Item leadingIcon="file-document-outline" onPress={() => { setIsProfileMenuOpen(false); setDocumentationKind('readme'); }} title="README" />
-              <Menu.Item leadingIcon="history" onPress={() => { setIsProfileMenuOpen(false); setDocumentationKind('version-log'); }} title="Version log" />
               <Menu.Item leadingIcon={APP_ICONS.achievements} onPress={() => { setIsProfileMenuOpen(false); setActiveView('achievements'); }} title="Achievements" />
               {isAdminDashboardAvailable && <Menu.Item leadingIcon={APP_ICONS.shield} onPress={() => { setIsProfileMenuOpen(false); setActiveView('admin'); }} title="Admin Dashboard" />}
               <Divider />
@@ -121,19 +100,18 @@ function DashboardScreen({ companyName }: { companyName: string }) {
         </View></View>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           {activeView === 'admin' && isAdminDashboardAvailable ? <AdminDashboard onCreateContractRequest={createSalesContractRequest} onResetCompany={async () => { await resetActiveCompany(); }} onSetInventoryAmount={setInventoryAmount} />
-            : activeView === 'achievements' ? <AchievementsDashboard achievements={achievements} companyStartedAtGameTimeMs={companyStartedAtGameTimeMs} currentGameTimeMs={lastProcessedAtMs} facilities={facilities} finance={finance} prestige={prestige} productionStatistics={productionStatistics} salesContracts={salesContracts} />
-              : activeView === 'profile' ? <ProfileDashboard companyName={companyName} onManageCompanies={logout} onResetCompany={async () => { await resetActiveCompany(); }} playerName={playerName} />
-                : activeView === 'settings' ? <SettingsDashboard onLogout={logout} onReplayTutorial={reopenWelcomeTutorial} />
-                  : activeView === 'leaderboard' ? <LeaderboardDashboard />
-                    : activeView === 'pedia' ? <IndustriPediaDashboard />
-                      : <DashboardContent activeTab={activeView === 'admin' ? 'company' : activeView} buyMarketResource={buyMarketResource} companyName={companyName} customerPipelineProgress={customerPipelineProgress} facilities={facilities} finance={finance} fulfillSalesContract={fulfillSalesContract} inventory={inventory} market={market} openConstructionYard={() => setIsConstructionYardOpen(true)} rejectSalesContract={rejectSalesContract} requestFacilityDestruction={setPendingDestruction} salesContracts={salesContracts} sellMarketResource={sellMarketResource} setFacilityRecipe={setFacilityRecipe} setFacilityWorkers={setFacilityWorkers} setMarketAutomation={setMarketAutomation} upgradeFacility={upgradeFacility} />}
+            : activeView === 'achievements' ? <AchievementsView achievements={achievements} companyStartedAtGameTimeMs={companyStartedAtGameTimeMs} currentGameTimeMs={lastProcessedAtMs} facilities={facilities} finance={finance} prestige={prestige} productionStatistics={productionStatistics} salesContracts={salesContracts} />
+              : activeView === 'profile' ? <ProfileScreen companyName={companyName} onManageCompanies={logout} onResetCompany={async () => { await resetActiveCompany(); }} playerName={playerName} />
+                : activeView === 'settings' ? <SettingsScreen onLogout={logout} onReplayTutorial={reopenWelcomeTutorial} />
+                  : activeView === 'leaderboard' ? <LeaderboardScreen />
+                    : activeView === 'pedia' ? <IndustriPediaView />
+                      : <GameViewContent activeTab={activeView === 'admin' ? 'company' : activeView} buyMarketResource={buyMarketResource} companyName={companyName} customerPipelineProgress={customerPipelineProgress} facilities={facilities} finance={finance} fulfillSalesContract={fulfillSalesContract} inventory={inventory} market={market} openConstructionYard={() => setIsConstructionYardOpen(true)} rejectSalesContract={rejectSalesContract} requestFacilityDestruction={setPendingDestruction} salesContracts={salesContracts} sellMarketResource={sellMarketResource} setFacilityRecipe={setFacilityRecipe} setFacilityWorkers={setFacilityWorkers} setMarketAutomation={setMarketAutomation} upgradeFacility={upgradeFacility} />}
         </ScrollView>
         <View style={styles.bottomNavigation}>{[...tabs.slice(0, 3), salesTab, ...tabs.slice(3)].map((tab) => <BottomNavigationItem active={activeView === tab.key} key={tab.key} label={tab.label} onPress={() => setActiveView(tab.key)} symbol={tab.symbol} />)}</View>
       </View>
-      <DashboardDialogs facilities={facilities} finance={finance} isConstructionYardOpen={isConstructionYardOpen} onCloseConstructionYard={() => setIsConstructionYardOpen(false)} onConfirmConstruction={() => { if (pendingConstruction && buildFacility(pendingConstruction)) setPendingConstruction(null); }} onConfirmDestruction={() => { if (pendingDestruction && destroyFacility(pendingDestruction)) setPendingDestruction(null); }} onDismissConstruction={() => setPendingConstruction(null)} onDismissDestruction={() => setPendingDestruction(null)} onSelectFacility={(facilityType) => { setIsConstructionYardOpen(false); setPendingConstruction(facilityType); }} pendingConstruction={pendingConstruction} pendingDestruction={pendingDestruction} />
+      <GameDialogs facilities={facilities} finance={finance} isConstructionYardOpen={isConstructionYardOpen} onCloseConstructionYard={() => setIsConstructionYardOpen(false)} onConfirmConstruction={() => { if (pendingConstruction && buildFacility(pendingConstruction)) setPendingConstruction(null); }} onConfirmDestruction={() => { if (pendingDestruction && destroyFacility(pendingDestruction)) setPendingDestruction(null); }} onDismissConstruction={() => setPendingConstruction(null)} onDismissDestruction={() => setPendingDestruction(null)} onSelectFacility={(facilityType) => { setIsConstructionYardOpen(false); setPendingConstruction(facilityType); }} pendingConstruction={pendingConstruction} pendingDestruction={pendingDestruction} />
       <PrestigeDialog currentGameTimeMs={lastProcessedAtMs} isOpen={isPrestigeOpen} onClose={() => setIsPrestigeOpen(false)} summary={prestigeSummary} />
       <TutorialGuideDialog onComplete={() => { void completeWelcomeTutorial(); }} visible={isTutorialOpen} />
-      <DocumentationDialog kind={documentationKind} onClose={() => setDocumentationKind(null)} />
     </SafeAreaView>
   );
 }

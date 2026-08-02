@@ -1,10 +1,10 @@
 import { View } from 'react-native';
 import { Text } from 'react-native-paper';
-import { styles } from '@/ui/dashboard/dashboard.styles';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import type { ResourceType } from '@/game/resources/resourceTypes';
-import { ContractRequestCard } from '../components/ContractRequestCard';
-import { InventoryControlCard } from '../components/InventoryControlCard';
-import { ResetCompanyCard } from '../components/ResetCompanyCard';
+import { ContractRequestCard } from '../../components/ContractRequestCard';
+import { InventoryControlCard } from '../../components/InventoryControlCard';
+import { ResetCompanyCard } from '../../components/ResetCompanyCard';
 
 export function AdminDashboard({ onCreateContractRequest, onResetCompany, onSetInventoryAmount }: {
   onCreateContractRequest: (resourceType: ResourceType, quantity: number) => boolean;

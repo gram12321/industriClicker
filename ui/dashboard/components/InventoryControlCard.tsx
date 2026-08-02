@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { Button, Card, Menu, Text, TextInput } from 'react-native-paper';
 import { getResource, getResourceIcon, RESOURCE_TYPES } from '@/game/resources/resourceConstants';
 import type { ResourceType } from '@/game/resources/resourceTypes';
-import { styles } from '@/ui/dashboard/dashboard.styles';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS } from '@/icons';
 
 export function InventoryControlCard({

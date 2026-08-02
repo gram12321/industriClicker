@@ -5,10 +5,10 @@ import { getResource, getResourceIcon, RESOURCE_TYPES } from '@/game/resources/r
 import type { Inventory } from '@/game/inventory/inventory';
 import { APP_ICONS } from '@/icons';
 import { formatNumber } from '@/utils';
-import { styles } from '@/ui/dashboard/dashboard.styles';
-import { SectionHeading } from '../components/DashboardViewComponents';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
+import { SectionHeading } from '../components/GameViewComponents';
 
-export function InventoryDashboard({ inventory }: { inventory: Inventory }) {
+export function InventoryView({ inventory }: { inventory: Inventory }) {
   return (
     <>
       <SectionHeading eyebrow="STOCK" title="Inventory" subtitle="Review the resources currently held by your company." />

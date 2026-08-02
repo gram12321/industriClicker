@@ -1,8 +1,8 @@
 import { Card, Text } from 'react-native-paper';
-import { styles } from '@/ui/dashboard/dashboard.styles';
-import { SectionHeading } from '../components/DashboardViewComponents';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
+import { SectionHeading } from '../components/GameViewComponents';
 
-export function CompanyDashboard({ companyName }: { companyName: string }) {
+export function CompanyView({ companyName }: { companyName: string }) {
   return (
     <>
       <SectionHeading eyebrow="COMPANY" title="Company overview" subtitle="Your active local industrial company." />

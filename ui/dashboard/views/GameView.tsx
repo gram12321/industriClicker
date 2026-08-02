@@ -7,16 +7,16 @@ import type { Market, MarketAutomation } from '@/game/market';
 import type { ResourceType } from '@/game/resources/resourceTypes';
 import type { Recipe } from '@/game/recipes/recipeTypes';
 import type { SalesContracts } from '@/game/sales/salesContracts';
-import { CompanyDashboard } from './views/CompanyDashboard';
-import { FinanceDashboard } from './views/FinanceDashboard';
-import { InventoryDashboard } from './views/InventoryDashboard';
-import { MarketDashboard } from './views/MarketDashboard';
-import { ProductionDashboard } from './views/ProductionDashboard';
-import { SalesDashboard } from './views/SalesDashboard';
+import { CompanyView } from './CompanyView';
+import { FinanceView } from './FinanceView';
+import { InventoryView } from './InventoryView';
+import { MarketView } from './MarketView';
+import { ProductionView } from './ProductionView';
+import { SalesView } from './SalesView';
 
-export type DashboardTab = 'company' | 'inventory' | 'market' | 'production' | 'sales' | 'finance';
+export type GameViewId = 'company' | 'inventory' | 'market' | 'production' | 'sales' | 'finance';
 
-export function DashboardContent({
+export function GameViewContent({
   activeTab,
   companyName,
   customerPipelineProgress,
@@ -36,7 +36,7 @@ export function DashboardContent({
   setFacilityWorkers,
   upgradeFacility,
 }: {
-  activeTab: DashboardTab;
+  activeTab: GameViewId;
   companyName: string;
   customerPipelineProgress: number;
   facilities: FacilityCollection;
@@ -56,12 +56,12 @@ export function DashboardContent({
   upgradeFacility: (facilityType: FacilityType, upgradeKind: FacilityUpgradeKind) => boolean;
 }) {
   switch (activeTab) {
-    case 'company': return <CompanyDashboard companyName={companyName} />;
-    case 'inventory': return <InventoryDashboard inventory={inventory} />;
-    case 'market': return <MarketDashboard buyMarketResource={buyMarketResource} finance={finance} inventory={inventory} market={market} sellMarketResource={sellMarketResource} setMarketAutomation={setMarketAutomation} />;
-    case 'production': return <ProductionDashboard facilities={facilities} finance={finance} inventory={inventory} openConstructionYard={openConstructionYard} requestFacilityDestruction={requestFacilityDestruction} setFacilityRecipe={setFacilityRecipe} setFacilityWorkers={setFacilityWorkers} upgradeFacility={upgradeFacility} />;
-    case 'sales': return <SalesDashboard customerPipelineProgress={customerPipelineProgress} fulfillSalesContract={fulfillSalesContract} inventory={inventory} rejectSalesContract={rejectSalesContract} salesContracts={salesContracts} />;
-    case 'finance': return <FinanceDashboard finance={finance} />;
+    case 'company': return <CompanyView companyName={companyName} />;
+    case 'inventory': return <InventoryView inventory={inventory} />;
+    case 'market': return <MarketView buyMarketResource={buyMarketResource} finance={finance} inventory={inventory} market={market} sellMarketResource={sellMarketResource} setMarketAutomation={setMarketAutomation} />;
+    case 'production': return <ProductionView facilities={facilities} finance={finance} inventory={inventory} openConstructionYard={openConstructionYard} requestFacilityDestruction={requestFacilityDestruction} setFacilityRecipe={setFacilityRecipe} setFacilityWorkers={setFacilityWorkers} upgradeFacility={upgradeFacility} />;
+    case 'sales': return <SalesView customerPipelineProgress={customerPipelineProgress} fulfillSalesContract={fulfillSalesContract} inventory={inventory} rejectSalesContract={rejectSalesContract} salesContracts={salesContracts} />;
+    case 'finance': return <FinanceView finance={finance} />;
   }
 }
 

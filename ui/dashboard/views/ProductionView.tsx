@@ -11,12 +11,12 @@ import type { Inventory } from '@/game/inventory/inventory';
 import type { Recipe } from '@/game/recipes/recipeTypes';
 import { getResource, getResourceIcon } from '@/game/resources/resourceConstants';
 import { clamp, formatCurrency, formatDuration, formatNumber, formatPercent } from '@/utils';
-import { styles } from '@/ui/dashboard/dashboard.styles';
-import { PlaceholderRow, SectionHeading, WorkMetric } from '../components/DashboardViewComponents';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
+import { PlaceholderRow, SectionHeading, WorkMetric } from '../components/GameViewComponents';
 import { formatRecipeInputs, formatRecipeName } from '../helpers/recipeFormatters';
 import { APP_ICONS } from '@/icons';
 
-export function ProductionDashboard({
+export function ProductionView({
   facilities, finance, inventory, openConstructionYard, requestFacilityDestruction, setFacilityRecipe, setFacilityWorkers, upgradeFacility,
 }: {
   facilities: FacilityCollection;
