@@ -127,6 +127,7 @@ export const styles = StyleSheet.create({
   profileButton: { borderRadius: 22, padding: 2 },
   safeArea: { backgroundColor: colors.primary, flex: 1 },
   salesAvailability: { color: colors.muted, fontSize: 12 },
+  salesCapacity: { color: colors.primary, fontSize: 13, fontWeight: '700' },
   salesActions: { flexDirection: 'row', gap: 8 },
   salesContractHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', paddingRight: 28 },
   salesRejectButton: { position: 'absolute', right: 2, top: 2 },

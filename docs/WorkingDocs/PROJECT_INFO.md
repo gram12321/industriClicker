@@ -6,7 +6,7 @@ Verified repository facts for Industri Clicker. Product choices belong in [desig
 
 - Stage: foundation.
 - Product: single-player, mobile-first industrial clicker for Android.
-- Implemented foundation: dashboard shell, local player/company selection, company-keyed local saves, standard-start onboarding, tutorial-guide placeholder, inventory, local/global market, facilities, finance, sales contracts, foreground production, tiered company achievements, company prestige, IndustriPedia, and local saves.
+- Implemented foundation: dashboard shell, local player/company selection, company-keyed local saves, standard-start onboarding, tutorial-guide placeholder, inventory, local/global market, facilities, finance, sales contracts, foreground production, tiered company achievements, company prestige, local-first progression gates, foreground research, IndustriPedia, and local saves.
 - Deferred: offline catch-up, broader staffing factors, and cloud services.
 
 ## Code Size
@@ -39,7 +39,7 @@ theme.ts              Shared Paper theme and visual tokens
 
 ## Routes and Commands
 
-- `/` — local player/company selection until a company is active, then the dashboard with Company, Inventory, Production, Finance, Profile, Settings, Leaderboard placeholder, Achievements, and IndustriPedia views.
+- `/` — local player/company selection until a company is active, then the dashboard with Company, Inventory, Production, Finance, Sales, Profile, Settings, Leaderboard placeholder, Achievements, Research, and IndustriPedia views.
 - `npm run start` — Expo development server for Expo Go.
 - `npm run android` — optional Android emulator shortcut.
 - `npm run web` — local browser development preview.

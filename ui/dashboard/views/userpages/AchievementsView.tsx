@@ -52,6 +52,7 @@ export function AchievementsView({
   salesContracts: SalesContracts;
 }) {
   const [selectedCategory, setSelectedCategory] = useState<AchievementCategory | 'all'>('all');
+  const [showCompletedTiers, setShowCompletedTiers] = useState(false);
   const context = createAchievementEvaluationContext({
     facilities,
     finance,
@@ -62,7 +63,7 @@ export function AchievementsView({
     currentGameTimeMs,
   });
   const allAchievements = getAchievementDisplay(context, achievements);
-  const displayed = filterAchievementSeriesForDisplay(allAchievements);
+  const displayed = showCompletedTiers ? allAchievements : filterAchievementSeriesForDisplay(allAchievements);
   const visibleAchievements = selectedCategory === 'all'
     ? displayed
     : displayed.filter((achievement) => achievement.category === selectedCategory);
@@ -93,6 +94,7 @@ export function AchievementsView({
           {ACHIEVEMENT_CATEGORIES.map((category) => (
             <Button compact icon={CATEGORY_ICONS[category]} key={category} mode={selectedCategory === category ? 'contained' : 'outlined'} onPress={() => setSelectedCategory(category)}>{`${CATEGORY_LABELS[category]} (${formatNumber(allAchievements.filter((achievement) => achievement.category === category).length)})`}</Button>
           ))}
+          <Button compact icon={showCompletedTiers ? 'chevron-up' : 'history'} mode={showCompletedTiers ? 'contained' : 'outlined'} onPress={() => setShowCompletedTiers((current) => !current)}>{showCompletedTiers ? 'Hide completed tiers' : 'Show completed tiers'}</Button>
         </Card.Content>
       </Card>
       {(selectedCategory === 'all' ? ACHIEVEMENT_CATEGORIES : [selectedCategory]).map((category) => {
@@ -120,6 +122,7 @@ export function AchievementsView({
                       </View>
                     </View>
                     <Text style={dashboardStyles.cardDescription}>{achievement.description}</Text>
+                    <Text style={localStyles.reward}>{`Reward: ${formatNumber(achievement.prestigeAmount, { smartDecimals: true })} prestige`}</Text>
                     <View style={localStyles.progressHeader}><Text style={dashboardStyles.cardKicker}>PROGRESS</Text><Text style={dashboardStyles.cardKicker}>{`${formatNumber(Math.min(achievement.currentValue, achievement.threshold), { smartDecimals: true })} / ${formatNumber(achievement.threshold)}`}</Text></View>
                     <ProgressBar accessible accessibilityLabel={`Progress toward ${achievement.name}`} color={achievement.isUnlocked ? colors.primary : colors.muted} progress={progress} style={localStyles.progress} />
                   </Card.Content>
@@ -147,6 +150,7 @@ const localStyles = StyleSheet.create({
   overviewTitle: { flex: 1, gap: 2 },
   progress: { borderRadius: 6, height: 8 },
   progressHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
+  reward: { color: colors.primary, fontSize: 12, fontWeight: '700' },
   title: { alignItems: 'center', flex: 1, flexDirection: 'row', minWidth: 0 },
   titleText: { flexShrink: 1 },
   unlocked: { color: colors.primary, fontSize: 11, fontWeight: '700' },

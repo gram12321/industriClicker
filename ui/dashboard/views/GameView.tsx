@@ -14,7 +14,7 @@ import { MarketView } from './MarketView';
 import { ProductionView } from './ProductionView';
 import { SalesView } from './SalesView';
 
-export type GameViewId = 'company' | 'inventory' | 'market' | 'production' | 'sales' | 'finance';
+export type GameViewId = 'company' | 'inventory' | 'market' | 'production' | 'research' | 'sales' | 'finance';
 
 export function GameViewContent({
   activeTab,
@@ -25,6 +25,7 @@ export function GameViewContent({
   fulfillSalesContract,
   inventory,
   market,
+  maximumOpenContracts,
   buyMarketResource,
   sellMarketResource,
   setMarketAutomation,
@@ -36,7 +37,7 @@ export function GameViewContent({
   setFacilityWorkers,
   upgradeFacility,
 }: {
-  activeTab: GameViewId;
+  activeTab: Exclude<GameViewId, 'research'>;
   companyName: string;
   customerPipelineProgress: number;
   facilities: FacilityCollection;
@@ -44,6 +45,7 @@ export function GameViewContent({
   fulfillSalesContract: (contractId: string) => boolean;
   inventory: Inventory;
   market: Market;
+  maximumOpenContracts: number;
   buyMarketResource: (resourceType: ResourceType, amount: number) => boolean;
   sellMarketResource: (resourceType: ResourceType, amount: number) => boolean;
   setMarketAutomation: (resourceType: ResourceType, updates: Partial<MarketAutomation>) => boolean;
@@ -60,7 +62,7 @@ export function GameViewContent({
     case 'inventory': return <InventoryView inventory={inventory} />;
     case 'market': return <MarketView buyMarketResource={buyMarketResource} finance={finance} inventory={inventory} market={market} sellMarketResource={sellMarketResource} setMarketAutomation={setMarketAutomation} />;
     case 'production': return <ProductionView facilities={facilities} finance={finance} inventory={inventory} openConstructionYard={openConstructionYard} requestFacilityDestruction={requestFacilityDestruction} setFacilityRecipe={setFacilityRecipe} setFacilityWorkers={setFacilityWorkers} upgradeFacility={upgradeFacility} />;
-    case 'sales': return <SalesView customerPipelineProgress={customerPipelineProgress} fulfillSalesContract={fulfillSalesContract} inventory={inventory} rejectSalesContract={rejectSalesContract} salesContracts={salesContracts} />;
+    case 'sales': return <SalesView customerPipelineProgress={customerPipelineProgress} fulfillSalesContract={fulfillSalesContract} inventory={inventory} maximumOpenContracts={maximumOpenContracts} rejectSalesContract={rejectSalesContract} salesContracts={salesContracts} />;
     case 'finance': return <FinanceView finance={finance} />;
   }
 }

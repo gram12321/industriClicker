@@ -134,6 +134,7 @@ export const useCompanySessionStore = create<CompanySessionState>((set, get) => 
         useGameStore.getState().restoreSnapshot(startingSnapshot);
         await saveCompanySnapshot(requested.id, startingSnapshot);
       }
+      useGameStore.getState().setStartingConditionId(requested.startingConditionId);
       const tutorial = await loadCompanyTutorialState(requested.id);
       await saveDeviceSession({ selectedProfileId: selectedProfile.id, activeCompanyId: requested.id });
       set({ activeCompany: requested, tutorial, error: null });
@@ -155,6 +156,7 @@ export const useCompanySessionStore = create<CompanySessionState>((set, get) => 
       const companies = await listCompaniesForProfile(selectedProfile.id);
       await saveDeviceSession({ selectedProfileId: selectedProfile.id, activeCompanyId: null });
       useGameStore.getState().restoreSnapshot(createStartingGameSnapshot());
+      useGameStore.getState().setStartingConditionId(null);
       set({ companies, activeCompany: null, tutorial: DEFAULT_COMPANY_TUTORIAL_STATE, error: null });
       return true;
     } catch {
@@ -169,6 +171,7 @@ export const useCompanySessionStore = create<CompanySessionState>((set, get) => 
     try {
       await clearLocalData();
       useGameStore.getState().restoreSnapshot(createStartingGameSnapshot());
+      useGameStore.getState().setStartingConditionId(null);
       set({ profiles: [], selectedProfile: null, companies: [], activeCompany: null, tutorial: DEFAULT_COMPANY_TUTORIAL_STATE, error: null });
       return true;
     } catch {
@@ -185,6 +188,7 @@ export const useCompanySessionStore = create<CompanySessionState>((set, get) => 
       await saveCompanySnapshot(activeCompany.id, useGameStore.getState().createSnapshot());
     }
     await saveDeviceSession(EMPTY_DEVICE_SESSION);
+    useGameStore.getState().setStartingConditionId(null);
     set({ isInitialized: true, selectedProfile: null, companies: [], activeCompany: null, tutorial: DEFAULT_COMPANY_TUTORIAL_STATE, error: null });
   },
   completeWelcomeTutorial: async () => {

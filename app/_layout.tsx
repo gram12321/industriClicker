@@ -59,6 +59,7 @@ function CompanyGamePersistence({ children }: { children: ReactNode }) {
         || state.achievements !== previousState.achievements
         || state.productionStatistics !== previousState.productionStatistics
         || state.prestige !== previousState.prestige
+        || state.research !== previousState.research
         || state.companyStartedAtGameTimeMs !== previousState.companyStartedAtGameTimeMs
         || state.lastProcessedAtMs !== previousState.lastProcessedAtMs
         || state.unprocessedWorkMs !== previousState.unprocessedWorkMs

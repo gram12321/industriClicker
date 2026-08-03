@@ -96,10 +96,13 @@ export class SalesContracts {
   }
 
   /** Creates one development-requested offer for the selected resource. */
-  createOfferForResource(resourceType: ResourceType, quantity: number, unitReward: number): SalesContract | null {
+  createOfferForResource(resourceType: ResourceType, quantity: number, unitReward: number, maximumOpenContracts: number): SalesContract | null {
     if (!Number.isInteger(quantity)
       || quantity < SALES_CONTRACT_MIN_REQUEST_QUANTITY
-      || quantity > SALES_CONTRACT_MAX_REQUEST_QUANTITY) {
+      || quantity > SALES_CONTRACT_MAX_REQUEST_QUANTITY
+      || !Number.isInteger(maximumOpenContracts)
+      || maximumOpenContracts < 0
+      || this.offered.length >= maximumOpenContracts) {
       return null;
     }
 
@@ -108,14 +111,16 @@ export class SalesContracts {
     return cloneContract(offer);
   }
 
-  advanceTime(elapsedMinutes: number, resourceTypes: readonly ResourceType[], getUnitReward: (resourceType: ResourceType) => number, random = Math.random): number {
-    if (!Number.isInteger(elapsedMinutes) || elapsedMinutes <= 0 || resourceTypes.length === 0) {
+  advanceTime(elapsedMinutes: number, resourceTypes: readonly ResourceType[], getUnitReward: (resourceType: ResourceType) => number, maximumOpenContracts: number, random = Math.random): number {
+    if (!Number.isInteger(elapsedMinutes) || elapsedMinutes <= 0 || resourceTypes.length === 0
+      || !Number.isInteger(maximumOpenContracts) || maximumOpenContracts < 0) {
       return 0;
     }
 
     let contractsCreated = 0;
 
     for (let minute = 0; minute < elapsedMinutes; minute += 1) {
+      if (this.offered.length >= maximumOpenContracts) break;
       if (clampRandom(random()) < calculateSalesContractOfferChance(this.offered.length)) {
         const resourceRoll = clampRandom(random());
         const resourceType = resourceTypes[Math.floor(resourceRoll * resourceTypes.length)];

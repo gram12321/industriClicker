@@ -93,7 +93,7 @@ export function getAchievementDisplay(context: AchievementEvaluationContext, led
   });
 }
 
-/** Shows completed tiers and the immediate next tier in each series. */
+/** Shows the next incomplete tier, or the final earned tier once a series is complete. */
 export function filterAchievementSeriesForDisplay(achievements: readonly AchievementDisplay[]): AchievementDisplay[] {
   const bySeries = new Map<string, AchievementDisplay[]>();
 
@@ -105,7 +105,6 @@ export function filterAchievementSeriesForDisplay(achievements: readonly Achieve
 
   return [...bySeries.values()].flatMap((series) => {
     const sorted = [...series].sort((left, right) => left.tier - right.tier);
-    const nextLockedIndex = sorted.findIndex((achievement) => !achievement.isUnlocked);
-    return nextLockedIndex < 0 ? [sorted[sorted.length - 1]] : sorted.slice(0, nextLockedIndex + 1);
+    return [sorted.find((achievement) => !achievement.isUnlocked) ?? sorted[sorted.length - 1]];
   });
 }
