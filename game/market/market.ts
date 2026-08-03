@@ -1,4 +1,4 @@
-import { RESOURCE_TYPES } from '../resources/resourceConstants';
+import { RESOURCES, RESOURCE_TYPES } from '../resources/resourceConstants';
 import type { ResourceType } from '../resources/resourceTypes';
 import {
   MARKET_AUTOBUY_DEFAULT_MAX_PRICE_MULTIPLIER,
@@ -7,7 +7,6 @@ import {
   MARKET_AUTOSELL_DEFAULT_MIN_PRICE,
   MARKET_DEFAULT_QUALITY,
   MARKET_DIFFUSION_DIVISOR,
-  MARKET_RESOURCE_DEFINITIONS,
 } from './marketConstants';
 import type { MarketAutomation, MarketDiffusionInfo, MarketPoolEntry, MarketSnapshot, MarketTradeResult } from './marketTypes';
 
@@ -21,7 +20,7 @@ function mixQuality(existing: MarketPoolEntry, addedAmount: number, addedQuality
 
 function createPool(kind: 'local' | 'global'): Record<ResourceType, MarketPoolEntry> {
   return RESOURCE_TYPES.reduce((pool, resourceType) => {
-    const definition = MARKET_RESOURCE_DEFINITIONS[resourceType];
+    const definition = RESOURCES[resourceType].market;
     pool[resourceType] = {
       supply: kind === 'local' ? definition.localInitialSupply : definition.globalInitialSupply,
       quality: MARKET_DEFAULT_QUALITY,
@@ -32,7 +31,7 @@ function createPool(kind: 'local' | 'global'): Record<ResourceType, MarketPoolEn
 
 function createAutomation(local: Record<ResourceType, MarketPoolEntry>): Record<ResourceType, MarketAutomation> {
   return RESOURCE_TYPES.reduce((automation, resourceType) => {
-    const price = MARKET_RESOURCE_DEFINITIONS[resourceType].localBenchmarkSupply / local[resourceType].supply;
+    const price = RESOURCES[resourceType].market.localBenchmarkSupply / local[resourceType].supply;
     automation[resourceType] = {
       autoBuyEnabled: false,
       autoBuyMaxUnitPrice: price * MARKET_AUTOBUY_DEFAULT_MAX_PRICE_MULTIPLIER,
@@ -62,13 +61,13 @@ export class Market {
   getAutomation(resourceType: ResourceType): MarketAutomation { return { ...this.automation[resourceType] }; }
 
   getLocalPrice(resourceType: ResourceType): number {
-    const definition = MARKET_RESOURCE_DEFINITIONS[resourceType];
+    const definition = RESOURCES[resourceType].market;
     const entry = this.local[resourceType];
     return definition.localBenchmarkSupply / Math.max(entry.supply, 1) * entry.quality;
   }
 
   getGlobalPrice(resourceType: ResourceType): number {
-    const definition = MARKET_RESOURCE_DEFINITIONS[resourceType];
+    const definition = RESOURCES[resourceType].market;
     const entry = this.global[resourceType];
     return definition.globalBenchmarkSupply / Math.max(entry.supply, 1) * entry.quality;
   }
@@ -77,7 +76,7 @@ export class Market {
     const localPrice = this.getLocalPrice(resourceType);
     const globalPrice = this.getGlobalPrice(resourceType);
     if (localPrice === globalPrice || globalPrice <= 0) return { direction: 'none', amount: 0 };
-    const base = MARKET_RESOURCE_DEFINITIONS[resourceType].localInitialSupply / MARKET_DIFFUSION_DIVISOR;
+    const base = RESOURCES[resourceType].market.localInitialSupply / MARKET_DIFFUSION_DIVISOR;
     if (localPrice > globalPrice) return { direction: 'to-local', amount: (localPrice / globalPrice - 1) * base };
     return { direction: 'to-global', amount: (1 - localPrice / globalPrice) * base };
   }

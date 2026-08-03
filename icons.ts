@@ -62,5 +62,10 @@ export const RESOURCE_ICONS: Readonly<Record<ResourceType, string>> = {
   [ResourceType.Electricity]: '⚡',
   [ResourceType.Sugar]: '🍬',
   [ResourceType.Coal]: '🪨',
+  [ResourceType.Iron]: '⛓️',
+  [ResourceType.Copper]: '🟠',
+  [ResourceType.Sand]: '🏜️',
+  [ResourceType.Clay]: '🟫',
+  [ResourceType.Stone]: '⛰️',
   [ResourceType.Cake]: '🍰',
 };

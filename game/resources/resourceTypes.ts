@@ -11,5 +11,18 @@ export enum ResourceType {
   Electricity = 'electricity',
   Sugar = 'sugar',
   Coal = 'coal',
+  Iron = 'iron',
+  Copper = 'copper',
+  Sand = 'sand',
+  Clay = 'clay',
+  Stone = 'stone',
   Cake = 'cake',
 }
+
+/** Market seed values owned by each resource's code catalogue entry. */
+export type ResourceMarketDefinition = {
+  localBenchmarkSupply: number;
+  localInitialSupply: number;
+  globalBenchmarkSupply: number;
+  globalInitialSupply: number;
+};

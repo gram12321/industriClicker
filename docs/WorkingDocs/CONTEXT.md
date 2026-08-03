@@ -8,11 +8,11 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 |---|---|
 | Industrial clicker | The game genre and setting direction. |
 | Resource | A typed item the player can gain, spend, transform, and hold in inventory. |
-| Grain, Bread, Water, Electricity, Sugar, Coal, Cake | Current resource names. |
+| Grain, Bread, Water, Electricity, Sugar, Coal, Iron, Copper, Sand, Clay, Stone, Cake | Current resource names. |
 | Inventory | Player-owned resource quantities and their associated quality. |
 | Resource quality | A property of an inventory entry; its gameplay rule is not yet designed. |
 | Recipe | A named production transformation with inputs, output, and work amount. |
-| Facility | A player-owned production unit. Current types are Farm, Bakery, Small Utility Works, Mine, Water Well, and Power Plant. |
+| Facility | A player-owned production unit. Current types are Farm, Bakery, Small Utility Works, Mine, Quarry, Water Well, and Power Plant. |
 | Euro (€) | The company currency. |
 | Finance | Company balance and its append-only balance-change record. |
 | Sales contract | A customer request for a resource and integer quantity, retained as offered, completed, or rejected. |

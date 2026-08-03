@@ -114,6 +114,11 @@ function getResourceSummary(resourceType: (typeof RESOURCE_TYPES)[number]): stri
     case 'electricity': return 'Utility resource used to power production recipes.';
     case 'sugar': return 'Farm-grown ingredient used to bake Cake.';
     case 'coal': return 'Mined fuel used by the Coal Power recipe.';
+    case 'iron': return 'Mined material used by future metalworking recipes.';
+    case 'copper': return 'Mined material used by future electrical recipes.';
+    case 'sand': return 'Quarried material for future construction recipes.';
+    case 'clay': return 'Quarried material for future construction recipes.';
+    case 'stone': return 'Quarried material for future construction recipes.';
     case 'cake': return 'Baked product made from Grain, Sugar, Water, and Electricity.';
     default: return 'Tracked in your company inventory.';
   }

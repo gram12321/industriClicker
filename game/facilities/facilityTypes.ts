@@ -4,6 +4,7 @@ export enum FacilityType {
   Bakery = 'bakery',
   SmallUtilityWorks = 'small-utility-works',
   Mine = 'mine',
+  Quarry = 'quarry',
   WaterWell = 'water-well',
   PowerPlant = 'power-plant',
 }

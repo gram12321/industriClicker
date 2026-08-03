@@ -17,7 +17,12 @@ export function formatRecipeName(recipe: Recipe): string {
     case 'produce-water': return 'Produce water';
     case 'produce-electricity': return 'Produce electricity';
     case 'grow-sugar': return 'Grow sugar';
+    case 'mine-iron': return 'Mine iron';
     case 'mine-coal': return 'Mine coal';
+    case 'mine-copper': return 'Mine copper';
+    case 'quarry-sand': return 'Quarry sand';
+    case 'quarry-clay': return 'Quarry clay';
+    case 'quarry-stone': return 'Quarry stone';
     case 'bake-cake': return 'Bake cake';
     case 'manual-pumping': return 'Manual pumping';
     case 'electric-pumping': return 'Electric pumping';

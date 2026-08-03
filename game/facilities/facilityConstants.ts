@@ -2,7 +2,7 @@ import { ALL_RECIPES } from '../recipes/recipeConstants';
 import { RecipeName, type Recipe } from '../recipes/recipeTypes';
 import { FacilityType } from './facilityTypes';
 
-export const FACILITY_TYPES = [FacilityType.Farm, FacilityType.Bakery, FacilityType.SmallUtilityWorks, FacilityType.Mine, FacilityType.WaterWell, FacilityType.PowerPlant] as const;
+export const FACILITY_TYPES = [FacilityType.Farm, FacilityType.Bakery, FacilityType.SmallUtilityWorks, FacilityType.Mine, FacilityType.Quarry, FacilityType.WaterWell, FacilityType.PowerPlant] as const;
 export const FACILITY_UPGRADE_COST_GROWTH = 1.5;
 export const FACILITY_SPEED_MAXIMUM_BONUS = 0.8;
 export const FACILITY_SPEED_BONUS_RATE = 0.22;
@@ -20,6 +20,7 @@ export const FACILITY_PRODUCTION_ORDER = [
   FacilityType.Farm,
   FacilityType.Bakery,
   FacilityType.Mine,
+  FacilityType.Quarry,
   FacilityType.WaterWell,
   FacilityType.PowerPlant,
 ] as const;
@@ -65,7 +66,15 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     icon: 'pickaxe',
     constructionCost: 150,
     baseWorkers: 10,
-    recipes: [ALL_RECIPES[RecipeName.MineCoal]],
+    recipes: [ALL_RECIPES[RecipeName.MineIron], ALL_RECIPES[RecipeName.MineCoal], ALL_RECIPES[RecipeName.MineCopper]],
+  },
+  [FacilityType.Quarry]: {
+    type: FacilityType.Quarry,
+    name: 'Quarry',
+    icon: 'terrain',
+    constructionCost: 120,
+    baseWorkers: 6,
+    recipes: [ALL_RECIPES[RecipeName.QuarrySand], ALL_RECIPES[RecipeName.QuarryClay], ALL_RECIPES[RecipeName.QuarryStone]],
   },
   [FacilityType.WaterWell]: {
     type: FacilityType.WaterWell,

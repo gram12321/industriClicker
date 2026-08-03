@@ -34,7 +34,12 @@ Recipes consume inputs at cycle start; if inputs are absent, the facility stalls
 | Bake Bread | 2 Grain, 1 Water, 1 Electricity | 1 Bread | 10 |
 | Produce Water / Electricity | None | 1 utility resource | 5 |
 | Grow Sugar | 4 Water | 1 Sugar | 3 |
-| Mine Coal | 3 Electricity | 1 Coal | 3 |
+| Mine Coal | 1 Water, 2 Electricity | 2 Coal | 3 |
+| Mine Iron | 2 Water, 4 Electricity | 1 Iron | 5 |
+| Mine Copper | 2 Water, 5 Electricity | 1 Copper | 6 |
+| Quarry Sand | 1 Water, 1 Electricity | 3 Sand | 2 |
+| Quarry Clay | 2 Water, 1 Electricity | 2 Clay | 3 |
+| Quarry Stone | 1 Water, 4 Electricity | 1 Stone | 5 |
 | Bake Cake | 1 Grain, 0.5 Sugar, 2 Electricity, 2 Water | 1 Cake | 15 |
 | Manual / Electric Pumping | None / 1 Electricity | 1 / 5 Water | 1 / 0.5 |
 | Coal / Solar Power | 1 Coal, 2 Water / None | 10 / 1 Electricity | 5 / 10 |
@@ -52,7 +57,7 @@ Levels and worker counts are non-negative integers. A zero-worker requirement ha
 
 ## Market
 
-- Each resource has persisted local/global supply and quality. Local and global prices are `benchmarkSupply / max(supply, 1) × marketQuality`.
+- Each resource's catalogue entry defines its local/global benchmark and initial supply. Local and global prices are `benchmarkSupply / max(supply, 1) × marketQuality`.
 - Foreground minute completion creates price-locked sales offers, autosells enabled inventory to the local market, then source-capped diffusion balances every resource between local and global reservoirs. Offline time does none of these.
 - Manual buys/sells trade only with the local market. A fulfilled sales contract adds the delivered inventory and its quality directly to the global reservoir; its reward was locked at offer time from global price × 1.20.
 - Autobuy may purchase missing recipe inputs from the local market only when enabled and under its saved finite maximum unit price.

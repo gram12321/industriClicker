@@ -39,11 +39,59 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     output: { resourceType: ResourceType.Sugar, amount: 1 },
     workAmount: 3,
   },
+  [RecipeName.MineIron]: {
+    name: RecipeName.MineIron,
+    inputs: [
+      { resourceType: ResourceType.Water, amount: 2 },
+      { resourceType: ResourceType.Electricity, amount: 4 },
+    ],
+    output: { resourceType: ResourceType.Iron, amount: 1 },
+    workAmount: 5,
+  },
   [RecipeName.MineCoal]: {
     name: RecipeName.MineCoal,
-    inputs: [{ resourceType: ResourceType.Electricity, amount: 3 }],
-    output: { resourceType: ResourceType.Coal, amount: 1 },
+    inputs: [
+      { resourceType: ResourceType.Water, amount: 1 },
+      { resourceType: ResourceType.Electricity, amount: 2 },
+    ],
+    output: { resourceType: ResourceType.Coal, amount: 2 },
     workAmount: 3,
+  },
+  [RecipeName.MineCopper]: {
+    name: RecipeName.MineCopper,
+    inputs: [
+      { resourceType: ResourceType.Water, amount: 2 },
+      { resourceType: ResourceType.Electricity, amount: 5 },
+    ],
+    output: { resourceType: ResourceType.Copper, amount: 1 },
+    workAmount: 6,
+  },
+  [RecipeName.QuarrySand]: {
+    name: RecipeName.QuarrySand,
+    inputs: [
+      { resourceType: ResourceType.Water, amount: 1 },
+      { resourceType: ResourceType.Electricity, amount: 1 },
+    ],
+    output: { resourceType: ResourceType.Sand, amount: 3 },
+    workAmount: 2,
+  },
+  [RecipeName.QuarryClay]: {
+    name: RecipeName.QuarryClay,
+    inputs: [
+      { resourceType: ResourceType.Water, amount: 2 },
+      { resourceType: ResourceType.Electricity, amount: 1 },
+    ],
+    output: { resourceType: ResourceType.Clay, amount: 2 },
+    workAmount: 3,
+  },
+  [RecipeName.QuarryStone]: {
+    name: RecipeName.QuarryStone,
+    inputs: [
+      { resourceType: ResourceType.Water, amount: 1 },
+      { resourceType: ResourceType.Electricity, amount: 4 },
+    ],
+    output: { resourceType: ResourceType.Stone, amount: 1 },
+    workAmount: 5,
   },
   [RecipeName.BakeCake]: {
     name: RecipeName.BakeCake,
