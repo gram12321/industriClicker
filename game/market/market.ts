@@ -6,8 +6,8 @@ import {
   MARKET_AUTOSELL_DEFAULT_MIN_KEEP,
   MARKET_AUTOSELL_DEFAULT_MIN_PRICE,
   MARKET_DEFAULT_QUALITY,
-  MARKET_DIFFUSION_DIVISOR,
 } from './marketConstants';
+import { calculateMarketDiffusionInfo, calculateMarketPrice } from './marketDiffusion';
 import type { MarketAutomation, MarketDiffusionInfo, MarketPoolEntry, MarketSnapshot, MarketTradeResult } from './marketTypes';
 
 function isNonNegativeFinite(value: number): boolean { return Number.isFinite(value) && value >= 0; }
@@ -62,23 +62,20 @@ export class Market {
 
   getLocalPrice(resourceType: ResourceType): number {
     const definition = RESOURCES[resourceType].market;
-    const entry = this.local[resourceType];
-    return definition.localBenchmarkSupply / Math.max(entry.supply, 1) * entry.quality;
+    return calculateMarketPrice(definition.localBenchmarkSupply, this.local[resourceType]);
   }
 
   getGlobalPrice(resourceType: ResourceType): number {
     const definition = RESOURCES[resourceType].market;
-    const entry = this.global[resourceType];
-    return definition.globalBenchmarkSupply / Math.max(entry.supply, 1) * entry.quality;
+    return calculateMarketPrice(definition.globalBenchmarkSupply, this.global[resourceType]);
   }
 
   getDiffusionInfo(resourceType: ResourceType): MarketDiffusionInfo {
-    const localPrice = this.getLocalPrice(resourceType);
-    const globalPrice = this.getGlobalPrice(resourceType);
-    if (localPrice === globalPrice || globalPrice <= 0) return { direction: 'none', amount: 0 };
-    const base = RESOURCES[resourceType].market.localInitialSupply / MARKET_DIFFUSION_DIVISOR;
-    if (localPrice > globalPrice) return { direction: 'to-local', amount: (localPrice / globalPrice - 1) * base };
-    return { direction: 'to-global', amount: (1 - localPrice / globalPrice) * base };
+    return calculateMarketDiffusionInfo(
+      this.local[resourceType],
+      this.global[resourceType],
+      RESOURCES[resourceType].market,
+    );
   }
 
   buyFromLocal(resourceType: ResourceType, requestedAmount: number): MarketTradeResult {

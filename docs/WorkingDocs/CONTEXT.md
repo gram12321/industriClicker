@@ -11,6 +11,9 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Grain, Bread, Water, Electricity, Sugar, Coal, Iron, Copper, Sand, Clay, Stone, Cake | Current resource names. |
 | Inventory | Player-owned resource quantities and their associated quality. |
 | Resource quality | A property of an inventory entry; its gameplay rule is not yet designed. |
+| Logistics multiplier | A resource catalogue value for physical shipping, storage, and market-network constraints on local/global diffusion. |
+| Value-density multiplier | A resource catalogue value for the economic value of moving a resource relative to its transport burden. |
+| Market urgency multiplier | A bounded, derived diffusion multiplier based on current local/global prices relative to the resource's initial price level. |
 | Recipe | A named production transformation with inputs, output, and work amount. |
 | Facility | A player-owned production unit. Current types are Farm, Bakery, Small Utility Works, Mine, Quarry, Water Well, and Power Plant. |
 | Euro (€) | The company currency. |

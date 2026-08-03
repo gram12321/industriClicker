@@ -20,7 +20,7 @@ Concrete data relationships for rules defined in [gameflow.md](gameflow.md). Thi
 | `lastObservedAtMs` | Runtime | Zustand game store | Foreground observation and lifecycle | No |
 | Local profile, company record, tutorial state, device session | Stored | Company domain SQLite adapters | Local player/company commands | Dedicated local tables |
 
-Derived values include staffing efficiency, production work/output, contract reward and offer chance, current prestige, and UI view models.
+Derived values include staffing efficiency, production work/output, contract reward and offer chance, current prestige, market diffusion amount, and UI view models.
 
 ## Command Effects
 

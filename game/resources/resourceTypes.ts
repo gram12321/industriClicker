@@ -25,4 +25,8 @@ export type ResourceMarketDefinition = {
   localInitialSupply: number;
   globalBenchmarkSupply: number;
   globalInitialSupply: number;
+  /** Physical shipping, storage, and market-network constraints. */
+  logisticsMultiplier: number;
+  /** Economic value density relative to the cost of moving the resource. */
+  valueDensityMultiplier: number;
 };

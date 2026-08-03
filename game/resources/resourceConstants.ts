@@ -19,51 +19,51 @@ export const RESOURCE_TYPES = [
 export const RESOURCES: Readonly<Record<ResourceType, { name: string; icon: string; market: ResourceMarketDefinition }>> = {
   [ResourceType.Grain]: {
     name: 'Grain', icon: '🌾',
-    market: { localBenchmarkSupply: 60_000, localInitialSupply: 100_000, globalBenchmarkSupply: 600_000, globalInitialSupply: 1_000_000 },
+    market: { localBenchmarkSupply: 60_000, localInitialSupply: 100_000, globalBenchmarkSupply: 600_000, globalInitialSupply: 1_000_000, logisticsMultiplier: 1, valueDensityMultiplier: 0.9 },
   },
   [ResourceType.Bread]: {
     name: 'Bread', icon: '🍞',
-    market: { localBenchmarkSupply: 90_000, localInitialSupply: 50_000, globalBenchmarkSupply: 900_000, globalInitialSupply: 500_000 },
+    market: { localBenchmarkSupply: 90_000, localInitialSupply: 50_000, globalBenchmarkSupply: 900_000, globalInitialSupply: 500_000, logisticsMultiplier: 0.5, valueDensityMultiplier: 1.1 },
   },
   [ResourceType.Water]: {
     name: 'Water', icon: '💧',
-    market: { localBenchmarkSupply: 5_000, localInitialSupply: 100_000, globalBenchmarkSupply: 50_000, globalInitialSupply: 1_000_000 },
+    market: { localBenchmarkSupply: 5_000, localInitialSupply: 100_000, globalBenchmarkSupply: 50_000, globalInitialSupply: 1_000_000, logisticsMultiplier: 0.6, valueDensityMultiplier: 0.7 },
   },
   [ResourceType.Electricity]: {
     name: 'Electricity', icon: '⚡',
-    market: { localBenchmarkSupply: 12_500, localInitialSupply: 50_000, globalBenchmarkSupply: 125_000, globalInitialSupply: 500_000 },
+    market: { localBenchmarkSupply: 12_500, localInitialSupply: 50_000, globalBenchmarkSupply: 125_000, globalInitialSupply: 500_000, logisticsMultiplier: 1.5, valueDensityMultiplier: 1 },
   },
   [ResourceType.Sugar]: {
     name: 'Sugar', icon: '🍬',
-    market: { localBenchmarkSupply: 40_000, localInitialSupply: 100_000, globalBenchmarkSupply: 400_000, globalInitialSupply: 1_000_000 },
+    market: { localBenchmarkSupply: 40_000, localInitialSupply: 100_000, globalBenchmarkSupply: 400_000, globalInitialSupply: 1_000_000, logisticsMultiplier: 1, valueDensityMultiplier: 0.95 },
   },
   [ResourceType.Coal]: {
     name: 'Coal', icon: '🪨',
-    market: { localBenchmarkSupply: 6_000, localInitialSupply: 5_000, globalBenchmarkSupply: 60_000, globalInitialSupply: 50_000 },
+    market: { localBenchmarkSupply: 6_000, localInitialSupply: 5_000, globalBenchmarkSupply: 60_000, globalInitialSupply: 50_000, logisticsMultiplier: 0.8, valueDensityMultiplier: 0.9 },
   },
   [ResourceType.Iron]: {
     name: 'Iron', icon: '⛓️',
-    market: { localBenchmarkSupply: 12_500, localInitialSupply: 5_000, globalBenchmarkSupply: 125_000, globalInitialSupply: 50_000 },
+    market: { localBenchmarkSupply: 12_500, localInitialSupply: 5_000, globalBenchmarkSupply: 125_000, globalInitialSupply: 50_000, logisticsMultiplier: 0.8, valueDensityMultiplier: 1.1 },
   },
   [ResourceType.Copper]: {
     name: 'Copper', icon: '🟠',
-    market: { localBenchmarkSupply: 17_500, localInitialSupply: 5_000, globalBenchmarkSupply: 175_000, globalInitialSupply: 50_000 },
+    market: { localBenchmarkSupply: 17_500, localInitialSupply: 5_000, globalBenchmarkSupply: 175_000, globalInitialSupply: 50_000, logisticsMultiplier: 1, valueDensityMultiplier: 1.15 },
   },
   [ResourceType.Sand]: {
     name: 'Sand', icon: '🏜️',
-    market: { localBenchmarkSupply: 15_000, localInitialSupply: 100_000, globalBenchmarkSupply: 150_000, globalInitialSupply: 1_000_000 },
+    market: { localBenchmarkSupply: 15_000, localInitialSupply: 100_000, globalBenchmarkSupply: 150_000, globalInitialSupply: 1_000_000, logisticsMultiplier: 0.35, valueDensityMultiplier: 0.7 },
   },
   [ResourceType.Clay]: {
     name: 'Clay', icon: '🟫',
-    market: { localBenchmarkSupply: 30_000, localInitialSupply: 100_000, globalBenchmarkSupply: 300_000, globalInitialSupply: 1_000_000 },
+    market: { localBenchmarkSupply: 30_000, localInitialSupply: 100_000, globalBenchmarkSupply: 300_000, globalInitialSupply: 1_000_000, logisticsMultiplier: 0.5, valueDensityMultiplier: 0.75 },
   },
   [ResourceType.Stone]: {
     name: 'Stone', icon: '⛰️',
-    market: { localBenchmarkSupply: 40_000, localInitialSupply: 50_000, globalBenchmarkSupply: 400_000, globalInitialSupply: 500_000 },
+    market: { localBenchmarkSupply: 40_000, localInitialSupply: 50_000, globalBenchmarkSupply: 400_000, globalInitialSupply: 500_000, logisticsMultiplier: 0.35, valueDensityMultiplier: 0.7 },
   },
   [ResourceType.Cake]: {
     name: 'Cake', icon: '🍰',
-    market: { localBenchmarkSupply: 22_500, localInitialSupply: 5_000, globalBenchmarkSupply: 225_000, globalInitialSupply: 50_000 },
+    market: { localBenchmarkSupply: 22_500, localInitialSupply: 5_000, globalBenchmarkSupply: 225_000, globalInitialSupply: 50_000, logisticsMultiplier: 0.4, valueDensityMultiplier: 1.15 },
   },
 };
 
