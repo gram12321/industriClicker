@@ -7,8 +7,8 @@ import {
   MARKET_AUTOSELL_DEFAULT_MIN_PRICE,
   MARKET_DEFAULT_QUALITY,
 } from './marketConstants';
-import { calculateMarketDiffusionInfo, calculateMarketPrice } from './marketDiffusion';
-import type { MarketAutomation, MarketDiffusionInfo, MarketPoolEntry, MarketSnapshot, MarketTradeResult } from './marketTypes';
+import { calculateMarketDiffusionDetails, calculateMarketDiffusionInfo, calculateMarketPrice } from './marketDiffusion';
+import type { MarketAutomation, MarketDiffusionDetails, MarketDiffusionInfo, MarketPoolEntry, MarketSnapshot, MarketTradeResult } from './marketTypes';
 
 function isNonNegativeFinite(value: number): boolean { return Number.isFinite(value) && value >= 0; }
 function isPositiveFinite(value: number): boolean { return Number.isFinite(value) && value > 0; }
@@ -72,6 +72,14 @@ export class Market {
 
   getDiffusionInfo(resourceType: ResourceType): MarketDiffusionInfo {
     return calculateMarketDiffusionInfo(
+      this.local[resourceType],
+      this.global[resourceType],
+      RESOURCES[resourceType].market,
+    );
+  }
+
+  getDiffusionDetails(resourceType: ResourceType): MarketDiffusionDetails {
+    return calculateMarketDiffusionDetails(
       this.local[resourceType],
       this.global[resourceType],
       RESOURCES[resourceType].market,

@@ -14,6 +14,7 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Logistics multiplier | A resource catalogue value for physical shipping, storage, and market-network constraints on local/global diffusion. |
 | Value-density multiplier | A resource catalogue value for the economic value of moving a resource relative to its transport burden. |
 | Market urgency multiplier | A bounded, derived diffusion multiplier based on current local/global prices relative to the resource's initial price level. |
+| Market-flow diagnostics | Read-only price, balance-target, rate, and multiplier details for one resource's local/global diffusion, shown in IndustriPedia. |
 | Recipe | A named production transformation with inputs, output, and work amount. |
 | Facility | A player-owned production unit. Current types are Farm, Bakery, Small Utility Works, Mine, Quarry, Water Well, and Power Plant. |
 | Euro (€) | The company currency. |

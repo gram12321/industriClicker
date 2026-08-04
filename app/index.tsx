@@ -92,7 +92,7 @@ function GameShell({ companyName }: { companyName: string }) {
           </View>
           <View style={styles.headerActions}>
             <IconButton accessibilityLabel="Fast-forward one minute" icon={APP_ICONS.fastForward} iconColor={colors.onDark} onPress={fastForwardOneMinute} />
-            <View accessibilityLabel={`Elapsed time ${formatElapsedTime(elapsedForegroundTimeMs)}`} style={styles.headerElapsedTime}><MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.elapsedTime} size={17} /><Text style={styles.headerElapsedTimeValue}>{formatElapsedTime(elapsedForegroundTimeMs)}</Text></View>
+            <View accessibilityLabel={`Time ${formatElapsedTime(elapsedForegroundTimeMs)}`} style={styles.headerElapsedTime}><MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.elapsedTime} size={17} /><Text style={styles.headerElapsedTimeValue}>{formatElapsedTime(elapsedForegroundTimeMs)}</Text></View>
             <Menu anchor={<Pressable accessibilityLabel="Open profile menu" accessibilityRole="button" onPress={() => setIsProfileMenuOpen(true)} style={styles.profileButton}><Avatar.Text label={companyName.slice(0, 2).toUpperCase()} size={38} style={styles.avatar} /></Pressable>} onDismiss={() => setIsProfileMenuOpen(false)} visible={isProfileMenuOpen}>
               <Menu.Item leadingIcon={APP_ICONS.account} onPress={() => { setIsProfileMenuOpen(false); setActiveView('profile'); }} title="Profile" />
               <Menu.Item leadingIcon={APP_ICONS.settings} onPress={() => { setIsProfileMenuOpen(false); setActiveView('settings'); }} title="Settings" />
@@ -112,7 +112,7 @@ function GameShell({ companyName }: { companyName: string }) {
                 : activeView === 'research' ? <ResearchView finance={finance} getAvailability={getResearchAvailability} onCancel={cancelResearch} onStart={startResearch} research={research} />
                 : activeView === 'settings' ? <SettingsScreen onLogout={logout} onReplayTutorial={reopenWelcomeTutorial} />
                   : activeView === 'leaderboard' ? <LeaderboardScreen />
-                    : activeView === 'pedia' ? <IndustriPediaView />
+                    : activeView === 'pedia' ? <IndustriPediaView market={market} />
                       : <GameViewContent activeTab={activeView === 'admin' ? 'company' : activeView} buyMarketResource={buyMarketResource} companyName={companyName} customerPipelineProgress={customerPipelineProgress} facilities={facilities} finance={finance} fulfillSalesContract={fulfillSalesContract} inventory={inventory} market={market} maximumOpenContracts={maximumOpenContracts} openConstructionYard={() => setIsConstructionYardOpen(true)} rejectSalesContract={rejectSalesContract} requestFacilityDestruction={setPendingDestruction} salesContracts={salesContracts} sellMarketResource={sellMarketResource} setFacilityRecipe={setFacilityRecipe} setFacilityWorkers={setFacilityWorkers} setMarketAutomation={setMarketAutomation} upgradeFacility={upgradeFacility} />}
         </ScrollView>
         <View style={styles.bottomNavigation}>{[...tabs.slice(0, 3), salesTab, researchTab, ...tabs.slice(3)].map((tab) => <BottomNavigationItem active={activeView === tab.key} key={tab.key} label={tab.label} onPress={() => setActiveView(tab.key)} symbol={tab.symbol} />)}</View>

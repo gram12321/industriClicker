@@ -25,6 +25,7 @@ Industri Clicker is a single-player, mobile-first industrial clicker for native 
 - Speed and Output upgrades improve a facility independently. Staffing is the first efficiency factor; broader workforce systems are deferred.
 - Production progresses only while the app is foregrounded. The temporary one-minute fast-forward follows the same rule; offline progression is not yet approved.
 - The local market is player-facing; the global market is a device-local reservoir that supplies price diffusion. Sales contracts lock a global-price offer with a 20% premium and deposit fulfilled goods into that reservoir.
+- IndustriPedia includes a portrait-first Market Flow reference. It explains one selected resource's live local/global prices, direction, next correction, balance targets, factors, and safeguards through compact cards and collapsed details rather than desktop tooltips.
 - A player can create device-local profiles and multiple independently saved companies. This is local selection, not an online account or authentication system.
 - The first company setup offers the single `Standard start` condition. Additional starting conditions and any theme system require an approved design decision.
 
