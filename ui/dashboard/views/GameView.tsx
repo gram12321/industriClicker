@@ -63,7 +63,7 @@ export function GameViewContent({
     case 'company': return <CompanyView companyName={companyName} />;
     case 'inventory': return <InventoryView inventory={inventory} />;
     case 'market': return <MarketView buyMarketResource={buyMarketResource} finance={finance} inventory={inventory} market={market} sellMarketResource={sellMarketResource} setMarketAutomation={setMarketAutomation} />;
-    case 'production': return <ProductionView facilities={facilities} finance={finance} inventory={inventory} market={market} openConstructionYard={openConstructionYard} requestFacilityDestruction={requestFacilityDestruction} setFacilityProductionActive={setFacilityProductionActive} setFacilityRecipe={setFacilityRecipe} setFacilityWorkers={setFacilityWorkers} upgradeFacility={upgradeFacility} />;
+    case 'production': return <ProductionView buyMarketResource={buyMarketResource} facilities={facilities} finance={finance} inventory={inventory} market={market} openConstructionYard={openConstructionYard} requestFacilityDestruction={requestFacilityDestruction} setFacilityProductionActive={setFacilityProductionActive} setFacilityRecipe={setFacilityRecipe} setFacilityWorkers={setFacilityWorkers} setMarketAutomation={setMarketAutomation} upgradeFacility={upgradeFacility} />;
     case 'sales': return <SalesView customerPipelineProgress={customerPipelineProgress} fulfillSalesContract={fulfillSalesContract} inventory={inventory} maximumOpenContracts={maximumOpenContracts} rejectSalesContract={rejectSalesContract} salesContracts={salesContracts} />;
     case 'finance': return <FinanceView finance={finance} />;
   }
