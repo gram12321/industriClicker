@@ -52,6 +52,11 @@ export const APP_ICONS = {
   marketTrendUp: 'arrow-up',
   close: 'close',
   speed: 'trending-up',
+  output: 'package-variant',
+  staffing: 'account-group-outline',
+  efficiency: 'gauge',
+  pause: 'pause',
+  resume: 'play',
   work: 'progress-clock',
 } as const;
 

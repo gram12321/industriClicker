@@ -106,10 +106,12 @@ export class Facility {
     this.outputUpgradeLevel += 1;
   }
 
-  getProductionStatus(inventory: Inventory): 'not-started' | 'missing-inputs' | 'producing' {
-    if (!this.active || !this.activeRecipeName) {
+  getProductionStatus(inventory: Inventory): 'not-started' | 'paused' | 'missing-inputs' | 'producing' {
+    if (!this.activeRecipeName) {
       return 'not-started';
     }
+
+    if (!this.active) return 'paused';
 
     const recipe = getRecipe(this.activeRecipeName);
     const isAtCycleStart = this.getRecipeProgress(recipe.name) === 0;
@@ -140,6 +142,12 @@ export class Facility {
 
     this.activeRecipeName = recipeName;
     this.active = true;
+    return true;
+  }
+
+  setProductionActive(active: boolean): boolean {
+    if (!this.activeRecipeName) return false;
+    this.active = active;
     return true;
   }
 

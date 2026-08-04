@@ -34,6 +34,7 @@ export function GameViewContent({
   requestFacilityDestruction,
   salesContracts,
   setFacilityRecipe,
+  setFacilityProductionActive,
   setFacilityWorkers,
   upgradeFacility,
 }: {
@@ -54,6 +55,7 @@ export function GameViewContent({
   requestFacilityDestruction: (facilityType: FacilityType) => void;
   salesContracts: SalesContracts;
   setFacilityRecipe: (facilityType: FacilityType, recipeName: Recipe['name'] | null) => boolean;
+  setFacilityProductionActive: (facilityType: FacilityType, active: boolean) => boolean;
   setFacilityWorkers: (facilityType: FacilityType, workerCount: number) => boolean;
   upgradeFacility: (facilityType: FacilityType, upgradeKind: FacilityUpgradeKind) => boolean;
 }) {
@@ -61,7 +63,7 @@ export function GameViewContent({
     case 'company': return <CompanyView companyName={companyName} />;
     case 'inventory': return <InventoryView inventory={inventory} />;
     case 'market': return <MarketView buyMarketResource={buyMarketResource} finance={finance} inventory={inventory} market={market} sellMarketResource={sellMarketResource} setMarketAutomation={setMarketAutomation} />;
-    case 'production': return <ProductionView facilities={facilities} finance={finance} inventory={inventory} openConstructionYard={openConstructionYard} requestFacilityDestruction={requestFacilityDestruction} setFacilityRecipe={setFacilityRecipe} setFacilityWorkers={setFacilityWorkers} upgradeFacility={upgradeFacility} />;
+    case 'production': return <ProductionView facilities={facilities} finance={finance} inventory={inventory} market={market} openConstructionYard={openConstructionYard} requestFacilityDestruction={requestFacilityDestruction} setFacilityProductionActive={setFacilityProductionActive} setFacilityRecipe={setFacilityRecipe} setFacilityWorkers={setFacilityWorkers} upgradeFacility={upgradeFacility} />;
     case 'sales': return <SalesView customerPipelineProgress={customerPipelineProgress} fulfillSalesContract={fulfillSalesContract} inventory={inventory} maximumOpenContracts={maximumOpenContracts} rejectSalesContract={rejectSalesContract} salesContracts={salesContracts} />;
     case 'finance': return <FinanceView finance={finance} />;
   }

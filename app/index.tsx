@@ -52,6 +52,7 @@ function GameShell({ companyName }: { companyName: string }) {
   const buyMissingConstructionMaterials = useGameStore((state) => state.buyMissingConstructionMaterials);
   const destroyFacility = useGameStore((state) => state.destroyFacility);
   const setFacilityRecipe = useGameStore((state) => state.setFacilityRecipe);
+  const setFacilityProductionActive = useGameStore((state) => state.setFacilityProductionActive);
   const setFacilityWorkers = useGameStore((state) => state.setFacilityWorkers);
   const upgradeFacility = useGameStore((state) => state.upgradeFacility);
   const fastForwardOneMinute = useGameStore((state) => state.fastForwardOneMinute);
@@ -114,7 +115,7 @@ function GameShell({ companyName }: { companyName: string }) {
                 : activeView === 'settings' ? <SettingsScreen onLogout={logout} onReplayTutorial={reopenWelcomeTutorial} />
                   : activeView === 'leaderboard' ? <LeaderboardScreen />
                     : activeView === 'pedia' ? <IndustriPediaView market={market} />
-                      : <GameViewContent activeTab={activeView === 'admin' ? 'company' : activeView} buyMarketResource={buyMarketResource} companyName={companyName} customerPipelineProgress={customerPipelineProgress} facilities={facilities} finance={finance} fulfillSalesContract={fulfillSalesContract} inventory={inventory} market={market} maximumOpenContracts={maximumOpenContracts} openConstructionYard={() => setIsConstructionYardOpen(true)} rejectSalesContract={rejectSalesContract} requestFacilityDestruction={setPendingDestruction} salesContracts={salesContracts} sellMarketResource={sellMarketResource} setFacilityRecipe={setFacilityRecipe} setFacilityWorkers={setFacilityWorkers} setMarketAutomation={setMarketAutomation} upgradeFacility={upgradeFacility} />}
+                      : <GameViewContent activeTab={activeView === 'admin' ? 'company' : activeView} buyMarketResource={buyMarketResource} companyName={companyName} customerPipelineProgress={customerPipelineProgress} facilities={facilities} finance={finance} fulfillSalesContract={fulfillSalesContract} inventory={inventory} market={market} maximumOpenContracts={maximumOpenContracts} openConstructionYard={() => setIsConstructionYardOpen(true)} rejectSalesContract={rejectSalesContract} requestFacilityDestruction={setPendingDestruction} salesContracts={salesContracts} sellMarketResource={sellMarketResource} setFacilityProductionActive={setFacilityProductionActive} setFacilityRecipe={setFacilityRecipe} setFacilityWorkers={setFacilityWorkers} setMarketAutomation={setMarketAutomation} upgradeFacility={upgradeFacility} />}
         </ScrollView>
         <View style={styles.bottomNavigation}>{[...tabs.slice(0, 3), salesTab, researchTab, ...tabs.slice(3)].map((tab) => <BottomNavigationItem active={activeView === tab.key} key={tab.key} label={tab.label} onPress={() => setActiveView(tab.key)} symbol={tab.symbol} />)}</View>
       </View>

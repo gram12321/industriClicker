@@ -61,6 +61,7 @@ type GameState = {
   buildFacility: (facilityType: FacilityType) => boolean;
   destroyFacility: (facilityType: FacilityType) => boolean;
   setFacilityRecipe: (facilityType: FacilityType, recipeName: RecipeName | null) => boolean;
+  setFacilityProductionActive: (facilityType: FacilityType, active: boolean) => boolean;
   setFacilityWorkers: (facilityType: FacilityType, workerCount: number) => boolean;
   upgradeFacility: (facilityType: FacilityType, upgradeKind: FacilityUpgradeKind) => boolean;
   advanceGameTime: (elapsedMilliseconds: number) => number;
@@ -340,6 +341,18 @@ export const useGameStore = create<GameState>((set, get) => {
     const facility = facilities.get(facilityType);
 
     if (!facility || !facility.setActiveRecipe(recipeName)) {
+      return false;
+    }
+
+    set({ facilities });
+    return true;
+  },
+  setFacilityProductionActive: (facilityType, active) => {
+    get().advanceRealtime(Date.now());
+    const facilities = get().facilities.clone();
+    const facility = facilities.get(facilityType);
+
+    if (!facility || !facility.setProductionActive(active)) {
       return false;
     }
 
