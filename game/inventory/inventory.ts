@@ -1,5 +1,4 @@
-import { ResourceType } from '../resources/resourceTypes';
-import { RESOURCE_TYPES } from '../resources/resourceConstants';
+import { RESOURCE_TYPES, type ResourceType } from '@/game/resources';
 import { INVENTORY_DEFAULT_RESOURCE_QUALITY } from './inventoryConstants';
 
 /** Quantity and quality are owned together for one player-held resource. */

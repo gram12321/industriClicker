@@ -3,10 +3,10 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { Avatar, Button, Card, Divider, List, Portal, Dialog, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { STARTING_CONDITIONS, useCompanySessionStore } from '@/game';
+import { STARTING_CONDITIONS, useCompanySessionStore } from '@/game/company';
 import { colors } from '@/theme';
 import { APP_ICONS } from '@/icons';
-import { DocumentationDialog, type DocumentationKind } from '../../components/DocumentationDialog';
+import { DocumentationDialog, type DocumentationKind } from '@/ui/dashboard/components';
 
 export function LoginView() {
   const [playerName, setPlayerName] = useState('');

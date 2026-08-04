@@ -1,18 +1,15 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Card, List, ProgressBar, Text } from 'react-native-paper';
-import type { AchievementLedger } from '@/game/achievements/achievement';
-import { ACHIEVEMENT_CATEGORIES, type AchievementCategory } from '@/game/achievements/achievementConstants';
-import { createAchievementEvaluationContext, filterAchievementSeriesForDisplay, getAchievementDisplay } from '@/game/achievements/achievementEvaluator';
-import type { ProductionStatistics } from '@/game/achievements/productionStatistics';
-import type { FacilityCollection } from '@/game/facilities/facilityCollection';
-import type { Finance } from '@/game/finance/finance';
-import type { PrestigeLedger } from '@/game/prestige/prestige';
-import type { SalesContracts } from '@/game/sales/salesContracts';
+import type { AchievementLedger, AchievementCategory, ProductionStatistics } from '@/game/achievements';
+import { ACHIEVEMENT_CATEGORIES, createAchievementEvaluationContext, filterAchievementSeriesForDisplay, getAchievementDisplay } from '@/game/achievements';
+import type { FacilityCollection } from '@/game/facilities';
+import type { Finance } from '@/game/finance';
+import type { PrestigeLedger } from '@/game/prestige';
+import type { SalesContracts } from '@/game/sales';
 import { colors } from '@/theme';
 import { formatNumber, getAchievementMasteryName } from '@/utils';
-import { SectionHeading } from '../../components/GameViewComponents';
-import { styles as dashboardStyles } from '../../helpers/dashboard.styles';
+import { SectionHeading, styles as dashboardStyles } from '@/ui/dashboard/shared';
 
 const CATEGORY_LABELS: Record<AchievementCategory, string> = {
   facilities: 'Facilities',

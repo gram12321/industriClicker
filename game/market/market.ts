@@ -1,5 +1,4 @@
-import { RESOURCES, RESOURCE_TYPES } from '../resources/resourceConstants';
-import type { ResourceType } from '../resources/resourceTypes';
+import { RESOURCES, RESOURCE_TYPES, type ResourceType } from '@/game/resources';
 import {
   MARKET_AUTOBUY_DEFAULT_MAX_PRICE_MULTIPLIER,
   MARKET_AUTOSELL_DEFAULT_MAX_PER_MINUTE,

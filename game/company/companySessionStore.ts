@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { isGameSnapshot } from '@/game/core/state/gameSnapshot';
-import { createStartingGameSnapshot, useGameStore } from '@/game/core/stores/gameStore';
+import { isGameSnapshot } from '@/game/core/state';
+import { createStartingGameSnapshot, useGameStore } from '@/game/core/stores';
 import { clearLocalData, createCompanyWithSave, createLocalProfile, deleteCompany, listCompaniesForProfile, listLocalProfiles, loadCompanySnapshot, loadCompanyTutorialState, loadDeviceSession, saveCompanySnapshot, saveCompanyTutorialState, saveDeviceSession } from './companyDatabase';
 import { STARTING_CONDITIONS } from './companyConstants';
 import { createLocalId, DEFAULT_COMPANY_TUTORIAL_STATE, EMPTY_DEVICE_SESSION, normalizeDisplayName, type CompanyTutorialState, type LocalCompany, type LocalPlayerProfile, type StartingConditionId, validateDisplayName } from './companyTypes';

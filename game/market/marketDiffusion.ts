@@ -1,4 +1,4 @@
-import type { ResourceMarketDefinition } from '../resources/resourceTypes';
+import type { ResourceMarketDefinition } from '@/game/resources';
 import { MARKET_DIFFUSION_CURVATURE, MARKET_DIFFUSION_DIVISOR, MARKET_DIFFUSION_MAX_EQUILIBRIUM_CORRECTION, MARKET_DIFFUSION_MAX_URGENCY_MULTIPLIER, MARKET_DIFFUSION_MIN_URGENCY_MULTIPLIER, MARKET_DIFFUSION_URGENCY_ELASTICITY } from './marketConstants';
 import type { MarketDiffusionDetails, MarketDiffusionInfo, MarketPoolEntry } from './marketTypes';
 

@@ -1,8 +1,7 @@
 import { Card, Text } from 'react-native-paper';
-import type { Finance } from '@/game/finance/finance';
+import type { Finance } from '@/game/finance';
 import { formatCurrency } from '@/utils';
-import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
-import { DetailRow, SectionHeading, TransactionRow } from '../components/GameViewComponents';
+import { DetailRow, SectionHeading, TransactionRow, styles } from '@/ui/dashboard/shared';
 
 export function FinanceView({ finance }: { finance: Finance }) {
   const recentTransactions = finance.getTransactions().slice(-3).reverse();

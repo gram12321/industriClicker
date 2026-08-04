@@ -1,4 +1,4 @@
-import type { NormalizationControlPoint } from '../core/math/scaling';
+import type { NormalizationControlPoint } from '@/game/core/math';
 
 /** The number of unfulfilled contracts treated as the probability curve's theoretical maximum. */
 export const SALES_CONTRACT_UNFULFILLED_THEORETICAL_MAXIMUM = 1_000_000;

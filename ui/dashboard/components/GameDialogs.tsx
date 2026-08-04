@@ -1,18 +1,14 @@
 import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { Button, Card, Dialog, List, Portal, Text } from 'react-native-paper';
 import { colors } from '@/theme';
-import type { Finance } from '@/game/finance/finance';
-import type { FacilityCollection } from '@/game/facilities/facilityCollection';
-import { FACILITY_TYPES, getFacilityDefinition } from '@/game/facilities/facilityConstants';
-import type { FacilityType } from '@/game/facilities/facilityTypes';
-import type { Inventory } from '@/game/inventory/inventory';
+import type { Finance } from '@/game/finance';
+import type { FacilityCollection, FacilityType } from '@/game/facilities';
+import { FACILITY_TYPES, getFacilityDefinition } from '@/game/facilities';
+import type { Inventory } from '@/game/inventory';
 import type { Market } from '@/game/market';
-import { getResourceIcon } from '@/game/resources/resourceConstants';
-import { ResourceType } from '@/game/resources/resourceTypes';
+import { ResourceType, getResourceIcon } from '@/game/resources';
 import { clamp, formatCurrency, formatNumber } from '@/utils';
-import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
-import { formatRecipeInputs, formatRecipeName, formatRecipeOutput } from '../helpers/recipeFormatters';
-import { DetailRow, WorkMetric } from './GameViewComponents';
+import { DetailRow, WorkMetric, formatRecipeInputs, formatRecipeName, formatRecipeOutput, styles } from '@/ui/dashboard/shared';
 import { APP_ICONS } from '@/icons';
 
 export function GameDialogs(props: {

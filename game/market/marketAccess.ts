@@ -1,4 +1,4 @@
-import type { ResourceType } from '../resources/resourceTypes';
+import type { ResourceType } from '@/game/resources';
 
 /** Command-facing seam for future achievement, research, and facility trade gates. */
 export function canBuyMarketResource(_resourceType: ResourceType): boolean { return true; }

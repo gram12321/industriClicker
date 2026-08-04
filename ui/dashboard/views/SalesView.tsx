@@ -2,13 +2,12 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { Button, Card, IconButton, ProgressBar, Text } from 'react-native-paper';
 import { colors } from '@/theme';
-import type { Inventory } from '@/game/inventory/inventory';
-import { calculateSalesContractEstimatedWaitMinutes, calculateSalesContractOfferChance, type SalesContracts } from '@/game/sales/salesContracts';
-import { getResource, getResourceIcon } from '@/game/resources/resourceConstants';
+import type { Inventory } from '@/game/inventory';
+import { calculateSalesContractEstimatedWaitMinutes, calculateSalesContractOfferChance, type SalesContracts } from '@/game/sales';
+import { getResource, getResourceIcon } from '@/game/resources';
 import { formatCurrency, formatDate, formatNumber } from '@/utils';
-import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS } from '@/icons';
-import { DetailRow, SectionHeading } from '../components/GameViewComponents';
+import { DetailRow, SectionHeading, styles } from '@/ui/dashboard/shared';
 
 export function SalesView({ customerPipelineProgress, fulfillSalesContract, inventory, maximumOpenContracts, rejectSalesContract, salesContracts }: { customerPipelineProgress: number; fulfillSalesContract: (id: string) => boolean; inventory: Inventory; maximumOpenContracts: number; rejectSalesContract: (id: string) => boolean; salesContracts: SalesContracts }) {
   const [salesList, setSalesList] = useState<'open' | 'closed'>('open');

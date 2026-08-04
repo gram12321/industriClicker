@@ -1,6 +1,6 @@
 import type { FacilityCollection } from './facilityCollection';
 import type { ProductionOutput } from './facility';
-import type { Inventory } from '../inventory/inventory';
+import type { Inventory } from '@/game/inventory';
 import { FACILITY_PRODUCTION_ORDER } from './facilityConstants';
 
 /** Applies one or more already-approved work units to all active facilities. */

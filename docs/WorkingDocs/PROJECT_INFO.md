@@ -45,6 +45,12 @@ theme.ts              Shared Paper theme and visual tokens
 - `npm run web` — local browser development preview.
 - `npm run typecheck` — TypeScript validation without emitting files.
 
+## Android Distribution
+
+- `eas.json` defines an internal `preview` profile that creates an APK for direct Android-device installation without Expo Go or a development server.
+- Run `npx eas-cli@latest build --platform android --profile preview` to create the APK through EAS Build. The first run signs in to Expo and associates the project with an Expo account.
+- The current Android application ID is the provisional `com.industriclicker.facilities`; it must be kept stable after the first Google Play upload.
+
 ## Documentation
 
 - [CONTEXT.md](CONTEXT.md): terminology.

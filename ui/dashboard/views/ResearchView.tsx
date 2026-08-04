@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, ProgressBar, Text } from 'react-native-paper';
-import type { Finance } from '@/game/finance/finance';
+import type { Finance } from '@/game/finance';
 import { RESEARCH_PROJECTS, type ResearchChainId, type ResearchLedger, type ResearchProjectDefinition, type ResearchProjectId } from '@/game/research';
 import type { GateRequirement } from '@/game/gates';
-import type { ResearchAvailability } from '@/game/core/stores/gameStore';
+import type { ResearchAvailability } from '@/game/core/stores';
 import { colors } from '@/theme';
 import { formatCurrency, formatElapsedTime } from '@/utils';
-import { SectionHeading } from '../components/GameViewComponents';
-import { styles as dashboardStyles } from '../helpers/dashboard.styles';
+import { SectionHeading, styles as dashboardStyles } from '@/ui/dashboard/shared';
 
 const CHAIN_DETAILS: Record<ResearchChainId, { eyebrow: string; icon: string; title: string; subtitle: string }> = {
   'capital-grants': { eyebrow: 'CAPITAL', icon: 'bank-outline', title: 'Capital grants', subtitle: 'Fund staged company investment with one-time research grants.' },

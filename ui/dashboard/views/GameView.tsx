@@ -1,12 +1,12 @@
-import type { Finance } from '@/game/finance/finance';
+import type { Finance } from '@/game/finance';
 import type { FacilityCollection } from '@/game/facilities/facilityCollection';
 import type { FacilityType } from '@/game/facilities/facilityTypes';
 import type { FacilityUpgradeKind } from '@/game/facilities/facilityUpgrades';
-import type { Inventory } from '@/game/inventory/inventory';
+import type { Inventory } from '@/game/inventory';
 import type { Market, MarketAutomation } from '@/game/market';
 import type { ResourceType } from '@/game/resources/resourceTypes';
 import type { Recipe } from '@/game/recipes/recipeTypes';
-import type { SalesContracts } from '@/game/sales/salesContracts';
+import type { SalesContracts } from '@/game/sales';
 import { CompanyView } from './CompanyView';
 import { FinanceView } from './FinanceView';
 import { InventoryView } from './InventoryView';

@@ -1,12 +1,11 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { View } from 'react-native';
 import { Text } from 'react-native-paper';
-import { getResource, getResourceIcon, RESOURCE_TYPES } from '@/game/resources/resourceConstants';
-import type { Inventory } from '@/game/inventory/inventory';
+import { getResource, getResourceIcon, RESOURCE_TYPES } from '@/game/resources';
+import type { Inventory } from '@/game/inventory';
 import { APP_ICONS } from '@/icons';
 import { formatNumber } from '@/utils';
-import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
-import { SectionHeading } from '../components/GameViewComponents';
+import { SectionHeading, styles } from '@/ui/dashboard/shared';
 
 export function InventoryView({ inventory }: { inventory: Inventory }) {
   return (

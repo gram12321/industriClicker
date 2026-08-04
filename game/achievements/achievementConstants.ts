@@ -1,5 +1,4 @@
-import type { ResourceType } from '../resources/resourceTypes';
-import { RESOURCES, RESOURCE_TYPES } from '../resources/resourceConstants';
+import { RESOURCES, RESOURCE_TYPES, type ResourceType } from '@/game/resources';
 
 export const ACHIEVEMENT_CATEGORIES = [
   'facilities',

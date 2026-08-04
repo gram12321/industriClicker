@@ -1,5 +1,5 @@
-import type { ResourceType } from '../resources/resourceTypes';
-import { calculateAsymmetricalScaler01, normalizeWithControlPoints01 } from '../core/math/scaling';
+import type { ResourceType } from '@/game/resources';
+import { calculateAsymmetricalScaler01, normalizeWithControlPoints01 } from '@/game/core/math';
 import { SALES_CONTRACT_MAX_REQUEST_QUANTITY, SALES_CONTRACT_MIN_REQUEST_QUANTITY, SALES_CONTRACT_UNFULFILLED_CHANCE_CONTROL_POINTS } from './salesConstants';
 export type SalesContractStatus = 'offered' | 'fulfilled' | 'rejected';
 

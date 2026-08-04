@@ -1,11 +1,11 @@
 import { View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Surface, Text } from 'react-native-paper';
-import type { FinanceTransaction } from '@/game/finance/finance';
+import type { FinanceTransaction } from '@/game/finance';
 import { formatCurrency, formatDate } from '@/utils';
-import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
+import { styles } from '@/ui/dashboard/helpers';
 import { APP_ICONS } from '@/icons';
-import { RESOURCE_TYPES, getResource, getResourceIcon } from '@/game/resources/resourceConstants';
+import { RESOURCE_TYPES, getResource, getResourceIcon } from '@/game/resources';
 
 export function SectionHeading({ eyebrow, subtitle, title }: { eyebrow: string; subtitle: string; title: string }) {
   return <View style={styles.sectionHeading}><Text style={styles.sectionEyebrow}>{eyebrow}</Text><Text variant="headlineSmall">{title}</Text><Text style={styles.sectionSubtitle}>{subtitle}</Text></View>;

@@ -38,6 +38,8 @@ npm run web
 
 The web command is a local browser preview for development and layout inspection; Android remains the product target. For the preferred native preview, run `npm run start`, keep the phone and computer on the same network, and scan the QR code from Expo Go. `npm run android` is an optional emulator shortcut when an emulator is available.
 
+To create an installable standalone Android preview, run `npx eas-cli@latest build --platform android --profile preview`, sign in to Expo when prompted, and open the resulting build link on the Android device. The `preview` profile produces an APK that does not need Expo Go or a development server. It uses the provisional Android package ID `com.industriclicker.facilities`; change this before the first Play Store upload if a different permanent identifier is required.
+
 ## Why This Stack
 
 Expo and React Native provide a native Android application rather than a browser application, while retaining TypeScript and React's component model. This gives coding agents a familiar, well-supported way to produce native mobile UI.

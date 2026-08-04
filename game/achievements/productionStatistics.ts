@@ -1,5 +1,4 @@
-import { RESOURCE_TYPES } from '../resources/resourceConstants';
-import type { ResourceType } from '../resources/resourceTypes';
+import { RESOURCE_TYPES, type ResourceType } from '@/game/resources';
 
 export type ProductionStatisticsSnapshot = {
   producedByResource: Record<ResourceType, number>;

@@ -1,6 +1,5 @@
-import { RecipeName, type RecipeInput } from '../recipes/recipeTypes';
-import type { Inventory } from '../inventory/inventory';
-import { getRecipe } from '../recipes/recipeConstants';
+import { getRecipe, type RecipeInput, type RecipeName } from '@/game/recipes';
+import type { Inventory } from '@/game/inventory';
 import { getFacilityDefinition } from './facilityConstants';
 import { FacilityType } from './facilityTypes';
 import { getOutputUpgradeMultiplier, getRequiredWorkers, getSpeedUpgradeMultiplier, getStaffingEfficiency } from './facilityUpgrades';

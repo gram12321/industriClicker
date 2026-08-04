@@ -3,12 +3,10 @@ import { View } from 'react-native';
 import { Button, Card, Dialog, Portal, Text } from 'react-native-paper';
 
 import { APP_ICONS } from '@/icons';
-import type { ResourceType } from '@/game/resources/resourceTypes';
+import type { ResourceType } from '@/game/resources';
 import { colors } from '@/theme';
-import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
-import { ContractRequestCard } from '../../components/ContractRequestCard';
-import { DeleteCompanyCard } from '../../components/DeleteCompanyCard';
-import { InventoryControlCard } from '../../components/InventoryControlCard';
+import { ContractRequestCard, DeleteCompanyCard, InventoryControlCard } from '@/ui/dashboard/components';
+import { styles } from '@/ui/dashboard/shared';
 
 export function AdminDashboard({ onClearAllLocalData, onCreateContractRequest, onDeleteCompany, onSetInventoryAmount }: {
   onClearAllLocalData: () => Promise<boolean>;

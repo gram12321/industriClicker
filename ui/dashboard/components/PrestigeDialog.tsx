@@ -1,8 +1,8 @@
 import { Fragment, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Button, Dialog, Icon, Portal, Surface, Text } from 'react-native-paper';
-import type { PrestigeEventType } from '@/game/prestige/prestige';
-import { calculatePrestigeDecayDetails, type CompanyPrestigeSummary } from '@/game/prestige/prestigeCalculator';
+import type { PrestigeEventType } from '@/game/prestige';
+import { calculatePrestigeDecayDetails, type CompanyPrestigeSummary } from '@/game/prestige';
 import { colors } from '@/theme';
 import { formatNumber, formatSigned } from '@/utils';
 

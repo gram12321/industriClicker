@@ -3,20 +3,15 @@ import { View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button, Card, IconButton, List, ProgressBar, Text, TouchableRipple } from 'react-native-paper';
 import { colors } from '@/theme';
-import type { Finance } from '@/game/finance/finance';
-import type { FacilityCollection } from '@/game/facilities/facilityCollection';
-import { getFacilityDefinition } from '@/game/facilities/facilityConstants';
-import type { FacilityType } from '@/game/facilities/facilityTypes';
-import { getFacilityUpgradeCost, type FacilityUpgradeKind } from '@/game/facilities/facilityUpgrades';
-import type { Inventory } from '@/game/inventory/inventory';
-import type { Market } from '@/game/market';
-import type { MarketAutomation } from '@/game/market';
-import type { Recipe } from '@/game/recipes/recipeTypes';
-import { getResource, getResourceIcon } from '@/game/resources/resourceConstants';
+import type { Finance } from '@/game/finance';
+import type { FacilityCollection, FacilityType, FacilityUpgradeKind } from '@/game/facilities';
+import { getFacilityDefinition, getFacilityUpgradeCost } from '@/game/facilities';
+import type { Inventory } from '@/game/inventory';
+import type { Market, MarketAutomation } from '@/game/market';
+import type { Recipe } from '@/game/recipes';
+import { getResource, getResourceIcon } from '@/game/resources';
 import { clamp, formatCurrency, formatDuration, formatNumber, formatPercent } from '@/utils';
-import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
-import { DetailRow, SectionHeading, WorkMetric } from '../components/GameViewComponents';
-import { formatRecipeName } from '../helpers/recipeFormatters';
+import { DetailRow, SectionHeading, WorkMetric, formatRecipeName, styles } from '@/ui/dashboard/shared';
 import { APP_ICONS } from '@/icons';
 
 export function ProductionView({
