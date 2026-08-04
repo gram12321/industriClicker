@@ -5,7 +5,11 @@ import type { Finance } from '@/game/finance/finance';
 import type { FacilityCollection } from '@/game/facilities/facilityCollection';
 import { FACILITY_TYPES, getFacilityDefinition } from '@/game/facilities/facilityConstants';
 import type { FacilityType } from '@/game/facilities/facilityTypes';
-import { clamp, formatCurrency } from '@/utils';
+import type { Inventory } from '@/game/inventory/inventory';
+import type { Market } from '@/game/market';
+import { getResourceIcon } from '@/game/resources/resourceConstants';
+import { ResourceType } from '@/game/resources/resourceTypes';
+import { clamp, formatCurrency, formatNumber } from '@/utils';
 import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { formatRecipeInputs, formatRecipeName, formatRecipeOutput } from '../helpers/recipeFormatters';
 import { DetailRow, WorkMetric } from './GameViewComponents';
@@ -14,31 +18,36 @@ import { APP_ICONS } from '@/icons';
 export function GameDialogs(props: {
   facilities: FacilityCollection;
   finance: Finance;
+  inventory: Inventory;
+  market: Market;
   pendingConstruction: FacilityType | null;
   pendingDestruction: FacilityType | null;
   isConstructionYardOpen: boolean;
   onCloseConstructionYard: () => void;
   onSelectFacility: (facilityType: FacilityType) => void;
   onConfirmConstruction: () => void;
+  onBuyMissingConstructionMaterials: () => void;
   onConfirmDestruction: () => void;
   onDismissConstruction: () => void;
   onDismissDestruction: () => void;
 }) {
   return <>
-    <ConstructionDialog facilities={props.facilities} facilityType={props.pendingConstruction} finance={props.finance} onConfirm={props.onConfirmConstruction} onDismiss={props.onDismissConstruction} />
-    <ConstructionYardDialog facilities={props.facilities} finance={props.finance} onDismiss={props.onCloseConstructionYard} onSelectFacility={props.onSelectFacility} visible={props.isConstructionYardOpen} />
+    <ConstructionDialog facilities={props.facilities} facilityType={props.pendingConstruction} finance={props.finance} inventory={props.inventory} market={props.market} onBuyMissingConstructionMaterials={props.onBuyMissingConstructionMaterials} onConfirm={props.onConfirmConstruction} onDismiss={props.onDismissConstruction} />
+    <ConstructionYardDialog facilities={props.facilities} finance={props.finance} inventory={props.inventory} onDismiss={props.onCloseConstructionYard} onSelectFacility={props.onSelectFacility} visible={props.isConstructionYardOpen} />
     <DestructionDialog facilityType={props.pendingDestruction} onConfirm={props.onConfirmDestruction} onDismiss={props.onDismissDestruction} />
   </>;
 }
 function ConstructionYardDialog({
   facilities,
   finance,
+  inventory,
   onDismiss,
   onSelectFacility,
   visible,
 }: {
   facilities: FacilityCollection;
   finance: Finance;
+  inventory: Inventory;
   onDismiss: () => void;
   onSelectFacility: (facilityType: FacilityType) => void;
   visible: boolean;
@@ -55,7 +64,7 @@ function ConstructionYardDialog({
             Choose an available facility. Its recipes and final cost are shown before construction.
           </Text>
           <Text style={styles.constructionYardFunds}>
-            Available funds: {formatCurrency(finance.getBalance())}
+            Available: {formatCurrency(finance.getBalance())} · {getResourceIcon(ResourceType.ConstructionMaterials)} {formatNumber(inventory.getAmount(ResourceType.ConstructionMaterials))} Construction Materials
           </Text>
           <ScrollView
             contentContainerStyle={styles.constructionYardList}
@@ -67,13 +76,11 @@ function ConstructionYardDialog({
             {FACILITY_TYPES.map((facilityType) => {
               const definition = getFacilityDefinition(facilityType);
               const isBuilt = facilities.has(facilityType);
-              const canAfford = finance.canAfford(definition.constructionCost);
-
               return (
                 <Card key={facilityType} mode="contained" style={styles.constructionYardCard}>
                   <Card.Content>
                     <List.Item
-                      description={`Construction cost: ${formatCurrency(definition.constructionCost)}`}
+                      description={`Land: ${formatCurrency(definition.landCost)} · Materials: ${getResourceIcon(ResourceType.ConstructionMaterials)} ${formatNumber(definition.constructionMaterialsCost)}`}
                       left={(props) => <List.Icon {...props} icon={definition.icon} />}
                       title={definition.name}
                       titleStyle={styles.facilityTitle}
@@ -87,11 +94,11 @@ function ConstructionYardDialog({
                   </Card.Content>
                   <Card.Actions>
                     <Button
-                      disabled={isBuilt || !canAfford}
+                      disabled={isBuilt}
                       mode="contained"
                       onPress={() => onSelectFacility(facilityType)}
                     >
-                      {isBuilt ? 'Already built' : canAfford ? 'Review construction' : 'Insufficient funds'}
+                      {isBuilt ? 'Already built' : 'Review construction'}
                     </Button>
                   </Card.Actions>
                 </Card>
@@ -111,12 +118,18 @@ function ConstructionDialog({
   facilities,
   facilityType,
   finance,
+  inventory,
+  market,
+  onBuyMissingConstructionMaterials,
   onConfirm,
   onDismiss,
 }: {
   facilities: FacilityCollection;
   facilityType: FacilityType | null;
   finance: Finance;
+  inventory: Inventory;
+  market: Market;
+  onBuyMissingConstructionMaterials: () => void;
   onConfirm: () => void;
   onDismiss: () => void;
 }) {
@@ -125,8 +138,17 @@ function ConstructionDialog({
   }
 
   const definition = getFacilityDefinition(facilityType);
-  const canConstruct = !facilities.has(facilityType) && finance.canAfford(definition.constructionCost);
-  const balanceAfterConstruction = finance.getBalance() - definition.constructionCost;
+  const canConstruct = !facilities.has(facilityType)
+    && finance.canAfford(definition.landCost)
+    && inventory.has(ResourceType.ConstructionMaterials, definition.constructionMaterialsCost);
+  const balanceAfterConstruction = finance.getBalance() - definition.landCost;
+  const materialsAfterConstruction = inventory.getAmount(ResourceType.ConstructionMaterials) - definition.constructionMaterialsCost;
+  const missingMaterials = Math.max(0, -materialsAfterConstruction);
+  const materialUnitPrice = market.getLocalPrice(ResourceType.ConstructionMaterials);
+  const materialPurchaseCost = missingMaterials * materialUnitPrice;
+  const canAutoBuyMaterials = missingMaterials > 0
+    && market.getLocalEntry(ResourceType.ConstructionMaterials).supply >= missingMaterials
+    && finance.canAfford(definition.landCost + materialPurchaseCost);
 
   return (
     <Portal>
@@ -134,11 +156,13 @@ function ConstructionDialog({
         <Dialog.Title>{`Construct ${definition.name}?`}</Dialog.Title>
         <Dialog.Content>
           <Text style={styles.dialogDescription}>
-            This confirms the construction cost before the facility is added to your company.
+            Purchase the land and supply the construction materials before the facility is added to your company.
           </Text>
           <View style={styles.dialogSummary}>
-            <DetailRow label="Construction cost" value={formatCurrency(definition.constructionCost)} />
-            <DetailRow label="Balance after construction" value={formatCurrency(balanceAfterConstruction)} />
+            <DetailRow label="Land purchase" value={formatCurrency(definition.landCost)} />
+            <DetailRow label="Construction Materials" value={`${getResourceIcon(ResourceType.ConstructionMaterials)} ${formatNumber(definition.constructionMaterialsCost)}`} />
+            <DetailRow label="Funds after purchase" value={formatCurrency(balanceAfterConstruction)} />
+            <DetailRow label="Materials after build" value={`${getResourceIcon(ResourceType.ConstructionMaterials)} ${formatNumber(materialsAfterConstruction)}`} />
           </View>
           <Text variant="titleMedium" style={styles.dialogSectionHeading}>Available recipes</Text>
           {definition.recipes.map((recipe) => (
@@ -152,6 +176,7 @@ function ConstructionDialog({
         </Dialog.Content>
         <Dialog.Actions>
           <Button onPress={onDismiss}>Cancel</Button>
+          {missingMaterials > 0 && <Button disabled={!canAutoBuyMaterials} onPress={onBuyMissingConstructionMaterials}>{`Buy ${formatNumber(missingMaterials)} materials · ${formatCurrency(materialPurchaseCost)}`}</Button>}
           <Button disabled={!canConstruct} mode="contained" onPress={onConfirm}>Confirm build</Button>
         </Dialog.Actions>
       </Dialog>
@@ -180,7 +205,7 @@ function DestructionDialog({
         <Dialog.Title>{`Destroy ${definition.name}?`}</Dialog.Title>
         <Dialog.Content>
           <Text style={styles.dialogDescription}>
-            This permanently removes the facility from your company. Construction funds are not refunded.
+            This permanently removes the facility from your company. Land and construction materials are not refunded.
           </Text>
         </Dialog.Content>
         <Dialog.Actions>

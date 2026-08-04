@@ -49,6 +49,7 @@ function GameShell({ companyName }: { companyName: string }) {
   const lastProcessedAtMs = useGameStore((state) => state.lastProcessedAtMs);
   const customerPipelineProgress = useGameStore((state) => state.customerPipelineProgress);
   const buildFacility = useGameStore((state) => state.buildFacility);
+  const buyMissingConstructionMaterials = useGameStore((state) => state.buyMissingConstructionMaterials);
   const destroyFacility = useGameStore((state) => state.destroyFacility);
   const setFacilityRecipe = useGameStore((state) => state.setFacilityRecipe);
   const setFacilityWorkers = useGameStore((state) => state.setFacilityWorkers);
@@ -117,7 +118,7 @@ function GameShell({ companyName }: { companyName: string }) {
         </ScrollView>
         <View style={styles.bottomNavigation}>{[...tabs.slice(0, 3), salesTab, researchTab, ...tabs.slice(3)].map((tab) => <BottomNavigationItem active={activeView === tab.key} key={tab.key} label={tab.label} onPress={() => setActiveView(tab.key)} symbol={tab.symbol} />)}</View>
       </View>
-      <GameDialogs facilities={facilities} finance={finance} isConstructionYardOpen={isConstructionYardOpen} onCloseConstructionYard={() => setIsConstructionYardOpen(false)} onConfirmConstruction={() => { if (pendingConstruction && buildFacility(pendingConstruction)) setPendingConstruction(null); }} onConfirmDestruction={() => { if (pendingDestruction && destroyFacility(pendingDestruction)) setPendingDestruction(null); }} onDismissConstruction={() => setPendingConstruction(null)} onDismissDestruction={() => setPendingDestruction(null)} onSelectFacility={(facilityType) => { setIsConstructionYardOpen(false); setPendingConstruction(facilityType); }} pendingConstruction={pendingConstruction} pendingDestruction={pendingDestruction} />
+      <GameDialogs facilities={facilities} finance={finance} inventory={inventory} isConstructionYardOpen={isConstructionYardOpen} market={market} onBuyMissingConstructionMaterials={() => { if (pendingConstruction) buyMissingConstructionMaterials(pendingConstruction); }} onCloseConstructionYard={() => setIsConstructionYardOpen(false)} onConfirmConstruction={() => { if (pendingConstruction && buildFacility(pendingConstruction)) setPendingConstruction(null); }} onConfirmDestruction={() => { if (pendingDestruction && destroyFacility(pendingDestruction)) setPendingDestruction(null); }} onDismissConstruction={() => setPendingConstruction(null)} onDismissDestruction={() => setPendingDestruction(null)} onSelectFacility={(facilityType) => { setIsConstructionYardOpen(false); setPendingConstruction(facilityType); }} pendingConstruction={pendingConstruction} pendingDestruction={pendingDestruction} />
       <PrestigeDialog currentGameTimeMs={lastProcessedAtMs} isOpen={isPrestigeOpen} onClose={() => setIsPrestigeOpen(false)} summary={prestigeSummary} />
       <TutorialGuideDialog onComplete={() => { void completeWelcomeTutorial(); }} visible={isTutorialOpen} />
     </SafeAreaView>

@@ -46,8 +46,8 @@ export function ProductionView({
         const requiredWorkers = facility.getRequiredWorkers();
         const speedUpgradeLevel = facility.getSpeedUpgradeLevel();
         const outputUpgradeLevel = facility.getOutputUpgradeLevel();
-        const speedUpgradeCost = getFacilityUpgradeCost(definition.constructionCost, speedUpgradeLevel);
-        const outputUpgradeCost = getFacilityUpgradeCost(definition.constructionCost, outputUpgradeLevel);
+        const speedUpgradeCost = getFacilityUpgradeCost(definition.upgradeCost, speedUpgradeLevel);
+        const outputUpgradeCost = getFacilityUpgradeCost(definition.upgradeCost, outputUpgradeLevel);
         const isExpanded = collapsedFacilities[facilityType] !== true;
 
         return (

@@ -52,7 +52,7 @@ Recipes consume inputs at cycle start; if inputs are absent, the facility stalls
 
 For `levels = speedLevel + outputLevel`:
 
-- Upgrade cost: `ceil(constructionCost × 1.5^currentLevel)`.
+- Upgrade cost: `ceil(upgradeCost × 1.5^currentLevel)`.
 - Speed multiplier: `1 + 0.8 × (1 - e^(-0.22 × speedLevel))`.
 - Output multiplier: `1 + (1 - e^(-0.18 × outputLevel))`.
 - Required workers: `baseWorkers + levels + ceil(baseWorkers × 1.15^levels - baseWorkers)`.
@@ -71,7 +71,8 @@ Levels and worker counts are non-negative integers. A zero-worker requirement ha
 
 ## Finance, Prestige, and Sales
 
-- Construction requires funds and applies `newBalance = currentBalance - constructionCost`; balance cannot become negative.
+- Construction requires both land funds and Construction Materials. It applies `newBalance = currentBalance - landCost` and consumes `constructionMaterialsCost` from inventory; neither balance nor materials can become negative.
+- A construction confirmation may buy only its missing Construction Materials from the local market at the current unit price. The purchase is allowed only when local supply and funds cover both the materials and the pending land cost.
 - Prestige is informational. Its total is derived from a permanent balance event and decaying fulfilled-sales events using foreground logical time; background time does not decay it.
 - Achievements are evaluated from post-command state. Facility/finance changes check their categories immediately; completed production updates lifetime total and per-resource output before production checks; fulfilled sales check sales, finance, and prestige after their normal prestige event; time checks run after completed foreground minutes.
 - An achievement unlock is durable and creates one source-keyed `achievement:<id>` prestige event. The evaluator sees normal post-command prestige but not prestige rewards from other unlocks in that same pass, so prestige tiers cannot recursively chain.

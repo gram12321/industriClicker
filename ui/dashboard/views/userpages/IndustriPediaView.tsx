@@ -162,7 +162,7 @@ function BuildingsSection() {
     {FACILITY_TYPES.map((facilityType) => {
       const facility = getFacilityDefinition(facilityType);
       return <Card key={facilityType} mode="contained" style={styles.featureCard}><Card.Content><List.Item
-        description={`${formatCurrency(facility.constructionCost)} construction · ${facility.baseWorkers} base workers`}
+        description={`Land: ${formatCurrency(facility.landCost)} · Construction Materials: ${formatNumber(facility.constructionMaterialsCost)} · ${facility.baseWorkers} base workers`}
         left={(props) => <List.Icon {...props} icon={facility.icon} />}
         title={facility.name}
       />
@@ -189,10 +189,10 @@ function RecipesSection() {
 
 function FinanceSection() {
   return <>
-    <SectionHeading eyebrow="FINANCE" title="Company funds" subtitle="Euros fund construction and upgrades, and are earned by fulfilling customer contracts." />
+    <SectionHeading eyebrow="FINANCE" title="Company funds" subtitle="Euros purchase facility land and fund upgrades; customer contracts earn them." />
     <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
       <Text style={styles.cardKicker}>STARTING CAPITAL</Text><Text style={styles.balanceValue}>{formatCurrency(FINANCE_INITIAL_BALANCE)}</Text>
-      <Text style={styles.cardDescription}>Facilities can only be constructed when the full construction cost is available. Destroying a facility does not refund its cost.</Text>
+      <Text style={styles.cardDescription}>A facility needs both its land purchase and Construction Materials. Destroying a facility refunds neither.</Text>
     </Card.Content></Card>
     <Card mode="contained" style={styles.featureCard}><Card.Content><List.Item description="Each fulfilled unit pays €1. The requested quantity must be fully available in inventory before a contract can be supplied." left={(props) => <List.Icon {...props} icon={APP_ICONS.contracts} />} title="Customer contracts" /><List.Item description="Each facility has separate Speed and Output upgrades. The next level costs more than the previous one." left={(props) => <List.Icon {...props} icon={APP_ICONS.speed} />} title="Facility upgrades" /><List.Item description="Every accepted cost and income is recorded in the Finance activity list." left={(props) => <List.Icon {...props} icon={APP_ICONS.financeHistory} />} title="Transaction history" /></Card.Content></Card>
   </>;

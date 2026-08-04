@@ -16,7 +16,8 @@ Industri Clicker is a single-player, mobile-first industrial clicker for native 
 ## Current Decisions
 
 - The first content foundation uses the resources and facilities named in [CONTEXT.md](CONTEXT.md). Quality has no player-visible effect yet.
-- Facilities are built with company funds; destroying one gives no refund.
+- Facilities require a euro land purchase and Construction Materials. Farms are land-heavy, while mines and quarries use relatively less land and more materials for machinery. Destroying a facility gives no refund.
+- The construction confirmation can buy exactly the missing Construction Materials from the local market, but reserves enough funds to complete the land purchase.
 - Sales contracts let players exchange available inventory for money. They remain available until fulfilled or rejected, and their retained history remains visible.
 - Company prestige is informational only in this version.
 - Research is a primary bottom-navigation view. It presents two compact linear chains: Capital Grants and Sales Capacity. Each project clearly shows its cost, time, reward, and every unmet condition; an active project prominently shows progress and the full-refund cancellation rule.

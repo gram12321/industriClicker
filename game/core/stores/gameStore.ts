@@ -7,7 +7,7 @@ import { advanceProduction as advanceFacilityProduction } from '@/game/facilitie
 import { getFacilityUpgradeCost, type FacilityUpgradeKind } from '@/game/facilities/facilityUpgrades';
 import type { RecipeName } from '@/game/recipes/recipeTypes';
 import { RESOURCE_TYPES } from '@/game/resources/resourceConstants';
-import type { ResourceType } from '@/game/resources/resourceTypes';
+import { ResourceType } from '@/game/resources/resourceTypes';
 import { Market, MARKET_SALES_CONTRACT_PREMIUM } from '@/game/market';
 import { canAutoBuyMarketResource, canBuyMarketResource, canSellMarketResource } from '@/game/market';
 import type { MarketAutomation } from '@/game/market';
@@ -57,6 +57,7 @@ type GameState = {
   buyMarketResource: (resourceType: ResourceType, amount: number) => boolean;
   sellMarketResource: (resourceType: ResourceType, amount: number) => boolean;
   setMarketAutomation: (resourceType: ResourceType, updates: Partial<MarketAutomation>) => boolean;
+  buyMissingConstructionMaterials: (facilityType: FacilityType) => boolean;
   buildFacility: (facilityType: FacilityType) => boolean;
   destroyFacility: (facilityType: FacilityType) => boolean;
   setFacilityRecipe: (facilityType: FacilityType, recipeName: RecipeName | null) => boolean;
@@ -259,21 +260,50 @@ export const useGameStore = create<GameState>((set, get) => {
     set({ market });
     return true;
   },
+  buyMissingConstructionMaterials: (facilityType) => {
+    get().advanceRealtime(Date.now());
+    const definition = getFacilityDefinition(facilityType);
+    const facilities = get().facilities;
+    const inventory = get().inventory.clone();
+    const market = get().market.clone();
+    const finance = get().finance.clone();
+    const missingAmount = Math.max(
+      0,
+      definition.constructionMaterialsCost - inventory.getAmount(ResourceType.ConstructionMaterials),
+    );
+    const trade = market.buyFromLocal(ResourceType.ConstructionMaterials, missingAmount);
+    const materialsTotal = trade.unitPrice * trade.amount;
+
+    if (facilities.has(facilityType) || missingAmount === 0 || !trade.success
+      || !finance.canAfford(definition.landCost + materialsTotal)
+      || !inventory.add(ResourceType.ConstructionMaterials, trade.amount, trade.quality)
+      || !finance.applyTransaction(
+        -materialsTotal,
+        `Bought ${trade.amount} Construction Materials for ${definition.name}`,
+        new Date().toISOString(),
+      )) return false;
+
+    set({ market, inventory, finance });
+    return true;
+  },
   buildFacility: (facilityType) => {
     get().advanceRealtime(Date.now());
     const facilities = get().facilities.clone();
     const finance = get().finance.clone();
+    const inventory = get().inventory.clone();
     const definition = getFacilityDefinition(facilityType);
 
-    if (!finance.canAfford(definition.constructionCost) || !facilities.build(facilityType)) {
+    if (!finance.canAfford(definition.landCost)
+      || !inventory.has(ResourceType.ConstructionMaterials, definition.constructionMaterialsCost)
+      || !facilities.build(facilityType)) {
       return false;
     }
 
     if (!finance.applyTransaction(
-      -definition.constructionCost,
-      `Constructed ${definition.name}`,
+      -definition.landCost,
+      `Purchased land for ${definition.name}`,
       new Date().toISOString(),
-    )) {
+    ) || !inventory.remove(ResourceType.ConstructionMaterials, definition.constructionMaterialsCost)) {
       return false;
     }
 
@@ -290,7 +320,7 @@ export const useGameStore = create<GameState>((set, get) => {
       currentGameTimeMs: get().lastProcessedAtMs,
       categories: ['facilities', 'finance', 'prestige'],
     });
-    set({ facilities, finance, ...achievementResult });
+    set({ facilities, finance, inventory, ...achievementResult });
     return true;
   },
   destroyFacility: (facilityType) => {
@@ -342,7 +372,7 @@ export const useGameStore = create<GameState>((set, get) => {
       ? facility.getSpeedUpgradeLevel()
       : facility.getOutputUpgradeLevel();
     const definition = getFacilityDefinition(facilityType);
-    const cost = getFacilityUpgradeCost(definition.constructionCost, currentLevel);
+    const cost = getFacilityUpgradeCost(definition.upgradeCost, currentLevel);
 
     if (!finance.canAfford(cost)) {
       return false;

@@ -31,7 +31,12 @@ export type FacilityDefinition = {
   type: FacilityType;
   name: string;
   icon: string;
-  constructionCost: number;
+  /** Euro price of the plot needed for this facility. */
+  landCost: number;
+  /** Construction Materials consumed when the facility is built. */
+  constructionMaterialsCost: number;
+  /** Euro base used only to scale the facility's separate upgrades. */
+  upgradeCost: number;
   baseWorkers: number;
   recipes: readonly Recipe[];
 };
@@ -42,7 +47,9 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     type: FacilityType.Farm,
     name: 'Farm',
     icon: 'tractor',
-    constructionCost: 60,
+    landCost: 60,
+    constructionMaterialsCost: 10,
+    upgradeCost: 60,
     baseWorkers: 2,
     recipes: [ALL_RECIPES[RecipeName.GrowGrain], ALL_RECIPES[RecipeName.GrowSugar]],
   },
@@ -50,7 +57,9 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     type: FacilityType.Bakery,
     name: 'Bakery',
     icon: 'bread-slice-outline',
-    constructionCost: 300,
+    landCost: 100,
+    constructionMaterialsCost: 200,
+    upgradeCost: 300,
     baseWorkers: 3,
     recipes: [ALL_RECIPES[RecipeName.BakeBread], ALL_RECIPES[RecipeName.BakeCake]],
   },
@@ -58,7 +67,9 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     type: FacilityType.SmallUtilityWorks,
     name: 'Small Utility Works',
     icon: 'flash-outline',
-    constructionCost: 500,
+    landCost: 100,
+    constructionMaterialsCost: 400,
+    upgradeCost: 500,
     baseWorkers: 1,
     recipes: [ALL_RECIPES[RecipeName.ProduceWater], ALL_RECIPES[RecipeName.ProduceElectricity]],
   },
@@ -66,7 +77,9 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     type: FacilityType.Mine,
     name: 'Mine',
     icon: 'pickaxe',
-    constructionCost: 150,
+    landCost: 30,
+    constructionMaterialsCost: 120,
+    upgradeCost: 150,
     baseWorkers: 10,
     recipes: [ALL_RECIPES[RecipeName.MineIron], ALL_RECIPES[RecipeName.MineCoal], ALL_RECIPES[RecipeName.MineCopper]],
   },
@@ -74,7 +87,9 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     type: FacilityType.Quarry,
     name: 'Quarry',
     icon: 'terrain',
-    constructionCost: 120,
+    landCost: 25,
+    constructionMaterialsCost: 95,
+    upgradeCost: 120,
     baseWorkers: 6,
     recipes: [ALL_RECIPES[RecipeName.QuarrySand], ALL_RECIPES[RecipeName.QuarryClay], ALL_RECIPES[RecipeName.QuarryStone]],
   },
@@ -82,7 +97,9 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     type: FacilityType.IndustrialProcessingFactory,
     name: 'Industrial Processing Factory',
     icon: 'factory',
-    constructionCost: 400,
+    landCost: 80,
+    constructionMaterialsCost: 320,
+    upgradeCost: 400,
     baseWorkers: 12,
     recipes: [ALL_RECIPES[RecipeName.ProduceSteel], ALL_RECIPES[RecipeName.ProduceElectricCircuits]],
   },
@@ -90,7 +107,9 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     type: FacilityType.ConstructionFactory,
     name: 'Construction Factory',
     icon: 'crane',
-    constructionCost: 650,
+    landCost: 80,
+    constructionMaterialsCost: 500,
+    upgradeCost: 650,
     baseWorkers: 16,
     recipes: [ALL_RECIPES[RecipeName.ProduceBricks], ALL_RECIPES[RecipeName.ProduceCement], ALL_RECIPES[RecipeName.ProduceReinforcedConcrete], ALL_RECIPES[RecipeName.ProduceConstructionMaterials]],
   },
@@ -98,7 +117,9 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     type: FacilityType.WaterWell,
     name: 'Water Well',
     icon: 'water-well',
-    constructionCost: 100,
+    landCost: 80,
+    constructionMaterialsCost: 20,
+    upgradeCost: 100,
     baseWorkers: 1,
     recipes: [ALL_RECIPES[RecipeName.ManualPumping], ALL_RECIPES[RecipeName.ElectricPumping]],
   },
@@ -106,7 +127,9 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     type: FacilityType.PowerPlant,
     name: 'Power Plant',
     icon: 'factory',
-    constructionCost: 500,
+    landCost: 100,
+    constructionMaterialsCost: 400,
+    upgradeCost: 500,
     baseWorkers: 18,
     recipes: [ALL_RECIPES[RecipeName.CoalPower], ALL_RECIPES[RecipeName.SolarPower]],
   },

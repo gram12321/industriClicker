@@ -14,7 +14,7 @@ export function FinanceView({ finance }: { finance: Finance }) {
         <Card.Content style={styles.cardContent}>
           <Text style={styles.cardKicker}>AVAILABLE FUNDS</Text>
           <Text style={styles.balanceValue}>{formatCurrency(finance.getBalance())}</Text>
-          <Text style={styles.cardDescription}>Construction costs are recorded when a facility is built.</Text>
+          <Text style={styles.cardDescription}>Land purchases are recorded when a facility is built. Construction Materials are consumed from inventory.</Text>
         </Card.Content>
       </Card>
       <Text style={styles.inventoryHeading} variant="titleMedium">Recent activity</Text>
