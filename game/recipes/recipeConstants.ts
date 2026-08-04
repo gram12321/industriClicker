@@ -93,6 +93,76 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     output: { resourceType: ResourceType.Stone, amount: 1 },
     workAmount: 5,
   },
+  [RecipeName.ProduceSteel]: {
+    name: RecipeName.ProduceSteel,
+    inputs: [
+      { resourceType: ResourceType.Iron, amount: 2 },
+      { resourceType: ResourceType.Coal, amount: 1 },
+      { resourceType: ResourceType.Water, amount: 2 },
+      { resourceType: ResourceType.Electricity, amount: 6 },
+    ],
+    output: { resourceType: ResourceType.Steel, amount: 2 },
+    workAmount: 8,
+  },
+  [RecipeName.ProduceElectricCircuits]: {
+    name: RecipeName.ProduceElectricCircuits,
+    inputs: [
+      { resourceType: ResourceType.Sand, amount: 2 },
+      { resourceType: ResourceType.Copper, amount: 2 },
+      { resourceType: ResourceType.Water, amount: 1 },
+      { resourceType: ResourceType.Electricity, amount: 4 },
+    ],
+    output: { resourceType: ResourceType.ElectricCircuits, amount: 1 },
+    workAmount: 10,
+  },
+  [RecipeName.ProduceBricks]: {
+    name: RecipeName.ProduceBricks,
+    inputs: [
+      { resourceType: ResourceType.Clay, amount: 2 },
+      { resourceType: ResourceType.Sand, amount: 1 },
+      { resourceType: ResourceType.Water, amount: 1 },
+      { resourceType: ResourceType.Electricity, amount: 3 },
+    ],
+    output: { resourceType: ResourceType.Bricks, amount: 4 },
+    workAmount: 4,
+  },
+  [RecipeName.ProduceCement]: {
+    name: RecipeName.ProduceCement,
+    inputs: [
+      { resourceType: ResourceType.Stone, amount: 3 },
+      { resourceType: ResourceType.Clay, amount: 1 },
+      { resourceType: ResourceType.Water, amount: 1 },
+      { resourceType: ResourceType.Electricity, amount: 5 },
+    ],
+    output: { resourceType: ResourceType.Cement, amount: 2 },
+    workAmount: 6,
+  },
+  [RecipeName.ProduceReinforcedConcrete]: {
+    name: RecipeName.ProduceReinforcedConcrete,
+    inputs: [
+      { resourceType: ResourceType.Cement, amount: 2 },
+      { resourceType: ResourceType.Sand, amount: 3 },
+      { resourceType: ResourceType.Stone, amount: 2 },
+      { resourceType: ResourceType.Steel, amount: 2 },
+      { resourceType: ResourceType.Water, amount: 2 },
+      { resourceType: ResourceType.Electricity, amount: 2 },
+    ],
+    output: { resourceType: ResourceType.ReinforcedConcrete, amount: 2 },
+    workAmount: 8,
+  },
+  [RecipeName.ProduceConstructionMaterials]: {
+    name: RecipeName.ProduceConstructionMaterials,
+    inputs: [
+      { resourceType: ResourceType.Bricks, amount: 4 },
+      { resourceType: ResourceType.ReinforcedConcrete, amount: 2 },
+      { resourceType: ResourceType.Steel, amount: 2 },
+      { resourceType: ResourceType.Sand, amount: 2 },
+      { resourceType: ResourceType.Cement, amount: 2 },
+      { resourceType: ResourceType.Electricity, amount: 3 },
+    ],
+    output: { resourceType: ResourceType.ConstructionMaterials, amount: 1 },
+    workAmount: 10,
+  },
   [RecipeName.BakeCake]: {
     name: RecipeName.BakeCake,
     inputs: [

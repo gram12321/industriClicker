@@ -40,6 +40,12 @@ Recipes consume inputs at cycle start; if inputs are absent, the facility stalls
 | Quarry Sand | 1 Water, 1 Electricity | 3 Sand | 2 |
 | Quarry Clay | 2 Water, 1 Electricity | 2 Clay | 3 |
 | Quarry Stone | 1 Water, 4 Electricity | 1 Stone | 5 |
+| Produce Steel | 2 Iron, 1 Coal, 2 Water, 6 Electricity | 2 Steel | 8 |
+| Produce Electric Circuits | 2 Sand, 2 Copper, 1 Water, 4 Electricity | 1 Electric Circuits | 10 |
+| Produce Bricks | 2 Clay, 1 Sand, 1 Water, 3 Electricity | 4 Bricks | 4 |
+| Produce Cement | 3 Stone, 1 Clay, 1 Water, 5 Electricity | 2 Cement | 6 |
+| Produce Reinforced Concrete | 2 Cement, 3 Sand, 2 Stone, 2 Steel, 2 Water, 2 Electricity | 2 Reinforced Concrete | 8 |
+| Produce Construction Materials | 4 Bricks, 2 Reinforced Concrete, 2 Steel, 2 Sand, 3 Electricity | 1 Construction Materials | 10 |
 | Bake Cake | 1 Grain, 0.5 Sugar, 2 Electricity, 2 Water | 1 Cake | 15 |
 | Manual / Electric Pumping | None / 1 Electricity | 1 / 5 Water | 1 / 0.5 |
 | Coal / Solar Power | 1 Coal, 2 Water / None | 10 / 1 Electricity | 5 / 10 |

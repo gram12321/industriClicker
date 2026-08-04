@@ -2,7 +2,7 @@ import { ALL_RECIPES } from '../recipes/recipeConstants';
 import { RecipeName, type Recipe } from '../recipes/recipeTypes';
 import { FacilityType } from './facilityTypes';
 
-export const FACILITY_TYPES = [FacilityType.Farm, FacilityType.Bakery, FacilityType.SmallUtilityWorks, FacilityType.Mine, FacilityType.Quarry, FacilityType.WaterWell, FacilityType.PowerPlant] as const;
+export const FACILITY_TYPES = [FacilityType.Farm, FacilityType.Bakery, FacilityType.SmallUtilityWorks, FacilityType.Mine, FacilityType.Quarry, FacilityType.IndustrialProcessingFactory, FacilityType.ConstructionFactory, FacilityType.WaterWell, FacilityType.PowerPlant] as const;
 export const FACILITY_UPGRADE_COST_GROWTH = 1.5;
 export const FACILITY_SPEED_MAXIMUM_BONUS = 0.8;
 export const FACILITY_SPEED_BONUS_RATE = 0.22;
@@ -21,6 +21,8 @@ export const FACILITY_PRODUCTION_ORDER = [
   FacilityType.Bakery,
   FacilityType.Mine,
   FacilityType.Quarry,
+  FacilityType.IndustrialProcessingFactory,
+  FacilityType.ConstructionFactory,
   FacilityType.WaterWell,
   FacilityType.PowerPlant,
 ] as const;
@@ -75,6 +77,22 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     constructionCost: 120,
     baseWorkers: 6,
     recipes: [ALL_RECIPES[RecipeName.QuarrySand], ALL_RECIPES[RecipeName.QuarryClay], ALL_RECIPES[RecipeName.QuarryStone]],
+  },
+  [FacilityType.IndustrialProcessingFactory]: {
+    type: FacilityType.IndustrialProcessingFactory,
+    name: 'Industrial Processing Factory',
+    icon: 'factory',
+    constructionCost: 400,
+    baseWorkers: 12,
+    recipes: [ALL_RECIPES[RecipeName.ProduceSteel], ALL_RECIPES[RecipeName.ProduceElectricCircuits]],
+  },
+  [FacilityType.ConstructionFactory]: {
+    type: FacilityType.ConstructionFactory,
+    name: 'Construction Factory',
+    icon: 'crane',
+    constructionCost: 650,
+    baseWorkers: 16,
+    recipes: [ALL_RECIPES[RecipeName.ProduceBricks], ALL_RECIPES[RecipeName.ProduceCement], ALL_RECIPES[RecipeName.ProduceReinforcedConcrete], ALL_RECIPES[RecipeName.ProduceConstructionMaterials]],
   },
   [FacilityType.WaterWell]: {
     type: FacilityType.WaterWell,

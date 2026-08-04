@@ -23,6 +23,12 @@ export function formatRecipeName(recipe: Recipe): string {
     case 'quarry-sand': return 'Quarry sand';
     case 'quarry-clay': return 'Quarry clay';
     case 'quarry-stone': return 'Quarry stone';
+    case 'produce-steel': return 'Produce steel';
+    case 'produce-electric-circuits': return 'Produce electric circuits';
+    case 'produce-bricks': return 'Produce bricks';
+    case 'produce-cement': return 'Produce cement';
+    case 'produce-reinforced-concrete': return 'Produce reinforced concrete';
+    case 'produce-construction-materials': return 'Produce construction materials';
     case 'bake-cake': return 'Bake cake';
     case 'manual-pumping': return 'Manual pumping';
     case 'electric-pumping': return 'Electric pumping';

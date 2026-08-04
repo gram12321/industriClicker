@@ -215,9 +215,15 @@ function getResourceSummary(resourceType: (typeof RESOURCE_TYPES)[number]): stri
     case 'electricity': return 'Utility resource used to power production recipes.';
     case 'sugar': return 'Farm-grown ingredient used to bake Cake.';
     case 'coal': return 'Mined fuel used by the Coal Power recipe.';
-    case 'iron': return 'Mined material used by future metalworking recipes.';
-    case 'copper': return 'Mined material used by future electrical recipes.';
-    case 'sand': return 'Quarried material for future construction recipes.';
+    case 'iron': return 'Mined metal used to produce Steel.';
+    case 'copper': return 'Mined conductor used to produce Electric Circuits.';
+    case 'steel': return 'Processed metal made from Iron and Coal.';
+    case 'electric-circuits': return 'Electronic component made from Sand, Copper, Water, and Electricity.';
+    case 'bricks': return 'Construction units made from Clay and Sand.';
+    case 'cement': return 'Construction binder made from Stone and Clay.';
+    case 'reinforced-concrete': return 'Structural composite made from Cement, Stone, Sand, and Steel.';
+    case 'construction-materials': return 'Finished construction bundle made from Bricks, Reinforced Concrete, Steel, and Sand.';
+    case 'sand': return 'Quarried material used as the current silicon source for Electric Circuits.';
     case 'clay': return 'Quarried material for future construction recipes.';
     case 'stone': return 'Quarried material for future construction recipes.';
     case 'cake': return 'Baked product made from Grain, Sugar, Water, and Electricity.';

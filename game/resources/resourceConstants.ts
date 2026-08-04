@@ -9,6 +9,12 @@ export const RESOURCE_TYPES = [
   ResourceType.Coal,
   ResourceType.Iron,
   ResourceType.Copper,
+  ResourceType.Steel,
+  ResourceType.ElectricCircuits,
+  ResourceType.Bricks,
+  ResourceType.Cement,
+  ResourceType.ReinforcedConcrete,
+  ResourceType.ConstructionMaterials,
   ResourceType.Sand,
   ResourceType.Clay,
   ResourceType.Stone,
@@ -48,6 +54,30 @@ export const RESOURCES: Readonly<Record<ResourceType, { name: string; icon: stri
   [ResourceType.Copper]: {
     name: 'Copper', icon: '🟠',
     market: { localBenchmarkSupply: 17_500, localInitialSupply: 5_000, globalBenchmarkSupply: 175_000, globalInitialSupply: 50_000, logisticsMultiplier: 1, valueDensityMultiplier: 1.15 },
+  },
+  [ResourceType.Steel]: {
+    name: 'Steel', icon: '🔩',
+    market: { localBenchmarkSupply: 10_000, localInitialSupply: 2_000, globalBenchmarkSupply: 100_000, globalInitialSupply: 20_000, logisticsMultiplier: 0.75, valueDensityMultiplier: 1.1 },
+  },
+  [ResourceType.ElectricCircuits]: {
+    name: 'Electric Circuits', icon: '🔌',
+    market: { localBenchmarkSupply: 6_000, localInitialSupply: 500, globalBenchmarkSupply: 60_000, globalInitialSupply: 5_000, logisticsMultiplier: 1.25, valueDensityMultiplier: 1.35 },
+  },
+  [ResourceType.Bricks]: {
+    name: 'Bricks', icon: '🧱',
+    market: { localBenchmarkSupply: 15_000, localInitialSupply: 15_000, globalBenchmarkSupply: 150_000, globalInitialSupply: 150_000, logisticsMultiplier: 0.4, valueDensityMultiplier: 0.8 },
+  },
+  [ResourceType.Cement]: {
+    name: 'Cement', icon: '🏗️',
+    market: { localBenchmarkSupply: 15_000, localInitialSupply: 5_000, globalBenchmarkSupply: 150_000, globalInitialSupply: 50_000, logisticsMultiplier: 0.45, valueDensityMultiplier: 0.9 },
+  },
+  [ResourceType.ReinforcedConcrete]: {
+    name: 'Reinforced Concrete', icon: '🏢',
+    market: { localBenchmarkSupply: 15_000, localInitialSupply: 1_000, globalBenchmarkSupply: 150_000, globalInitialSupply: 10_000, logisticsMultiplier: 0.4, valueDensityMultiplier: 1.15 },
+  },
+  [ResourceType.ConstructionMaterials]: {
+    name: 'Construction Materials', icon: '🏗️',
+    market: { localBenchmarkSupply: 12_500, localInitialSupply: 250, globalBenchmarkSupply: 125_000, globalInitialSupply: 2_500, logisticsMultiplier: 0.5, valueDensityMultiplier: 1.2 },
   },
   [ResourceType.Sand]: {
     name: 'Sand', icon: '🏜️',
