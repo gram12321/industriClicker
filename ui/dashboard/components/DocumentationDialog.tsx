@@ -6,7 +6,7 @@ import { colors } from '@/theme';
 
 export type DocumentationKind = 'readme' | 'version-log' | null;
 
-const DOCUMENTS: Record<Exclude<DocumentationKind, null>, { asset: number; title: string }> = {
+const DOCUMENTS: Record<Exclude<DocumentationKind, null>, { asset: number | string; title: string }> = {
   readme: { asset: require('../../../readme.md'), title: 'Industri Clicker README' },
   'version-log': { asset: require('../../../docs/WorkingDocs/versionlog.md'), title: 'Version log' },
 };
@@ -17,10 +17,11 @@ export function DocumentationDialog({ kind, onClose }: { kind: DocumentationKind
 
   useEffect(() => {
     if (!kind) return;
-    const source = Image.resolveAssetSource(DOCUMENTS[kind].asset);
+    const asset = DOCUMENTS[kind].asset;
+    const uri = typeof asset === 'string' ? asset : Image.resolveAssetSource(asset).uri;
     setContent(null);
     setError(null);
-    void fetch(source.uri)
+    void fetch(uri)
       .then((response) => {
         if (!response.ok) throw new Error('The document could not be loaded.');
         return response.text();

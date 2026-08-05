@@ -5,41 +5,45 @@ import { FacilityType } from './facilityTypes';
 export type FacilityCollectionSnapshot = {   facilities: FacilitySnapshot[]; };
 
 /**
- * Player-owned constructed facilities. A facility type can be constructed once.
+ * Player-owned constructed facilities.
  */
 export class FacilityCollection {
-  private facilities: Partial<Record<FacilityType, Facility>> = {};
+  private facilities: Facility[] = [];
 
   has(facilityType: FacilityType): boolean {
-    return this.facilities[facilityType] !== undefined;
+    return this.facilities.some((facility) => facility.facilityType === facilityType);
   }
 
-  get(facilityType: FacilityType): Facility | null {
-    return this.facilities[facilityType] ?? null;
+  get(facilityId: string): Facility | null {
+    return this.facilities.find((facility) => facility.id === facilityId) ?? null;
   }
 
   getAll(): Facility[] {
-    return FACILITY_TYPES.flatMap((facilityType) => {
-      const facility = this.facilities[facilityType];
-      return facility ? [facility] : [];
-    });
+    return [...this.facilities].sort((left, right) => (
+      FACILITY_TYPES.indexOf(left.facilityType) - FACILITY_TYPES.indexOf(right.facilityType)
+      || left.id.localeCompare(right.id, undefined, { numeric: true })
+    ));
+  }
+
+  getAllByType(facilityType: FacilityType): Facility[] {
+    return this.getAll().filter((facility) => facility.facilityType === facilityType);
   }
 
   build(facilityType: FacilityType): boolean {
-    if (this.has(facilityType)) {
-      return false;
-    }
-
-    this.facilities[facilityType] = new Facility(facilityType);
+    const nextNumber = this.getAllByType(facilityType).reduce((highest, facility) => (
+      Math.max(highest, Number(facility.id.split('-').at(-1)) || 0)
+    ), 0) + 1;
+    this.facilities.push(new Facility(`${facilityType}-${nextNumber}`, facilityType));
     return true;
   }
 
-  destroy(facilityType: FacilityType): boolean {
-    if (!this.has(facilityType)) {
+  destroy(facilityId: string): boolean {
+    const index = this.facilities.findIndex((facility) => facility.id === facilityId);
+    if (index === -1) {
       return false;
     }
 
-    delete this.facilities[facilityType];
+    this.facilities.splice(index, 1);
     return true;
   }
 
@@ -49,7 +53,7 @@ export class FacilityCollection {
 
   toSnapshot(): FacilityCollectionSnapshot {
     return {
-      facilities: this.getAll().map((facility) => facility.toSnapshot()),
+      facilities: this.facilities.map((facility) => facility.toSnapshot()),
     };
   }
 
@@ -57,11 +61,11 @@ export class FacilityCollection {
     const collection = new FacilityCollection();
 
     for (const facilitySnapshot of snapshot.facilities) {
-      if (!(FACILITY_TYPES as readonly FacilityType[]).includes(facilitySnapshot.facilityType) || collection.has(facilitySnapshot.facilityType)) {
+      if (!(FACILITY_TYPES as readonly FacilityType[]).includes(facilitySnapshot.facilityType) || collection.get(facilitySnapshot.id)) {
         continue;
       }
 
-      collection.facilities[facilitySnapshot.facilityType] = Facility.fromSnapshot(facilitySnapshot);
+      collection.facilities.push(Facility.fromSnapshot(facilitySnapshot));
     }
 
     return collection;

@@ -15,8 +15,7 @@ export function advanceProduction(
   }
 
   for (const facilityType of FACILITY_PRODUCTION_ORDER) {
-    const facility = facilities.get(facilityType);
-    if (facility) {
+    for (const facility of facilities.getAllByType(facilityType)) {
       outputs.push(...facility.advanceProduction(inventory, workAmount));
     }
   }

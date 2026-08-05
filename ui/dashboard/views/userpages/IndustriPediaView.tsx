@@ -156,7 +156,7 @@ function ResourcesSection() {
 
 function BuildingsSection() {
   return <>
-    <SectionHeading eyebrow="BUILDINGS" title="Facility catalogue" subtitle="Build a facility once, then select one of its available recipes to begin production." />
+    <SectionHeading eyebrow="BUILDINGS" title="Facility catalogue" subtitle="Build one or more facilities, then select an available recipe for each to begin production." />
     {FACILITY_TYPES.map((facilityType) => {
       const facility = getFacilityDefinition(facilityType);
       return <Card key={facilityType} mode="contained" style={styles.featureCard}><Card.Content><List.Item

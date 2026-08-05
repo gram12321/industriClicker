@@ -26,7 +26,7 @@ Foreground elapsed time -> advanceGameTime -> registered timed rules
 
 ## Production and Facilities
 
-Recipes consume inputs at cycle start; if inputs are absent, the facility stalls without banking work. A completed cycle grants `baseOutput × outputMultiplier`.
+Recipes consume inputs at cycle start; if inputs are absent, the facility stalls without banking work. A completed cycle grants `baseOutput × outputMultiplier`. Each constructed facility is an independent numbered instance, so multiple facilities of one type can run different recipes and upgrades.
 Players may pause a selected recipe without clearing it; resuming continues its retained cycle progress. A facility also stalls automatically at a cycle boundary when its next recipe inputs are unavailable.
 
 | Recipe | Inputs | Output | Work |
