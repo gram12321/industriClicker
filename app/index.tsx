@@ -34,6 +34,7 @@ function GameShell({ companyName }: { companyName: string }) {
   const [isConstructionYardOpen, setIsConstructionYardOpen] = useState(false);
   const [isPrestigeOpen, setIsPrestigeOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState<1 | 2>(1);
   const [pendingConstruction, setPendingConstruction] = useState<import('@/game').FacilityType | null>(null);
   const [pendingDestruction, setPendingDestruction] = useState<import('@/game').FacilityType | null>(null);
   const inventory = useGameStore((state) => state.inventory);
@@ -80,6 +81,10 @@ function GameShell({ companyName }: { companyName: string }) {
 
   useEffect(() => {
     setIsTutorialOpen(!tutorial.completedWelcome);
+    if (!tutorial.completedWelcome) {
+      setActiveView('company');
+      setTutorialStep(1);
+    }
   }, [tutorial.completedWelcome]);
 
   return (
@@ -88,8 +93,10 @@ function GameShell({ companyName }: { companyName: string }) {
       <View style={styles.screen}>
         <View style={styles.header}><View style={styles.topBar}>
           <View style={styles.balanceInline}>
-            <MaterialCommunityIcons accessibilityLabel="Balance icon" color={colors.onDark} name={APP_ICONS.currency} size={21} />
-            <Text style={styles.balanceInlineValue}>{formatCurrency(finance.getBalance())}</Text>
+            <View accessibilityLabel={isTutorialOpen && tutorialStep === 2 ? 'Tutorial highlighted company balance' : undefined} style={styles.balanceAmount}>
+              <MaterialCommunityIcons accessibilityLabel="Balance icon" color={colors.onDark} name={APP_ICONS.currency} size={21} />
+              <Text style={styles.balanceInlineValue}>{formatCurrency(finance.getBalance())}</Text>
+            </View>
             <Pressable accessibilityLabel="Open company prestige" accessibilityRole="button" onPress={() => setIsPrestigeOpen(true)} style={styles.prestigeInline}><MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.achievements} size={17} /><Text style={styles.prestigeInlineValue}>{formatNumber(prestigeSummary.totalPrestige, { smartDecimals: true })}</Text></Pressable>
           </View>
           <View style={styles.headerActions}>
@@ -108,7 +115,7 @@ function GameShell({ companyName }: { companyName: string }) {
           </View>
         </View></View>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          {activeView === 'admin' && isAdminDashboardAvailable ? <AdminDashboard onClearAllLocalData={clearAllLocalData} onCreateContractRequest={createSalesContractRequest} onDeleteCompany={deleteActiveCompany} onSetInventoryAmount={setInventoryAmount} />
+          {activeView === 'admin' && isAdminDashboardAvailable ? <AdminDashboard isTutorialEnabled={!tutorial.completedWelcome} onClearAllLocalData={clearAllLocalData} onCreateContractRequest={createSalesContractRequest} onDeleteCompany={deleteActiveCompany} onDisableTutorial={completeWelcomeTutorial} onEnableTutorial={reopenWelcomeTutorial} onSetInventoryAmount={setInventoryAmount} />
             : activeView === 'achievements' ? <AchievementsView achievements={achievements} companyStartedAtGameTimeMs={companyStartedAtGameTimeMs} currentGameTimeMs={lastProcessedAtMs} facilities={facilities} finance={finance} prestige={prestige} productionStatistics={productionStatistics} salesContracts={salesContracts} />
               : activeView === 'profile' ? <ProfileScreen companyName={companyName} onDeleteCompany={deleteActiveCompany} onManageCompanies={logout} playerName={playerName} />
                 : activeView === 'research' ? <ResearchView finance={finance} getAvailability={getResearchAvailability} onCancel={cancelResearch} onStart={startResearch} research={research} />
@@ -117,11 +124,11 @@ function GameShell({ companyName }: { companyName: string }) {
                     : activeView === 'pedia' ? <IndustriPediaView market={market} />
                       : <GameViewContent activeTab={activeView === 'admin' ? 'company' : activeView} buyMarketResource={buyMarketResource} companyName={companyName} customerPipelineProgress={customerPipelineProgress} facilities={facilities} finance={finance} fulfillSalesContract={fulfillSalesContract} getResearchAvailability={getResearchAvailability} inventory={inventory} market={market} maximumOpenContracts={maximumOpenContracts} openConstructionYard={() => setIsConstructionYardOpen(true)} rejectSalesContract={rejectSalesContract} requestFacilityDestruction={setPendingDestruction} research={research} salesContracts={salesContracts} sellMarketResource={sellMarketResource} setFacilityProductionActive={setFacilityProductionActive} setFacilityRecipe={setFacilityRecipe} setFacilityWorkers={setFacilityWorkers} setMarketAutomation={setMarketAutomation} upgradeFacility={upgradeFacility} />}
         </ScrollView>
-        <View style={styles.bottomNavigation}>{[...tabs.slice(0, 3), salesTab, researchTab, ...tabs.slice(3)].map((tab) => <BottomNavigationItem active={activeView === tab.key} key={tab.key} label={tab.label} onPress={() => setActiveView(tab.key)} symbol={tab.symbol} />)}</View>
+        <View style={styles.bottomNavigation}>{(tutorial.completedWelcome ? [...tabs.slice(0, 3), salesTab, researchTab, ...tabs.slice(3)] : [tabs[0]]).map((tab) => <BottomNavigationItem active={activeView === tab.key} key={tab.key} label={tab.label} onPress={() => setActiveView(tab.key)} symbol={tab.symbol} />)}</View>
       </View>
       <GameDialogs facilities={facilities} finance={finance} inventory={inventory} isConstructionYardOpen={isConstructionYardOpen} market={market} onBuyMissingConstructionMaterials={() => { if (pendingConstruction) buyMissingConstructionMaterials(pendingConstruction); }} onCloseConstructionYard={() => setIsConstructionYardOpen(false)} onConfirmConstruction={() => { if (pendingConstruction && buildFacility(pendingConstruction)) setPendingConstruction(null); }} onConfirmDestruction={() => { if (pendingDestruction && destroyFacility(pendingDestruction)) setPendingDestruction(null); }} onDismissConstruction={() => setPendingConstruction(null)} onDismissDestruction={() => setPendingDestruction(null)} onSelectFacility={(facilityType) => { setIsConstructionYardOpen(false); setPendingConstruction(facilityType); }} pendingConstruction={pendingConstruction} pendingDestruction={pendingDestruction} />
       <PrestigeDialog currentGameTimeMs={lastProcessedAtMs} isOpen={isPrestigeOpen} onClose={() => setIsPrestigeOpen(false)} summary={prestigeSummary} />
-      <TutorialGuideDialog onComplete={() => { void completeWelcomeTutorial(); }} visible={isTutorialOpen} />
+      <TutorialGuideDialog balance={formatCurrency(finance.getBalance())} onClose={() => setIsTutorialOpen(false)} onNext={() => setTutorialStep(2)} step={tutorialStep} visible={isTutorialOpen} />
     </SafeAreaView>
   );
 }

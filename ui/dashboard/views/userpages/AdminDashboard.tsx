@@ -8,13 +8,20 @@ import { colors } from '@/theme';
 import { ContractRequestCard, DeleteCompanyCard, InventoryControlCard } from '@/ui/dashboard/components';
 import { styles } from '@/ui/dashboard/shared';
 
-export function AdminDashboard({ onClearAllLocalData, onCreateContractRequest, onDeleteCompany, onSetInventoryAmount }: {
+export function AdminDashboard({ isTutorialEnabled, onClearAllLocalData, onCreateContractRequest, onDeleteCompany, onDisableTutorial, onEnableTutorial, onSetInventoryAmount }: {
+  isTutorialEnabled: boolean;
   onClearAllLocalData: () => Promise<boolean>;
   onCreateContractRequest: (resourceType: ResourceType, quantity: number) => boolean;
   onDeleteCompany: () => Promise<boolean>;
+  onDisableTutorial: () => Promise<void>;
+  onEnableTutorial: () => Promise<void>;
   onSetInventoryAmount: (resourceType: ResourceType, amount: number) => boolean;
 }) {
-  return <><View style={styles.sectionHeading}><Text style={styles.sectionEyebrow}>DEVELOPMENT</Text><Text variant="headlineSmall">Admin Dashboard</Text><Text style={styles.sectionSubtitle}>Development tools are available only from a local browser connection.</Text></View><ContractRequestCard onCreateContractRequest={onCreateContractRequest} /><InventoryControlCard onSetInventoryAmount={onSetInventoryAmount} /><DeleteCompanyCard onDeleteCompany={onDeleteCompany} /><ClearLocalDataCard onClearAllLocalData={onClearAllLocalData} /></>;
+  return <><View style={styles.sectionHeading}><Text style={styles.sectionEyebrow}>DEVELOPMENT</Text><Text variant="headlineSmall">Admin Dashboard</Text><Text style={styles.sectionSubtitle}>Development tools are available only from a local browser connection.</Text></View><TutorialControlCard isTutorialEnabled={isTutorialEnabled} onDisableTutorial={onDisableTutorial} onEnableTutorial={onEnableTutorial} /><ContractRequestCard onCreateContractRequest={onCreateContractRequest} /><InventoryControlCard onSetInventoryAmount={onSetInventoryAmount} /><DeleteCompanyCard onDeleteCompany={onDeleteCompany} /><ClearLocalDataCard onClearAllLocalData={onClearAllLocalData} /></>;
+}
+
+function TutorialControlCard({ isTutorialEnabled, onDisableTutorial, onEnableTutorial }: { isTutorialEnabled: boolean; onDisableTutorial: () => Promise<void>; onEnableTutorial: () => Promise<void> }) {
+  return <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text style={styles.cardKicker}>ONBOARDING</Text><Text variant="titleLarge">Welcome tutorial</Text><Text style={styles.cardDescription}>{isTutorialEnabled ? 'Enabled. Only the Company tab is available until this development control turns the tutorial off.' : 'Disabled. New companies also start with the tutorial disabled during development.'}</Text></Card.Content><Card.Actions><Button mode="contained" onPress={() => { void (isTutorialEnabled ? onDisableTutorial() : onEnableTutorial()); }}>{isTutorialEnabled ? 'Turn tutorial off' : 'Turn tutorial on'}</Button></Card.Actions></Card>;
 }
 
 function ClearLocalDataCard({ onClearAllLocalData }: { onClearAllLocalData: () => Promise<boolean> }) {

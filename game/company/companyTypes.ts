@@ -24,7 +24,7 @@ export type DeviceSession = {
   activeCompanyId: string | null;
 };
 
-export const DEFAULT_COMPANY_TUTORIAL_STATE: CompanyTutorialState = { completedWelcome: false };
+export const DEFAULT_COMPANY_TUTORIAL_STATE: CompanyTutorialState = { completedWelcome: true };
 export const EMPTY_DEVICE_SESSION: DeviceSession = { selectedProfileId: null, activeCompanyId: null };
 
 const MAX_DISPLAY_NAME_LENGTH = 32;

@@ -10,6 +10,7 @@ export const styles = StyleSheet.create({
   activeNavigationText: { color: colors.primary, fontWeight: '700' },
   avatar: { backgroundColor: '#D9EDE5' },
   balanceInline: { alignItems: 'center', flexDirection: 'row', gap: 8 },
+  balanceAmount: { alignItems: 'center', flexDirection: 'row', gap: 8 },
   balanceInlineValue: { color: colors.onDark, fontSize: 20, fontWeight: '700' },
   balanceValue: { color: colors.charcoal, fontSize: 36, fontWeight: '700', lineHeight: 42 },
   bottomNavigation: {
@@ -186,6 +187,7 @@ export const styles = StyleSheet.create({
     minHeight: 64,
     paddingHorizontal: 20,
   },
+  tutorialBalanceSpotlight: { alignItems: 'center', backgroundColor: colors.primary, borderColor: '#FFD54F', borderRadius: 10, borderWidth: 2, flexDirection: 'row', gap: 8, left: 14, paddingHorizontal: 8, paddingVertical: 4, position: 'absolute', top: 10 },
   transactionCost: { color: colors.error, fontWeight: '700' },
   transactionDetails: { flex: 1, gap: 2, paddingRight: 12 },
   transactionIcon: { alignItems: 'center', borderRadius: 20, height: 40, justifyContent: 'center', marginRight: 12, width: 40 },

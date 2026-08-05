@@ -113,7 +113,7 @@ export async function createCompanyWithSave(input: { company: LocalCompany; snap
       input.company.id, input.company.ownerProfileId, input.company.displayName, normalizedName, input.company.startingConditionId, input.company.createdAt, input.company.updatedAt,
     );
     await database.runAsync('INSERT INTO company_saves (company_id, snapshot_json, updated_at) VALUES (?, ?, ?)', input.company.id, JSON.stringify(input.snapshot), input.company.updatedAt);
-    await database.runAsync('INSERT INTO company_tutorial_state (company_id, completed_welcome) VALUES (?, ?)', input.company.id, 0);
+    await database.runAsync('INSERT INTO company_tutorial_state (company_id, completed_welcome) VALUES (?, ?)', input.company.id, DEFAULT_COMPANY_TUTORIAL_STATE.completedWelcome ? 1 : 0);
   });
 }
 
@@ -128,6 +128,7 @@ export async function clearLocalData(): Promise<void> {
   const database = await getDatabase();
   await database.withTransactionAsync(async () => {
     await database.runAsync('DELETE FROM device_session');
+    await database.runAsync('DELETE FROM companies');
     await database.runAsync('DELETE FROM local_profiles');
   });
 }
