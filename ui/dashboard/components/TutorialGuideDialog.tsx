@@ -1,27 +1,15 @@
-import { View } from 'react-native';
+import { Image, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Avatar, Button, Dialog, Portal, Text } from 'react-native-paper';
-
+import { Button, Dialog, Portal, Text } from 'react-native-paper';
 import { colors } from '@/theme';
 import { styles } from '@/ui/dashboard/helpers';
 
-export function TutorialGuideDialog({ balance, step, visible, onClose, onNext }: { balance: string; step: 1 | 2; visible: boolean; onClose: () => void; onNext: () => void }) {
-  const isBalanceStep = step === 2;
+const SIMULUCIUS_IMAGES = { balance: require('../../../assets/simulucius/withlaptop.png'), welcome: require('../../../assets/simulucius/frontremovebg.png') } as const;
 
-  return (
-    <Portal>
-      <Dialog dismissable={false} visible={visible}>
-        <Dialog.Title>{isBalanceStep ? 'Your company balance' : 'Welcome to Industri Clicker'}</Dialog.Title>
-        <Dialog.Content>
-          <View style={{ alignItems: 'center', gap: 12 }}>
-            <Avatar.Icon icon={isBalanceStep ? 'cash' : 'factory'} size={52} style={{ backgroundColor: colors.primary }} />
-            <Text style={styles.sectionEyebrow}>{`STEP ${step} OF 2`}</Text>
-            {isBalanceStep ? <Text style={styles.dialogDescription}>The highlighted amount at the top is your company balance. You spend it on construction and upgrades, and earn more by selling resources. Later it will become part of your company’s total assets. And thus also provide Prestige. I'll tell you more about that later</Text> : <><Text style={styles.dialogDescription}>I’ll help you get oriented. Your company runs while this app is in the foreground. Start by checking your Company tab.</Text><Text style={styles.dialogDescription}>The tutorial stays active while you work through the early game.</Text></>}
-          </View>
-        </Dialog.Content>
-        <Dialog.Actions><Button mode="contained" onPress={isBalanceStep ? onClose : onNext}>{isBalanceStep ? 'Continue to Company' : 'Next'}</Button></Dialog.Actions>
-      </Dialog>
-      {isBalanceStep && visible && <View accessibilityElementsHidden pointerEvents="none" style={styles.tutorialBalanceSpotlight}><MaterialCommunityIcons color={colors.onDark} name="cash" size={21} /><Text style={styles.balanceInlineValue}>{balance}</Text></View>}
-    </Portal>
-  );
+export function TutorialGuideDialog({ balance, elapsedTime, step, visible, onNext }: { balance: string; elapsedTime: string; step: 1 | 2 | 3 | 4 | 5; visible: boolean; onNext: () => void }) {
+  const isBalanceStep = step === 2; const isTimeStep = step === 3; const isCompanyStep = step === 4; const isProductionStep = step === 5;
+  const description = isProductionStep ? 'Press the Production tab below. I’ll introduce that view in the next dialog.' : isCompanyStep ? 'This is your company overview. It will become your home base for understanding your company and its progress. I will show you more of this page later.' : isTimeStep ? 'The highlighted value shows your company time. It advances while you play, and helps you follow how long your company has been running and how much progress it has made.' : isBalanceStep ? "The highlighted amount at the top is your company balance. You spend it on construction and upgrades, and earn more by selling resources. Later it will become part of your company's total assets and provide Prestige. I'll tell you more about that later." : "I'll help you get oriented. Start by checking your Company tab. The tutorial stays active while you work through the early game.";
+  return <Portal><Dialog dismissable={false} style={styles.tutorialDialog} visible={visible}><Image accessibilityLabel="Simulucius, your tutorial guide" resizeMode="contain" source={isBalanceStep ? SIMULUCIUS_IMAGES.balance : SIMULUCIUS_IMAGES.welcome} style={styles.tutorialGuideCharacterBehind} /><Dialog.Title>{isBalanceStep ? 'Your company balance' : isTimeStep ? 'Your company time' : isCompanyStep ? 'Your company overview' : isProductionStep ? 'Production' : 'Welcome to Industri Clicker'}</Dialog.Title><Dialog.Content><View style={{ alignItems: 'center', gap: 12 }}><Text style={styles.sectionEyebrow}>{`STEP ${step} OF 5`}</Text><Text style={styles.dialogDescription}>{description}</Text></View></Dialog.Content>{!isProductionStep && <Dialog.Actions><Button mode="contained" onPress={onNext}>Next</Button></Dialog.Actions>}</Dialog>{isBalanceStep && visible && <View accessibilityElementsHidden pointerEvents="none" style={styles.tutorialBalanceSpotlight}><MaterialCommunityIcons color={colors.onDark} name="cash" size={21} /><Text style={styles.balanceInlineValue}>{balance}</Text></View>}{isTimeStep && visible && <View accessibilityElementsHidden pointerEvents="none" style={styles.tutorialTimeSpotlight}><MaterialCommunityIcons color={colors.onDark} name="timer-outline" size={17} /><Text style={styles.headerElapsedTimeValue}>{elapsedTime}</Text></View>}</Portal>;
 }
+
+export function ProductionTutorialDialog({ visible, onClose }: { visible: boolean; onClose: () => void }) { return <Portal><Dialog dismissable={false} style={styles.tutorialDialog} visible={visible}><Image accessibilityLabel="Simulucius, your tutorial guide" resizeMode="contain" source={SIMULUCIUS_IMAGES.welcome} style={styles.tutorialGuideCharacterBehind} /><Dialog.Title>Production</Dialog.Title><Dialog.Content><Text style={styles.dialogDescription}>This is the Production view. We’ll explore how your facilities run here next.</Text></Dialog.Content><Dialog.Actions><Button mode="contained" onPress={onClose}>Continue</Button></Dialog.Actions></Dialog></Portal>; }

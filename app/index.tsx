@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { APP_ICONS } from '@/icons';
 import { calculateCompanyPrestigeSummary, getMaximumOpenSalesContracts, useCompanySessionStore, useGameStore } from '@/game';
 import { colors } from '@/theme';
-import { AdminDashboard, AchievementsView, GameViewContent, GameDialogs, IndustriPediaView, isDevAdminSurfaceAvailable, LeaderboardScreen, PrestigeDialog, ProfileScreen, ResearchView, SettingsScreen, styles, TutorialGuideDialog, LoginView, type GameViewId } from '@/ui';
+import { AdminDashboard, AchievementsView, GameViewContent, GameDialogs, IndustriPediaView, isDevAdminSurfaceAvailable, LeaderboardScreen, PrestigeDialog, ProfileScreen, ResearchView, SettingsScreen, styles, ProductionTutorialDialog, TutorialGuideDialog, LoginView, type GameViewId } from '@/ui';
 import { formatCurrency, formatElapsedTime, formatNumber } from '@/utils';
 
 type ActiveScreen = GameViewId | 'achievements' | 'admin' | 'profile' | 'pedia' | 'settings' | 'leaderboard';
@@ -34,7 +34,8 @@ function GameShell({ companyName }: { companyName: string }) {
   const [isConstructionYardOpen, setIsConstructionYardOpen] = useState(false);
   const [isPrestigeOpen, setIsPrestigeOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
-  const [tutorialStep, setTutorialStep] = useState<1 | 2>(1);
+  const [tutorialStep, setTutorialStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [isProductionTutorialOpen, setIsProductionTutorialOpen] = useState(false);
   const [pendingConstruction, setPendingConstruction] = useState<import('@/game').FacilityType | null>(null);
   const [pendingDestruction, setPendingDestruction] = useState<import('@/game').FacilityType | null>(null);
   const inventory = useGameStore((state) => state.inventory);
@@ -97,11 +98,11 @@ function GameShell({ companyName }: { companyName: string }) {
               <MaterialCommunityIcons accessibilityLabel="Balance icon" color={colors.onDark} name={APP_ICONS.currency} size={21} />
               <Text style={styles.balanceInlineValue}>{formatCurrency(finance.getBalance())}</Text>
             </View>
-            <Pressable accessibilityLabel="Open company prestige" accessibilityRole="button" onPress={() => setIsPrestigeOpen(true)} style={styles.prestigeInline}><MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.achievements} size={17} /><Text style={styles.prestigeInlineValue}>{formatNumber(prestigeSummary.totalPrestige, { smartDecimals: true })}</Text></Pressable>
+            {tutorial.completedWelcome && <Pressable accessibilityLabel="Open company prestige" accessibilityRole="button" onPress={() => setIsPrestigeOpen(true)} style={styles.prestigeInline}><MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.achievements} size={17} /><Text style={styles.prestigeInlineValue}>{formatNumber(prestigeSummary.totalPrestige, { smartDecimals: true })}</Text></Pressable>}
           </View>
           <View style={styles.headerActions}>
-            <IconButton accessibilityLabel="Fast-forward one minute" icon={APP_ICONS.fastForward} iconColor={colors.onDark} onPress={fastForwardOneMinute} />
-            <View accessibilityLabel={`Time ${formatElapsedTime(elapsedForegroundTimeMs)}`} style={styles.headerElapsedTime}><MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.elapsedTime} size={17} /><Text style={styles.headerElapsedTimeValue}>{formatElapsedTime(elapsedForegroundTimeMs)}</Text></View>
+            {tutorial.completedWelcome && <IconButton accessibilityLabel="Fast-forward one minute" icon={APP_ICONS.fastForward} iconColor={colors.onDark} onPress={fastForwardOneMinute} />}
+            <View accessibilityLabel={isTutorialOpen && tutorialStep === 3 ? 'Tutorial highlighted company time' : `Time ${formatElapsedTime(elapsedForegroundTimeMs)}`} style={styles.headerElapsedTime}><MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.elapsedTime} size={17} /><Text style={styles.headerElapsedTimeValue}>{formatElapsedTime(elapsedForegroundTimeMs)}</Text></View>
             <Menu anchor={<Pressable accessibilityLabel="Open profile menu" accessibilityRole="button" onPress={() => setIsProfileMenuOpen(true)} style={styles.profileButton}><Avatar.Text label={companyName.slice(0, 2).toUpperCase()} size={38} style={styles.avatar} /></Pressable>} onDismiss={() => setIsProfileMenuOpen(false)} visible={isProfileMenuOpen}>
               <Menu.Item leadingIcon={APP_ICONS.account} onPress={() => { setIsProfileMenuOpen(false); setActiveView('profile'); }} title="Profile" />
               <Menu.Item leadingIcon={APP_ICONS.settings} onPress={() => { setIsProfileMenuOpen(false); setActiveView('settings'); }} title="Settings" />
@@ -124,16 +125,17 @@ function GameShell({ companyName }: { companyName: string }) {
                     : activeView === 'pedia' ? <IndustriPediaView market={market} />
                       : <GameViewContent activeTab={activeView === 'admin' ? 'company' : activeView} buyMarketResource={buyMarketResource} companyName={companyName} customerPipelineProgress={customerPipelineProgress} facilities={facilities} finance={finance} fulfillSalesContract={fulfillSalesContract} getResearchAvailability={getResearchAvailability} inventory={inventory} market={market} maximumOpenContracts={maximumOpenContracts} openConstructionYard={() => setIsConstructionYardOpen(true)} rejectSalesContract={rejectSalesContract} requestFacilityDestruction={setPendingDestruction} research={research} salesContracts={salesContracts} sellMarketResource={sellMarketResource} setFacilityProductionActive={setFacilityProductionActive} setFacilityRecipe={setFacilityRecipe} setFacilityWorkers={setFacilityWorkers} setMarketAutomation={setMarketAutomation} upgradeFacility={upgradeFacility} />}
         </ScrollView>
-        <View style={styles.bottomNavigation}>{(tutorial.completedWelcome ? [...tabs.slice(0, 3), salesTab, researchTab, ...tabs.slice(3)] : [tabs[0]]).map((tab) => <BottomNavigationItem active={activeView === tab.key} key={tab.key} label={tab.label} onPress={() => setActiveView(tab.key)} symbol={tab.symbol} />)}</View>
+        <View style={styles.bottomNavigation}>{(tutorial.completedWelcome ? [...tabs.slice(0, 3), salesTab, researchTab, ...tabs.slice(3)] : tutorialStep === 5 ? [tabs[0], tabs[2]] : [tabs[0]]).map((tab) => <BottomNavigationItem active={activeView === tab.key} highlight={tutorialStep === 5 && tab.key === 'production'} key={tab.key} label={tab.label} onPress={() => { if (tutorialStep === 5 && tab.key === 'production') { setActiveView('production'); setIsTutorialOpen(false); setIsProductionTutorialOpen(true); } else setActiveView(tab.key); }} symbol={tab.symbol} />)}</View>
       </View>
       <GameDialogs facilities={facilities} finance={finance} inventory={inventory} isConstructionYardOpen={isConstructionYardOpen} market={market} onBuyMissingConstructionMaterials={() => { if (pendingConstruction) buyMissingConstructionMaterials(pendingConstruction); }} onCloseConstructionYard={() => setIsConstructionYardOpen(false)} onConfirmConstruction={() => { if (pendingConstruction && buildFacility(pendingConstruction)) setPendingConstruction(null); }} onConfirmDestruction={() => { if (pendingDestruction && destroyFacility(pendingDestruction)) setPendingDestruction(null); }} onDismissConstruction={() => setPendingConstruction(null)} onDismissDestruction={() => setPendingDestruction(null)} onSelectFacility={(facilityType) => { setIsConstructionYardOpen(false); setPendingConstruction(facilityType); }} pendingConstruction={pendingConstruction} pendingDestruction={pendingDestruction} />
       <PrestigeDialog currentGameTimeMs={lastProcessedAtMs} isOpen={isPrestigeOpen} onClose={() => setIsPrestigeOpen(false)} summary={prestigeSummary} />
-      <TutorialGuideDialog balance={formatCurrency(finance.getBalance())} onClose={() => setIsTutorialOpen(false)} onNext={() => setTutorialStep(2)} step={tutorialStep} visible={isTutorialOpen} />
+      <TutorialGuideDialog balance={formatCurrency(finance.getBalance())} elapsedTime={formatElapsedTime(elapsedForegroundTimeMs)} onNext={() => setTutorialStep((currentStep) => currentStep === 1 ? 2 : currentStep === 2 ? 3 : currentStep === 3 ? 4 : 5)} step={tutorialStep} visible={isTutorialOpen} />
+      <ProductionTutorialDialog onClose={() => setIsProductionTutorialOpen(false)} visible={isProductionTutorialOpen} />
     </SafeAreaView>
   );
 }
 
-function BottomNavigationItem({ active, label, onPress, symbol }: { active: boolean; label: string; onPress: () => void; symbol: string }) {
+function BottomNavigationItem({ active, highlight, label, onPress, symbol }: { active: boolean; highlight?: boolean; label: string; onPress: () => void; symbol: string }) {
   const activeStyle: StyleProp<ViewStyle> = active ? styles.activeNavigationItem : undefined;
-  return <Pressable accessibilityLabel={`${label} tab`} accessibilityRole="tab" accessibilityState={{ selected: active }} onPress={onPress} style={[styles.navigationItem, activeStyle]}><Text style={[styles.navigationSymbol, active && styles.activeNavigationText]}>{symbol}</Text><Text style={[styles.navigationLabel, active && styles.activeNavigationText]}>{label}</Text></Pressable>;
+  return <Pressable accessibilityLabel={`${label} tab`} accessibilityRole="tab" accessibilityState={{ selected: active }} onPress={onPress} style={[styles.navigationItem, activeStyle, highlight && styles.tutorialProductionNavigation]}><Text style={[styles.navigationSymbol, active && styles.activeNavigationText]}>{symbol}</Text><Text style={[styles.navigationLabel, active && styles.activeNavigationText]}>{label}</Text></Pressable>;
 }
