@@ -213,7 +213,7 @@ flowchart LR
 |---|---|---|---|---|
 | `inventory.entries.*.quantity`, `.quality` | Stored | `Inventory` | Resource commands and production | `InventorySnapshot` |
 | `finance.balance`, `.transactions` | Stored | `Finance` | Accepted transactions | `FinanceSnapshot` |
-| `facilities[FacilityType]` and recipe progress | Stored | `FacilityCollection` | Construction, setup, upgrades, and production | Facility snapshot |
+| Numbered facility instances and recipe progress | Stored | `FacilityCollection` | Construction, setup, upgrades, and production | Facility snapshot |
 | Facility upgrade levels and assigned workers | Stored | `Facility` | Upgrade and staffing commands | Facility snapshot |
 | `salesContracts.offered`, `.completed`, `.nextCustomerNumber` | Stored | `SalesContracts` | Offers and contract actions | `SalesContractsSnapshot` |
 | `achievements.unlocks` | Stored | `AchievementLedger` | Post-command achievement evaluation | `AchievementLedgerSnapshot` |

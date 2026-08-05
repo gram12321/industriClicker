@@ -24,6 +24,7 @@ export type GameTimeSnapshot = {
  * definitions and class methods are intentionally absent.
  */
 export type GameSnapshot = {
+  version: 2;
   finance: FinanceSnapshot;
   inventory: InventorySnapshot;
   market: MarketSnapshot;
@@ -57,7 +58,7 @@ function isGameTimeSnapshot(value: unknown): value is GameTimeSnapshot {
 
 /** Structural guard used by the company-scoped SQLite save adapter. */
 export function isGameSnapshot(value: unknown): value is GameSnapshot {
-  if (!isRecord(value) || !isRecord(value.finance) || !isRecord(value.inventory)
+  if (!isRecord(value) || value.version !== 2 || !isRecord(value.finance) || !isRecord(value.inventory)
     || !isRecord(value.market) || !isRecord(value.facilities) || !isRecord(value.salesContracts)
     || !isRecord(value.achievements) || !isRecord(value.productionStatistics)
     || !isRecord(value.prestige) || !isResearchLedgerSnapshot(value.research) || !isGameTimeSnapshot(value.time)) {

@@ -46,11 +46,11 @@ type GameState = {
   setMarketAutomation: (resourceType: ResourceType, updates: Partial<MarketAutomation>) => boolean;
   buyMissingConstructionMaterials: (facilityType: FacilityType) => boolean;
   buildFacility: (facilityType: FacilityType) => boolean;
-  destroyFacility: (facilityType: FacilityType) => boolean;
-  setFacilityRecipe: (facilityType: FacilityType, recipeName: RecipeName | null) => boolean;
-  setFacilityProductionActive: (facilityType: FacilityType, active: boolean) => boolean;
-  setFacilityWorkers: (facilityType: FacilityType, workerCount: number) => boolean;
-  upgradeFacility: (facilityType: FacilityType, upgradeKind: FacilityUpgradeKind) => boolean;
+  destroyFacility: (facilityId: string) => boolean;
+  setFacilityRecipe: (facilityId: string, recipeName: RecipeName | null) => boolean;
+  setFacilityProductionActive: (facilityId: string, active: boolean) => boolean;
+  setFacilityWorkers: (facilityId: string, workerCount: number) => boolean;
+  upgradeFacility: (facilityId: string, upgradeKind: FacilityUpgradeKind) => boolean;
   advanceGameTime: (elapsedMilliseconds: number) => number;
   advanceRealtime: (nowMs: number) => number;
   fastForwardOneMinute: () => boolean;
@@ -121,6 +121,7 @@ function getResearchAvailabilityForState(input: {
 export function createStartingGameSnapshot(nowMs = Date.now()): GameSnapshot {
   const finance = new Finance();
   return {
+    version: 2,
     finance: finance.toSnapshot(),
     inventory: new Inventory().toSnapshot(),
     market: new Market().toSnapshot(),
@@ -262,7 +263,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const trade = market.buyFromLocal(ResourceType.ConstructionMaterials, missingAmount);
     const materialsTotal = trade.unitPrice * trade.amount;
 
-    if (facilities.has(facilityType) || missingAmount === 0 || !trade.success
+    if (missingAmount === 0 || !trade.success
       || !finance.canAfford(definition.landCost + materialsTotal)
       || !inventory.add(ResourceType.ConstructionMaterials, trade.amount, trade.quality)
       || !finance.applyTransaction(
@@ -289,7 +290,7 @@ export const useGameStore = create<GameState>((set, get) => {
 
     if (!finance.applyTransaction(
       -definition.landCost,
-      `Purchased land for ${definition.name}`,
+      `Purchased land for ${facilities.getAllByType(facilityType).at(-1)?.getDisplayName() ?? definition.name}`,
       new Date().toISOString(),
     ) || !inventory.remove(ResourceType.ConstructionMaterials, definition.constructionMaterialsCost)) {
       return false;
@@ -311,21 +312,21 @@ export const useGameStore = create<GameState>((set, get) => {
     set({ facilities, finance, inventory, ...achievementResult });
     return true;
   },
-  destroyFacility: (facilityType) => {
+  destroyFacility: (facilityId) => {
     get().advanceRealtime(Date.now());
     const facilities = get().facilities.clone();
 
-    if (!facilities.destroy(facilityType)) {
+    if (!facilities.destroy(facilityId)) {
       return false;
     }
 
     set({ facilities });
     return true;
   },
-  setFacilityRecipe: (facilityType, recipeName) => {
+  setFacilityRecipe: (facilityId, recipeName) => {
     get().advanceRealtime(Date.now());
     const facilities = get().facilities.clone();
-    const facility = facilities.get(facilityType);
+    const facility = facilities.get(facilityId);
 
     if (!facility || !facility.setActiveRecipe(recipeName)) {
       return false;
@@ -334,10 +335,10 @@ export const useGameStore = create<GameState>((set, get) => {
     set({ facilities });
     return true;
   },
-  setFacilityProductionActive: (facilityType, active) => {
+  setFacilityProductionActive: (facilityId, active) => {
     get().advanceRealtime(Date.now());
     const facilities = get().facilities.clone();
-    const facility = facilities.get(facilityType);
+    const facility = facilities.get(facilityId);
 
     if (!facility || !facility.setProductionActive(active)) {
       return false;
@@ -346,10 +347,10 @@ export const useGameStore = create<GameState>((set, get) => {
     set({ facilities });
     return true;
   },
-  setFacilityWorkers: (facilityType, workerCount) => {
+  setFacilityWorkers: (facilityId, workerCount) => {
     get().advanceRealtime(Date.now());
     const facilities = get().facilities.clone();
-    const facility = facilities.get(facilityType);
+    const facility = facilities.get(facilityId);
 
     if (!facility || !facility.setAssignedWorkers(workerCount)) {
       return false;
@@ -358,11 +359,11 @@ export const useGameStore = create<GameState>((set, get) => {
     set({ facilities });
     return true;
   },
-  upgradeFacility: (facilityType, upgradeKind) => {
+  upgradeFacility: (facilityId, upgradeKind) => {
     get().advanceRealtime(Date.now());
     const facilities = get().facilities.clone();
     const finance = get().finance.clone();
-    const facility = facilities.get(facilityType);
+    const facility = facilities.get(facilityId);
 
     if (!facility) {
       return false;
@@ -371,7 +372,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const currentLevel = upgradeKind === 'speed'
       ? facility.getSpeedUpgradeLevel()
       : facility.getOutputUpgradeLevel();
-    const definition = getFacilityDefinition(facilityType);
+    const definition = getFacilityDefinition(facility.facilityType);
     const cost = getFacilityUpgradeCost(definition.upgradeCost, currentLevel);
 
     if (!finance.canAfford(cost)) {
@@ -386,7 +387,7 @@ export const useGameStore = create<GameState>((set, get) => {
 
     if (!finance.applyTransaction(
       -cost,
-      `${upgradeKind === 'speed' ? 'Speed' : 'Output'} upgrade for ${definition.name}`,
+      `${upgradeKind === 'speed' ? 'Speed' : 'Output'} upgrade for ${facility.getDisplayName()}`,
       new Date().toISOString(),
     )) {
       return false;
@@ -733,6 +734,7 @@ export const useGameStore = create<GameState>((set, get) => {
     }
   },
   createSnapshot: () => ({
+    version: 2,
     finance: get().finance.toSnapshot(),
     inventory: get().inventory.toSnapshot(),
     market: get().market.toSnapshot(),

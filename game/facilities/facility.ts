@@ -8,6 +8,7 @@ const WORK_COMPLETION_EPSILON = 1e-9;
 
 /** Plain data used by the game snapshot and Expo SQLite adapter. */
 export type FacilitySnapshot = {
+  id: string;
   facilityType: FacilityType;
   activeRecipeName: RecipeName | null;
   isActive: boolean;
@@ -34,6 +35,7 @@ export class Facility {
   private assignedWorkers = 0;
 
   constructor(
+    public readonly id: string,
     public readonly facilityType: FacilityType,
     snapshot?: FacilitySnapshot,
   ) {
@@ -46,6 +48,10 @@ export class Facility {
 
   getActiveRecipeName(): RecipeName | null {
     return this.activeRecipeName;
+  }
+
+  getDisplayName(): string {
+    return `${getFacilityDefinition(this.facilityType).name} #${this.id.split('-').at(-1)}`;
   }
 
   isActive(): boolean {
@@ -197,6 +203,7 @@ export class Facility {
 
   toSnapshot(): FacilitySnapshot {
     return {
+      id: this.id,
       facilityType: this.facilityType,
       activeRecipeName: this.activeRecipeName,
       isActive: this.active,
@@ -208,7 +215,7 @@ export class Facility {
   }
 
   static fromSnapshot(snapshot: FacilitySnapshot): Facility {
-    return new Facility(snapshot.facilityType, snapshot);
+    return new Facility(snapshot.id, snapshot.facilityType, snapshot);
   }
 
   private restore(snapshot: FacilitySnapshot): void {

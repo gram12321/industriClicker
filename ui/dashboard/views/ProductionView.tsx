@@ -4,7 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button, Card, IconButton, List, ProgressBar, Text, TouchableRipple } from 'react-native-paper';
 import { colors } from '@/theme';
 import type { Finance } from '@/game/finance';
-import type { FacilityCollection, FacilityType, FacilityUpgradeKind } from '@/game/facilities';
+import type { FacilityCollection, FacilityUpgradeKind } from '@/game/facilities';
 import { getFacilityDefinition, getFacilityUpgradeCost } from '@/game/facilities';
 import type { Inventory } from '@/game/inventory';
 import type { Market, MarketAutomation } from '@/game/market';
@@ -23,15 +23,15 @@ export function ProductionView({
   inventory: Inventory;
   market: Market;
   openConstructionYard: () => void;
-  requestFacilityDestruction: (facilityType: FacilityType) => void;
-  setFacilityProductionActive: (facilityType: FacilityType, active: boolean) => boolean;
-  setFacilityRecipe: (facilityType: FacilityType, recipeName: Recipe['name'] | null) => boolean;
-  setFacilityWorkers: (facilityType: FacilityType, workerCount: number) => boolean;
+  requestFacilityDestruction: (facilityId: string) => void;
+  setFacilityProductionActive: (facilityId: string, active: boolean) => boolean;
+  setFacilityRecipe: (facilityId: string, recipeName: Recipe['name'] | null) => boolean;
+  setFacilityWorkers: (facilityId: string, workerCount: number) => boolean;
   setMarketAutomation: (resourceType: Recipe['inputs'][number]['resourceType'], updates: Partial<MarketAutomation>) => boolean;
-  upgradeFacility: (facilityType: FacilityType, upgradeKind: FacilityUpgradeKind) => boolean;
+  upgradeFacility: (facilityId: string, upgradeKind: FacilityUpgradeKind) => boolean;
 }) {
-  const [collapsedFacilities, setCollapsedFacilities] = useState<Partial<Record<FacilityType, boolean>>>({});
-  const [expandedRecipeSelectors, setExpandedRecipeSelectors] = useState<Partial<Record<FacilityType, boolean>>>({});
+  const [collapsedFacilities, setCollapsedFacilities] = useState<Record<string, boolean>>({});
+  const [expandedRecipeSelectors, setExpandedRecipeSelectors] = useState<Record<string, boolean>>({});
   const builtFacilities = facilities.getAll();
 
   return <>
@@ -39,6 +39,8 @@ export function ProductionView({
     <Button icon={APP_ICONS.add} mode="contained" onPress={openConstructionYard}>Build facility</Button>
     {builtFacilities.map((facility) => {
       const facilityType = facility.facilityType;
+      const facilityId = facility.id;
+      const facilityName = facility.getDisplayName();
       const definition = getFacilityDefinition(facilityType);
       const activeRecipeName = facility.getActiveRecipeName();
       const activeRecipe = definition.recipes.find((recipe) => recipe.name === activeRecipeName);
@@ -49,12 +51,12 @@ export function ProductionView({
       const outputUpgradeLevel = facility.getOutputUpgradeLevel();
       const speedUpgradeCost = getFacilityUpgradeCost(definition.upgradeCost, speedUpgradeLevel);
       const outputUpgradeCost = getFacilityUpgradeCost(definition.upgradeCost, outputUpgradeLevel);
-      const isExpanded = collapsedFacilities[facilityType] !== true;
-      const isRecipeSelectorExpanded = expandedRecipeSelectors[facilityType] === true;
+      const isExpanded = collapsedFacilities[facilityId] !== true;
+      const isRecipeSelectorExpanded = expandedRecipeSelectors[facilityId] === true;
       const allInputsAutoBuyEnabled = Boolean(activeRecipe && activeRecipe.inputs.length > 0 && activeRecipe.inputs.every((input) => market.getAutomation(input.resourceType).autoBuyEnabled));
       const hasMissingInputs = Boolean(activeRecipe && activeRecipe.inputs.some((input) => input.amount > inventory.getAmount(input.resourceType)));
 
-      return <Card key={facilityType} mode="contained" style={styles.featureCard}><Card.Content>
+      return <Card key={facilityId} mode="contained" style={styles.featureCard}><Card.Content>
         <List.Item
           description={<View style={styles.facilityHeader}>
             <View style={styles.facilityHeaderRow}><Text style={styles.cardDescription}>{activeRecipe ? formatRecipeName(activeRecipe) : 'No active recipe'}</Text>{activeRecipe && <WorkMetric value={`${formatNumber(facility.getRecipeProgress(activeRecipe.name), { smartDecimals: true })}/${formatNumber(activeRecipe.workAmount, { smartDecimals: true })}`} />}</View>
@@ -67,8 +69,8 @@ export function ProductionView({
             </View>
           </View>}
           left={(props) => <List.Icon {...props} icon={definition.icon} />}
-          right={() => <View style={styles.facilityTopActions}>{activeRecipe && <IconButton accessibilityLabel={`${facility.isActive() ? 'Pause' : 'Resume'} ${definition.name}`} icon={facility.isActive() ? APP_ICONS.pause : APP_ICONS.resume} onPress={() => setFacilityProductionActive(facilityType, !facility.isActive())} size={20} />}<IconButton accessibilityLabel={`Destroy ${definition.name}`} icon={APP_ICONS.destroy} iconColor={colors.error} onPress={() => requestFacilityDestruction(facilityType)} size={20} /><IconButton accessibilityLabel={`${isExpanded ? 'Collapse' : 'Expand'} ${definition.name}`} icon={isExpanded ? APP_ICONS.collapse : APP_ICONS.expand} onPress={() => setCollapsedFacilities((current) => ({ ...current, [facilityType]: isExpanded }))} size={20} /></View>}
-          title={definition.name}
+          right={() => <View style={styles.facilityTopActions}>{activeRecipe && <IconButton accessibilityLabel={`${facility.isActive() ? 'Pause' : 'Resume'} ${facilityName}`} icon={facility.isActive() ? APP_ICONS.pause : APP_ICONS.resume} onPress={() => setFacilityProductionActive(facilityId, !facility.isActive())} size={20} />}<IconButton accessibilityLabel={`Destroy ${facilityName}`} icon={APP_ICONS.destroy} iconColor={colors.error} onPress={() => requestFacilityDestruction(facilityId)} size={20} /><IconButton accessibilityLabel={`${isExpanded ? 'Collapse' : 'Expand'} ${facilityName}`} icon={isExpanded ? APP_ICONS.collapse : APP_ICONS.expand} onPress={() => setCollapsedFacilities((current) => ({ ...current, [facilityId]: isExpanded }))} size={20} /></View>}
+          title={facilityName}
           titleStyle={styles.facilityTitle}
         />
         {!isExpanded && activeRecipe && <FacilityProductionStatus compact efficiency={facility.getEfficiency()} market={market} outputMultiplier={facility.getOutputMultiplier()} progress={facility.getRecipeProgress(activeRecipe.name)} recipe={activeRecipe} speedMultiplier={facility.getSpeedMultiplier()} status={productionStatus} />}
@@ -81,22 +83,22 @@ export function ProductionView({
             <FacilityProductionStatus efficiency={facility.getEfficiency()} market={market} outputMultiplier={facility.getOutputMultiplier()} progress={activeRecipe ? facility.getRecipeProgress(activeRecipe.name) : 0} recipe={activeRecipe ?? null} speedMultiplier={facility.getSpeedMultiplier()} status={productionStatus} />
           </View>
           <View style={styles.facilityRecipeSelector}>
-            <View style={styles.facilityRecipeSelectorHeader}><Text style={styles.facilityRecipeSelectorTitle}>Production recipe</Text><IconButton accessibilityLabel={`${isRecipeSelectorExpanded ? 'Hide' : 'Show'} recipes for ${definition.name}`} icon={isRecipeSelectorExpanded ? APP_ICONS.collapse : APP_ICONS.expand} onPress={() => setExpandedRecipeSelectors((current) => ({ ...current, [facilityType]: !isRecipeSelectorExpanded }))} size={20} /></View>
-            {isRecipeSelectorExpanded ? definition.recipes.map((recipe) => <RecipeOption efficiency={facility.getEfficiency()} key={recipe.name} market={market} outputMultiplier={facility.getOutputMultiplier()} recipe={recipe} selected={activeRecipeName === recipe.name} speedMultiplier={facility.getSpeedMultiplier()} inventory={inventory} onPress={() => setFacilityRecipe(facilityType, recipe.name)} />) : <Text style={styles.facilityRecipeSelectorCurrent}>{activeRecipe ? `Current: ${formatRecipeName(activeRecipe)}` : 'No recipe selected'}</Text>}
+            <View style={styles.facilityRecipeSelectorHeader}><Text style={styles.facilityRecipeSelectorTitle}>Production recipe</Text><IconButton accessibilityLabel={`${isRecipeSelectorExpanded ? 'Hide' : 'Show'} recipes for ${facilityName}`} icon={isRecipeSelectorExpanded ? APP_ICONS.collapse : APP_ICONS.expand} onPress={() => setExpandedRecipeSelectors((current) => ({ ...current, [facilityId]: !isRecipeSelectorExpanded }))} size={20} /></View>
+            {isRecipeSelectorExpanded ? definition.recipes.map((recipe) => <RecipeOption efficiency={facility.getEfficiency()} key={recipe.name} market={market} outputMultiplier={facility.getOutputMultiplier()} recipe={recipe} selected={activeRecipeName === recipe.name} speedMultiplier={facility.getSpeedMultiplier()} inventory={inventory} onPress={() => setFacilityRecipe(facilityId, recipe.name)} />) : <Text style={styles.facilityRecipeSelectorCurrent}>{activeRecipe ? `Current: ${formatRecipeName(activeRecipe)}` : 'No recipe selected'}</Text>}
           </View>
           <View style={styles.facilityStaffingSection}>
             <Text style={styles.constructionYardRecipeLabel}>Staffing</Text>
             <View style={styles.facilityStaffingControls}>
-              <IconButton accessibilityLabel={`Remove worker from ${definition.name}`} disabled={assignedWorkers === 0} icon={APP_ICONS.minus} onPress={() => setFacilityWorkers(facilityType, assignedWorkers - 1)} />
+              <IconButton accessibilityLabel={`Remove worker from ${facilityName}`} disabled={assignedWorkers === 0} icon={APP_ICONS.minus} onPress={() => setFacilityWorkers(facilityId, assignedWorkers - 1)} />
               <View style={styles.facilityStaffingSummary}><Text style={styles.facilityStaffingValue}>{formatNumber(assignedWorkers)} / {formatNumber(requiredWorkers)} workers</Text><Text style={styles.facilityStaffingDetail}>Efficiency {formatPercent(facility.getEfficiency(), { decimals: 0 })}</Text></View>
-              <IconButton accessibilityLabel={`Add worker to ${definition.name}`} icon={APP_ICONS.add} onPress={() => setFacilityWorkers(facilityType, assignedWorkers + 1)} />
+              <IconButton accessibilityLabel={`Add worker to ${facilityName}`} icon={APP_ICONS.add} onPress={() => setFacilityWorkers(facilityId, assignedWorkers + 1)} />
             </View>
           </View>
           <Text style={styles.constructionYardRecipeLabel}>Upgrades</Text>
           <Text style={styles.facilityUpgradeSummary}>Speed x{formatNumber(facility.getSpeedMultiplier(), { decimals: 2, forceDecimals: true, adaptiveNearOne: false })} · Output x{formatNumber(facility.getOutputMultiplier(), { decimals: 2, forceDecimals: true, adaptiveNearOne: false })}</Text>
           <View style={styles.facilityUpgradeControls}>
-            <FacilityUpgradeControl canAfford={finance.canAfford(speedUpgradeCost)} cost={speedUpgradeCost} icon={APP_ICONS.speed} label="Speed" level={speedUpgradeLevel} onPress={() => upgradeFacility(facilityType, 'speed')} />
-            <FacilityUpgradeControl canAfford={finance.canAfford(outputUpgradeCost)} cost={outputUpgradeCost} icon={APP_ICONS.output} label="Output" level={outputUpgradeLevel} onPress={() => upgradeFacility(facilityType, 'output')} />
+            <FacilityUpgradeControl canAfford={finance.canAfford(speedUpgradeCost)} cost={speedUpgradeCost} icon={APP_ICONS.speed} label="Speed" level={speedUpgradeLevel} onPress={() => upgradeFacility(facilityId, 'speed')} />
+            <FacilityUpgradeControl canAfford={finance.canAfford(outputUpgradeCost)} cost={outputUpgradeCost} icon={APP_ICONS.output} label="Output" level={outputUpgradeLevel} onPress={() => upgradeFacility(facilityId, 'output')} />
           </View>
         </>}
       </Card.Content></Card>;

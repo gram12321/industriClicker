@@ -35,7 +35,7 @@ function GameShell({ companyName }: { companyName: string }) {
   const [isPrestigeOpen, setIsPrestigeOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [pendingConstruction, setPendingConstruction] = useState<import('@/game').FacilityType | null>(null);
-  const [pendingDestruction, setPendingDestruction] = useState<import('@/game').FacilityType | null>(null);
+  const [pendingDestruction, setPendingDestruction] = useState<string | null>(null);
   const inventory = useGameStore((state) => state.inventory);
   const market = useGameStore((state) => state.market);
   const facilities = useGameStore((state) => state.facilities);

@@ -1,6 +1,5 @@
 import type { Finance } from '@/game/finance';
 import type { FacilityCollection } from '@/game/facilities/facilityCollection';
-import type { FacilityType } from '@/game/facilities/facilityTypes';
 import type { FacilityUpgradeKind } from '@/game/facilities/facilityUpgrades';
 import type { Inventory } from '@/game/inventory';
 import type { Market, MarketAutomation } from '@/game/market';
@@ -52,12 +51,12 @@ export function GameViewContent({
   setMarketAutomation: (resourceType: ResourceType, updates: Partial<MarketAutomation>) => boolean;
   openConstructionYard: () => void;
   rejectSalesContract: (contractId: string) => boolean;
-  requestFacilityDestruction: (facilityType: FacilityType) => void;
+  requestFacilityDestruction: (facilityId: string) => void;
   salesContracts: SalesContracts;
-  setFacilityRecipe: (facilityType: FacilityType, recipeName: Recipe['name'] | null) => boolean;
-  setFacilityProductionActive: (facilityType: FacilityType, active: boolean) => boolean;
-  setFacilityWorkers: (facilityType: FacilityType, workerCount: number) => boolean;
-  upgradeFacility: (facilityType: FacilityType, upgradeKind: FacilityUpgradeKind) => boolean;
+  setFacilityRecipe: (facilityId: string, recipeName: Recipe['name'] | null) => boolean;
+  setFacilityProductionActive: (facilityId: string, active: boolean) => boolean;
+  setFacilityWorkers: (facilityId: string, workerCount: number) => boolean;
+  upgradeFacility: (facilityId: string, upgradeKind: FacilityUpgradeKind) => boolean;
 }) {
   switch (activeTab) {
     case 'company': return <CompanyView companyName={companyName} />;
