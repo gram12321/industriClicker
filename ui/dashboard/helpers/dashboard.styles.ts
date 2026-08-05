@@ -165,6 +165,11 @@ export const styles = StyleSheet.create({
   salesFilterButton: { flex: 1 },
   salesFilters: { flexDirection: 'row', gap: 8 },
   salesReward: { color: colors.primary, fontSize: 20, fontWeight: '700' },
+  salesResearchGate: { color: colors.error, fontSize: 12, lineHeight: 18 },
+  salesResearchReady: { color: colors.primary, fontSize: 12, fontWeight: '700' },
+  salesComparison: { color: colors.muted, fontSize: 12 },
+  salesComparisonPositive: { color: colors.marketGreen, fontWeight: '700' },
+  salesComparisonNegative: { color: colors.error, fontWeight: '700' },
   screen: { backgroundColor: colors.softBackground, flex: 1 },
   sectionEyebrow: {
     color: colors.primary,

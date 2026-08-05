@@ -22,6 +22,16 @@ export type SalesContractsSnapshot = {
   nextCustomerNumber: number;
 };
 
+export function calculateSalesContractMarketComparison(contract: Pick<SalesContract, 'quantity' | 'reward'>, normalMarketUnitPrice: number): { normalSaleValue: number; gain: number; gainPercent: number } {
+  const normalSaleValue = contract.quantity * normalMarketUnitPrice;
+  const gain = contract.reward - normalSaleValue;
+  return {
+    normalSaleValue,
+    gain,
+    gainPercent: normalSaleValue > 0 ? (gain / normalSaleValue) * 100 : 0,
+  };
+}
+
 function isContract(value: SalesContract): boolean {
   return (
     value.id.length > 0
