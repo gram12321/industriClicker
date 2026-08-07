@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button, Card, IconButton, List, ProgressBar, Text, TouchableRipple } from 'react-native-paper';
@@ -17,7 +17,7 @@ import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS } from '@/icons';
 
 export function ProductionView({
-  buyMarketResource, facilities, finance, inventory, isBuildFacilityTutorial, market, openConstructionYard, requestFacilityDestruction, setFacilityProductionActive, setFacilityRecipe, setFacilityWorkers, setMarketAutomation, upgradeFacility,
+  buyMarketResource, facilities, finance, inventory, isBuildFacilityTutorial, market, onBuildFacilityLayout, openConstructionYard, requestFacilityDestruction, setFacilityProductionActive, setFacilityRecipe, setFacilityWorkers, setMarketAutomation, upgradeFacility,
 }: {
   facilities: FacilityCollection;
   buyMarketResource: (resourceType: Recipe['inputs'][number]['resourceType'], amount: number) => boolean;
@@ -25,6 +25,7 @@ export function ProductionView({
   inventory: Inventory;
   market: Market;
   isBuildFacilityTutorial?: boolean;
+  onBuildFacilityLayout?: (layout: { height: number; width: number; x: number; y: number }) => void;
   openConstructionYard: () => void;
   requestFacilityDestruction: (facilityId: string) => void;
   setFacilityProductionActive: (facilityId: string, active: boolean) => boolean;
@@ -35,11 +36,12 @@ export function ProductionView({
 }) {
   const [collapsedFacilities, setCollapsedFacilities] = useState<Record<string, boolean>>({});
   const [expandedRecipeSelectors, setExpandedRecipeSelectors] = useState<Record<string, boolean>>({});
+  const buildFacilityButtonRef = useRef<View>(null);
   const builtFacilities = facilities.getAll();
 
   return <>
     <SectionHeading eyebrow="OPERATIONS" title="Facilities" subtitle="Manage your constructed facilities and build new ones." />
-    <Button icon={APP_ICONS.add} mode="contained" style={isBuildFacilityTutorial ? styles.tutorialBuildFacilityButton : undefined} onPress={openConstructionYard}>Build facility</Button>
+    <View ref={buildFacilityButtonRef} onLayout={() => buildFacilityButtonRef.current?.measureInWindow((x, y, width, height) => onBuildFacilityLayout?.({ height, width, x, y }))}><Button icon={APP_ICONS.add} mode="contained" style={isBuildFacilityTutorial ? styles.tutorialBuildFacilityButton : undefined} onPress={openConstructionYard}>Build facility</Button></View>
     {builtFacilities.map((facility) => {
       const facilityType = facility.facilityType;
       const facilityId = facility.id;

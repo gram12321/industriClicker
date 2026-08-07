@@ -40,6 +40,8 @@ type GameState = {
   unprocessedWorkMs: number;
   /** Estimated customer-wait intervals elapsed since the last offer. */
   customerPipelineProgress: number;
+  addAdminFunds: (amount: number) => boolean;
+  setAdminBalance: (amount: number) => boolean;
   setInventoryAmount: (resourceType: ResourceType, amount: number) => boolean;
   buyMarketResource: (resourceType: ResourceType, amount: number) => boolean;
   sellMarketResource: (resourceType: ResourceType, amount: number) => boolean;
@@ -204,6 +206,18 @@ export const useGameStore = create<GameState>((set, get) => {
   lastObservedAtMs: initialGameTimeMs,
   unprocessedWorkMs: 0,
   customerPipelineProgress: 0,
+  addAdminFunds: (amount) => {
+    if (!Number.isFinite(amount) || amount === 0) return false;
+    const finance = get().finance.clone();
+    if (!finance.applyTransaction(amount, 'Admin balance adjustment', new Date().toISOString())) return false;
+    set({ finance });
+    return true;
+  },
+  setAdminBalance: (amount) => {
+    if (!Number.isFinite(amount) || amount < 0) return false;
+    const currentBalance = get().finance.getBalance();
+    return get().addAdminFunds(amount - currentBalance);
+  },
   setInventoryAmount: (resourceType, amount) => {
     const inventory = get().inventory.clone();
 

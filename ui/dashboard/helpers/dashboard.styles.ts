@@ -4,6 +4,7 @@ import { colors } from '@/theme';
 
 export const styles = StyleSheet.create({
   adminContractControls: { gap: 8 },
+  adminMoneyActions: { flexDirection: 'row', gap: 8 },
   adminContractAmountInput: { backgroundColor: colors.surface },
   adminSuccessMessage: { color: colors.primary, fontWeight: '700' },
   activeNavigationItem: { backgroundColor: colors.paleGreen },
@@ -195,6 +196,7 @@ export const styles = StyleSheet.create({
   tutorialProductionNavigation: { borderColor: '#FFD54F', borderWidth: 2 },
   tutorialBuildFacilityButton: { borderColor: '#FFD54F', borderWidth: 3 },
   tutorialBuildFacilityCard: { backgroundColor: '#F5EFFB', borderRadius: 24, elevation: 8, marginHorizontal: 32, padding: 24 },
+  tutorialBuildFacilityDimmer: { backgroundColor: 'rgba(0, 0, 0, 0.32)', left: 0, position: 'absolute', right: 0 },
   tutorialBalanceSpotlight: { alignItems: 'center', backgroundColor: colors.primary, borderColor: '#FFD54F', borderRadius: 10, borderWidth: 2, flexDirection: 'row', gap: 8, left: 14, paddingHorizontal: 8, paddingVertical: 4, position: 'absolute', top: 10 },
   tutorialDialog: { overflow: 'visible' },
   tutorialDialogTitle: { color: colors.charcoal, fontSize: 24, marginBottom: 18 },
