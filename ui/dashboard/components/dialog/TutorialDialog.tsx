@@ -31,3 +31,7 @@ export function TutorialGuideDialog({ balance, elapsedTime, step, visible, onNex
 export function ProductionTutorialDialog({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   return <Portal><Dialog dismissable={false} style={styles.tutorialDialog} visible={visible}><Image accessibilityLabel="Simulucius, your tutorial guide" resizeMode="contain" source={SIMULUCIUS_IMAGES.welcome} style={styles.tutorialGuideCharacterBehind} /><Dialog.Title>Production</Dialog.Title><Dialog.Content><Text style={styles.dialogDescription}>This is the Production view. We’ll explore how your facilities run here next.</Text></Dialog.Content><Dialog.Actions><Button mode="contained" onPress={onClose}>Continue</Button></Dialog.Actions></Dialog></Portal>;
 }
+
+export function BuildFacilityTutorialDialog({ visible }: { visible: boolean }) {
+  return <Portal>{visible && <View pointerEvents="none" style={styles.tutorialProductionOverlay}><View style={styles.tutorialBuildFacilityCard}><Image accessibilityLabel="Simulucius, your tutorial guide" resizeMode="contain" source={SIMULUCIUS_IMAGES.welcome} style={styles.tutorialGuideCharacterBehind} /><Text style={styles.tutorialDialogTitle}>Build a facility</Text><Text style={styles.dialogDescription}>Press “Build facility” to construct your first facility.</Text></View></View>}</Portal>;
+}

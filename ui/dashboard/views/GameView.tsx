@@ -31,6 +31,7 @@ export function GameViewContent({
   sellMarketResource,
   setMarketAutomation,
   openConstructionYard,
+  isBuildFacilityTutorial,
   rejectSalesContract,
   research,
   getResearchAvailability,
@@ -54,6 +55,7 @@ export function GameViewContent({
   sellMarketResource: (resourceType: ResourceType, amount: number) => boolean;
   setMarketAutomation: (resourceType: ResourceType, updates: Partial<MarketAutomation>) => boolean;
   openConstructionYard: () => void;
+  isBuildFacilityTutorial?: boolean;
   rejectSalesContract: (contractId: string) => boolean;
   research: ResearchLedger;
   getResearchAvailability: (projectId: ResearchProjectId) => ResearchAvailability;
@@ -68,7 +70,7 @@ export function GameViewContent({
     case 'company': return <CompanyView companyName={companyName} />;
     case 'inventory': return <InventoryView inventory={inventory} />;
     case 'market': return <MarketView buyMarketResource={buyMarketResource} finance={finance} inventory={inventory} market={market} sellMarketResource={sellMarketResource} setMarketAutomation={setMarketAutomation} />;
-    case 'production': return <ProductionView buyMarketResource={buyMarketResource} facilities={facilities} finance={finance} inventory={inventory} market={market} openConstructionYard={openConstructionYard} requestFacilityDestruction={requestFacilityDestruction} setFacilityProductionActive={setFacilityProductionActive} setFacilityRecipe={setFacilityRecipe} setFacilityWorkers={setFacilityWorkers} setMarketAutomation={setMarketAutomation} upgradeFacility={upgradeFacility} />;
+    case 'production': return <ProductionView buyMarketResource={buyMarketResource} facilities={facilities} finance={finance} inventory={inventory} market={market} isBuildFacilityTutorial={isBuildFacilityTutorial} openConstructionYard={openConstructionYard} requestFacilityDestruction={requestFacilityDestruction} setFacilityProductionActive={setFacilityProductionActive} setFacilityRecipe={setFacilityRecipe} setFacilityWorkers={setFacilityWorkers} setMarketAutomation={setMarketAutomation} upgradeFacility={upgradeFacility} />;
     case 'sales': return <SalesView customerPipelineProgress={customerPipelineProgress} fulfillSalesContract={fulfillSalesContract} getResearchAvailability={getResearchAvailability} inventory={inventory} market={market} maximumOpenContracts={maximumOpenContracts} rejectSalesContract={rejectSalesContract} research={research} salesContracts={salesContracts} />;
     case 'finance': return <FinanceView finance={finance} />;
   }

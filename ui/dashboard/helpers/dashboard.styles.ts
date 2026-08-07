@@ -193,6 +193,8 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   tutorialProductionNavigation: { borderColor: '#FFD54F', borderWidth: 2 },
+  tutorialBuildFacilityButton: { borderColor: '#FFD54F', borderWidth: 3 },
+  tutorialBuildFacilityCard: { backgroundColor: '#F5EFFB', borderRadius: 24, elevation: 8, marginHorizontal: 32, padding: 24 },
   tutorialBalanceSpotlight: { alignItems: 'center', backgroundColor: colors.primary, borderColor: '#FFD54F', borderRadius: 10, borderWidth: 2, flexDirection: 'row', gap: 8, left: 14, paddingHorizontal: 8, paddingVertical: 4, position: 'absolute', top: 10 },
   tutorialDialog: { overflow: 'visible' },
   tutorialDialogTitle: { color: colors.charcoal, fontSize: 24, marginBottom: 18 },

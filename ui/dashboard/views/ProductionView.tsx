@@ -17,13 +17,14 @@ import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS } from '@/icons';
 
 export function ProductionView({
-  buyMarketResource, facilities, finance, inventory, market, openConstructionYard, requestFacilityDestruction, setFacilityProductionActive, setFacilityRecipe, setFacilityWorkers, setMarketAutomation, upgradeFacility,
+  buyMarketResource, facilities, finance, inventory, isBuildFacilityTutorial, market, openConstructionYard, requestFacilityDestruction, setFacilityProductionActive, setFacilityRecipe, setFacilityWorkers, setMarketAutomation, upgradeFacility,
 }: {
   facilities: FacilityCollection;
   buyMarketResource: (resourceType: Recipe['inputs'][number]['resourceType'], amount: number) => boolean;
   finance: Finance;
   inventory: Inventory;
   market: Market;
+  isBuildFacilityTutorial?: boolean;
   openConstructionYard: () => void;
   requestFacilityDestruction: (facilityId: string) => void;
   setFacilityProductionActive: (facilityId: string, active: boolean) => boolean;
@@ -38,7 +39,7 @@ export function ProductionView({
 
   return <>
     <SectionHeading eyebrow="OPERATIONS" title="Facilities" subtitle="Manage your constructed facilities and build new ones." />
-    <Button icon={APP_ICONS.add} mode="contained" onPress={openConstructionYard}>Build facility</Button>
+    <Button icon={APP_ICONS.add} mode="contained" style={isBuildFacilityTutorial ? styles.tutorialBuildFacilityButton : undefined} onPress={openConstructionYard}>Build facility</Button>
     {builtFacilities.map((facility) => {
       const facilityType = facility.facilityType;
       const facilityId = facility.id;
