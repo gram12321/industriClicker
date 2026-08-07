@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { Button, Card, Menu, Text, TextInput } from 'react-native-paper';
 import { getResource, getResourceIcon, RESOURCE_TYPES, type ResourceType } from '@/game/resources';
-import { styles } from '@/ui/dashboard/shared';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS } from '@/icons';
 
 export function InventoryControlCard({

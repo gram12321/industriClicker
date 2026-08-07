@@ -1,7 +1,7 @@
 import { View } from 'react-native';
 import { Button, Card, List, Text } from 'react-native-paper';
 
-import { styles } from '@/ui/dashboard/shared';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS } from '@/icons';
 
 export function SettingsScreen({ onLogout, onReplayTutorial }: { onLogout: () => Promise<void>; onReplayTutorial: () => Promise<void> }) {

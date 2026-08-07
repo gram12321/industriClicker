@@ -11,7 +11,9 @@ import type { Market, MarketAutomation } from '@/game/market';
 import type { Recipe } from '@/game/recipes';
 import { getResource, getResourceIcon } from '@/game/resources';
 import { clamp, formatCurrency, formatDuration, formatNumber, formatPercent } from '@/utils';
-import { DetailRow, SectionHeading, WorkMetric, formatRecipeName, styles } from '@/ui/dashboard/shared';
+import { DetailRow, SectionHeading, WorkMetric } from '@/ui/dashboard/components/DashboardPrimitives';
+import { formatRecipeName } from '@/ui/dashboard/helpers/recipeFormatters';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS } from '@/icons';
 
 export function ProductionView({

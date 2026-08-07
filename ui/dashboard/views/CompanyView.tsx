@@ -1,5 +1,6 @@
 import { Card, Text } from 'react-native-paper';
-import { SectionHeading, styles } from '@/ui/dashboard/shared';
+import { SectionHeading } from '@/ui/dashboard/components/DashboardPrimitives';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 
 export function CompanyView({ companyName }: { companyName: string }) {
   return (

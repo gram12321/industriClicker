@@ -1,2 +1,2 @@
 export * from '../helpers';
-export * from '../components/GameViewComponents';
+export * from '../components/DashboardPrimitives';

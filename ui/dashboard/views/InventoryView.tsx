@@ -5,7 +5,8 @@ import { getResource, getResourceIcon, RESOURCE_TYPES } from '@/game/resources';
 import type { Inventory } from '@/game/inventory';
 import { APP_ICONS } from '@/icons';
 import { formatNumber } from '@/utils';
-import { SectionHeading, styles } from '@/ui/dashboard/shared';
+import { SectionHeading } from '@/ui/dashboard/components/DashboardPrimitives';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 
 export function InventoryView({ inventory }: { inventory: Inventory }) {
   return (

@@ -234,6 +234,318 @@ Write clear, factual release notes that explain what changed, where, and why it 
 
 ---
 
+## Version 0.00019b through 0.00019 - Tutorial flow
+**Date:** 2026-08-06 | **Commit(s):** f9ae965dab8207231796174b9fcb0b9495d8f452, 888a43608d26b0b0b5fc46d7ce36b72b1b3376e5, b0e5754a2bec23485bf61d4b40923a67df63f001 | **Stats:** +91 / -50
+
+### Summary
+
+- Added the first tutorial flow and introduced tutorial guidance for new players.
+- Added introductory visual assets and improved the tutorial's highlighted-area presentation.
+- Connected tutorial state to company data and the admin/user dashboard context.
+
+### Changes
+
+- `ui/dashboard/components/TutorialGuideDialog.tsx` - Added the tutorial dialog, first-step guidance, and highlighted-area instructions.
+- `ui/dashboard/helpers/dashboard.styles.ts` - Added styling for tutorial overlays and highlighted controls.
+- `app/index.tsx` and `ui/dashboard/views/userpages/AdminDashboard.tsx` - Connected tutorial presentation to the app and dashboard flow.
+- `game/company/companyDatabase.ts` and `game/company/companyTypes.ts` - Added the company data needed to support tutorial state and context.
+- **NEW FILE:** `assets/simulucius/frontremovebg.png` and `assets/simulucius/withlaptop.png` - Added tutorial illustrations.
+
+### Notes
+
+- These commits form the initial tutorial implementation and are grouped despite their asynchronous commit order.
+
+---
+
+## Version 0.00018 - Sales UI gates
+**Date:** 2026-08-05 | **Commit(s):** ecc25d36d9dbc9df26483207dc7b3093c10bc3db | **Stats:** +32 / -5
+
+### Summary
+
+- Added gated sales UI states so unavailable sales actions are visible with their requirements.
+- Updated the sales view and contract state to expose gate information.
+
+### Changes
+
+- `game/sales/salesContracts.ts` - Added the sales gate state used by the UI.
+- `ui/dashboard/views/SalesView.tsx` and `ui/dashboard/views/GameView.tsx` - Displayed gated sales actions in the player-facing flow.
+- `ui/dashboard/helpers/dashboard.styles.ts` and `app/index.tsx` - Added the supporting styles and app integration.
+
+### Notes
+
+- The commit is a focused presentation and state change for sales availability.
+
+---
+
+## Version 0.00017 - Multiple facilities and documentation viewer fixes
+**Date:** 2026-08-05 | **Commit(s):** 72a0427bacfd0a7fa8fffbee8555ca065afc2492 | **Stats:** +771 / -93
+
+### Summary
+
+- Allowed multiple facilities of the same type.
+- Fixed viewing of Markdown documentation inside the app.
+- Updated facility production, state snapshots, and dashboard dialogs for the expanded facility model.
+
+### Changes
+
+- `game/facilities/facility.ts`, `facilityCollection.ts`, `advanceProduction.ts`, `game/core/state/gameSnapshot.ts`, and `game/core/stores/gameStore.ts` - Updated facility identity, collection, production, and state handling to support repeated facility types.
+- `ui/dashboard/components/DocumentationDialog.tsx`, `GameDialogs.tsx`, and `ui/dashboard/views/GameView.tsx` - Corrected the documentation viewer and related game dialogs.
+- `app/index.tsx` - Integrated the revised facility and documentation behavior into the main app.
+- `docs/WorkingDocs/CONTEXT.md`, `gameflow.md`, and `VariableRelationshipMap.md` - Documented the new facility and state relationships.
+- `.tmp-web-export/` - Refreshed the generated web inspection assets and embedded documentation output.
+
+### Notes
+
+- This commit combines a gameplay data-model correction with its required UI and documentation updates.
+
+---
+
+## Version 0.00016 through 0.00015 - Deployment preparation
+**Date:** 2026-08-05 | **Commit(s):** 1d4c9a667187723f7bf93d3e08036eb7c9654c65, 589360da7aaf37997cb46cc4510788668789df74 | **Stats:** +413 / -261
+
+### Summary
+
+- Corrected the package and generated bundle required for the deployment environment.
+- Added deployment configuration and aligned the project structure with the deployable app.
+- Updated public barrel exports and documented the deployment state.
+
+### Changes
+
+- `package.json`, `package-lock.json`, `metro.config.js`, `.tmp-web-export/`, and `app.json` - Updated package resolution, Metro configuration, app metadata, and generated web output.
+- **NEW FILE:** `eas.json` - Added Expo Application Services deployment configuration.
+- `game/core/`, `game/achievements/`, `game/company/`, `game/facilities/`, and related index files - Organized public exports and deployment-ready module boundaries.
+- `docs/WorkingDocs/PROJECT_INFO.md` - Recorded the deployment setup and current project structure.
+
+### Notes
+
+- These commits prepare the existing game for deployment; they do not introduce a backend or cloud save system.
+
+---
+
+## Version 0.00014a through 0.00014 - Production UI
+**Date:** 2026-08-04 | **Commit(s):** 7a9741d939fb74ec67b01dcc45a6f5ce28937bc8, ea25174fb26dbfb951fd9c3ef2fd940396be156e | **Stats:** +211 / -146
+
+### Summary
+
+- Added the dedicated production view and connected production information to the game UI.
+- Improved facility production presentation, icons, layout, and dashboard navigation.
+
+### Changes
+
+- `ui/dashboard/views/ProductionView.tsx` and `ui/dashboard/views/GameView.tsx` - Added the production screen and connected it to the main game view.
+- `ui/dashboard/helpers/dashboard.styles.ts` - Added production-specific layout and styling.
+- `app/index.tsx`, `game/core/stores/gameStore.ts`, and `game/facilities/facility.ts` - Connected production state and facility data to the UI.
+- `icons.ts` - Added or corrected production-related icon mappings.
+- `docs/WorkingDocs/gameflow.md` - Updated the documented production flow.
+
+### Notes
+
+- The two commits are grouped because the second refines the production screen introduced by the first.
+
+---
+
+## Version 0.00013 through 0.00012 - Resources, construction materials, and market diffusion
+**Date:** 2026-08-04 | **Commit(s):** 26d1841254d793102bf78be68b0193001f5a42b2, 2dce63fc61ab8902eec11d02fb69e95de316f3e4, 2f4459538b12956775d2bb94d987f21baeeeab8b, 8276b58f75f03e5342222716f7c2cf3e73831697, 9a86cd0917387058a767fa9ffe82dfbce4849761, 1211c6c34f18cc5a3ac16572901d4937760c57da | **Stats:** +1005 / -169
+
+### Summary
+
+- Added base resources, metals, construction materials, and their recipe relationships.
+- Added the variable relationship map for tracking resource and facility dependencies.
+- Introduced market diffusion and the first market model used by resource availability.
+- Expanded IndustriPedia and resource formatting to expose the new catalogue.
+
+### Changes
+
+- `game/resources/resourceConstants.ts`, `resourceTypes.ts`, `game/recipes/recipeConstants.ts`, and `recipeTypes.ts` - Added the base resource and construction-material catalogue.
+- `game/facilities/facilityConstants.ts` and `facilityTypes.ts` - Added construction costs and facility material relationships.
+- `game/market/market.ts`, `marketDiffusion.ts`, `marketTypes.ts`, `marketConstants.ts`, and `game/market/index.ts` - Added market state, diffusion calculations, types, constants, and public exports.
+- `ui/dashboard/views/userpages/IndustriPediaView.tsx`, `ui/dashboard/helpers/recipeFormatters.ts`, and `icons.ts` - Added the player-facing resource and recipe presentation.
+- `app/index.tsx` and `game/core/stores/gameStore.ts` - Connected construction materials and market state to the app.
+- `docs/WorkingDocs/CONTEXT.md`, `design.md`, `gameflow.md`, and `VariableRelationshipMap.md` - Documented resources, materials, market diffusion, and their dependencies.
+- **NEW FILE:** `docs/WorkingDocs/VariableRelationshipMap.md` content was expanded by `2dce63f` with the current relationship register.
+
+### Notes
+
+- The version labels are not chronological; all six commits are retained together because they establish one resource and market foundation.
+
+---
+
+## Version 0.00011b through 0.00011 - Research gates
+**Date:** 2026-08-03 | **Commit(s):** b85b71a12589a564db2adecfaccee36b8c05618c, af27af6851f465695829a45de9132aabff66e06c, 1266c5b11efea14004a5322d60c71f4e550f1cd9 | **Stats:** +744 / -33
+
+### Summary
+
+- Added the first research-gate domain and connected research state to the game.
+- Added the research-gates implementation plan and improved research and achievement presentation.
+- Added the initial research alpha flow and its persistence/state integration.
+
+### Changes
+
+- `game/gates/gate.ts`, `game/gates/index.ts`, `game/research/index.ts`, and `game/index.ts` - Added the initial research and gate public surfaces.
+- `game/core/stores/gameStore.ts`, `game/core/state/gameSnapshot.ts`, and `game/company/companySessionStore.ts` - Added research-related state ownership and session integration.
+- `app/_layout.tsx`, `app/index.tsx`, and `ui/dashboard/views/ResearchView.tsx` - Connected research state to the application and added its first UI.
+- `ui/dashboard/views/userpages/AchievementsView.tsx` - Adjusted achievement presentation alongside the research UI.
+- `docs/plans/researchgatesplan.md` - Added the research-gates implementation plan.
+- `docs/WorkingDocs/CONTEXT.md`, `design.md`, `gameflow.md`, `PROJECT_INFO.md`, and `VariableRelationshipMap.md` - Documented research terminology, gate flow, state, and dependencies.
+
+### Notes
+
+- Research planning and implementation are recorded here; the separate achievement-tier correction is logged in the following account and achievement entry.
+
+---
+
+## Version 0.0010 through 0.00090a - Accounts, company reset, and achievements
+**Date:** 2026-08-02 | **Commit(s):** 7be1d6857ed005188464b478b83f5d4b13c20387, c05f15f75131116273f7aa5b90032704a1f7049a, 775c30063f739a3a77863a5917c8fffe0475d814 | **Stats:** +243 / -121
+
+### Summary
+
+- Replaced completed achievement tiers and improved achievement presentation.
+- Added user-facing company deletion and admin database reset controls.
+- Added the supporting company/session behavior and documented the reset flow.
+
+### Changes
+
+- `game/achievements/achievementEvaluator.ts` and `ui/dashboard/views/userpages/AchievementsView.tsx` - Updated completed-tier evaluation and achievement display.
+- `ui/dashboard/components/DeleteCompanyCard.tsx`, `ResetCompanyCard.tsx`, `ui/dashboard/views/userpages/AdminDashboard.tsx`, and `ProfileScreen.tsx` - Added company deletion and admin reset actions.
+- `game/company/companyDatabase.ts` and `game/company/companySessionStore.ts` - Added the company/session operations behind those controls.
+- `app/index.tsx` and `docs/WorkingDocs/VariableRelationshipMap.md` - Connected the controls and documented their state effects.
+- `docs/plans/userlogin.md`, `docs/WorkingDocs/gameflow.md`, and `docs/WorkingDocs/design.md` - Recorded the account and reset behavior.
+
+### Notes
+
+- The `0.0010` labels are preserved as commit labels even though they do not sort chronologically with the surrounding versions.
+
+---
+
+## Version 0.00092d through 0.0009a - Core cleanup and achievement cleanup
+**Date:** 2026-08-02 | **Commit(s):** 94339ab3923b45467143ef5943225d2c09e17851, 49e7c0fccfe9b38d346850925ee366dc27139110, f9d92933504c40db2ced71f485c4db76799bca9a, 83457c72c2b3760b3efa35d14cef5ea33e6a11d2, 92de738ddeb41972f5fd94123c034ececa0f1abf, 13bf3b9b841bdcdf406f9eed6cdf2f82cbfdf984 | **Stats:** +107 / -277
+
+### Summary
+
+- Cleaned mixed-domain modules and moved responsibilities to their owning domains.
+- Removed obsolete core/store wiring and tightened achievement, facility, inventory, market, prestige, and resource boundaries.
+- Simplified dashboard exports and corrected company/session code structure.
+
+### Changes
+
+- `game/achievements/achievementConstants.ts` and `productionStatistics.ts` - Cleaned achievement constants and production-statistics ownership.
+- `game/facilities/`, `game/inventory/`, `game/market/`, `game/prestige/`, `game/recipes/`, and `game/resources/` - Removed mixed-domain responsibilities and corrected module boundaries.
+- `game/core/state/gameSnapshot.ts`, `game/core/stores/gameStore.ts`, and `app/_layout.tsx` - Simplified core state and lifecycle wiring.
+- `game/company/companyDatabase.ts` and `companySessionStore.ts` - Cleaned company/session responsibilities.
+- `ui/dashboard/components/GameDialogs.tsx`, `ui/dashboard/helpers/dashboard.styles.ts`, and `ui/index.ts` - Removed obsolete UI exports and corrected dashboard imports.
+- `docs/WorkingDocs/design.md`, `gameflow.md`, and `VariableRelationshipMap.md` - Updated the documented ownership after the cleanup.
+
+### Notes
+
+- This is a structural cleanup group; it does not represent a new player-facing feature by itself.
+
+---
+
+## Version Skill update - Project guidance alignment
+**Date:** 2026-08-02 | **Commit(s):** 49c7ad5c27cea6cd4decaffd7ff584a68f316dd7 | **Stats:** +14 / -2
+
+### Summary
+
+- Updated the project guidance to reflect the current account, market, achievement, and game-domain structure.
+
+### Changes
+
+- `skills/mobilegamedev-gram/SKILL.md` - Updated the repository router and project-convention guidance.
+- `readme.md` - Updated the project overview to match the current implementation direction.
+
+### Notes
+
+- This was documentation and workflow guidance only; it did not change runtime game behavior.
+
+---
+
+## Version 0.0009 - User login and user pages
+**Date:** 2026-08-02 | **Commit(s):** bac92417f3dfe049b17712337036cb1cb18064e5, 8aaf03eaa5befe1988b26f6fc24af7edb722e2cd | **Stats:** +1264 / -613
+
+### Summary
+
+- Added the local company/session model and the first user-login flow.
+- Added profile, admin, and user-facing dashboard pages.
+- Added the company persistence boundary and documented the account/session behavior.
+
+### Changes
+
+- **NEW FILE:** `game/company/companyConstants.ts`, `companyDatabase.ts`, `companySessionStore.ts`, `companyTypes.ts`, and `game/company/index.ts` - Added company identity, local persistence, session state, types, and public exports.
+- `app/_layout.tsx` and `app/index.tsx` - Added the application entry flow for the active company/session.
+- `ui/dashboard/views/userpages/` and `ui/dashboard/components/` - Added profile, admin, game, inventory, contract, documentation, reset, and related user-page components.
+- `metro.config.js` - Updated the bundler configuration for the company/session implementation.
+- `docs/plans/userlogin.md`, `docs/WorkingDocs/CONTEXT.md`, `design.md`, `gameflow.md`, `PROJECT_INFO.md`, and `VariableRelationshipMap.md` - Documented user identity, session state, persistence ownership, and the user-page flow.
+
+### Notes
+
+- The implementation remains local-first; it does not add accounts or synchronization through a remote backend.
+
+---
+
+## Version 0.00081a through 0.0008 - Market implementation
+**Date:** 2026-07-31 | **Commit(s):** 6f82613f9ed3957ce45027676374ec530284d6e3, f4c05e09a105c5d80a547f670476acfeebc078e4, fab4ec1826dd59ec4f6bbad53160a2ef2c246207, a87e3a96481a7646fb0f3ed5fab0dd40dd1e7ed7 | **Stats:** +874 / -55
+
+### Summary
+
+- Added the local market domain and market dashboard.
+- Added market access, constants, types, state, and persistence integration.
+- Added the market design plan and tuned the beta presentation.
+
+### Changes
+
+- **NEW FILE:** `game/market/market.ts`, `marketAccess.ts`, `marketConstants.ts`, `marketTypes.ts`, and `game/market/index.ts` - Added the market model, access rules, balance values, types, and public exports.
+- `game/core/stores/gameStore.ts`, `game/core/state/gameSnapshot.ts`, `game/core/persistence/gameSaveRepository.ts`, and `game/inventory/inventory.ts` - Connected market state to the local game state and save boundary.
+- `ui/dashboard/views/MarketDashboard.tsx`, `ui/dashboard/components/DashboardViewComponents.tsx`, `ui/dashboard/dashboard.styles.ts`, `icons.ts`, and `theme.ts` - Added and styled the market dashboard.
+- `app/index.tsx` and `ui/dashboard/views/MarketDashboard.tsx` - Connected market navigation and display to the app.
+- **NEW FILE:** `docs/plans/marketplan.md` - Added the market implementation plan.
+- `app/_layout.tsx`, `app/index.tsx`, `utils.ts`, and dashboard styles - Applied beta tuning and small presentation fixes.
+
+### Notes
+
+- The market remains a local game system with no backend dependency.
+
+---
+
+## Version 0.0007a through 0.0007 - Achievements alpha
+**Date:** 2026-07-31 | **Commit(s):** fce24175faaa3fae94ad669d948c532373ca2395, 2cffd131f50886e7272d91d2e0fb0ab1d39964bc | **Stats:** +878 / -35
+
+### Summary
+
+- Added the first achievement domain, evaluator, production statistics, and achievement dashboard.
+- Added achievement persistence/state integration and the achievement implementation plan.
+- Corrected achievement dashboard icon presentation.
+
+### Changes
+
+- **NEW FILE:** `game/achievements/achievement.ts`, `achievementConstants.ts`, `achievementEvaluator.ts`, `productionStatistics.ts`, and `game/achievements/index.ts` - Added achievement definitions, evaluation, production metrics, constants, and public exports.
+- `game/core/persistence/gameSaveRepository.ts`, `game/core/state/gameSnapshot.ts`, `game/core/stores/gameStore.ts`, and `app/_layout.tsx` - Added achievement state and save/lifecycle integration.
+- `app/index.tsx` and `ui/dashboard/views/AchievementsDashboard.tsx` - Added the achievement dashboard and app navigation.
+- **NEW FILE:** `docs/plans/achievementsplan.md` - Added the achievement implementation plan.
+- `docs/WorkingDocs/CONTEXT.md`, `design.md`, `gameflow.md`, `PROJECT_INFO.md`, and `VariableRelationshipMap.md` - Documented achievement terms, evaluation flow, and state ownership.
+
+### Notes
+
+- This was the first achievement implementation; later commits refine tiers and presentation.
+
+---
+
+## Version 0.00053f - Version-log reconciliation
+**Date:** 2026-07-30 | **Commit(s):** 3167022167285ce842552785e6d9760441ed8a4f | **Stats:** +181 / -0
+
+### Summary
+
+- Recorded the preceding asynchronous development commits in the version log.
+
+### Changes
+
+- `docs/WorkingDocs/versionlog.md` - Added grouped evidence-based entries for the commits that had landed on `main` through this point.
+
+### Notes
+
+- This documentation commit is included so every commit reachable from `main` is represented exactly once.
+
+---
+
 ## Version 0.0006a - Realtime manager fixes
 **Date:** 2026-07-27 | **Commit(s):** 84d1189409f70caf731050642d7cb8b1a2dc4680 | **Stats:** +1511 / -90
 

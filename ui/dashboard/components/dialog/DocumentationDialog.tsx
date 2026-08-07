@@ -7,8 +7,8 @@ import { colors } from '@/theme';
 export type DocumentationKind = 'readme' | 'version-log' | null;
 
 const DOCUMENTS: Record<Exclude<DocumentationKind, null>, { asset: number | string; title: string }> = {
-  readme: { asset: require('../../../readme.md'), title: 'Industri Clicker README' },
-  'version-log': { asset: require('../../../docs/WorkingDocs/versionlog.md'), title: 'Version log' },
+  readme: { asset: require('../../../../readme.md'), title: 'Industri Clicker README' },
+  'version-log': { asset: require('../../../../docs/WorkingDocs/versionlog.md'), title: 'Version log' },
 };
 
 export function DocumentationDialog({ kind, onClose }: { kind: DocumentationKind; onClose: () => void }) {

@@ -10,7 +10,8 @@ import { calculateSalesContractEstimatedWaitMinutes, calculateSalesContractMarke
 import { getResource, getResourceIcon } from '@/game/resources';
 import { formatCurrency, formatDate, formatNumber } from '@/utils';
 import { APP_ICONS } from '@/icons';
-import { DetailRow, SectionHeading, styles } from '@/ui/dashboard/shared';
+import { DetailRow, SectionHeading } from '@/ui/dashboard/components/DashboardPrimitives';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 
 export function SalesView({ customerPipelineProgress, fulfillSalesContract, getResearchAvailability, inventory, market, maximumOpenContracts, rejectSalesContract, research, salesContracts }: { customerPipelineProgress: number; fulfillSalesContract: (id: string) => boolean; getResearchAvailability: (projectId: ResearchProjectId) => ResearchAvailability; inventory: Inventory; market: Market; maximumOpenContracts: number; rejectSalesContract: (id: string) => boolean; research: ResearchLedger; salesContracts: SalesContracts }) {
   const [salesList, setSalesList] = useState<'open' | 'closed'>('open');

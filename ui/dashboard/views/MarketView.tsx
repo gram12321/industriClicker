@@ -9,7 +9,8 @@ import { RESOURCE_TYPES, getResource, getResourceIcon } from '@/game/resources';
 import { formatCurrency, formatNumber } from '@/utils';
 import { colors } from '@/theme';
 import { APP_ICONS } from '@/icons';
-import { SectionHeading, styles } from '@/ui/dashboard/shared';
+import { SectionHeading } from '@/ui/dashboard/components/DashboardPrimitives';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 
 const multiplierSteps = [1, 10, 100, 1000] as const;
 const sliderMinimum = 1;

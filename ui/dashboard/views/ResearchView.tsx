@@ -7,7 +7,8 @@ import type { GateRequirement } from '@/game/gates';
 import type { ResearchAvailability } from '@/game/core/stores';
 import { colors } from '@/theme';
 import { formatCurrency, formatElapsedTime } from '@/utils';
-import { SectionHeading, styles as dashboardStyles } from '@/ui/dashboard/shared';
+import { SectionHeading } from '@/ui/dashboard/components/DashboardPrimitives';
+import { styles as dashboardStyles } from '@/ui/dashboard/helpers/dashboard.styles';
 
 const CHAIN_DETAILS: Record<ResearchChainId, { eyebrow: string; icon: string; title: string; subtitle: string }> = {
   'capital-grants': { eyebrow: 'CAPITAL', icon: 'bank-outline', title: 'Capital grants', subtitle: 'Fund staged company investment with one-time research grants.' },

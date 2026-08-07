@@ -3,11 +3,11 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button, Dialog, Portal, Text } from 'react-native-paper';
 
 import { colors } from '@/theme';
-import { styles } from '@/ui/dashboard/helpers';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 
 const SIMULUCIUS_IMAGES = {
-  balance: require('../../../assets/simulucius/withlaptop.png'),
-  welcome: require('../../../assets/simulucius/frontremovebg.png'),
+  balance: require('../../../../assets/simulucius/withlaptop.png'),
+  welcome: require('../../../../assets/simulucius/frontremovebg.png'),
 } as const;
 
 export function TutorialGuideDialog({ balance, elapsedTime, step, visible, onNext }: { balance: string; elapsedTime: string; step: 1 | 2 | 3 | 4 | 5; visible: boolean; onNext: () => void }) {

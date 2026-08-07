@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, Card, Dialog, Portal, Text } from 'react-native-paper';
 import { colors } from '@/theme';
-import { styles } from '@/ui/dashboard/shared';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS } from '@/icons';
 
 export function DeleteCompanyCard({ onDeleteCompany }: { onDeleteCompany: () => Promise<boolean> }) {

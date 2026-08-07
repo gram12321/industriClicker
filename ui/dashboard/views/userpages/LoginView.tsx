@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { STARTING_CONDITIONS, useCompanySessionStore } from '@/game/company';
 import { colors } from '@/theme';
 import { APP_ICONS } from '@/icons';
-import { DocumentationDialog, type DocumentationKind } from '@/ui/dashboard/components';
+import { DocumentationDialog, type DocumentationKind } from '@/ui/dashboard/components/dialog/DocumentationDialog';
 
 export function LoginView() {
   const [playerName, setPlayerName] = useState('');

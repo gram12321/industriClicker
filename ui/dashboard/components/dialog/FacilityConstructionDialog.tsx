@@ -8,10 +8,12 @@ import type { Inventory } from '@/game/inventory';
 import type { Market } from '@/game/market';
 import { ResourceType, getResourceIcon } from '@/game/resources';
 import { clamp, formatCurrency, formatNumber } from '@/utils';
-import { DetailRow, WorkMetric, formatRecipeInputs, formatRecipeName, formatRecipeOutput, styles } from '@/ui/dashboard/shared';
+import { DetailRow, WorkMetric } from '@/ui/dashboard/components/DashboardPrimitives';
+import { formatRecipeInputs, formatRecipeName, formatRecipeOutput } from '@/ui/dashboard/helpers/recipeFormatters';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS } from '@/icons';
 
-export function GameDialogs(props: {
+export function FacilityConstructionDialog(props: {
   facilities: FacilityCollection;
   finance: Finance;
   inventory: Inventory;

@@ -5,8 +5,10 @@ import { Button, Card, Dialog, Portal, Text } from 'react-native-paper';
 import { APP_ICONS } from '@/icons';
 import type { ResourceType } from '@/game/resources';
 import { colors } from '@/theme';
-import { ContractRequestCard, DeleteCompanyCard, InventoryControlCard } from '@/ui/dashboard/components';
-import { styles } from '@/ui/dashboard/shared';
+import { ContractRequestCard } from '@/ui/dashboard/components/cards/ContractRequestCard';
+import { DeleteCompanyCard } from '@/ui/dashboard/components/cards/DeleteCompanyCard';
+import { InventoryControlCard } from '@/ui/dashboard/components/cards/InventoryControlCard';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 
 export function AdminDashboard({ isTutorialEnabled, onClearAllLocalData, onCreateContractRequest, onDeleteCompany, onDisableTutorial, onEnableTutorial, onSetInventoryAmount }: {
   isTutorialEnabled: boolean;
