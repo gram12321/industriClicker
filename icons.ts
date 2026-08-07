@@ -9,6 +9,7 @@ export const APP_ICONS = {
   bank: 'bank-outline',
   building: 'factory',
   collapse: 'chevron-up',
+  coin: 'circle-multiple-outline',
   contracts: 'handshake-outline',
   currency: 'cash-multiple',
   delete: 'delete-outline',
