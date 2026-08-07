@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Image, Pressable, ScrollView, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Avatar, Divider, IconButton, Menu, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { APP_ICONS } from '@/icons';
@@ -22,6 +22,7 @@ const tabs: Array<{ key: GameViewId; label: string; symbol: string }> = [
 
 const salesTab: { key: GameViewId; label: string; symbol: string } = { key: 'sales', label: 'Sales', symbol: '$' };
 const researchTab: { key: GameViewId; label: string; symbol: string } = { key: 'research', label: 'Research', symbol: 'R' };
+const SIMULUCIUS_TUTORIAL_BUTTON = require('../assets/simulucius/frontremovebg.png');
 
 export default function HomeScreen() {
   const activeCompany = useCompanySessionStore((state) => state.activeCompany);
@@ -36,6 +37,7 @@ function GameShell({ companyName }: { companyName: string }) {
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [tutorialStep, setTutorialStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [isProductionTutorialOpen, setIsProductionTutorialOpen] = useState(false);
+  const [hasProductionTutorialStarted, setHasProductionTutorialStarted] = useState(false);
   const [isBuildFacilityTutorialOpen, setIsBuildFacilityTutorialOpen] = useState(false);
   const [buildFacilityButtonLayout, setBuildFacilityButtonLayout] = useState<{ height: number; width: number; x: number; y: number } | null>(null);
   const [pendingConstruction, setPendingConstruction] = useState<import('@/game').FacilityType | null>(null);
@@ -90,6 +92,7 @@ function GameShell({ companyName }: { companyName: string }) {
       setActiveView('company');
       setTutorialStep(1);
       setIsProductionTutorialOpen(false);
+      setHasProductionTutorialStarted(false);
       setIsBuildFacilityTutorialOpen(false);
     } else {
       setIsProductionTutorialOpen(false);
@@ -127,20 +130,21 @@ function GameShell({ companyName }: { companyName: string }) {
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           {activeView === 'admin' && isAdminDashboardAvailable ? <AdminDashboard isTutorialEnabled={!tutorial.completedWelcome} onAddFunds={addAdminFunds} onClearAllLocalData={clearAllLocalData} onCreateContractRequest={createSalesContractRequest} onDeleteCompany={deleteActiveCompany} onDisableTutorial={completeWelcomeTutorial} onEnableTutorial={reopenWelcomeTutorial} onSetBalance={setAdminBalance} onSetInventoryAmount={setInventoryAmount} />
             : activeView === 'achievements' ? <AchievementsView achievements={achievements} companyStartedAtGameTimeMs={companyStartedAtGameTimeMs} currentGameTimeMs={lastProcessedAtMs} facilities={facilities} finance={finance} prestige={prestige} productionStatistics={productionStatistics} salesContracts={salesContracts} />
-              : activeView === 'profile' ? <ProfileScreen companyName={companyName} onDeleteCompany={deleteActiveCompany} onManageCompanies={logout} playerName={playerName} />
+                : activeView === 'profile' ? <ProfileScreen companyName={companyName} onDeleteCompany={deleteActiveCompany} onManageCompanies={logout} onReplayTutorial={reopenWelcomeTutorial} playerName={playerName} />
                 : activeView === 'research' ? <ResearchView finance={finance} getAvailability={getResearchAvailability} onCancel={cancelResearch} onStart={startResearch} research={research} />
-                : activeView === 'settings' ? <SettingsScreen onLogout={logout} onReplayTutorial={reopenWelcomeTutorial} />
+                : activeView === 'settings' ? <SettingsScreen onLogout={logout} />
                   : activeView === 'leaderboard' ? <LeaderboardScreen />
                     : activeView === 'pedia' ? <IndustriPediaView market={market} />
                       : <GameViewContent activeTab={activeView === 'admin' ? 'company' : activeView} buyMarketResource={buyMarketResource} companyName={companyName} customerPipelineProgress={customerPipelineProgress} facilities={facilities} finance={finance} fulfillSalesContract={fulfillSalesContract} getResearchAvailability={getResearchAvailability} inventory={inventory} isBuildFacilityTutorial={isBuildFacilityTutorialOpen} market={market} maximumOpenContracts={maximumOpenContracts} onBuildFacilityLayout={setBuildFacilityButtonLayout} openConstructionYard={() => { if (isBuildFacilityTutorialOpen) setIsBuildFacilityTutorialOpen(false); setIsConstructionYardOpen(true); }} rejectSalesContract={rejectSalesContract} requestFacilityDestruction={setPendingDestruction} research={research} salesContracts={salesContracts} sellMarketResource={sellMarketResource} setFacilityProductionActive={setFacilityProductionActive} setFacilityRecipe={setFacilityRecipe} setFacilityWorkers={setFacilityWorkers} setMarketAutomation={setMarketAutomation} upgradeFacility={upgradeFacility} />}
         </ScrollView>
-        <View style={styles.bottomNavigation}>{(tutorial.completedWelcome ? [...tabs.slice(0, 3), salesTab, researchTab, ...tabs.slice(3)] : tutorialStep === 5 ? [tabs[0], tabs[2]] : [tabs[0]]).map((tab) => <BottomNavigationItem active={activeView === tab.key} highlight={tutorialStep === 5 && activeView !== 'production' && tab.key === 'production'} key={tab.key} label={tab.label} onPress={() => { if (tutorialStep === 5 && tab.key === 'production') { setActiveView('production'); setIsTutorialOpen(false); setIsProductionTutorialOpen(true); } else setActiveView(tab.key); }} symbol={tab.symbol} />)}</View>
+        <View style={styles.bottomNavigation}>{(tutorial.completedWelcome ? [...tabs.slice(0, 3), salesTab, researchTab, ...tabs.slice(3)] : tutorialStep === 5 ? [tabs[0], tabs[2]] : [tabs[0]]).map((tab) => <BottomNavigationItem active={activeView === tab.key} highlight={tutorialStep === 5 && activeView !== 'production' && tab.key === 'production'} key={tab.key} label={tab.label} onPress={() => { setActiveView(tab.key); if (tutorial.completedWelcome) return; if (tab.key === 'company') { setIsProductionTutorialOpen(false); setIsBuildFacilityTutorialOpen(false); setIsTutorialOpen(true); } if (tab.key === 'production') { setIsTutorialOpen(false); hasProductionTutorialStarted ? setIsBuildFacilityTutorialOpen(true) : setIsProductionTutorialOpen(true); } }} symbol={tab.symbol} />)}</View>
       </View>
       <FacilityConstructionDialog facilities={facilities} finance={finance} inventory={inventory} isConstructionYardOpen={isConstructionYardOpen} market={market} onBuyMissingConstructionMaterials={() => { if (pendingConstruction) buyMissingConstructionMaterials(pendingConstruction); }} onCloseConstructionYard={() => setIsConstructionYardOpen(false)} onConfirmConstruction={() => { if (pendingConstruction && buildFacility(pendingConstruction)) setPendingConstruction(null); }} onConfirmDestruction={() => { if (pendingDestruction && destroyFacility(pendingDestruction)) setPendingDestruction(null); }} onDismissConstruction={() => setPendingConstruction(null)} onDismissDestruction={() => setPendingDestruction(null)} onSelectFacility={(facilityType) => { setIsConstructionYardOpen(false); setPendingConstruction(facilityType); }} pendingConstruction={pendingConstruction} pendingDestruction={pendingDestruction} />
       <PrestigeDialog currentGameTimeMs={lastProcessedAtMs} isOpen={isPrestigeOpen} onClose={() => setIsPrestigeOpen(false)} summary={prestigeSummary} />
-      <TutorialGuideDialog balance={formatCurrency(finance.getBalance())} elapsedTime={formatElapsedTime(elapsedForegroundTimeMs)} onNext={() => setTutorialStep((currentStep) => currentStep === 1 ? 2 : currentStep === 2 ? 3 : currentStep === 3 ? 4 : 5)} step={tutorialStep} visible={isTutorialOpen} />
-      <ProductionTutorialDialog onClose={() => { setIsProductionTutorialOpen(false); setIsBuildFacilityTutorialOpen(true); }} visible={isProductionTutorialOpen} />
-      <BuildFacilityTutorialDialog highlightLayout={buildFacilityButtonLayout} visible={isBuildFacilityTutorialOpen && activeView === 'production' && !isTutorialOpen && !isProductionTutorialOpen} />
+      {!tutorial.completedWelcome && ((activeView === 'company' && !isTutorialOpen) || (activeView === 'production' && !isProductionTutorialOpen && !isBuildFacilityTutorialOpen)) && <View style={styles.tutorialReopenControl}><Pressable accessibilityLabel="Reopen tutorial" accessibilityRole="button" onPress={() => { if (activeView === 'company') setIsTutorialOpen(true); if (activeView === 'production') hasProductionTutorialStarted ? setIsBuildFacilityTutorialOpen(true) : setIsProductionTutorialOpen(true); }} style={styles.tutorialReopenButton}><Image accessibilityLabel="Simulucius" resizeMode="contain" source={SIMULUCIUS_TUTORIAL_BUTTON} style={styles.tutorialReopenCharacter} /></Pressable><IconButton accessibilityLabel="Exit tutorial" icon="close" onPress={() => { void completeWelcomeTutorial(); }} size={16} style={styles.tutorialReopenCloseButton} /></View>}
+      <TutorialGuideDialog balance={formatCurrency(finance.getBalance())} elapsedTime={formatElapsedTime(elapsedForegroundTimeMs)} onBack={() => setTutorialStep((currentStep) => Math.max(1, currentStep - 1) as 1 | 2 | 3 | 4 | 5)} onDismiss={() => setIsTutorialOpen(false)} onExit={() => { void completeWelcomeTutorial(); }} onNext={() => { if (tutorialStep === 5) { setActiveView('production'); setIsTutorialOpen(false); setIsProductionTutorialOpen(true); } else setTutorialStep((currentStep) => (currentStep + 1) as 1 | 2 | 3 | 4 | 5); }} step={tutorialStep} visible={isTutorialOpen && activeView === 'company'} />
+      <ProductionTutorialDialog onBack={() => { setActiveView('company'); setIsProductionTutorialOpen(false); setIsTutorialOpen(true); }} onClose={() => { setHasProductionTutorialStarted(true); setIsProductionTutorialOpen(false); setIsBuildFacilityTutorialOpen(true); }} onDismiss={() => setIsProductionTutorialOpen(false)} onExit={() => { void completeWelcomeTutorial(); }} visible={isProductionTutorialOpen && activeView === 'production'} />
+      <BuildFacilityTutorialDialog highlightLayout={buildFacilityButtonLayout} onBack={() => { setHasProductionTutorialStarted(false); setIsBuildFacilityTutorialOpen(false); setIsProductionTutorialOpen(true); }} onDismiss={() => setIsBuildFacilityTutorialOpen(false)} onExit={() => { void completeWelcomeTutorial(); }} onNext={() => { void completeWelcomeTutorial(); }} visible={isBuildFacilityTutorialOpen && activeView === 'production' && !isTutorialOpen && !isProductionTutorialOpen} />
     </SafeAreaView>
   );
 }
