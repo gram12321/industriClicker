@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ProgressBar, Text } from 'react-native-paper';
-import { getFacilityDefinition, type FacilityCollection } from '@/game/facilities';
+import { calculateFacilityEffectiveWork, getFacilityDefinition, getFacilityProductionStatus, type FacilityCollection } from '@/game/facilities';
+import { BASE_WORK_PER_MINUTE } from '@/game/core/time';
 import type { Inventory } from '@/game/inventory';
-import { getResearchProject, type ResearchLedger } from '@/game/research';
+import { getRecipeResearchWorkSpeedMultiplier, getResearchProject, type ResearchLedger } from '@/game/research';
 import { calculateSalesContractEstimatedWaitMinutes, calculateSalesContractOfferChance, type SalesContracts } from '@/game/sales';
 import { APP_ICONS } from '@/icons';
 import { colors } from '@/theme';
@@ -55,13 +56,13 @@ export function ActiveProcessesOverlay({ customerPipelineProgress, facilities, i
 
 function getActiveProcesses({ customerPipelineProgress, facilities, inventory, maximumOpenContracts, research, salesContracts }: Parameters<typeof ActiveProcessesOverlay>[0]): ActiveProcess[] {
   const production = facilities.getAll().flatMap((facility) => {
-    if (facility.getProductionStatus(inventory) !== 'producing') return [];
+    if (getFacilityProductionStatus(facility, inventory) !== 'producing') return [];
     const recipeName = facility.getActiveRecipeName();
     const recipe = recipeName ? getFacilityDefinition(facility.facilityType).recipes.find((candidate) => candidate.name === recipeName) : null;
     if (!recipe) return [];
 
     const progress = clamp(facility.getRecipeProgress(recipe.name) / recipe.requiredWork, 0, 1);
-    const workPerMinute = facility.getBuildingEfficiency() * facility.getSpeedUpgradeWorkSpeedMultiplier();
+    const workPerMinute = calculateFacilityEffectiveWork(facility, BASE_WORK_PER_MINUTE, getRecipeResearchWorkSpeedMultiplier(recipe.name, research.getCompletedProjectIds()));
     const minutesRemaining = workPerMinute > 0 ? (recipe.requiredWork - facility.getRecipeProgress(recipe.name)) / workPerMinute : 0;
     return [{ id: facility.id, icon: getFacilityDefinition(facility.facilityType).icon, label: formatRecipeName(recipe), progress, timing: `${formatNumber(progress * 100, { decimals: 0 })}% · ${formatDuration(minutesRemaining)} left`, title: facility.getDisplayName() }];
   });

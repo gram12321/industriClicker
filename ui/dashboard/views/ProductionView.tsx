@@ -5,7 +5,7 @@ import { Button, Card, IconButton, List, ProgressBar, Text, TouchableRipple } fr
 import { colors } from '@/theme';
 import type { Finance } from '@/game/finance';
 import type { FacilityCollection, FacilityUpgradeKind } from '@/game/facilities';
-import { getFacilityDefinition, getFacilityUpgradeCost } from '@/game/facilities';
+import { calculateFacilityEffectiveWork, getFacilityDefinition, getFacilityProductionStatus, getFacilityUpgradeCost } from '@/game/facilities';
 import type { Inventory } from '@/game/inventory';
 import type { Market, MarketAutomation } from '@/game/market';
 import type { Recipe } from '@/game/recipes';
@@ -54,9 +54,9 @@ export function ProductionView({
       const activeRecipeName = facility.getActiveRecipeName();
       const activeRecipe = definition.recipes.find((recipe) => recipe.name === activeRecipeName);
       const effectiveWorkPerMinute = activeRecipe
-        ? facility.getEffectiveWork(BASE_WORK_PER_MINUTE, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds))
+        ? calculateFacilityEffectiveWork(facility, BASE_WORK_PER_MINUTE, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds))
         : 0;
-      const productionStatus = facility.getProductionStatus(inventory);
+      const productionStatus = getFacilityProductionStatus(facility, inventory);
       const assignedWorkers = facility.getAssignedWorkers();
       const requiredWorkers = facility.getRequiredWorkers();
       const speedUpgradeLevel = facility.getSpeedUpgradeLevel();
@@ -96,7 +96,7 @@ export function ProductionView({
           </View>
           <View style={styles.facilityRecipeSelector}>
             <View style={styles.facilityRecipeSelectorHeader}><Text style={styles.facilityRecipeSelectorTitle}>Production recipe</Text><IconButton accessibilityLabel={`${isRecipeSelectorExpanded ? 'Hide' : 'Show'} recipes for ${facilityName}`} icon={isRecipeSelectorExpanded ? APP_ICONS.collapse : APP_ICONS.expand} onPress={() => setExpandedRecipeSelectors((current) => ({ ...current, [facilityId]: !isRecipeSelectorExpanded }))} size={20} /></View>
-            {isRecipeSelectorExpanded ? definition.recipes.map((recipe) => <RecipeOption effectiveWorkPerMinute={facility.getEffectiveWork(BASE_WORK_PER_MINUTE, getRecipeResearchWorkSpeedMultiplier(recipe.name, completedResearchProjectIds))} key={recipe.name} locked={!research.hasCompleted(getRecipeResearchProjectId(recipe.name))} market={market} outputMultiplier={facility.getOutputMultiplier()} recipe={recipe} selected={activeRecipeName === recipe.name} inventory={inventory} onPress={() => setFacilityRecipe(facilityId, recipe.name)} />) : <Text style={styles.facilityRecipeSelectorCurrent}>{activeRecipe ? `Current: ${formatRecipeName(activeRecipe)}` : 'No recipe selected'}</Text>}
+            {isRecipeSelectorExpanded ? definition.recipes.map((recipe) => <RecipeOption effectiveWorkPerMinute={calculateFacilityEffectiveWork(facility, BASE_WORK_PER_MINUTE, getRecipeResearchWorkSpeedMultiplier(recipe.name, completedResearchProjectIds))} key={recipe.name} locked={!research.hasCompleted(getRecipeResearchProjectId(recipe.name))} market={market} outputMultiplier={facility.getOutputMultiplier()} recipe={recipe} selected={activeRecipeName === recipe.name} inventory={inventory} onPress={() => setFacilityRecipe(facilityId, recipe.name)} />) : <Text style={styles.facilityRecipeSelectorCurrent}>{activeRecipe ? `Current: ${formatRecipeName(activeRecipe)}` : 'No recipe selected'}</Text>}
           </View>
           <View style={styles.facilityStaffingSection}>
             <Text style={styles.constructionYardRecipeLabel}>Staffing</Text>

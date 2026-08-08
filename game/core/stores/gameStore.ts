@@ -1,6 +1,6 @@
 import { Finance } from '@/game/finance';
 import { Inventory } from '@/game/inventory';
-import { FacilityCollection, advanceProduction as advanceFacilityProduction, getFacilityDefinition, getFacilityUpgradeCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
+import { FacilityCollection, advanceAllFacilityProduction, calculateFacilityEffectiveWork, getFacilityDefinition, getFacilityMissingInputs, getFacilityUpgradeCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
 import type { RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
 import { MARKET_SALES_CONTRACT_PREMIUM, Market, canAutoBuyMarketResource, canBuyMarketResource, canSellMarketResource, type MarketAutomation } from '@/game/market';
@@ -456,7 +456,7 @@ export const useGameStore = create<GameState>((set, get) => {
         market ??= get().market.clone();
         marketFinance ??= get().finance.clone();
         for (const facility of facilities.getAll()) {
-          for (const input of facility.getMissingInputs(inventory)) {
+          for (const input of getFacilityMissingInputs(facility, inventory)) {
             const automation = market.getAutomation(input.resourceType);
             const unitPrice = market.getLocalPrice(input.resourceType);
             if (!automation.autoBuyEnabled || !canAutoBuyMarketResource(input.resourceType)
@@ -468,7 +468,11 @@ export const useGameStore = create<GameState>((set, get) => {
           }
         }
         const baseWork = (stepMs / REALTIME_WORK_MINUTE_MS) * BASE_WORK_PER_MINUTE;
-        const outputs = advanceFacilityProduction(facilities, inventory, baseWork, (recipeName) => getRecipeResearchWorkSpeedMultiplier(recipeName, research.getCompletedProjectIds()));
+        const outputs = advanceAllFacilityProduction(facilities, inventory, (facility, recipeName) => calculateFacilityEffectiveWork(
+          facility,
+          baseWork,
+          getRecipeResearchWorkSpeedMultiplier(recipeName, research.getCompletedProjectIds()),
+        ));
         if (outputs.length > 0) {
           if (productionStatistics === get().productionStatistics) {
             productionStatistics = productionStatistics.clone();

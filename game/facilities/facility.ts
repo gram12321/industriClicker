@@ -1,10 +1,7 @@
-import { getRecipe, type RecipeInput, type RecipeName } from '@/game/recipes';
-import type { Inventory } from '@/game/inventory';
+import type { RecipeName } from '@/game/recipes';
 import { getFacilityDefinition } from './facilityConstants';
 import { FacilityType } from './facilityTypes';
 import { getBuildingEfficiency, getOutputUpgradeMultiplier, getRequiredWorkers, getSpeedUpgradeWorkSpeedMultiplier } from './facilityUpgrades';
-
-const WORK_COMPLETION_EPSILON = 1e-9;
 
 /** Plain data used by the game snapshot and Expo SQLite adapter. */
 export type FacilitySnapshot = {
@@ -16,13 +13,6 @@ export type FacilitySnapshot = {
   speedUpgradeLevel?: number;
   outputUpgradeLevel?: number;
   assignedWorkers?: number;
-};
-
-export type ProductionOutput = {
-  facilityType: FacilityType;
-  recipeName: RecipeName;
-  resourceType: ReturnType<typeof getRecipe>['output']['resourceType'];
-  amount: number;
 };
 
 /** Player-owned state for one constructed facility. */
@@ -94,16 +84,6 @@ export class Facility {
     return getOutputUpgradeMultiplier(this.outputUpgradeLevel);
   }
 
-  /** Work available to the selected recipe after every current speed multiplier. */
-  getEffectiveWork(baseWork: number, recipeResearchWorkSpeedMultiplier = 1): number {
-    if (!Number.isFinite(baseWork) || baseWork <= 0) {
-      return 0;
-    }
-
-    const safeRecipeResearchWorkSpeedMultiplier = Number.isFinite(recipeResearchWorkSpeedMultiplier) && recipeResearchWorkSpeedMultiplier > 0 ? recipeResearchWorkSpeedMultiplier : 1;
-    return baseWork * this.getBuildingEfficiency() * this.getSpeedUpgradeWorkSpeedMultiplier() * safeRecipeResearchWorkSpeedMultiplier;
-  }
-
   setAssignedWorkers(workerCount: number): boolean {
     if (!Number.isInteger(workerCount) || workerCount < 0) {
       return false;
@@ -119,29 +99,6 @@ export class Facility {
 
   upgradeOutput(): void {
     this.outputUpgradeLevel += 1;
-  }
-
-  getProductionStatus(inventory: Inventory): 'not-started' | 'paused' | 'missing-inputs' | 'producing' {
-    if (!this.activeRecipeName) {
-      return 'not-started';
-    }
-
-    if (!this.active) return 'paused';
-
-    const recipe = getRecipe(this.activeRecipeName);
-    const isAtCycleStart = this.getRecipeProgress(recipe.name) === 0;
-
-    return isAtCycleStart && this.getMissingInputs(inventory).length > 0 ? 'missing-inputs' : 'producing';
-  }
-
-  getMissingInputs(inventory: Inventory): RecipeInput[] {
-    if (!this.activeRecipeName) {
-      return [];
-    }
-
-    return getRecipe(this.activeRecipeName).inputs.filter((input) => (
-      !inventory.has(input.resourceType, input.amount)
-    ));
   }
 
   setActiveRecipe(recipeName: RecipeName | null): boolean {
@@ -166,49 +123,15 @@ export class Facility {
     return true;
   }
 
-  /**
-   * Applies work to the selected recipe. Inputs are paid at the beginning of
-   * each cycle, matching the Baseclicker production rule.
-   */
-  advanceProduction(inventory: Inventory, baseWork: number, recipeResearchWorkSpeedMultiplier = 1): ProductionOutput[] {
-    const outputs: ProductionOutput[] = [];
-    if (!Number.isFinite(baseWork) || baseWork <= 0 || !this.active || !this.activeRecipeName) {
-      return outputs;
+  /** Internal production-state command used by the facility production engine. */
+  setRecipeProgress(recipeName: RecipeName, progress: number): boolean {
+    const recipe = getFacilityDefinition(this.facilityType).recipes.find((candidate) => candidate.name === recipeName);
+    if (!recipe || !Number.isFinite(progress) || progress < 0 || progress >= recipe.requiredWork) {
+      return false;
     }
 
-    const recipe = getRecipe(this.activeRecipeName);
-    if (!recipe || recipe.requiredWork <= 0) {
-      return outputs;
-    }
-
-    let remainingEffectiveWork = this.getEffectiveWork(baseWork, recipeResearchWorkSpeedMultiplier);
-    let progress = this.getRecipeProgress(recipe.name);
-
-    while (remainingEffectiveWork > 0) {
-      if (progress === 0 && !recipe.inputs.every((input) => inventory.has(input.resourceType, input.amount))) {
-        break;
-      }
-
-      if (progress === 0) {
-        for (const input of recipe.inputs) {
-          inventory.remove(input.resourceType, input.amount);
-        }
-      }
-
-      const appliedWork = Math.min(remainingEffectiveWork, recipe.requiredWork - progress);
-      progress += appliedWork;
-      remainingEffectiveWork -= appliedWork;
-
-      if (progress + WORK_COMPLETION_EPSILON >= recipe.requiredWork) {
-        const amount = recipe.output.amount * this.getOutputMultiplier();
-        inventory.add(recipe.output.resourceType, amount);
-        outputs.push({ facilityType: this.facilityType, recipeName: recipe.name, resourceType: recipe.output.resourceType, amount });
-        progress = 0;
-      }
-    }
-
-    this.recipeProgress[recipe.name] = progress;
-    return outputs;
+    this.recipeProgress[recipeName] = progress;
+    return true;
   }
 
   toSnapshot(): FacilitySnapshot {
