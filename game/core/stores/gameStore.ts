@@ -154,7 +154,8 @@ function applyAchievementUnlocks(input: {
   companyStartedAtGameTimeMs: number;
   currentGameTimeMs: number;
   categories: readonly AchievementCategory[];
-}): { achievements: AchievementLedger; prestige: PrestigeLedger } {
+  inventory: Inventory;
+}): { achievements: AchievementLedger; prestige: PrestigeLedger; inventory: Inventory } {
   const context = createAchievementEvaluationContext({
     facilities: input.facilities,
     finance: input.finance,
@@ -167,11 +168,12 @@ function applyAchievementUnlocks(input: {
   const eligible = evaluateAchievementUnlocks(context, input.achievements, input.categories);
 
   if (eligible.length === 0) {
-    return { achievements: input.achievements, prestige: input.prestige };
+    return { achievements: input.achievements, prestige: input.prestige, inventory: input.inventory };
   }
 
   const achievements = input.achievements.clone();
   const prestige = input.prestige.clone();
+  const inventory = input.inventory.clone();
 
   for (const definition of eligible) {
     if (achievements.unlock(definition.id, input.currentGameTimeMs)) {
@@ -182,10 +184,11 @@ function applyAchievementUnlocks(input: {
         decayHalfLifeForegroundHours: definition.prestigeHalfLifeForegroundHours,
         createdAtGameTimeMs: input.currentGameTimeMs,
       });
+      for (const reward of definition.rewards ?? []) inventory.add(reward.resourceType, reward.amount);
     }
   }
 
-  return { achievements, prestige };
+  return { achievements, prestige, inventory };
 }
 
 /** Runtime owner of the active company's progress. The company session owns durable saves. */
@@ -324,8 +327,9 @@ export const useGameStore = create<GameState>((set, get) => {
       companyStartedAtGameTimeMs: get().companyStartedAtGameTimeMs,
       currentGameTimeMs: get().lastProcessedAtMs,
       categories: ['facilities', 'finance', 'prestige'],
+      inventory,
     });
-    set({ facilities, finance, inventory, ...achievementResult });
+    set({ facilities, finance, ...achievementResult });
     return true;
   },
   destroyFacility: (facilityId) => {
@@ -421,6 +425,7 @@ export const useGameStore = create<GameState>((set, get) => {
       companyStartedAtGameTimeMs: get().companyStartedAtGameTimeMs,
       currentGameTimeMs: get().lastProcessedAtMs,
       categories: ['facilities', 'finance', 'prestige'],
+      inventory: get().inventory,
     });
     set({ facilities, finance, ...achievementResult });
     return true;
@@ -575,8 +580,9 @@ export const useGameStore = create<GameState>((set, get) => {
         companyStartedAtGameTimeMs: get().companyStartedAtGameTimeMs,
         currentGameTimeMs: nextGameTimeMs,
         categories: achievementCategories,
+        inventory,
       })
-      : { achievements: get().achievements, prestige };
+      : { achievements: get().achievements, prestige, inventory };
 
     set({
       lastProcessedAtMs: nextGameTimeMs,
@@ -584,6 +590,7 @@ export const useGameStore = create<GameState>((set, get) => {
       customerPipelineProgress,
       ...(hasActiveFacility ? { facilities } : {}),
       ...(inventory !== get().inventory ? { inventory } : {}),
+      ...(achievementResult.inventory !== get().inventory ? { inventory: achievementResult.inventory } : {}),
       ...(marketFinance ? { finance: marketFinance } : {}),
       ...(productionStatistics !== get().productionStatistics ? { productionStatistics } : {}),
       ...(salesContracts ? { salesContracts } : {}),
@@ -670,6 +677,7 @@ export const useGameStore = create<GameState>((set, get) => {
       companyStartedAtGameTimeMs: state.companyStartedAtGameTimeMs,
       currentGameTimeMs: state.lastProcessedAtMs,
       categories: ['finance', 'prestige'],
+      inventory: state.inventory,
     });
     set({ research, finance, ...achievementResult });
     return true;
@@ -729,8 +737,9 @@ export const useGameStore = create<GameState>((set, get) => {
       companyStartedAtGameTimeMs: get().companyStartedAtGameTimeMs,
       currentGameTimeMs,
       categories: ['sales', 'finance', 'prestige'],
+      inventory,
     });
-    set({ inventory, market, finance, salesContracts, ...achievementResult });
+    set({ market, finance, salesContracts, ...achievementResult });
     return true;
   },
   rejectSalesContract: (contractId) => {
@@ -775,6 +784,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const productionStatistics = ProductionStatistics.fromSnapshot(snapshot.productionStatistics);
     const prestige = PrestigeLedger.fromSnapshot(snapshot.prestige);
     const research = ResearchLedger.fromSnapshot(snapshot.research);
+    const inventory = Inventory.fromSnapshot(snapshot.inventory);
     syncCompanyBalancePrestige(prestige, finance, snapshot.time.lastProcessedAtMs);
     const achievementResult = applyAchievementUnlocks({
       achievements,
@@ -786,11 +796,12 @@ export const useGameStore = create<GameState>((set, get) => {
       companyStartedAtGameTimeMs: snapshot.time.companyStartedAtGameTimeMs,
       currentGameTimeMs: snapshot.time.lastProcessedAtMs,
       categories: ['facilities', 'production', 'sales', 'finance', 'time', 'prestige'],
+      inventory,
     });
 
     set({
     finance,
-    inventory: Inventory.fromSnapshot(snapshot.inventory),
+    inventory: achievementResult.inventory,
     market,
     facilities,
     salesContracts,

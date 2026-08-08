@@ -1,4 +1,4 @@
-import { RESOURCES, RESOURCE_TYPES, type ResourceType } from '@/game/resources';
+import { RESOURCES, RESOURCE_TYPES, ResourceType } from '@/game/resources';
 
 export const ACHIEVEMENT_CATEGORIES = [
   'facilities',
@@ -36,7 +36,10 @@ export type AchievementDefinition = {
   resourceType?: ResourceType;
   prestigeAmount: number;
   prestigeHalfLifeForegroundHours: number;
+  rewards?: readonly AchievementReward[];
 };
+
+export type AchievementReward = { resourceType: ResourceType; amount: number };
 
 const ACHIEVEMENT_TIER_PRESTIGE = [
   { amount: 0.1, halfLifeForegroundHours: 8 },
@@ -75,7 +78,7 @@ export function createResourceProductionAchievements(resourceType: ResourceType,
 }
 
 export const ACHIEVEMENT_DEFINITIONS: readonly AchievementDefinition[] = [
-  ...createTieredAchievements({ seriesId: 'facility_portfolio', category: 'facilities', name: 'Industrial Footprint', description: 'Own {threshold} facilities.', icon: 'factory', metric: 'facility-count', thresholds: [1, 3, 6] }),
+  ...createTieredAchievements({ seriesId: 'facility_portfolio', category: 'facilities', name: 'Industrial Footprint', description: 'Own {threshold} facilities.', icon: 'factory', metric: 'facility-count', thresholds: [1, 3, 6] }).map((achievement, index) => index === 0 ? { ...achievement, description: 'Own your first facility. Receive 10 Water and 10 Electricity.', rewards: [{ resourceType: ResourceType.Water, amount: 10 }, { resourceType: ResourceType.Electricity, amount: 10 }] } : achievement),
   ...createTieredAchievements({ seriesId: 'facility_upgrades', category: 'facilities', name: 'Moderniser', description: 'Buy {threshold} facility upgrades.', icon: 'trending-up', metric: 'upgrade-levels', thresholds: [1, 5, 15] }),
   ...RESOURCE_TYPES.flatMap((resourceType) => createResourceProductionAchievements(resourceType, RESOURCES[resourceType].name, RESOURCES[resourceType].icon)),
   ...createTieredAchievements({ seriesId: 'total_production', category: 'production', name: 'Production Line', description: 'Complete {threshold} total output.', icon: 'package-variant', metric: 'total-produced', thresholds: [1, 100, 1_000] }),
