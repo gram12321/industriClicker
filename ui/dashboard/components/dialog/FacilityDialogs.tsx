@@ -1,6 +1,7 @@
 import { ScrollView, useWindowDimensions, View } from 'react-native';
+import { useState } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Button, Card, Dialog, List, Portal, Text } from 'react-native-paper';
+import { Button, Card, Dialog, List, Portal, SegmentedButtons, Text } from 'react-native-paper';
 import { colors } from '@/theme';
 import type { Finance } from '@/game/finance';
 import type { FacilityCollection, FacilityType } from '@/game/facilities';
@@ -46,27 +47,53 @@ export function FacilityConstructionDialog(props: {
 }) {
   return <>
     <ConfirmConstrution facilityType={props.pendingConstruction} finance={props.finance} inventory={props.inventory} market={props.market} onBuyMissingConstructionMaterials={props.onBuyMissingConstructionMaterials} onConfirm={props.onConfirmConstruction} onDismiss={props.onDismissConstruction} />
-    <BuildFacilityDialog onDismiss={props.onCloseConstructionYard} onSelectFacility={props.onSelectFacility} visible={props.isConstructionYardOpen} />
+    <BuildFacilityDialog finance={props.finance} inventory={props.inventory} market={props.market} onDismiss={props.onCloseConstructionYard} onSelectFacility={props.onSelectFacility} visible={props.isConstructionYardOpen} />
     <DestructionDialog facilities={props.facilities} facilityId={props.pendingDestruction} onConfirm={props.onConfirmDestruction} onDismiss={props.onDismissDestruction} />
   </>;
 }
 function BuildFacilityDialog({
+  finance,
+  inventory,
+  market,
   onDismiss,
   onSelectFacility,
   visible,
 }: {
+  finance: Finance;
+  inventory: Inventory;
+  market: Market;
   onDismiss: () => void;
   onSelectFacility: (facilityType: FacilityType) => void;
   visible: boolean;
 }) {
   const { height } = useWindowDimensions();
   const facilityListMaxHeight = clamp(height - 280, 160, 480);
+  const [facilityFilter, setFacilityFilter] = useState<'all' | 'available' | 'unavailable'>('all');
+  const facilities = FACILITY_TYPES.map((facilityType) => {
+    const definition = getFacilityDefinition(facilityType);
+    const missingMaterials = Math.max(0, definition.constructionMaterialsCost - inventory.getAmount(ResourceType.ConstructionMaterials));
+    const canAffordConstruction = market.getLocalEntry(ResourceType.ConstructionMaterials).supply >= missingMaterials
+      && finance.canAfford(definition.landCost + missingMaterials * market.getLocalPrice(ResourceType.ConstructionMaterials));
+    return { canAffordConstruction, definition, facilityType };
+  }).sort((left, right) => Number(right.canAffordConstruction) - Number(left.canAffordConstruction)
+    || left.definition.name.localeCompare(right.definition.name));
+  const filteredFacilities = facilities.filter(({ canAffordConstruction }) => facilityFilter === 'all'
+    || (facilityFilter === 'available' ? canAffordConstruction : !canAffordConstruction));
 
   return (
     <Portal>
       <Dialog dismissable onDismiss={onDismiss} style={styles.constructionYardDialog} visible={visible}>
         <Dialog.Title>Build facility</Dialog.Title>
         <Dialog.Content style={styles.constructionYardDialogContent}>
+          <SegmentedButtons
+            buttons={[
+              { value: 'all', label: 'All' },
+              { value: 'available', label: 'Available' },
+              { value: 'unavailable', label: 'Unavailable' },
+            ]}
+            onValueChange={(value) => setFacilityFilter(value as 'all' | 'available' | 'unavailable')}
+            value={facilityFilter}
+          />
           <ScrollView
             contentContainerStyle={styles.constructionYardList}
             keyboardShouldPersistTaps="handled"
@@ -74,10 +101,18 @@ function BuildFacilityDialog({
             showsVerticalScrollIndicator
             style={[styles.constructionYardListViewport, { maxHeight: facilityListMaxHeight }]}
           >
-            {FACILITY_TYPES.map((facilityType) => {
-              const definition = getFacilityDefinition(facilityType);
+            {filteredFacilities.map(({ canAffordConstruction, definition, facilityType }) => {
+              const constructionMaterialsPrice = market.getLocalPrice(ResourceType.ConstructionMaterials);
+              const totalConstructionCost = definition.landCost + definition.constructionMaterialsCost * constructionMaterialsPrice;
               return (
-                <Card key={facilityType} mode="contained" onPress={() => onSelectFacility(facilityType)} style={styles.constructionYardCard}>
+                <Card
+                  accessibilityLabel={`${definition.name}${canAffordConstruction ? '' : ' unavailable'}`}
+                  accessibilityState={{ disabled: !canAffordConstruction }}
+                  key={facilityType}
+                  mode="contained"
+                  onPress={canAffordConstruction ? () => onSelectFacility(facilityType) : undefined}
+                  style={[styles.constructionYardCard, !canAffordConstruction && styles.constructionYardCardDisabled]}
+                >
                   <Card.Content>
                     <List.Item
                       description={<View style={styles.currencyDescription}><Text>Land:</Text><CurrencyValue value={definition.landCost} /><Text>· Materials: {getResourceIcon(ResourceType.ConstructionMaterials)} {formatNumber(definition.constructionMaterialsCost)}</Text></View>}
@@ -85,6 +120,10 @@ function BuildFacilityDialog({
                       title={definition.name}
                       titleStyle={styles.facilityTitle}
                     />
+                    <View style={styles.facilityCostDetails}>
+                      <View style={styles.currencyDescription}><Text>Material price:</Text><CurrencyValue value={constructionMaterialsPrice} /></View>
+                      <View style={styles.currencyDescription}><Text>Total cost:</Text><CurrencyValue value={totalConstructionCost} /></View>
+                    </View>
                   </Card.Content>
                 </Card>
               );

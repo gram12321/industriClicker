@@ -12,6 +12,7 @@ import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyBalancePre
 import { evaluateGateRequirements, type GateContext, type GateEvaluation } from '@/game/gates';
 import { ResearchLedger, getMaximumOpenSalesContracts, getResearchProject, type ResearchProjectId } from '@/game/research';
 import type { StartingConditionId } from '@/game/company/companyTypes';
+import { STANDARD_START_CONSTRUCTION_MATERIALS } from '@/game/company/companyConstants';
 import { create } from 'zustand';
 
 export type ResearchAvailability = GateEvaluation & {
@@ -122,9 +123,11 @@ function getResearchAvailabilityForState(input: {
 /** Produces a fresh, current-version company snapshot without touching runtime state. */
 export function createStartingGameSnapshot(nowMs = Date.now()): GameSnapshot {
   const finance = new Finance();
+  const inventory = new Inventory();
+  inventory.setAmount(ResourceType.ConstructionMaterials, STANDARD_START_CONSTRUCTION_MATERIALS);
   return {
     finance: finance.toSnapshot(),
-    inventory: new Inventory().toSnapshot(),
+    inventory: inventory.toSnapshot(),
     market: new Market().toSnapshot(),
     facilities: new FacilityCollection().toSnapshot(),
     salesContracts: new SalesContracts().toSnapshot(),
