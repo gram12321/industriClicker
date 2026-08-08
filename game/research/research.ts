@@ -1,4 +1,6 @@
-import { getResearchProject, RESEARCH_PROJECT_IDS, type ResearchProjectId } from './researchConstants';
+import { getRecipeResearchLevelProjectId, getResearchProject, RESEARCH_PROJECT_IDS, type ResearchProjectId } from './researchConstants';
+import type { RecipeName } from '@/game/recipes';
+import { calculateDiminishingBonus } from '@/game/core/math/scaling';
 
 export type CompletedResearchProject = { projectId: ResearchProjectId; completedAtGameTimeMs: number };
 export type ActiveResearchProject = { projectId: ResearchProjectId; progressMs: number; paidCost: number };
@@ -11,6 +13,11 @@ export function getMaximumOpenSalesContracts(completedProjectIds: readonly strin
     const effect = getResearchProject(projectId)?.effect;
     return effect?.kind === 'max-open-sales-contracts' ? Math.max(maximum, effect.maximum) : maximum;
   }, BASE_MAXIMUM_OPEN_SALES_CONTRACTS);
+}
+
+export function getRecipeTimeMultiplier(recipeName: RecipeName, completedProjectIds: readonly string[]): number {
+  const level = Array.from({ length: 10 }, (_, index) => index + 1).filter((candidate) => completedProjectIds.includes(getRecipeResearchLevelProjectId(recipeName, candidate))).length;
+  return 1 + calculateDiminishingBonus(level, 0.75, 0.35);
 }
 
 function isProjectId(value: unknown): value is ResearchProjectId {

@@ -160,7 +160,7 @@ export class Facility {
    * Applies work to the selected recipe. Inputs are paid at the beginning of
    * each cycle, matching the Baseclicker production rule.
    */
-  advanceProduction(inventory: Inventory, workAmount: number): ProductionOutput[] {
+  advanceProduction(inventory: Inventory, workAmount: number, recipeTimeMultiplier = 1): ProductionOutput[] {
     const outputs: ProductionOutput[] = [];
     if (!Number.isFinite(workAmount) || workAmount <= 0 || !this.active || !this.activeRecipeName) {
       return outputs;
@@ -171,7 +171,8 @@ export class Facility {
       return outputs;
     }
 
-    let remainingWork = workAmount * this.getEfficiency() * this.getSpeedMultiplier();
+    const safeRecipeTimeMultiplier = Number.isFinite(recipeTimeMultiplier) && recipeTimeMultiplier > 0 ? recipeTimeMultiplier : 1;
+    let remainingWork = workAmount * this.getEfficiency() * this.getSpeedMultiplier() * safeRecipeTimeMultiplier;
     let progress = this.getRecipeProgress(recipe.name);
 
     while (remainingWork > 0) {

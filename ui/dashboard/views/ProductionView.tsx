@@ -9,6 +9,7 @@ import { getFacilityDefinition, getFacilityUpgradeCost } from '@/game/facilities
 import type { Inventory } from '@/game/inventory';
 import type { Market, MarketAutomation } from '@/game/market';
 import type { Recipe } from '@/game/recipes';
+import { getRecipeResearchProjectId, type ResearchLedger } from '@/game/research';
 import { getResource, getResourceIcon } from '@/game/resources';
 import { clamp, formatCurrency, formatDuration, formatNumber, formatPercent } from '@/utils';
 import { DetailRow, SectionHeading, WorkMetric } from '@/ui/dashboard/components/DashboardPrimitives';
@@ -17,13 +18,14 @@ import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS } from '@/icons';
 
 export function ProductionView({
-  buyMarketResource, facilities, finance, inventory, isBuildFacilityTutorial, market, onBuildFacilityLayout, openConstructionYard, requestFacilityDestruction, setFacilityProductionActive, setFacilityRecipe, setFacilityWorkers, setMarketAutomation, upgradeFacility,
+  buyMarketResource, facilities, finance, inventory, isBuildFacilityTutorial, market, onBuildFacilityLayout, openConstructionYard, requestFacilityDestruction, research, setFacilityProductionActive, setFacilityRecipe, setFacilityWorkers, setMarketAutomation, upgradeFacility,
 }: {
   facilities: FacilityCollection;
   buyMarketResource: (resourceType: Recipe['inputs'][number]['resourceType'], amount: number) => boolean;
   finance: Finance;
   inventory: Inventory;
   market: Market;
+  research: ResearchLedger;
   isBuildFacilityTutorial?: boolean;
   onBuildFacilityLayout?: (layout: { height: number; width: number; x: number; y: number }) => void;
   openConstructionYard: () => void;
@@ -89,7 +91,7 @@ export function ProductionView({
           </View>
           <View style={styles.facilityRecipeSelector}>
             <View style={styles.facilityRecipeSelectorHeader}><Text style={styles.facilityRecipeSelectorTitle}>Production recipe</Text><IconButton accessibilityLabel={`${isRecipeSelectorExpanded ? 'Hide' : 'Show'} recipes for ${facilityName}`} icon={isRecipeSelectorExpanded ? APP_ICONS.collapse : APP_ICONS.expand} onPress={() => setExpandedRecipeSelectors((current) => ({ ...current, [facilityId]: !isRecipeSelectorExpanded }))} size={20} /></View>
-            {isRecipeSelectorExpanded ? definition.recipes.map((recipe) => <RecipeOption efficiency={facility.getEfficiency()} key={recipe.name} market={market} outputMultiplier={facility.getOutputMultiplier()} recipe={recipe} selected={activeRecipeName === recipe.name} speedMultiplier={facility.getSpeedMultiplier()} inventory={inventory} onPress={() => setFacilityRecipe(facilityId, recipe.name)} />) : <Text style={styles.facilityRecipeSelectorCurrent}>{activeRecipe ? `Current: ${formatRecipeName(activeRecipe)}` : 'No recipe selected'}</Text>}
+            {isRecipeSelectorExpanded ? definition.recipes.map((recipe) => <RecipeOption efficiency={facility.getEfficiency()} key={recipe.name} locked={!research.hasCompleted(getRecipeResearchProjectId(recipe.name))} market={market} outputMultiplier={facility.getOutputMultiplier()} recipe={recipe} selected={activeRecipeName === recipe.name} speedMultiplier={facility.getSpeedMultiplier()} inventory={inventory} onPress={() => setFacilityRecipe(facilityId, recipe.name)} />) : <Text style={styles.facilityRecipeSelectorCurrent}>{activeRecipe ? `Current: ${formatRecipeName(activeRecipe)}` : 'No recipe selected'}</Text>}
           </View>
           <View style={styles.facilityStaffingSection}>
             <Text style={styles.constructionYardRecipeLabel}>Staffing</Text>
@@ -120,12 +122,12 @@ function FacilityUpgradeControl({ canAfford, cost, icon, label, level, onPress }
   return <View style={styles.facilityUpgradeCard}><View style={styles.facilityUpgradeHeader}><MaterialCommunityIcons color={colors.primary} name={icon as never} size={15} /><Text style={styles.facilityUpgradeLabel}>{label}</Text></View><Text style={styles.facilityUpgradeLevel}>L{formatNumber(level)} → L{formatNumber(level + 1)}</Text><View style={styles.facilityUpgradeAction}><Text style={styles.facilityUpgradeCost}>{formatCurrency(cost)}</Text><IconButton accessibilityLabel={`Upgrade ${label} to level ${level + 1}`} disabled={!canAfford} icon={APP_ICONS.add} mode="contained" onPress={onPress} size={16} /></View></View>;
 }
 
-function RecipeOption({ efficiency, inventory, market, onPress, outputMultiplier, recipe, selected, speedMultiplier }: { efficiency: number; inventory: Inventory; market: Market; onPress: () => void; outputMultiplier: number; recipe: Recipe; selected: boolean; speedMultiplier: number }) {
+function RecipeOption({ efficiency, inventory, locked, market, onPress, outputMultiplier, recipe, selected, speedMultiplier }: { efficiency: number; inventory: Inventory; locked: boolean; market: Market; onPress: () => void; outputMultiplier: number; recipe: Recipe; selected: boolean; speedMultiplier: number }) {
   const inputSummary = recipe.inputs.length === 0 ? 'No inputs' : recipe.inputs.map((input) => `${getResourceIcon(input.resourceType)} ${formatNumber(input.amount, { smartDecimals: true })}/${formatNumber(inventory.getAmount(input.resourceType), { smartDecimals: true })}`).join('  ');
   const hasMissingInputs = recipe.inputs.some((input) => !inventory.has(input.resourceType, input.amount));
   const valuePerMinute = getRecipeValuePerMinute(recipe, market, outputMultiplier, efficiency * speedMultiplier);
 
-  return <TouchableRipple accessibilityLabel={`Run ${formatRecipeName(recipe)}`} onPress={onPress} style={[styles.facilityRecipeOption, selected && styles.facilityRecipeOptionActive, hasMissingInputs && styles.facilityRecipeOptionUnavailable]}><View><Text style={styles.facilityRecipeOptionName}>{formatRecipeName(recipe)}</Text><Text style={[styles.facilityRecipeOptionDetails, hasMissingInputs && styles.facilityRecipeOptionMissing]}>Inputs: {inputSummary}</Text><View style={styles.facilityRecipeOptionStats}><Text style={styles.facilityRecipeOptionDetails}>Work: {formatNumber(recipe.workAmount, { smartDecimals: true })}</Text><Text style={styles.facilityRecipeOptionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text></View></View></TouchableRipple>;
+  return <TouchableRipple accessibilityLabel={`Run ${formatRecipeName(recipe)}`} disabled={locked} onPress={onPress} style={[styles.facilityRecipeOption, selected && styles.facilityRecipeOptionActive, hasMissingInputs && styles.facilityRecipeOptionUnavailable, locked && styles.facilityRecipeOptionUnavailable]}><View><Text style={styles.facilityRecipeOptionName}>{formatRecipeName(recipe)}</Text><Text style={[styles.facilityRecipeOptionDetails, (hasMissingInputs || locked) && styles.facilityRecipeOptionMissing]}>{locked ? 'Research required' : `Inputs: ${inputSummary}`}</Text><View style={styles.facilityRecipeOptionStats}><Text style={styles.facilityRecipeOptionDetails}>Work: {formatNumber(recipe.workAmount, { smartDecimals: true })}</Text><Text style={styles.facilityRecipeOptionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text></View></View></TouchableRipple>;
 }
 
 function FacilityResourceSummary({ outputMultiplier, recipe }: { outputMultiplier: number; recipe: Recipe }) {

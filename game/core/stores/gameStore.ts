@@ -10,7 +10,7 @@ import { SalesContracts, calculateSalesContractOfferChance } from '@/game/sales'
 import { AchievementLedger, ProductionStatistics, createAchievementEvaluationContext, evaluateAchievementUnlocks, type AchievementCategory } from '@/game/achievements';
 import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary } from '@/game/prestige';
 import { evaluateGateRequirements, type GateContext, type GateEvaluation } from '@/game/gates';
-import { ResearchLedger, getMaximumOpenSalesContracts, getResearchProject, type ResearchProjectId } from '@/game/research';
+import { ResearchLedger, getMaximumOpenSalesContracts, getRecipeResearchProjectId, getRecipeTimeMultiplier, getResearchProject, type ResearchProjectId } from '@/game/research';
 import type { StartingConditionId } from '@/game/company/companyTypes';
 import { STANDARD_START_CONSTRUCTION_MATERIALS } from '@/game/company/companyConstants';
 import { create } from 'zustand';
@@ -348,7 +348,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const facilities = get().facilities.clone();
     const facility = facilities.get(facilityId);
 
-    if (!facility || !facility.setActiveRecipe(recipeName)) {
+    if (!facility || (recipeName !== null && !get().research.hasCompleted(getRecipeResearchProjectId(recipeName))) || !facility.setActiveRecipe(recipeName)) {
       return false;
     }
 
@@ -467,7 +467,7 @@ export const useGameStore = create<GameState>((set, get) => {
             }
           }
         }
-        const outputs = advanceFacilityProduction(facilities, inventory, stepMs / REALTIME_WORK_MINUTE_MS);
+        const outputs = advanceFacilityProduction(facilities, inventory, stepMs / REALTIME_WORK_MINUTE_MS, (recipeName) => getRecipeTimeMultiplier(recipeName, research.getCompletedProjectIds()));
         if (outputs.length > 0) {
           if (productionStatistics === get().productionStatistics) {
             productionStatistics = productionStatistics.clone();
