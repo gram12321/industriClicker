@@ -5,12 +5,12 @@ import type { RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
 import { MARKET_SALES_CONTRACT_PREMIUM, Market, canAutoBuyMarketResource, canBuyMarketResource, canSellMarketResource, type MarketAutomation } from '@/game/market';
 import type { GameSnapshot } from '@/game/core/state';
-import { FOREGROUND_SIMULATION_STEP_MS, REALTIME_WORK_MINUTE_MS, calculateRealtimeAdvance } from '@/game/core/time';
+import { BASE_WORK_PER_MINUTE, FOREGROUND_SIMULATION_STEP_MS, REALTIME_WORK_MINUTE_MS, calculateRealtimeAdvance } from '@/game/core/time';
 import { SalesContracts, calculateSalesContractOfferChance } from '@/game/sales';
 import { AchievementLedger, ProductionStatistics, createAchievementEvaluationContext, evaluateAchievementUnlocks, type AchievementCategory } from '@/game/achievements';
 import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary } from '@/game/prestige';
 import { evaluateGateRequirements, type GateContext, type GateEvaluation } from '@/game/gates';
-import { ResearchLedger, getMaximumOpenSalesContracts, getRecipeResearchProjectId, getRecipeTimeMultiplier, getResearchProject, type ResearchProjectId } from '@/game/research';
+import { ResearchLedger, getMaximumOpenSalesContracts, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, type ResearchProjectId } from '@/game/research';
 import type { StartingConditionId } from '@/game/company/companyTypes';
 import { STANDARD_START_CONSTRUCTION_MATERIALS } from '@/game/company/companyConstants';
 import { create } from 'zustand';
@@ -467,7 +467,8 @@ export const useGameStore = create<GameState>((set, get) => {
             }
           }
         }
-        const outputs = advanceFacilityProduction(facilities, inventory, stepMs / REALTIME_WORK_MINUTE_MS, (recipeName) => getRecipeTimeMultiplier(recipeName, research.getCompletedProjectIds()));
+        const baseWork = (stepMs / REALTIME_WORK_MINUTE_MS) * BASE_WORK_PER_MINUTE;
+        const outputs = advanceFacilityProduction(facilities, inventory, baseWork, (recipeName) => getRecipeResearchWorkSpeedMultiplier(recipeName, research.getCompletedProjectIds()));
         if (outputs.length > 0) {
           if (productionStatistics === get().productionStatistics) {
             productionStatistics = productionStatistics.clone();

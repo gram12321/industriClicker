@@ -190,7 +190,7 @@ function ConfirmConstrution({
             <List.Item
               key={recipe.name}
               title={formatRecipeName(recipe)}
-              description={<View><Text style={styles.cardDescription}>{`${formatRecipeInputs(recipe)} → ${formatRecipeOutput(recipe)}`}</Text><WorkMetric value={String(recipe.workAmount)} /></View>}
+              description={<View><Text style={styles.cardDescription}>{`${formatRecipeInputs(recipe)} → ${formatRecipeOutput(recipe)}`}</Text><WorkMetric value={String(recipe.requiredWork)} /></View>}
               left={(props) => <List.Icon {...props} icon={APP_ICONS.play} />}
             />
           ))}

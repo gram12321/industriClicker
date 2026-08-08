@@ -178,7 +178,7 @@ function RecipesSection() {
     <SectionHeading eyebrow="RECIPES" title="Production recipes" subtitle="Inputs are paid at the start of each cycle. A facility pauses when the required inputs are unavailable." />
     <Card mode="contained" style={styles.featureCard}><Card.Content><List.Section>
       {Object.values(ALL_RECIPES).map((recipe) => <List.Item
-        description={<View><Text style={styles.cardDescription}>{`${formatRecipeInputs(recipe)} → ${formatRecipeOutput(recipe)}`}</Text><WorkMetric value={formatNumber(recipe.workAmount, { smartDecimals: true })} /></View>}
+        description={<View><Text style={styles.cardDescription}>{`${formatRecipeInputs(recipe)} → ${formatRecipeOutput(recipe)}`}</Text><WorkMetric value={formatNumber(recipe.requiredWork, { smartDecimals: true })} /></View>}
         key={recipe.name}
         left={(props) => <List.Icon {...props} icon={APP_ICONS.production} />}
         title={formatRecipeName(recipe)}

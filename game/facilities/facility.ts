@@ -2,7 +2,7 @@ import { getRecipe, type RecipeInput, type RecipeName } from '@/game/recipes';
 import type { Inventory } from '@/game/inventory';
 import { getFacilityDefinition } from './facilityConstants';
 import { FacilityType } from './facilityTypes';
-import { getOutputUpgradeMultiplier, getRequiredWorkers, getSpeedUpgradeMultiplier, getStaffingEfficiency } from './facilityUpgrades';
+import { getBuildingEfficiency, getOutputUpgradeMultiplier, getRequiredWorkers, getSpeedUpgradeWorkSpeedMultiplier } from './facilityUpgrades';
 
 const WORK_COMPLETION_EPSILON = 1e-9;
 
@@ -82,16 +82,26 @@ export class Facility {
     );
   }
 
-  getEfficiency(): number {
-    return getStaffingEfficiency(this.assignedWorkers, this.getRequiredWorkers());
+  getBuildingEfficiency(): number {
+    return getBuildingEfficiency(this.assignedWorkers, this.getRequiredWorkers());
   }
 
-  getSpeedMultiplier(): number {
-    return getSpeedUpgradeMultiplier(this.speedUpgradeLevel);
+  getSpeedUpgradeWorkSpeedMultiplier(): number {
+    return getSpeedUpgradeWorkSpeedMultiplier(this.speedUpgradeLevel);
   }
 
   getOutputMultiplier(): number {
     return getOutputUpgradeMultiplier(this.outputUpgradeLevel);
+  }
+
+  /** Work available to the selected recipe after every current speed multiplier. */
+  getEffectiveWork(baseWork: number, recipeResearchWorkSpeedMultiplier = 1): number {
+    if (!Number.isFinite(baseWork) || baseWork <= 0) {
+      return 0;
+    }
+
+    const safeRecipeResearchWorkSpeedMultiplier = Number.isFinite(recipeResearchWorkSpeedMultiplier) && recipeResearchWorkSpeedMultiplier > 0 ? recipeResearchWorkSpeedMultiplier : 1;
+    return baseWork * this.getBuildingEfficiency() * this.getSpeedUpgradeWorkSpeedMultiplier() * safeRecipeResearchWorkSpeedMultiplier;
   }
 
   setAssignedWorkers(workerCount: number): boolean {
@@ -160,22 +170,21 @@ export class Facility {
    * Applies work to the selected recipe. Inputs are paid at the beginning of
    * each cycle, matching the Baseclicker production rule.
    */
-  advanceProduction(inventory: Inventory, workAmount: number, recipeTimeMultiplier = 1): ProductionOutput[] {
+  advanceProduction(inventory: Inventory, baseWork: number, recipeResearchWorkSpeedMultiplier = 1): ProductionOutput[] {
     const outputs: ProductionOutput[] = [];
-    if (!Number.isFinite(workAmount) || workAmount <= 0 || !this.active || !this.activeRecipeName) {
+    if (!Number.isFinite(baseWork) || baseWork <= 0 || !this.active || !this.activeRecipeName) {
       return outputs;
     }
 
     const recipe = getRecipe(this.activeRecipeName);
-    if (!recipe || recipe.workAmount <= 0) {
+    if (!recipe || recipe.requiredWork <= 0) {
       return outputs;
     }
 
-    const safeRecipeTimeMultiplier = Number.isFinite(recipeTimeMultiplier) && recipeTimeMultiplier > 0 ? recipeTimeMultiplier : 1;
-    let remainingWork = workAmount * this.getEfficiency() * this.getSpeedMultiplier() * safeRecipeTimeMultiplier;
+    let remainingEffectiveWork = this.getEffectiveWork(baseWork, recipeResearchWorkSpeedMultiplier);
     let progress = this.getRecipeProgress(recipe.name);
 
-    while (remainingWork > 0) {
+    while (remainingEffectiveWork > 0) {
       if (progress === 0 && !recipe.inputs.every((input) => inventory.has(input.resourceType, input.amount))) {
         break;
       }
@@ -186,11 +195,11 @@ export class Facility {
         }
       }
 
-      const appliedWork = Math.min(remainingWork, recipe.workAmount - progress);
+      const appliedWork = Math.min(remainingEffectiveWork, recipe.requiredWork - progress);
       progress += appliedWork;
-      remainingWork -= appliedWork;
+      remainingEffectiveWork -= appliedWork;
 
-      if (progress + WORK_COMPLETION_EPSILON >= recipe.workAmount) {
+      if (progress + WORK_COMPLETION_EPSILON >= recipe.requiredWork) {
         const amount = recipe.output.amount * this.getOutputMultiplier();
         inventory.add(recipe.output.resourceType, amount);
         outputs.push({ facilityType: this.facilityType, recipeName: recipe.name, resourceType: recipe.output.resourceType, amount });
@@ -240,7 +249,7 @@ export class Facility {
     for (const recipe of getFacilityDefinition(this.facilityType).recipes) {
       const progress = snapshot.recipeProgress[recipe.name];
 
-      if (Number.isFinite(progress) && progress !== undefined && progress >= 0 && progress < recipe.workAmount) {
+      if (Number.isFinite(progress) && progress !== undefined && progress >= 0 && progress < recipe.requiredWork) {
         this.recipeProgress[recipe.name] = progress;
       }
     }

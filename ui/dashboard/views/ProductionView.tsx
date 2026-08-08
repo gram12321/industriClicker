@@ -9,7 +9,8 @@ import { getFacilityDefinition, getFacilityUpgradeCost } from '@/game/facilities
 import type { Inventory } from '@/game/inventory';
 import type { Market, MarketAutomation } from '@/game/market';
 import type { Recipe } from '@/game/recipes';
-import { getRecipeResearchProjectId, type ResearchLedger } from '@/game/research';
+import { getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, type ResearchLedger } from '@/game/research';
+import { BASE_WORK_PER_MINUTE } from '@/game/core/time';
 import { getResource, getResourceIcon } from '@/game/resources';
 import { clamp, formatCurrency, formatDuration, formatNumber, formatPercent } from '@/utils';
 import { DetailRow, SectionHeading, WorkMetric } from '@/ui/dashboard/components/DashboardPrimitives';
@@ -38,6 +39,7 @@ export function ProductionView({
 }) {
   const [collapsedFacilities, setCollapsedFacilities] = useState<Record<string, boolean>>({});
   const [expandedRecipeSelectors, setExpandedRecipeSelectors] = useState<Record<string, boolean>>({});
+  const completedResearchProjectIds = research.getCompletedProjectIds();
   const buildFacilityButtonRef = useRef<View>(null);
   const builtFacilities = facilities.getAll();
 
@@ -51,6 +53,9 @@ export function ProductionView({
       const definition = getFacilityDefinition(facilityType);
       const activeRecipeName = facility.getActiveRecipeName();
       const activeRecipe = definition.recipes.find((recipe) => recipe.name === activeRecipeName);
+      const effectiveWorkPerMinute = activeRecipe
+        ? facility.getEffectiveWork(BASE_WORK_PER_MINUTE, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds))
+        : 0;
       const productionStatus = facility.getProductionStatus(inventory);
       const assignedWorkers = facility.getAssignedWorkers();
       const requiredWorkers = facility.getRequiredWorkers();
@@ -66,10 +71,10 @@ export function ProductionView({
       return <Card key={facilityId} mode="contained" style={styles.featureCard}><Card.Content>
         <List.Item
           description={<View style={styles.facilityHeader}>
-            <View style={styles.facilityHeaderRow}><Text style={styles.cardDescription}>{activeRecipe ? formatRecipeName(activeRecipe) : 'No active recipe'}</Text>{activeRecipe && <WorkMetric value={`${formatNumber(facility.getRecipeProgress(activeRecipe.name), { smartDecimals: true })}/${formatNumber(activeRecipe.workAmount, { smartDecimals: true })}`} />}</View>
+            <View style={styles.facilityHeaderRow}><Text style={styles.cardDescription}>{activeRecipe ? formatRecipeName(activeRecipe) : 'No active recipe'}</Text>{activeRecipe && <WorkMetric value={formatRecipeProgress(facility.getRecipeProgress(activeRecipe.name), activeRecipe.requiredWork, effectiveWorkPerMinute)} />}</View>
             <View style={styles.facilityMetrics}>
               <FacilityMetric icon={APP_ICONS.staffing} label={`${formatNumber(assignedWorkers)}/${formatNumber(requiredWorkers)}`} />
-              <FacilityMetric icon={APP_ICONS.efficiency} label={formatPercent(facility.getEfficiency(), { decimals: 0 })} />
+              <FacilityMetric icon={APP_ICONS.efficiency} label={formatPercent(facility.getBuildingEfficiency(), { decimals: 0 })} />
               <FacilityMetric icon={APP_ICONS.speed} label={`L${formatNumber(speedUpgradeLevel)}`} />
               <FacilityMetric icon={APP_ICONS.output} label={`L${formatNumber(outputUpgradeLevel)}`} />
               {(productionStatus === 'missing-inputs' || productionStatus === 'paused') && <View accessibilityLabel={productionStatus === 'missing-inputs' ? 'Production paused: missing inputs' : 'Production manually paused'} style={styles.facilityPauseMetric}><MaterialCommunityIcons color={colors.error} name={APP_ICONS.pause} size={14} /></View>}
@@ -80,29 +85,29 @@ export function ProductionView({
           title={facilityName}
           titleStyle={styles.facilityTitle}
         />
-        {!isExpanded && activeRecipe && <FacilityProductionStatus compact efficiency={facility.getEfficiency()} market={market} outputMultiplier={facility.getOutputMultiplier()} progress={facility.getRecipeProgress(activeRecipe.name)} recipe={activeRecipe} speedMultiplier={facility.getSpeedMultiplier()} status={productionStatus} />}
+        {!isExpanded && activeRecipe && <FacilityProductionStatus compact effectiveWorkPerMinute={effectiveWorkPerMinute} market={market} outputMultiplier={facility.getOutputMultiplier()} progress={facility.getRecipeProgress(activeRecipe.name)} recipe={activeRecipe} status={productionStatus} />}
         {isExpanded && <>
           <View style={styles.facilityProductionSection}>
             {activeRecipe && <View style={styles.facilityProductionTop}><FacilityResourceSummary outputMultiplier={facility.getOutputMultiplier()} recipe={activeRecipe} /><View style={styles.facilityRecipeActions}>
               <IconButton accessibilityLabel={allInputsAutoBuyEnabled ? 'Disable autobuy for recipe inputs' : 'Allow autobuy for recipe inputs'} containerColor={allInputsAutoBuyEnabled ? colors.marketAutomationActive : colors.marketAutomation} disabled={activeRecipe.inputs.length === 0} icon={APP_ICONS.marketAutoBuy} iconColor={colors.onDark} onPress={() => activeRecipe.inputs.forEach((input) => setMarketAutomation(input.resourceType, { autoBuyEnabled: !allInputsAutoBuyEnabled }))} size={16} style={styles.facilityRecipeActionButton} />
               <IconButton accessibilityLabel="Buy missing inputs for one production cycle" containerColor={colors.marketBuy} disabled={!hasMissingInputs} icon={APP_ICONS.marketBuy} iconColor={colors.onDark} onPress={() => activeRecipe.inputs.forEach((input) => { const missingAmount = Math.max(0, input.amount - inventory.getAmount(input.resourceType)); if (missingAmount > 0) buyMarketResource(input.resourceType, missingAmount); })} size={16} style={styles.facilityRecipeActionButton} />
             </View></View>}
-            <FacilityProductionStatus efficiency={facility.getEfficiency()} market={market} outputMultiplier={facility.getOutputMultiplier()} progress={activeRecipe ? facility.getRecipeProgress(activeRecipe.name) : 0} recipe={activeRecipe ?? null} speedMultiplier={facility.getSpeedMultiplier()} status={productionStatus} />
+            <FacilityProductionStatus effectiveWorkPerMinute={effectiveWorkPerMinute} market={market} outputMultiplier={facility.getOutputMultiplier()} progress={activeRecipe ? facility.getRecipeProgress(activeRecipe.name) : 0} recipe={activeRecipe ?? null} status={productionStatus} />
           </View>
           <View style={styles.facilityRecipeSelector}>
             <View style={styles.facilityRecipeSelectorHeader}><Text style={styles.facilityRecipeSelectorTitle}>Production recipe</Text><IconButton accessibilityLabel={`${isRecipeSelectorExpanded ? 'Hide' : 'Show'} recipes for ${facilityName}`} icon={isRecipeSelectorExpanded ? APP_ICONS.collapse : APP_ICONS.expand} onPress={() => setExpandedRecipeSelectors((current) => ({ ...current, [facilityId]: !isRecipeSelectorExpanded }))} size={20} /></View>
-            {isRecipeSelectorExpanded ? definition.recipes.map((recipe) => <RecipeOption efficiency={facility.getEfficiency()} key={recipe.name} locked={!research.hasCompleted(getRecipeResearchProjectId(recipe.name))} market={market} outputMultiplier={facility.getOutputMultiplier()} recipe={recipe} selected={activeRecipeName === recipe.name} speedMultiplier={facility.getSpeedMultiplier()} inventory={inventory} onPress={() => setFacilityRecipe(facilityId, recipe.name)} />) : <Text style={styles.facilityRecipeSelectorCurrent}>{activeRecipe ? `Current: ${formatRecipeName(activeRecipe)}` : 'No recipe selected'}</Text>}
+            {isRecipeSelectorExpanded ? definition.recipes.map((recipe) => <RecipeOption effectiveWorkPerMinute={facility.getEffectiveWork(BASE_WORK_PER_MINUTE, getRecipeResearchWorkSpeedMultiplier(recipe.name, completedResearchProjectIds))} key={recipe.name} locked={!research.hasCompleted(getRecipeResearchProjectId(recipe.name))} market={market} outputMultiplier={facility.getOutputMultiplier()} recipe={recipe} selected={activeRecipeName === recipe.name} inventory={inventory} onPress={() => setFacilityRecipe(facilityId, recipe.name)} />) : <Text style={styles.facilityRecipeSelectorCurrent}>{activeRecipe ? `Current: ${formatRecipeName(activeRecipe)}` : 'No recipe selected'}</Text>}
           </View>
           <View style={styles.facilityStaffingSection}>
             <Text style={styles.constructionYardRecipeLabel}>Staffing</Text>
             <View style={styles.facilityStaffingControls}>
               <IconButton accessibilityLabel={`Remove worker from ${facilityName}`} disabled={assignedWorkers === 0} icon={APP_ICONS.minus} onPress={() => setFacilityWorkers(facilityId, assignedWorkers - 1)} />
-              <View style={styles.facilityStaffingSummary}><Text style={styles.facilityStaffingValue}>{formatNumber(assignedWorkers)} / {formatNumber(requiredWorkers)} workers</Text><Text style={styles.facilityStaffingDetail}>Efficiency {formatPercent(facility.getEfficiency(), { decimals: 0 })}</Text></View>
+              <View style={styles.facilityStaffingSummary}><Text style={styles.facilityStaffingValue}>{formatNumber(assignedWorkers)} / {formatNumber(requiredWorkers)} workers</Text><Text style={styles.facilityStaffingDetail}>Building efficiency {formatPercent(facility.getBuildingEfficiency(), { decimals: 0 })}</Text></View>
               <IconButton accessibilityLabel={`Add worker to ${facilityName}`} icon={APP_ICONS.add} onPress={() => setFacilityWorkers(facilityId, assignedWorkers + 1)} />
             </View>
           </View>
           <Text style={styles.constructionYardRecipeLabel}>Upgrades</Text>
-          <Text style={styles.facilityUpgradeSummary}>Speed x{formatNumber(facility.getSpeedMultiplier(), { decimals: 2, forceDecimals: true, adaptiveNearOne: false })} · Output x{formatNumber(facility.getOutputMultiplier(), { decimals: 2, forceDecimals: true, adaptiveNearOne: false })}</Text>
+          <Text style={styles.facilityUpgradeSummary}>Work speed x{formatNumber(facility.getSpeedUpgradeWorkSpeedMultiplier(), { decimals: 2, forceDecimals: true, adaptiveNearOne: false })} · Output x{formatNumber(facility.getOutputMultiplier(), { decimals: 2, forceDecimals: true, adaptiveNearOne: false })}</Text>
           <View style={styles.facilityUpgradeControls}>
             <FacilityUpgradeControl canAfford={finance.canAfford(speedUpgradeCost)} cost={speedUpgradeCost} icon={APP_ICONS.speed} label="Speed" level={speedUpgradeLevel} onPress={() => upgradeFacility(facilityId, 'speed')} />
             <FacilityUpgradeControl canAfford={finance.canAfford(outputUpgradeCost)} cost={outputUpgradeCost} icon={APP_ICONS.output} label="Output" level={outputUpgradeLevel} onPress={() => upgradeFacility(facilityId, 'output')} />
@@ -122,12 +127,12 @@ function FacilityUpgradeControl({ canAfford, cost, icon, label, level, onPress }
   return <View style={styles.facilityUpgradeCard}><View style={styles.facilityUpgradeHeader}><MaterialCommunityIcons color={colors.primary} name={icon as never} size={15} /><Text style={styles.facilityUpgradeLabel}>{label}</Text></View><Text style={styles.facilityUpgradeLevel}>L{formatNumber(level)} → L{formatNumber(level + 1)}</Text><View style={styles.facilityUpgradeAction}><Text style={styles.facilityUpgradeCost}>{formatCurrency(cost)}</Text><IconButton accessibilityLabel={`Upgrade ${label} to level ${level + 1}`} disabled={!canAfford} icon={APP_ICONS.add} mode="contained" onPress={onPress} size={16} /></View></View>;
 }
 
-function RecipeOption({ efficiency, inventory, locked, market, onPress, outputMultiplier, recipe, selected, speedMultiplier }: { efficiency: number; inventory: Inventory; locked: boolean; market: Market; onPress: () => void; outputMultiplier: number; recipe: Recipe; selected: boolean; speedMultiplier: number }) {
+function RecipeOption({ effectiveWorkPerMinute, inventory, locked, market, onPress, outputMultiplier, recipe, selected }: { effectiveWorkPerMinute: number; inventory: Inventory; locked: boolean; market: Market; onPress: () => void; outputMultiplier: number; recipe: Recipe; selected: boolean }) {
   const inputSummary = recipe.inputs.length === 0 ? 'No inputs' : recipe.inputs.map((input) => `${getResourceIcon(input.resourceType)} ${formatNumber(input.amount, { smartDecimals: true })}/${formatNumber(inventory.getAmount(input.resourceType), { smartDecimals: true })}`).join('  ');
   const hasMissingInputs = recipe.inputs.some((input) => !inventory.has(input.resourceType, input.amount));
-  const valuePerMinute = getRecipeValuePerMinute(recipe, market, outputMultiplier, efficiency * speedMultiplier);
+  const valuePerMinute = getRecipeValuePerMinute(recipe, market, outputMultiplier, effectiveWorkPerMinute);
 
-  return <TouchableRipple accessibilityLabel={`Run ${formatRecipeName(recipe)}`} disabled={locked} onPress={onPress} style={[styles.facilityRecipeOption, selected && styles.facilityRecipeOptionActive, hasMissingInputs && styles.facilityRecipeOptionUnavailable, locked && styles.facilityRecipeOptionUnavailable]}><View><Text style={styles.facilityRecipeOptionName}>{formatRecipeName(recipe)}</Text><Text style={[styles.facilityRecipeOptionDetails, (hasMissingInputs || locked) && styles.facilityRecipeOptionMissing]}>{locked ? 'Research required' : `Inputs: ${inputSummary}`}</Text><View style={styles.facilityRecipeOptionStats}><Text style={styles.facilityRecipeOptionDetails}>Work: {formatNumber(recipe.workAmount, { smartDecimals: true })}</Text><Text style={styles.facilityRecipeOptionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text></View></View></TouchableRipple>;
+  return <TouchableRipple accessibilityLabel={`Run ${formatRecipeName(recipe)}`} disabled={locked} onPress={onPress} style={[styles.facilityRecipeOption, selected && styles.facilityRecipeOptionActive, hasMissingInputs && styles.facilityRecipeOptionUnavailable, locked && styles.facilityRecipeOptionUnavailable]}><View><Text style={styles.facilityRecipeOptionName}>{formatRecipeName(recipe)}</Text><Text style={[styles.facilityRecipeOptionDetails, (hasMissingInputs || locked) && styles.facilityRecipeOptionMissing]}>{locked ? 'Research required' : `Inputs: ${inputSummary}`}</Text><View style={styles.facilityRecipeOptionStats}><Text style={styles.facilityRecipeOptionDetails}>Required work: {formatNumber(recipe.requiredWork, { smartDecimals: true })}</Text><Text style={styles.facilityRecipeOptionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text></View></View></TouchableRipple>;
 }
 
 function FacilityResourceSummary({ outputMultiplier, recipe }: { outputMultiplier: number; recipe: Recipe }) {
@@ -138,20 +143,37 @@ function FacilityResourceSummary({ outputMultiplier, recipe }: { outputMultiplie
   </View>;
 }
 
-function FacilityProductionStatus({ compact = false, efficiency, market, outputMultiplier, progress, recipe, speedMultiplier, status }: { compact?: boolean; efficiency: number; market: Market; outputMultiplier: number; progress: number; recipe: Recipe | null; speedMultiplier: number; status: 'not-started' | 'paused' | 'missing-inputs' | 'producing' }) {
+function FacilityProductionStatus({ compact = false, effectiveWorkPerMinute, market, outputMultiplier, progress, recipe, status }: { compact?: boolean; effectiveWorkPerMinute: number; market: Market; outputMultiplier: number; progress: number; recipe: Recipe | null; status: 'not-started' | 'paused' | 'missing-inputs' | 'producing' }) {
   if (!recipe) return <Text style={styles.productionError}>Production is not started. Choose a recipe to begin.</Text>;
-  const progressPercent = clamp((progress / recipe.workAmount) * 100, 0, 100);
-  const valuePerMinute = getRecipeValuePerMinute(recipe, market, outputMultiplier, efficiency * speedMultiplier);
-  const workPerMinute = efficiency * speedMultiplier;
-  const minutesRemaining = workPerMinute > 0 ? Math.max(0, recipe.workAmount - progress) / workPerMinute : 0;
-  if (compact) return <View style={styles.productionProgress}><View style={styles.productionProgressHeader}><Text style={styles.productionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text><View style={styles.productionProgressMeta}><Text style={styles.productionPercent}>{formatPercent(progressPercent, { decimals: 0, input: 'percent' })}</Text><Text style={styles.productionTimeLeft}>Time left: {formatDuration(minutesRemaining)}</Text></View></View><ProgressBar color={colors.primary} progress={progressPercent / 100} style={styles.productionProgressBar} /></View>;
-  if (status !== 'producing') return <View style={styles.productionProgress}><Text style={styles.productionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text><Text style={styles.productionTimeLeft}>Time left: {formatDuration(minutesRemaining)}</Text></View>;
-  return <View style={styles.productionProgress}><View style={styles.productionProgressHeader}><Text style={styles.productionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text><View style={styles.productionProgressMeta}><Text style={styles.productionPercent}>{formatPercent(progressPercent, { decimals: 0, input: 'percent' })}</Text><Text style={styles.productionTimeLeft}>Time left: {formatDuration(minutesRemaining)}</Text></View></View><ProgressBar color={colors.primary} progress={progressPercent / 100} style={styles.productionProgressBar} /></View>;
+  const progressPercent = clamp((progress / recipe.requiredWork) * 100, 0, 100);
+  const valuePerMinute = getRecipeValuePerMinute(recipe, market, outputMultiplier, effectiveWorkPerMinute);
+  const workPerMinute = effectiveWorkPerMinute;
+  const minutesRemaining = workPerMinute > 0 ? Math.max(0, recipe.requiredWork - progress) / workPerMinute : 0;
+  const productionRateLabel = formatProductionRate(recipe, outputMultiplier, effectiveWorkPerMinute, minutesRemaining);
+  if (compact) return <View style={styles.productionProgress}><View style={styles.productionProgressHeader}><Text style={styles.productionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text><View style={styles.productionProgressMeta}><Text style={styles.productionPercent}>{formatPercent(progressPercent, { decimals: 0, input: 'percent' })}</Text><Text style={styles.productionTimeLeft}>{productionRateLabel}</Text><Text style={styles.productionTimeLeft}>Time left: {formatDuration(minutesRemaining)}</Text></View></View><ProgressBar color={colors.primary} progress={progressPercent / 100} style={styles.productionProgressBar} /></View>;
+  if (status !== 'producing') return <View style={styles.productionProgress}><Text style={styles.productionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text><Text style={styles.productionTimeLeft}>{productionRateLabel}</Text><Text style={styles.productionTimeLeft}>Time left: {formatDuration(minutesRemaining)}</Text></View>;
+  return <View style={styles.productionProgress}><View style={styles.productionProgressHeader}><Text style={styles.productionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text><View style={styles.productionProgressMeta}><Text style={styles.productionPercent}>{formatPercent(progressPercent, { decimals: 0, input: 'percent' })}</Text><Text style={styles.productionTimeLeft}>{productionRateLabel}</Text><Text style={styles.productionTimeLeft}>Time left: {formatDuration(minutesRemaining)}</Text></View></View><ProgressBar color={colors.primary} progress={progressPercent / 100} style={styles.productionProgressBar} /></View>;
+}
+
+function formatRecipeProgress(progress: number, requiredWork: number, effectiveWorkPerMinute: number): string {
+  if (effectiveWorkPerMinute <= 0) return '0 min';
+
+  return `${formatDuration(progress / effectiveWorkPerMinute)}/${formatDuration(requiredWork / effectiveWorkPerMinute)}`;
+}
+
+function formatProductionRate(recipe: Recipe, outputMultiplier: number, effectiveWorkPerMinute: number, minutesRemaining: number): string {
+  if (recipe.requiredWork <= 0) return 'Production/min: 0';
+
+  const outputPerMinute = recipe.output.amount * outputMultiplier * effectiveWorkPerMinute / recipe.requiredWork;
+  const useSeconds = minutesRemaining < 1;
+  const outputRate = useSeconds ? outputPerMinute / 60 : outputPerMinute;
+  const unit = useSeconds ? 'sec' : 'min';
+  return `Production/${unit}: ${getResourceIcon(recipe.output.resourceType)} ${formatNumber(outputRate, { smartDecimals: true })}`;
 }
 
 function getRecipeValuePerMinute(recipe: Recipe, market: Market, outputMultiplier: number, workPerMinute: number): number {
-  if (recipe.workAmount <= 0) return 0;
-  const cyclesPerMinute = workPerMinute / recipe.workAmount;
+  if (recipe.requiredWork <= 0) return 0;
+  const cyclesPerMinute = workPerMinute / recipe.requiredWork;
   const outputValue = recipe.output.amount * outputMultiplier * market.getLocalPrice(recipe.output.resourceType);
   const inputValue = recipe.inputs.reduce((total, input) => total + input.amount * market.getLocalPrice(input.resourceType), 0);
   return (outputValue - inputValue) * cyclesPerMinute;

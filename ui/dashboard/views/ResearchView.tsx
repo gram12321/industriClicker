@@ -26,7 +26,7 @@ const RESEARCH_CHAIN_IDS: readonly ResearchChainId[] = ['capital-grants', 'sales
 const formatCurrency = (value: number) => formatCurrencyWithSymbol(value).replace(/\s*€/u, '');
 
 function isRecipeProjectForConstructedFacility(project: ResearchProjectDefinition, facilities: FacilityCollection): boolean {
-  if (project.effect.kind !== 'recipe-unlock' && project.effect.kind !== 'recipe-time-bonus') return false;
+  if (project.effect.kind !== 'recipe-unlock' && project.effect.kind !== 'recipe-work-speed-bonus') return false;
   const recipeName = project.effect.recipeName;
   return Object.values(FACILITIES).some((facility) => facility.recipes.some((recipe) => recipe.name === recipeName) && facilities.has(facility.type));
 }
@@ -42,11 +42,11 @@ function isRequirementFulfilled(requirement: GateRequirement, availability: Rese
 }
 
 function getRecipeTimeComparison(project: ResearchProjectDefinition): { before: string; after: string } | null {
-  if (project.effect.kind !== 'recipe-time-bonus') return null;
+  if (project.effect.kind !== 'recipe-work-speed-bonus') return null;
   const recipe = getRecipe(project.effect.recipeName as Parameters<typeof getRecipe>[0]);
   const beforeBonus = calculateDiminishingBonus(Math.max(0, project.effect.level - 1), 0.75, 0.35);
   const afterBonus = calculateDiminishingBonus(project.effect.level, 0.75, 0.35);
-  return { before: formatDuration(recipe.workAmount / (1 + beforeBonus)), after: formatDuration(recipe.workAmount / (1 + afterBonus)) };
+  return { before: formatDuration(recipe.requiredWork / (1 + beforeBonus)), after: formatDuration(recipe.requiredWork / (1 + afterBonus)) };
 }
 
 export function ResearchView({

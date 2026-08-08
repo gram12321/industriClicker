@@ -60,9 +60,9 @@ function getActiveProcesses({ customerPipelineProgress, facilities, inventory, m
     const recipe = recipeName ? getFacilityDefinition(facility.facilityType).recipes.find((candidate) => candidate.name === recipeName) : null;
     if (!recipe) return [];
 
-    const progress = clamp(facility.getRecipeProgress(recipe.name) / recipe.workAmount, 0, 1);
-    const workPerMinute = facility.getEfficiency() * facility.getSpeedMultiplier();
-    const minutesRemaining = workPerMinute > 0 ? (recipe.workAmount - facility.getRecipeProgress(recipe.name)) / workPerMinute : 0;
+    const progress = clamp(facility.getRecipeProgress(recipe.name) / recipe.requiredWork, 0, 1);
+    const workPerMinute = facility.getBuildingEfficiency() * facility.getSpeedUpgradeWorkSpeedMultiplier();
+    const minutesRemaining = workPerMinute > 0 ? (recipe.requiredWork - facility.getRecipeProgress(recipe.name)) / workPerMinute : 0;
     return [{ id: facility.id, icon: getFacilityDefinition(facility.facilityType).icon, label: formatRecipeName(recipe), progress, timing: `${formatNumber(progress * 100, { decimals: 0 })}% · ${formatDuration(minutesRemaining)} left`, title: facility.getDisplayName() }];
   });
 

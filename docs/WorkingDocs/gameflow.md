@@ -54,11 +54,11 @@ Players may pause a selected recipe without clearing it; resuming continues its 
 For `levels = speedLevel + outputLevel`:
 
 - Upgrade cost: `ceil(upgradeCost × 1.5^currentLevel)`.
-- Speed multiplier: `1 + 0.8 × (1 - e^(-0.22 × speedLevel))`.
+- Speed-upgrade work-speed multiplier: `1 + 0.8 × (1 - e^(-0.22 × speedLevel))`.
 - Output multiplier: `1 + (1 - e^(-0.18 × outputLevel))`.
 - Required workers: `baseWorkers + levels + ceil(baseWorkers × 1.15^levels - baseWorkers)`.
-- Staffing efficiency at or below target: `0.01 + 0.99 × ratio^1.6`; above target: `1 + 0.25 × (1 - e^(-0.7 × (ratio - 1)))`.
-- Effective work: `baseWork × staffingEfficiency × speedMultiplier`.
+- Building efficiency from staffing at or below target: `0.01 + 0.99 × ratio^1.6`; above target: `1 + 0.25 × (1 - e^(-0.7 × (ratio - 1)))`.
+- Effective work: `baseWork × buildingEfficiency × speedUpgradeWorkSpeedMultiplier × recipeResearchWorkSpeedMultiplier`.
 
 Levels and worker counts are non-negative integers. A zero-worker requirement has 100% efficiency; above-target staffing cannot reach a 25% bonus.
 

@@ -8,7 +8,7 @@ export function getFacilityUpgradeCost(constructionCost: number, currentLevel: n
   return Math.ceil(scaleExponential(constructionCost, currentLevel, FACILITY_UPGRADE_COST_GROWTH));
 }
 
-export function getSpeedUpgradeMultiplier(level: number): number {
+export function getSpeedUpgradeWorkSpeedMultiplier(level: number): number {
   return 1 + calculateDiminishingBonus(level, FACILITY_SPEED_MAXIMUM_BONUS, FACILITY_SPEED_BONUS_RATE);
 }
 
@@ -33,7 +33,7 @@ export function getRequiredWorkers(baseWorkers: number, speedLevel: number, outp
  * Staff below the requirement lose efficiency increasingly quickly. Extra
  * staff remain valid and give a bounded, exponentially diminishing bonus.
  */
-export function getStaffingEfficiency(assignedWorkers: number, requiredWorkers: number): number {
+export function getBuildingEfficiency(assignedWorkers: number, requiredWorkers: number): number {
   const assigned = Math.max(0, Math.floor(assignedWorkers));
   const required = Math.max(0, Math.floor(requiredWorkers));
 

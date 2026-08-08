@@ -233,6 +233,10 @@ export function formatTime(date: Date): string {
 export function formatDuration(minutes: number): string {
   if (!Number.isFinite(minutes) || minutes <= 0) return '0 min';
 
+  if (minutes < 1) {
+    return `${formatNumber(minutes * 60, { smartDecimals: true })} sec`;
+  }
+
   if (minutes < 60) {
     return `${formatNumber(minutes, { smartDecimals: true })} min`;
   }

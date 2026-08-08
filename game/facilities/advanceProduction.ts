@@ -8,18 +8,18 @@ import type { RecipeName } from '@/game/recipes';
 export function advanceProduction(
   facilities: FacilityCollection,
   inventory: Inventory,
-  workAmount: number,
-  recipeTimeMultiplier: (recipeName: RecipeName) => number = () => 1,
+  baseWork: number,
+  recipeResearchWorkSpeedMultiplier: (recipeName: RecipeName) => number = () => 1,
 ): ProductionOutput[] {
   const outputs: ProductionOutput[] = [];
-  if (!Number.isFinite(workAmount) || workAmount <= 0) {
+  if (!Number.isFinite(baseWork) || baseWork <= 0) {
     return outputs;
   }
 
   for (const facilityType of FACILITY_PRODUCTION_ORDER) {
     for (const facility of facilities.getAllByType(facilityType)) {
       const recipeName = facility.getActiveRecipeName();
-      outputs.push(...facility.advanceProduction(inventory, workAmount, recipeName ? recipeTimeMultiplier(recipeName) : 1));
+      outputs.push(...facility.advanceProduction(inventory, baseWork, recipeName ? recipeResearchWorkSpeedMultiplier(recipeName) : 1));
     }
   }
 

@@ -40,5 +40,5 @@ export type Recipe = {
   inputs: readonly RecipeInput[];
   output: RecipeOutput;
   /** Deterministic work units required for one production cycle. */
-  workAmount: number;
+  requiredWork: number;
 };

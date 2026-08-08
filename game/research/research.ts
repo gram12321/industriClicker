@@ -15,7 +15,7 @@ export function getMaximumOpenSalesContracts(completedProjectIds: readonly strin
   }, BASE_MAXIMUM_OPEN_SALES_CONTRACTS);
 }
 
-export function getRecipeTimeMultiplier(recipeName: RecipeName, completedProjectIds: readonly string[]): number {
+export function getRecipeResearchWorkSpeedMultiplier(recipeName: RecipeName, completedProjectIds: readonly string[]): number {
   const level = Array.from({ length: 10 }, (_, index) => index + 1).filter((candidate) => completedProjectIds.includes(getRecipeResearchLevelProjectId(recipeName, candidate))).length;
   return 1 + calculateDiminishingBonus(level, 0.75, 0.35);
 }

@@ -39,14 +39,14 @@ export function getRecipeResearchLevelProjectId(recipeName: RecipeName, level: n
 }
 
 const RECIPE_RESEARCH_PROJECTS: ResearchProjectDefinition[] = Object.values(FACILITIES).flatMap((facility) => facility.recipes.flatMap((recipe, recipeIndex) => {
-  const baseCost = Math.ceil(facility.landCost * 0.5 + facility.constructionMaterialsCost * 0.5 + recipe.inputs.length * 25 + recipe.workAmount * 5 + recipeIndex * 20);
-  const baseDuration = Math.max(15_000, Math.ceil((facility.landCost + facility.constructionMaterialsCost + recipe.workAmount * 10 + recipeIndex * 25) * 100));
+  const baseCost = Math.ceil(facility.landCost * 0.5 + facility.constructionMaterialsCost * 0.5 + recipe.inputs.length * 25 + recipe.requiredWork * 5 + recipeIndex * 20);
+  const baseDuration = Math.max(15_000, Math.ceil((facility.landCost + facility.constructionMaterialsCost + recipe.requiredWork * 10 + recipeIndex * 25) * 100));
   const unlock: ResearchProjectDefinition = { id: getRecipeResearchProjectId(recipe.name), chainId: 'recipe-unlocks', tier: 1, name: `Recipe research: ${recipe.name}`, cost: baseCost, durationMs: baseDuration, requirements: [FACILITY_TIER_1], effect: { kind: 'recipe-unlock', recipeName: recipe.name } };
   const bonusProjects = Array.from({ length: 10 }, (_, index): ResearchProjectDefinition => {
     const level = index + 1;
     const previousId = index === 0 ? getRecipeResearchProjectId(recipe.name) : getRecipeResearchLevelProjectId(recipe.name, level - 1);
-    const previousLabel = index === 0 ? `Recipe research: ${recipe.name}` : `${recipe.name} efficiency ${level - 1}`;
-    return { id: getRecipeResearchLevelProjectId(recipe.name, level), chainId: 'recipe-unlocks', tier: level, name: `${recipe.name} efficiency ${level}`, cost: Math.ceil(baseCost * (1 + index * 0.75)), durationMs: Math.ceil(baseDuration * (1 + index * 0.5)), requirements: [{ kind: 'research', projectId: previousId, label: previousLabel }], effect: { kind: 'recipe-time-bonus', recipeName: recipe.name, level } };
+    const previousLabel = index === 0 ? `Recipe research: ${recipe.name}` : `${recipe.name} work speed ${level - 1}`;
+    return { id: getRecipeResearchLevelProjectId(recipe.name, level), chainId: 'recipe-unlocks', tier: level, name: `${recipe.name} work speed ${level}`, cost: Math.ceil(baseCost * (1 + index * 0.75)), durationMs: Math.ceil(baseDuration * (1 + index * 0.5)), requirements: [{ kind: 'research', projectId: previousId, label: previousLabel }], effect: { kind: 'recipe-work-speed-bonus', recipeName: recipe.name, level } };
   });
   return [unlock, ...bonusProjects];
 }));
