@@ -31,25 +31,25 @@ Players may pause a selected recipe without clearing it; resuming continues its 
 
 | Recipe | Inputs | Output | Work |
 |---|---|---:|---:|
-| Grow Grain | 1 Water, 1 Electricity | 1 Grain | 0.05 |
-| Bake Bread | 2 Grain, 1 Water, 1 Electricity | 1 Bread | 10 |
-| Produce Water / Electricity | None | 1 utility resource | 5 |
-| Grow Sugar | 4 Water | 1 Sugar | 3 |
-| Mine Coal | 1 Water, 2 Electricity | 2 Coal | 3 |
-| Mine Iron | 2 Water, 4 Electricity | 1 Iron | 5 |
-| Mine Copper | 2 Water, 5 Electricity | 1 Copper | 6 |
-| Quarry Sand | 1 Water, 1 Electricity | 3 Sand | 2 |
-| Quarry Clay | 2 Water, 1 Electricity | 2 Clay | 3 |
-| Quarry Stone | 1 Water, 4 Electricity | 1 Stone | 5 |
-| Produce Steel | 2 Iron, 1 Coal, 2 Water, 6 Electricity | 2 Steel | 8 |
-| Produce Electric Circuits | 2 Sand, 2 Copper, 1 Water, 4 Electricity | 1 Electric Circuits | 10 |
-| Produce Bricks | 2 Clay, 1 Sand, 1 Water, 3 Electricity | 4 Bricks | 4 |
-| Produce Cement | 3 Stone, 1 Clay, 1 Water, 5 Electricity | 2 Cement | 6 |
-| Produce Reinforced Concrete | 2 Cement, 3 Sand, 2 Stone, 2 Steel, 2 Water, 2 Electricity | 2 Reinforced Concrete | 8 |
-| Produce Construction Materials | 4 Bricks, 2 Reinforced Concrete, 2 Steel, 2 Sand, 3 Electricity | 1 Construction Materials | 10 |
-| Bake Cake | 1 Grain, 0.5 Sugar, 2 Electricity, 2 Water | 1 Cake | 15 |
-| Manual / Electric Pumping | None / 1 Electricity | 1 / 5 Water | 1 / 0.5 |
-| Coal / Solar Power | 1 Coal, 2 Water / None | 10 / 1 Electricity | 5 / 10 |
+| Grow Grain | 1 Water, 1 Electricity | 1 Grain | 0.06 |
+| Bake Bread | 2 Grain, 1 Water, 1 Electricity | 3 Bread | 0.26 |
+| Produce Water / Electricity | None | 1 utility resource | 0.073 / 0.11 |
+| Grow Sugar | 4 Water | 1 Sugar | 0.12 |
+| Mine Coal | 1 Water, 2 Electricity | 2 Coal | 0.2 |
+| Mine Iron | 2 Water, 4 Electricity | 1 Iron | 0.267 |
+| Mine Copper | 2 Water, 5 Electricity | 1 Copper | 0.333 |
+| Quarry Sand | 1 Water, 1 Electricity | 3 Sand | 0.107 |
+| Quarry Clay | 2 Water, 1 Electricity | 2 Clay | 0.16 |
+| Quarry Stone | 1 Water, 4 Electricity | 3 Stone | 0.213 |
+| Produce Steel | 2 Iron, 1 Coal, 2 Water, 6 Electricity | 5 Steel | 1.1 |
+| Produce Electric Circuits | 2 Sand, 2 Copper, 1 Water, 4 Electricity | 4 Electric Circuits | 1.65 |
+| Produce Bricks | 2 Clay, 1 Sand, 1 Water, 3 Electricity | 10 Bricks | 0.65 |
+| Produce Cement | 3 Stone, 1 Clay, 1 Water, 5 Electricity | 5 Cement | 1.083 |
+| Produce Reinforced Concrete | 2 Cement, 3 Sand, 2 Stone, 2 Steel, 2 Water, 2 Electricity | 6 Reinforced Concrete | 2.6 |
+| Produce Construction Materials | 4 Bricks, 2 Reinforced Concrete, 2 Steel, 2 Sand, 3 Electricity | 4 Construction Materials | 5.2 |
+| Bake Cake | 1 Grain, 0.5 Sugar, 2 Electricity, 2 Water | 3 Cake | 0.39 |
+| Manual / Electric Pumping | None / 1 Electricity | 1 / 5 Water | 0.073 / 0.12 |
+| Coal / Solar Power | 1 Coal, 2 Water / None | 10 / 1 Electricity | 0.467 / 0.933 |
 
 For `levels = speedLevel + outputLevel`:
 
