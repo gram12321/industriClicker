@@ -163,6 +163,7 @@ function FacilitiesSection() {
   return <>
     <SectionHeading eyebrow="FACILITIES" title="Facility catalogue" subtitle="Build one or more facilities, then select an available recipe for each to begin production." />
     <FacilityConditionReference />
+    <FacilityUpgradeReference />
     {FACILITY_GROUPS.map((group) => <View key={group.id} style={localStyles.catalogueGroup}><Text style={styles.cardKicker}>{group.label}</Text>{group.facilities.map((facilityType) => {
       const facility = getFacilityDefinition(facilityType);
       return <Card key={facilityType} mode="contained" style={styles.featureCard}><Card.Content><List.Item
@@ -196,6 +197,17 @@ function FacilityConditionReference() {
       <Text style={localStyles.conditionTableCell}>{entry.passiveCondition}</Text>
       <Text style={localStyles.conditionTableCell}>{entry.productionCondition}</Text>
     </View>)}
+  </Card.Content></Card>;
+}
+
+function FacilityUpgradeReference() {
+  return <Card mode="contained" style={styles.featureCard}><Card.Content style={localStyles.conditionReferenceContent}>
+    <Text style={styles.cardKicker}>FACILITY UPGRADES</Text>
+    <Text style={styles.cardDescription}>Speed, Output, and Condition upgrades are purchased independently for each facility. Speed and Output levels increase worker requirements; Condition levels do not.</Text>
+    <Text style={localStyles.formula}>Upgrade cost: ceil(base upgrade cost × 1.5^current level).</Text>
+    <Text style={localStyles.formula}>Speed: work speed × (1 + 0.8 × (1 − e^(−0.22 × speed level))).</Text>
+    <Text style={localStyles.formula}>Output: output × (1 + 1 × (1 − e^(−0.18 × output level))).</Text>
+    <Text style={localStyles.formula}>Condition: decay × (1 − 0.75 × (1 − e^(−0.18 × condition level))); the reduction approaches 75% without reaching it.</Text>
   </Card.Content></Card>;
 }
 

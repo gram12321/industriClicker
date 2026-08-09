@@ -433,7 +433,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const facilityView = facility.getView();
     const currentLevel = upgradeKind === 'speed'
       ? facilityView.speedUpgradeLevel
-      : facilityView.outputUpgradeLevel;
+      : upgradeKind === 'output' ? facilityView.outputUpgradeLevel : facilityView.conditionDecayUpgradeLevel;
     const definition = getFacilityDefinition(facility.facilityType);
     const cost = getFacilityUpgradeCost(definition.upgradeCost, currentLevel);
 
@@ -443,13 +443,15 @@ export const useGameStore = create<GameState>((set, get) => {
 
     if (upgradeKind === 'speed') {
       facility.upgradeSpeed();
-    } else {
+    } else if (upgradeKind === 'output') {
       facility.upgradeOutput();
+    } else {
+      facility.upgradeConditionDecay();
     }
 
     if (!finance.applyTransaction(
       -cost,
-      `${upgradeKind === 'speed' ? 'Speed' : 'Output'} upgrade for ${facilityView.displayName}`,
+      `${upgradeKind === 'speed' ? 'Speed' : upgradeKind === 'output' ? 'Output' : 'Condition decay'} upgrade for ${facilityView.displayName}`,
       new Date().toISOString(),
     )) {
       return false;

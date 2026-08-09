@@ -2,7 +2,7 @@ import type { RecipeName } from '@/game/recipes';
 import { calculateAsymmetricalScaler01 } from '@/game/core/math/scaling';
 import { getFacilityDefinition } from './facilityConstants';
 import { FacilityType } from './facilityTypes';
-import { getFacilityEfficiency, getOutputUpgradeMultiplier, getRequiredWorkers, getSpeedUpgradeWorkSpeedMultiplier, getStaffingEfficiency } from './facilityUpgrades';
+import { getConditionDecayMultiplier, getFacilityEfficiency, getOutputUpgradeMultiplier, getRequiredWorkers, getSpeedUpgradeWorkSpeedMultiplier, getStaffingEfficiency } from './facilityUpgrades';
 
 /** Plain data used by the game snapshot and Expo SQLite adapter. */
 export type FacilitySnapshot = {
@@ -13,6 +13,7 @@ export type FacilitySnapshot = {
   recipeProgress: Partial<Record<RecipeName, number>>;
   speedUpgradeLevel?: number;
   outputUpgradeLevel?: number;
+  conditionDecayUpgradeLevel?: number;
   assignedWorkers?: number;
   facilityCondition: number;
 };
@@ -27,6 +28,8 @@ export type FacilityView = {
   recipeProgress: Readonly<Partial<Record<RecipeName, number>>>;
   speedUpgradeLevel: number;
   outputUpgradeLevel: number;
+  conditionDecayUpgradeLevel: number;
+  conditionDecayMultiplier: number;
   assignedWorkers: number;
   requiredWorkers: number;
   staffingEfficiency: number;
@@ -43,6 +46,7 @@ export class Facility {
   private recipeProgress: Partial<Record<RecipeName, number>> = {};
   private speedUpgradeLevel = 0;
   private outputUpgradeLevel = 0;
+  private conditionDecayUpgradeLevel = 0;
   private assignedWorkers = 0;
   private facilityCondition = 1;
 
@@ -71,6 +75,8 @@ export class Facility {
       recipeProgress: { ...this.recipeProgress },
       speedUpgradeLevel: this.speedUpgradeLevel,
       outputUpgradeLevel: this.outputUpgradeLevel,
+      conditionDecayUpgradeLevel: this.conditionDecayUpgradeLevel,
+      conditionDecayMultiplier: getConditionDecayMultiplier(this.conditionDecayUpgradeLevel),
       assignedWorkers: this.assignedWorkers,
       requiredWorkers,
       staffingEfficiency,
@@ -106,6 +112,10 @@ export class Facility {
     this.outputUpgradeLevel += 1;
   }
 
+  upgradeConditionDecay(): void {
+    this.conditionDecayUpgradeLevel += 1;
+  }
+
   setActiveRecipe(recipeName: RecipeName | null): boolean {
     if (recipeName === null) {
       this.activeRecipeName = null;
@@ -134,7 +144,7 @@ export class Facility {
       return false;
     }
 
-    const scaledLoss = loss * calculateAsymmetricalScaler01(this.facilityCondition);
+    const scaledLoss = loss * calculateAsymmetricalScaler01(this.facilityCondition) * getConditionDecayMultiplier(this.conditionDecayUpgradeLevel);
     this.facilityCondition = Math.max(0, this.facilityCondition - scaledLoss);
     return true;
   }
@@ -165,6 +175,7 @@ export class Facility {
       recipeProgress: { ...this.recipeProgress },
       speedUpgradeLevel: this.speedUpgradeLevel,
       outputUpgradeLevel: this.outputUpgradeLevel,
+      conditionDecayUpgradeLevel: this.conditionDecayUpgradeLevel,
       assignedWorkers: this.assignedWorkers,
       facilityCondition: this.facilityCondition,
     };
@@ -188,6 +199,7 @@ export class Facility {
     this.recipeProgress = {};
     this.speedUpgradeLevel = isValidUpgradeLevel(snapshot.speedUpgradeLevel) ? snapshot.speedUpgradeLevel : 0;
     this.outputUpgradeLevel = isValidUpgradeLevel(snapshot.outputUpgradeLevel) ? snapshot.outputUpgradeLevel : 0;
+    this.conditionDecayUpgradeLevel = isValidUpgradeLevel(snapshot.conditionDecayUpgradeLevel) ? snapshot.conditionDecayUpgradeLevel : 0;
     this.assignedWorkers = isValidWorkerCount(snapshot.assignedWorkers)
       ? snapshot.assignedWorkers
       : this.calculateRequiredWorkers();

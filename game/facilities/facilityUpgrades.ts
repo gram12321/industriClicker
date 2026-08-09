@@ -1,7 +1,7 @@
 import { calculateAsymmetricalScaler01, calculateDiminishingBonus, calculatePowerPenalty, scaleExponential } from '../core/math/scaling';
-import { FACILITY_MINIMUM_STAFFING_EFFICIENCY, FACILITY_OUTPUT_BONUS_RATE, FACILITY_OUTPUT_MAXIMUM_BONUS, FACILITY_OVERSTAFFING_BONUS_RATE, FACILITY_OVERSTAFFING_MAXIMUM_BONUS, FACILITY_REPAIR_MATERIAL_COST_RATE, FACILITY_SPEED_BONUS_RATE, FACILITY_SPEED_MAXIMUM_BONUS, FACILITY_UNDERSTAFFING_EXPONENT, FACILITY_UPGRADE_COST_GROWTH, FACILITY_WORKER_REQUIREMENT_GROWTH } from './facilityConstants';
+import { FACILITY_CONDITION_DECAY_MAX_REDUCTION, FACILITY_CONDITION_DECAY_REDUCTION_RATE, FACILITY_MINIMUM_STAFFING_EFFICIENCY, FACILITY_OUTPUT_BONUS_RATE, FACILITY_OUTPUT_MAXIMUM_BONUS, FACILITY_OVERSTAFFING_BONUS_RATE, FACILITY_OVERSTAFFING_MAXIMUM_BONUS, FACILITY_REPAIR_MATERIAL_COST_RATE, FACILITY_SPEED_BONUS_RATE, FACILITY_SPEED_MAXIMUM_BONUS, FACILITY_UNDERSTAFFING_EXPONENT, FACILITY_UPGRADE_COST_GROWTH, FACILITY_WORKER_REQUIREMENT_GROWTH } from './facilityConstants';
 
-export type FacilityUpgradeKind = 'speed' | 'output';
+export type FacilityUpgradeKind = 'speed' | 'output' | 'condition';
 
 /** Cost of the next level; level 0 is the first upgrade. */
 export function getFacilityUpgradeCost(constructionCost: number, currentLevel: number): number {
@@ -14,6 +14,11 @@ export function getSpeedUpgradeWorkSpeedMultiplier(level: number): number {
 
 export function getOutputUpgradeMultiplier(level: number): number {
   return 1 + calculateDiminishingBonus(level, FACILITY_OUTPUT_MAXIMUM_BONUS, FACILITY_OUTPUT_BONUS_RATE);
+}
+
+/** Returns the remaining wear multiplier after condition-decay upgrades. */
+export function getConditionDecayMultiplier(level: number): number {
+  return 1 - calculateDiminishingBonus(level, FACILITY_CONDITION_DECAY_MAX_REDUCTION, FACILITY_CONDITION_DECAY_REDUCTION_RATE);
 }
 
 /**
