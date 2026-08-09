@@ -19,6 +19,7 @@ Use `skills/toolsskills/small-steps/SKILL.md` as the default working style. Sele
 - Supabase is deferred. Do not add backend, cloud sync, accounts, web release, or iOS release without explicit approval.
 - Do not add backward-compatibility layers for code, local-save shapes, tables, or persistence keys. When a persisted shape changes, deliberately version it and allow older saves to be discarded unless the user explicitly approves a migration.
 - Do not commit, push, launch a development server, create a release build, or run broad verification unless the user explicitly asks or the task clearly justifies it.
+- Run `npm test` only when a change can affect facility production, recipe balance, facility work/upgrade formulas, production tick order, or the corresponding tests. Do not run the full test suite for unrelated UI, documentation, persistence, or other changes.
 - Use focused verification and report only checks that actually ran.
 
 ## Documentation

@@ -44,6 +44,7 @@ theme.ts              Shared Paper theme and visual tokens
 - `npm run android` — optional Android emulator shortcut.
 - `npm run web` — local browser development preview.
 - `npm run typecheck` — TypeScript validation without emitting files.
+- `npm test` — deterministic Vitest checks for game-engine rules and recipe balance.
 
 ## Android Distribution
 

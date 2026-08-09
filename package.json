@@ -6,6 +6,7 @@
     "start": "expo start",
     "android": "expo start --android",
     "web": "expo start --web",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "private": true,
@@ -30,6 +31,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.10",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "vitest": "^4.1.10"
   }
 }
