@@ -1,7 +1,7 @@
 import type { RecipeName } from '@/game/recipes';
 import { getFacilityDefinition } from './facilityConstants';
 import { FacilityType } from './facilityTypes';
-import { getBuildingEfficiency, getOutputUpgradeMultiplier, getRequiredWorkers, getSpeedUpgradeWorkSpeedMultiplier, getStaffingEfficiency } from './facilityUpgrades';
+import { getFacilityEfficiency, getOutputUpgradeMultiplier, getRequiredWorkers, getSpeedUpgradeWorkSpeedMultiplier, getStaffingEfficiency } from './facilityUpgrades';
 
 /** Plain data used by the game snapshot and Expo SQLite adapter. */
 export type FacilitySnapshot = {
@@ -30,7 +30,7 @@ export type FacilityView = {
   requiredWorkers: number;
   staffingEfficiency: number;
   facilityCondition: number;
-  buildingEfficiency: number;
+  facilityEfficiency: number;
   speedUpgradeWorkSpeedMultiplier: number;
   outputMultiplier: number;
 };
@@ -60,7 +60,7 @@ export class Facility {
   getView(): FacilityView {
     const requiredWorkers = this.calculateRequiredWorkers();
     const staffingEfficiency = getStaffingEfficiency(this.assignedWorkers, requiredWorkers);
-    const buildingEfficiency = getBuildingEfficiency(staffingEfficiency, this.facilityCondition);
+    const facilityEfficiency = getFacilityEfficiency(staffingEfficiency, this.facilityCondition);
     return {
       id: this.id,
       facilityType: this.facilityType,
@@ -74,7 +74,7 @@ export class Facility {
       requiredWorkers,
       staffingEfficiency,
       facilityCondition: this.facilityCondition,
-      buildingEfficiency,
+      facilityEfficiency,
       speedUpgradeWorkSpeedMultiplier: getSpeedUpgradeWorkSpeedMultiplier(this.speedUpgradeLevel),
       outputMultiplier: getOutputUpgradeMultiplier(this.outputUpgradeLevel),
     };

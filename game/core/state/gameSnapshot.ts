@@ -8,8 +8,6 @@ import { isPrestigeLedgerSnapshot, type PrestigeLedgerSnapshot } from '../../pre
 import { type MarketSnapshot } from '../../market/marketTypes';
 import { isResearchLedgerSnapshot, type ResearchLedgerSnapshot } from '../../research/research';
 
-export const GAME_SNAPSHOT_VERSION = 2;
-
 export type GameTimeSnapshot = {
   /** Logical foreground time when the current company began. */
   companyStartedAtGameTimeMs: number;
@@ -26,7 +24,6 @@ export type GameTimeSnapshot = {
  * definitions and class methods are intentionally absent.
  */
 export type GameSnapshot = {
-  version: typeof GAME_SNAPSHOT_VERSION;
   finance: FinanceSnapshot;
   inventory: InventorySnapshot;
   market: MarketSnapshot;
@@ -60,7 +57,7 @@ function isGameTimeSnapshot(value: unknown): value is GameTimeSnapshot {
 
 /** Structural guard used by the company-scoped SQLite save adapter. */
 export function isGameSnapshot(value: unknown): value is GameSnapshot {
-  if (!isRecord(value) || value.version !== GAME_SNAPSHOT_VERSION || !isRecord(value.finance) || !isRecord(value.inventory)
+  if (!isRecord(value) || !isRecord(value.finance) || !isRecord(value.inventory)
     || !isRecord(value.market) || !isRecord(value.facilities) || !isRecord(value.salesContracts)
     || !isRecord(value.achievements) || !isRecord(value.productionStatistics)
     || !isRecord(value.prestige) || !isResearchLedgerSnapshot(value.research) || !isGameTimeSnapshot(value.time)) {
@@ -74,6 +71,11 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
     && isRecord(value.market.global)
     && isRecord(value.market.automation)
     && Array.isArray(value.facilities.facilities)
+    && value.facilities.facilities.every((facility) => isRecord(facility)
+      && typeof facility.facilityCondition === 'number'
+      && Number.isFinite(facility.facilityCondition)
+      && facility.facilityCondition >= 0
+      && facility.facilityCondition <= 1)
     && Array.isArray(value.salesContracts.offered)
     && Array.isArray(value.salesContracts.completed)
     && typeof value.salesContracts.nextCustomerNumber === 'number'

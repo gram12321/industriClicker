@@ -13,9 +13,9 @@ export const FACILITY_OVERSTAFFING_MAXIMUM_BONUS = 0.25;
 export const FACILITY_OVERSTAFFING_BONUS_RATE = 0.7;
 export const FACILITY_MINIMUM_STAFFING_EFFICIENCY = 0.01;
 /** Condition lost by every constructed facility per foreground minute. */
-export const FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE = 0.0001;
+export const FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE = 1 / 600;
 /** Additional condition lost for each completed recipe work unit. */
-export const FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT = 0.0005;
+export const FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT = 1 / 600;
 
 /** Fixed order keeps production deterministic and runs utility producers first. */
 export const FACILITY_PRODUCTION_ORDER = [

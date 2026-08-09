@@ -25,7 +25,7 @@ export function calculateFacilityEffectiveWork(
   if (!Number.isFinite(baseWork) || baseWork <= 0) return 0;
 
   return baseWork
-    * facility.buildingEfficiency
+    * facility.facilityEfficiency
     * facility.speedUpgradeWorkSpeedMultiplier
     * recipeResearchWorkSpeedMultiplier;
 }

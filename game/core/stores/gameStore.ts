@@ -4,7 +4,7 @@ import { FacilityCollection, advanceAllFacilityProduction, calculateFacilityEffe
 import type { RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
 import { MARKET_SALES_CONTRACT_PREMIUM, Market, canAutoBuyMarketResource, canBuyMarketResource, canSellMarketResource, type MarketAutomation } from '@/game/market';
-import { GAME_SNAPSHOT_VERSION, type GameSnapshot } from '@/game/core/state';
+import type { GameSnapshot } from '@/game/core/state';
 import { BASE_WORK_PER_MINUTE, FOREGROUND_SIMULATION_STEP_MS, REALTIME_WORK_MINUTE_MS, calculateRealtimeAdvance } from '@/game/core/time';
 import { SalesContracts, calculateSalesContractOfferChance } from '@/game/sales';
 import { AchievementLedger, ProductionStatistics, createAchievementEvaluationContext, evaluateAchievementUnlocks, type AchievementCategory } from '@/game/achievements';
@@ -126,7 +126,6 @@ export function createStartingGameSnapshot(nowMs = Date.now()): GameSnapshot {
   const inventory = new Inventory();
   inventory.setAmount(ResourceType.ConstructionMaterials, STANDARD_START_CONSTRUCTION_MATERIALS);
   return {
-    version: GAME_SNAPSHOT_VERSION,
     finance: finance.toSnapshot(),
     inventory: inventory.toSnapshot(),
     market: new Market().toSnapshot(),
@@ -771,7 +770,6 @@ export const useGameStore = create<GameState>((set, get) => {
     }
   },
   createSnapshot: () => ({
-    version: GAME_SNAPSHOT_VERSION,
     finance: get().finance.toSnapshot(),
     inventory: get().inventory.toSnapshot(),
     market: get().market.toSnapshot(),

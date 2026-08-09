@@ -43,5 +43,5 @@ Industri Clicker is a single-player, mobile-first industrial clicker for native 
 | Cloud backend | No cloud service until an approved need exists. |
 | Offline catch-up | Needs an approved cap, clock policy, and resume feedback. |
 | Monetization and broader progression | To be designed after the first playable loop. |
-| Save compatibility | Older snapshot versions may be discarded unless a migration is explicitly approved. |
+| Save compatibility | Older saves may be discarded unless a migration is explicitly approved. |
 | Cloud accounts, sync, and global leaderboard | Deferred. Device-local profiles and a clearly labelled leaderboard placeholder do not provide online identity or rankings. |

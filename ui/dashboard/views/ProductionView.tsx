@@ -58,7 +58,7 @@ export function ProductionView({
         ? calculateFacilityEffectiveWork(facilityView, BASE_WORK_PER_MINUTE, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds))
         : 0;
       const productionStatus = getFacilityProductionStatus(facilityView, inventory);
-      const { assignedWorkers, buildingEfficiency, facilityCondition, outputMultiplier, outputUpgradeLevel, requiredWorkers, speedUpgradeLevel, speedUpgradeWorkSpeedMultiplier } = facilityView;
+      const { assignedWorkers, facilityEfficiency, facilityCondition, outputMultiplier, outputUpgradeLevel, requiredWorkers, speedUpgradeLevel, speedUpgradeWorkSpeedMultiplier } = facilityView;
       const speedUpgradeCost = getFacilityUpgradeCost(definition.upgradeCost, speedUpgradeLevel);
       const outputUpgradeCost = getFacilityUpgradeCost(definition.upgradeCost, outputUpgradeLevel);
       const isExpanded = collapsedFacilities[facilityId] !== true;
@@ -72,8 +72,7 @@ export function ProductionView({
             <View style={styles.facilityHeaderRow}><Text style={styles.cardDescription}>{activeRecipe ? formatRecipeName(activeRecipe) : 'No active recipe'}</Text>{activeRecipe && <WorkMetric value={formatRecipeProgress(facilityView.recipeProgress[activeRecipe.name] ?? 0, activeRecipe.requiredWork, effectiveWorkPerMinute)} />}</View>
             <View style={styles.facilityMetrics}>
               <FacilityMetric icon={APP_ICONS.staffing} label={`${formatNumber(assignedWorkers)}/${formatNumber(requiredWorkers)}`} />
-              <FacilityMetric icon={APP_ICONS.efficiency} label={formatPercent(buildingEfficiency, { decimals: 0 })} />
-              <FacilityMetric icon="wrench-outline" label={formatPercent(facilityCondition, { decimals: 0 })} />
+              <FacilityMetric icon={APP_ICONS.efficiency} label={formatPercent(facilityEfficiency, { decimals: 0 })} />
               <FacilityMetric icon={APP_ICONS.speed} label={`L${formatNumber(speedUpgradeLevel)}`} />
               <FacilityMetric icon={APP_ICONS.output} label={`L${formatNumber(outputUpgradeLevel)}`} />
               {(productionStatus === 'missing-inputs' || productionStatus === 'paused') && <View accessibilityLabel={productionStatus === 'missing-inputs' ? 'Production paused: missing inputs' : 'Production manually paused'} style={styles.facilityPauseMetric}><MaterialCommunityIcons color={colors.error} name={APP_ICONS.pause} size={14} /></View>}
@@ -101,9 +100,15 @@ export function ProductionView({
             <Text style={styles.constructionYardRecipeLabel}>Staffing</Text>
             <View style={styles.facilityStaffingControls}>
               <IconButton accessibilityLabel={`Remove worker from ${facilityName}`} disabled={assignedWorkers === 0} icon={APP_ICONS.minus} onPress={() => setFacilityWorkers(facilityId, assignedWorkers - 1)} />
-              <View style={styles.facilityStaffingSummary}><Text style={styles.facilityStaffingValue}>{formatNumber(assignedWorkers)} / {formatNumber(requiredWorkers)} workers</Text><Text style={styles.facilityStaffingDetail}>Condition {formatPercent(facilityCondition, { decimals: 0 })} · Building efficiency {formatPercent(buildingEfficiency, { decimals: 0 })}</Text></View>
+              <View style={styles.facilityStaffingSummary}><Text style={styles.facilityStaffingValue}>{formatNumber(assignedWorkers)} / {formatNumber(requiredWorkers)} workers</Text><Text style={styles.facilityStaffingDetail}>Staff efficiency {formatPercent(facilityView.staffingEfficiency, { decimals: 0 })}</Text></View>
               <IconButton accessibilityLabel={`Add worker to ${facilityName}`} icon={APP_ICONS.add} onPress={() => setFacilityWorkers(facilityId, assignedWorkers + 1)} />
             </View>
+          </View>
+          <View style={styles.facilityEfficiencySection}>
+            <View style={styles.facilityEfficiencyHeader}><Text style={styles.constructionYardRecipeLabel}>Facility efficiency</Text><Text style={styles.facilityStaffingDetail}>{formatPercent(facilityEfficiency, { decimals: 0 })}</Text></View>
+            <View style={styles.facilityEfficiencyRow}><Text style={styles.facilityEfficiencyLabel}>Staff efficiency</Text><Text style={styles.facilityEfficiencyValue}>{formatPercent(facilityView.staffingEfficiency, { decimals: 0 })}</Text></View>
+            <View style={styles.facilityEfficiencyRow}><Text style={styles.facilityEfficiencyLabel}>Facility condition</Text><Text style={styles.facilityEfficiencyValue}>{formatPercent(facilityCondition, { decimals: 0 })}</Text></View>
+            <ProgressBar accessible accessibilityLabel={`Facility condition ${formatPercent(facilityCondition, { decimals: 0 })}`} color={colors.primary} progress={facilityCondition} style={styles.facilityConditionProgress} />
           </View>
           <Text style={styles.constructionYardRecipeLabel}>Upgrades</Text>
           <Text style={styles.facilityUpgradeSummary}>Work speed x{formatNumber(speedUpgradeWorkSpeedMultiplier, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })} · Output x{formatNumber(outputMultiplier, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })}</Text>

@@ -225,7 +225,7 @@ flowchart LR
 | `lastObservedAtMs` | Runtime | Zustand game store | Foreground observation and lifecycle | No |
 | Local profile, company record, tutorial state, device session | Stored | Company domain SQLite adapters | Local player/company commands | Dedicated local tables |
 
-Derived values include building efficiency, production work/output, contract reward and offer chance, current prestige, market diffusion amount, and UI view models.
+Derived values include facility efficiency, production work/output, contract reward and offer chance, current prestige, market diffusion amount, and UI view models.
 
 ## Command Effects
 

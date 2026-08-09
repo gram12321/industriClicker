@@ -59,7 +59,7 @@ export function getStaffingEfficiency(assignedWorkers: number, requiredWorkers: 
  * Combines the current efficiency factors. Additional factors can be added
  * here as the system grows without changing production callers.
  */
-export function getBuildingEfficiency(staffingEfficiency: number, facilityCondition: number): number {
+export function getFacilityEfficiency(staffingEfficiency: number, facilityCondition: number): number {
   const staffing = Number.isFinite(staffingEfficiency) ? Math.max(0, staffingEfficiency) : 0;
   const condition = Number.isFinite(facilityCondition) ? Math.min(1, Math.max(0, facilityCondition)) : 0;
 

@@ -58,9 +58,9 @@ For `levels = speedLevel + outputLevel`:
 - Output multiplier: `1 + (1 - e^(-0.18 × outputLevel))`.
 - Required workers: `baseWorkers + levels + ceil(baseWorkers × 1.15^levels - baseWorkers)`.
 - Staffing efficiency at or below target: `0.01 + 0.99 × ratio^1.6`; above target: `1 + 0.25 × (1 - e^(-0.7 × (ratio - 1)))`.
-- Facility condition starts at `1`, is clamped to `0–1`, and loses `0.0001` per constructed facility per foreground minute. Each completed cycle also loses `recipe.requiredWork × 0.0005` condition.
-- Building efficiency: `staffingEfficiency × facilityCondition`.
-- Effective work: `baseWork × buildingEfficiency × speedUpgradeWorkSpeedMultiplier × recipeResearchWorkSpeedMultiplier`.
+- Facility condition starts at `1`, is clamped to `0–1`, and loses `1 / 600` per constructed facility per foreground minute. Each completed cycle also loses `recipe.requiredWork / 600` condition.
+- Facility efficiency: `staffingEfficiency × facilityCondition`.
+- Effective work: `baseWork × facilityEfficiency × speedUpgradeWorkSpeedMultiplier × recipeResearchWorkSpeedMultiplier`.
 
 Levels and worker counts are non-negative integers. A zero-worker requirement has 100% efficiency; above-target staffing cannot reach a 25% bonus.
 
@@ -109,4 +109,4 @@ Offline catch-up is deferred and must use this rule path when approved.
 | Delete company | Delete the active company record and its cascaded local save/tutorial rows, then return to local company selection. |
 | Clear local data (admin) | Delete every local profile, company, save, tutorial row, and device session while retaining the empty SQLite schema. |
 
-No save-version compatibility layer exists: an older snapshot version is deliberately discarded. Achievement ledger, production statistics, research ledger, facility condition, and company-start logical time are required snapshot fields.
+No save compatibility layer exists: a snapshot that lacks a required current field, including facility condition, is discarded. Achievement ledger, production statistics, research ledger, facility condition, and company-start logical time are required snapshot fields.
