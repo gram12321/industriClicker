@@ -23,6 +23,8 @@ export const FACILITY_UNDERSTAFFING_EXPONENT = 1.6;
 export const FACILITY_OVERSTAFFING_MAXIMUM_BONUS = 0.25;
 export const FACILITY_OVERSTAFFING_BONUS_RATE = 0.7;
 export const FACILITY_MINIMUM_STAFFING_EFFICIENCY = 0.01;
+/** Additional work contributed by each required worker per foreground minute. */
+export const FACILITY_STAFF_WORK_PER_WORKER_PER_MINUTE = 0.1;
 /** Condition lost by every constructed facility per foreground minute. */
 export const FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE = 1 / 600;
 /** Additional condition lost for each completed recipe work unit. */

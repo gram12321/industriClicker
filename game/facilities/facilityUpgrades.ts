@@ -66,11 +66,14 @@ export function getStaffingEfficiency(assignedWorkers: number, requiredWorkers: 
  */
 export function getFacilityEfficiency(staffingEfficiency: number, facilityCondition: number): number {
   const staffing = Number.isFinite(staffingEfficiency) ? Math.max(0, staffingEfficiency) : 0;
+  return staffing * getFacilityConditionEfficiency(facilityCondition);
+}
+
+/** Converts the current condition into the work multiplier for the facility. */
+export function getFacilityConditionEfficiency(facilityCondition: number): number {
   const condition = Number.isFinite(facilityCondition) ? Math.min(1, Math.max(0, facilityCondition)) : 0;
   // Inverting the wear curve makes each lost point of condition increasingly costly.
-  const conditionEfficiency = 1 - calculateAsymmetricalScaler01(1 - condition);
-
-  return staffing * conditionEfficiency;
+  return 1 - calculateAsymmetricalScaler01(1 - condition);
 }
 
 export function getFacilityRepairCost(constructionMaterialsCost: number, facilityCondition: number): number {

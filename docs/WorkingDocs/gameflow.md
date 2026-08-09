@@ -60,9 +60,10 @@ For `levels = speedLevel + outputLevel`:
 - Staffing efficiency at or below target: `0.01 + 0.99 × ratio^1.6`; above target: `1 + 0.25 × (1 - e^(-0.7 × (ratio - 1)))`.
 - Facility condition starts at `1`, is clamped to `0–1`, and loses `1 / 600` per constructed facility per foreground minute. Each completed cycle also loses `recipe.requiredWork / 600` condition. Both losses are multiplied by `calculateAsymmetricalScaler01(facilityCondition)`, so wear is fastest at high condition and slows toward zero.
 - Condition upgrades reduce both wear sources by `1 - 0.75 × (1 - e^(-0.18 × conditionUpgradeLevel))`; the reduction approaches 75% without reaching it, uses the same facility upgrade cost curve, and does not increase worker requirements.
-- Facility efficiency: `staffingEfficiency × (1 - calculateAsymmetricalScaler01(1 - facilityCondition))`, so each lost point of condition is increasingly costly.
+- Facility efficiency: `staffingEfficiency × conditionEfficiency`, where `conditionEfficiency = 1 - calculateAsymmetricalScaler01(1 - facilityCondition)`, so each lost point of condition is increasingly costly.
 - Repairing a facility restores condition to `1` and costs only Construction Materials: `constructionMaterialsCost × 0.9 × (1 - facilityCondition)`. Missing materials are bought automatically from the local market; land cost is excluded.
-- Effective work: `baseWork × facilityEfficiency × speedUpgradeWorkSpeedMultiplier × recipeResearchWorkSpeedMultiplier`.
+- Staff work: `requiredWorkers × 0.1 × (stepMs / 60,000) × staffingEfficiency` work per foreground step.
+- Effective work: `(baseWork + staffWork) × conditionEfficiency × speedUpgradeWorkSpeedMultiplier × recipeResearchWorkSpeedMultiplier`.
 
 The following reference values use the current condition curve. Passive time advances in one-second steps; production uses completed `1.00`-work cycles. Their nearly identical results differ only because of that step size.
 

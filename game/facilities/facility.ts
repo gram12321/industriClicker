@@ -2,7 +2,7 @@ import type { RecipeName } from '@/game/recipes';
 import { calculateAsymmetricalScaler01 } from '@/game/core/math/scaling';
 import { getFacilityDefinition } from './facilityConstants';
 import { FacilityType } from './facilityTypes';
-import { getConditionDecayMultiplier, getFacilityEfficiency, getOutputUpgradeMultiplier, getRequiredWorkers, getSpeedUpgradeWorkSpeedMultiplier, getStaffingEfficiency } from './facilityUpgrades';
+import { getConditionDecayMultiplier, getFacilityConditionEfficiency, getFacilityEfficiency, getOutputUpgradeMultiplier, getRequiredWorkers, getSpeedUpgradeWorkSpeedMultiplier, getStaffingEfficiency } from './facilityUpgrades';
 
 /** Plain data used by the game snapshot and Expo SQLite adapter. */
 export type FacilitySnapshot = {
@@ -34,6 +34,7 @@ export type FacilityView = {
   requiredWorkers: number;
   staffingEfficiency: number;
   facilityCondition: number;
+  conditionEfficiency: number;
   facilityEfficiency: number;
   speedUpgradeWorkSpeedMultiplier: number;
   outputMultiplier: number;
@@ -81,6 +82,7 @@ export class Facility {
       requiredWorkers,
       staffingEfficiency,
       facilityCondition: this.facilityCondition,
+      conditionEfficiency: getFacilityConditionEfficiency(this.facilityCondition),
       facilityEfficiency,
       speedUpgradeWorkSpeedMultiplier: getSpeedUpgradeWorkSpeedMultiplier(this.speedUpgradeLevel),
       outputMultiplier: getOutputUpgradeMultiplier(this.outputUpgradeLevel),

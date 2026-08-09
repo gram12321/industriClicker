@@ -1,7 +1,7 @@
 import type { Inventory } from '@/game/inventory';
 import { getRecipe, type RecipeInput, type RecipeName } from '@/game/recipes';
 import type { ResourceType } from '@/game/resources';
-import { FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT, FACILITY_PRODUCTION_ORDER } from './facilityConstants';
+import { FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT, FACILITY_PRODUCTION_ORDER, FACILITY_STAFF_WORK_PER_WORKER_PER_MINUTE } from './facilityConstants';
 import type { FacilityView } from './facility';
 import type { FacilityCollection } from './facilityCollection';
 
@@ -24,8 +24,13 @@ export function calculateFacilityEffectiveWork(
 ): number {
   if (!Number.isFinite(baseWork) || baseWork <= 0) return 0;
 
-  return baseWork
-    * facility.facilityEfficiency
+  const staffWork = baseWork
+    * facility.requiredWorkers
+    * FACILITY_STAFF_WORK_PER_WORKER_PER_MINUTE
+    * facility.staffingEfficiency;
+
+  return (baseWork + staffWork)
+    * facility.conditionEfficiency
     * facility.speedUpgradeWorkSpeedMultiplier
     * recipeResearchWorkSpeedMultiplier;
 }
