@@ -27,10 +27,12 @@ export function GameViewContent({
   market,
   maximumOpenContracts,
   onlyInStock,
+  showActiveRecipeInputs,
   buyMarketResource,
   sellMarketResource,
   setMarketAutomation,
   setOnlyInStock,
+  setShowActiveRecipeInputs,
   openConstructionYard,
   isBuildFacilityTutorial,
   onBuildFacilityLayout,
@@ -56,10 +58,12 @@ export function GameViewContent({
   market: Market;
   maximumOpenContracts: number;
   onlyInStock: boolean;
+  showActiveRecipeInputs: boolean;
   buyMarketResource: (resourceType: ResourceType, amount: number) => boolean;
   sellMarketResource: (resourceType: ResourceType, amount: number) => boolean;
   setMarketAutomation: (resourceType: ResourceType, updates: Partial<MarketAutomation>) => boolean;
   setOnlyInStock: (value: boolean) => void;
+  setShowActiveRecipeInputs: (value: boolean) => void;
   openConstructionYard: () => void;
   isBuildFacilityTutorial?: boolean;
   onBuildFacilityLayout?: (layout: { height: number; width: number; x: number; y: number }) => void;
@@ -78,7 +82,7 @@ export function GameViewContent({
   switch (activeTab) {
     case 'company': return <CompanyView companyName={companyName} />;
     case 'inventory':
-    case 'market': return <InventoryView buyMarketResource={buyMarketResource} finance={finance} inventory={inventory} market={market} onlyInStock={onlyInStock} sellMarketResource={sellMarketResource} setMarketAutomation={setMarketAutomation} setOnlyInStock={setOnlyInStock} />;
+    case 'market': return <InventoryView buyMarketResource={buyMarketResource} facilities={facilities} finance={finance} inventory={inventory} market={market} onlyInStock={onlyInStock} showActiveRecipeInputs={showActiveRecipeInputs} sellMarketResource={sellMarketResource} setMarketAutomation={setMarketAutomation} setOnlyInStock={setOnlyInStock} setShowActiveRecipeInputs={setShowActiveRecipeInputs} />;
     case 'production': return <ProductionView buyMarketResource={buyMarketResource} facilities={facilities} finance={finance} getResearchAvailability={getResearchAvailability} inventory={inventory} market={market} research={research} startResearch={startResearch} isBuildFacilityTutorial={isBuildFacilityTutorial} onBuildFacilityLayout={onBuildFacilityLayout} openConstructionYard={openConstructionYard} repairFacility={repairFacility} requestFacilityDestruction={requestFacilityDestruction} setFacilityProductionActive={setFacilityProductionActive} setFacilityRecipe={setFacilityRecipe} setFacilityWorkers={setFacilityWorkers} setMarketAutomation={setMarketAutomation} upgradeFacility={upgradeFacility} />;
     case 'sales': return <SalesView customerPipelineProgress={customerPipelineProgress} fulfillSalesContract={fulfillSalesContract} getResearchAvailability={getResearchAvailability} inventory={inventory} market={market} maximumOpenContracts={maximumOpenContracts} rejectSalesContract={rejectSalesContract} research={research} salesContracts={salesContracts} />;
     case 'finance': return <FinanceView finance={finance} />;

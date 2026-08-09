@@ -64,6 +64,7 @@ function isMarketAutomationSnapshot(value: unknown): boolean {
     && typeof value.autoBuyEnabled === 'boolean'
     && typeof value.autoSellEnabled === 'boolean'
     && typeof value.autoBuyMaxUnitPrice === 'number' && Number.isFinite(value.autoBuyMaxUnitPrice) && value.autoBuyMaxUnitPrice >= 0
+    && typeof value.autoBuyTargetInventory === 'number' && Number.isFinite(value.autoBuyTargetInventory) && value.autoBuyTargetInventory >= 0
     && typeof value.autoSellIntervalMs === 'number' && MARKET_AUTOSELL_INTERVAL_OPTIONS.some((option) => option.milliseconds === value.autoSellIntervalMs)
     && typeof value.autoSellMaxPerMinute === 'number' && Number.isFinite(value.autoSellMaxPerMinute) && value.autoSellMaxPerMinute >= 0
     && typeof value.autoSellMinKeep === 'number' && Number.isFinite(value.autoSellMinKeep) && value.autoSellMinKeep >= 0

@@ -538,6 +538,24 @@ export const useGameStore = create<GameState>((set, get) => {
         facilities.applyPassiveConditionLoss((stepMs / REALTIME_WORK_MINUTE_MS) * FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE);
       }
 
+      const automationMarket: Market = market ?? get().market;
+      for (const resourceType of RESOURCE_TYPES) {
+        const automation = automationMarket.getAutomation(resourceType);
+        const targetDeficit = automation.autoBuyTargetInventory - inventory.getAmount(resourceType);
+        if (!automation.autoBuyEnabled || targetDeficit <= 0 || !canAutoBuyMarketResource(resourceType)) continue;
+        const unitPrice = automationMarket.getLocalPrice(resourceType);
+        const availableFinance = marketFinance ?? get().finance;
+        if (unitPrice > automation.autoBuyMaxUnitPrice || !availableFinance.canAfford(unitPrice * targetDeficit)) continue;
+        const buyingMarket: Market = market ?? automationMarket.clone();
+        market = buyingMarket;
+        marketFinance ??= get().finance.clone();
+        if (inventory === get().inventory) inventory = inventory.clone();
+        const trade = buyingMarket.buyFromLocal(resourceType, targetDeficit);
+        if (trade.success && inventory.add(resourceType, trade.amount, trade.quality)) {
+          marketFinance.applyTransaction(-trade.unitPrice * trade.amount, `Autobought ${trade.amount} ${resourceType} to target inventory`, new Date().toISOString());
+        }
+      }
+
       if (hasActiveFacility) {
         market ??= get().market.clone();
         marketFinance ??= get().finance.clone();
@@ -545,9 +563,11 @@ export const useGameStore = create<GameState>((set, get) => {
           for (const input of getFacilityMissingInputs(facility.getView().activeRecipeName, inventory)) {
             const automation = market.getAutomation(input.resourceType);
             const unitPrice = market.getLocalPrice(input.resourceType);
+            const targetDeficit = automation.autoBuyTargetInventory - inventory.getAmount(input.resourceType);
+            const purchaseAmount = Math.max(input.amount, targetDeficit);
             if (!automation.autoBuyEnabled || !canAutoBuyMarketResource(input.resourceType)
-              || unitPrice > automation.autoBuyMaxUnitPrice || !marketFinance.canAfford(unitPrice * input.amount)) continue;
-            const trade = market.buyFromLocal(input.resourceType, input.amount);
+              || unitPrice > automation.autoBuyMaxUnitPrice || !marketFinance.canAfford(unitPrice * purchaseAmount)) continue;
+            const trade = market.buyFromLocal(input.resourceType, purchaseAmount);
             if (trade.success && inventory.add(input.resourceType, trade.amount, trade.quality)) {
               marketFinance.applyTransaction(-trade.unitPrice * trade.amount, `Autobought ${trade.amount} ${input.resourceType} for production`, new Date().toISOString());
             }

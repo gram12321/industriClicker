@@ -91,7 +91,7 @@ Levels and worker counts are non-negative integers. A zero-worker requirement ha
 - `Market.getDiffusionDetails(resourceType)` exposes the current prices, targets, multipliers, and effective post-cap transfer for the read-only Market Flow IndustriPedia view.
 - Foreground minute completion creates price-locked sales offers, then source-capped diffusion balances every resource between local and global reservoirs. Autosell runs independently at each resource's selected 5-second, 20-second, 1-minute, 3-minute, or 10-minute foreground interval; its configured maximum remains a per-minute rate and is scaled to the interval. Offline time does none of these.
 - Manual buys/sells trade only with the local market. A fulfilled sales contract adds the delivered inventory and its quality directly to the global reservoir; its reward was locked at offer time from global price × 1.20.
-- Autobuy may purchase missing recipe inputs from the local market only when enabled and under its saved finite maximum unit price.
+- Autobuy may purchase missing recipe inputs from the local market only when enabled and under its saved finite maximum unit price. Each resource also has a saved autobuy target inventory; when enabled, autobuy fills the resource up to that target even without an active recipe shortage.
 
 ## Finance, Prestige, and Sales
 

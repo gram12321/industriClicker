@@ -4,6 +4,8 @@ import { PanResponder, Pressable, StyleSheet, View } from 'react-native';
 import { Button, Card, Checkbox, Dialog, IconButton, Menu, Portal, Text, TextInput } from 'react-native-paper';
 import type { Finance } from '@/game/finance';
 import type { Inventory } from '@/game/inventory';
+import type { FacilityCollection } from '@/game/facilities/facilityCollection';
+import { getRecipe } from '@/game/recipes';
 import { MARKET_AUTOSELL_DEFAULT_INTERVAL_MS, MARKET_AUTOSELL_INTERVAL_OPTIONS, type Market, type MarketAutomation, type MarketTradeMultiplier } from '@/game/market';
 import { RESOURCE_GROUPS, RESOURCE_TYPES, getResource, getResourceIcon } from '@/game/resources';
 import { APP_ICONS } from '@/icons';
@@ -25,22 +27,25 @@ function sliderValue(position: number) {
   return Math.max(sliderMinimum, Math.min(sliderMaximum, Math.round(sliderMinimum * (sliderMaximum / sliderMinimum) ** clamped)));
 }
 
-export function InventoryView({ buyMarketResource, finance, inventory, market, onlyInStock, sellMarketResource, setMarketAutomation, setOnlyInStock }: {
+export function InventoryView({ buyMarketResource, facilities, finance, inventory, market, onlyInStock, showActiveRecipeInputs, sellMarketResource, setMarketAutomation, setOnlyInStock, setShowActiveRecipeInputs }: {
   buyMarketResource: (resourceType: (typeof RESOURCE_TYPES)[number], amount: number) => boolean;
+  facilities: FacilityCollection;
   finance: Finance;
   inventory: Inventory;
   market: Market;
   onlyInStock: boolean;
+  showActiveRecipeInputs: boolean;
   sellMarketResource: (resourceType: (typeof RESOURCE_TYPES)[number], amount: number) => boolean;
   setMarketAutomation: (resourceType: (typeof RESOURCE_TYPES)[number], updates: Partial<MarketAutomation>) => boolean;
   setOnlyInStock: (value: boolean) => void;
+  setShowActiveRecipeInputs: (value: boolean) => void;
 }) {
   const [multiplier, setMultiplier] = useState<MarketTradeMultiplier>(1);
   const [selectedResource, setSelectedResource] = useState<(typeof RESOURCE_TYPES)[number] | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [settingsResource, setSettingsResource] = useState<(typeof RESOURCE_TYPES)[number] | null>(null);
   const [intervalMenuOpen, setIntervalMenuOpen] = useState(false);
-  const [settingsDraft, setSettingsDraft] = useState({ minKeep: '', maxSell: '', maxBuyPrice: '', minSellPrice: '', sellIntervalMs: MARKET_AUTOSELL_DEFAULT_INTERVAL_MS });
+  const [settingsDraft, setSettingsDraft] = useState({ minKeep: '', maxSell: '', maxBuyPrice: '', minSellPrice: '', buyTarget: '', sellIntervalMs: MARKET_AUTOSELL_DEFAULT_INTERVAL_MS });
   const sliderWidthRef = useRef(0);
   const panResponder = useRef(PanResponder.create({
     onStartShouldSetPanResponderCapture: () => true,
@@ -52,14 +57,14 @@ export function InventoryView({ buyMarketResource, finance, inventory, market, o
   const sliderProgress = sliderPosition(sliderAmount);
   const openSettings = (resourceType: (typeof RESOURCE_TYPES)[number]) => {
     const automation = market.getAutomation(resourceType);
-    setSettingsDraft({ minKeep: String(automation.autoSellMinKeep), maxSell: String(automation.autoSellMaxPerMinute), maxBuyPrice: String(automation.autoBuyMaxUnitPrice), minSellPrice: String(automation.autoSellMinUnitPrice), sellIntervalMs: automation.autoSellIntervalMs });
+    setSettingsDraft({ minKeep: String(automation.autoSellMinKeep), maxSell: String(automation.autoSellMaxPerMinute), maxBuyPrice: String(automation.autoBuyMaxUnitPrice), minSellPrice: String(automation.autoSellMinUnitPrice), buyTarget: String(automation.autoBuyTargetInventory), sellIntervalMs: automation.autoSellIntervalMs });
     setSettingsResource(resourceType);
   };
   const saveSettings = () => {
     if (!settingsResource) return;
     const values = Object.fromEntries(Object.entries(settingsDraft).map(([key, value]) => [key, Number(value)]));
     if (Object.values(values).some((value) => !Number.isFinite(value) || value < 0)) return;
-    setMarketAutomation(settingsResource, { autoSellMinKeep: values.minKeep, autoSellIntervalMs: settingsDraft.sellIntervalMs, autoSellMaxPerMinute: values.maxSell, autoBuyMaxUnitPrice: values.maxBuyPrice, autoSellMinUnitPrice: values.minSellPrice });
+    setMarketAutomation(settingsResource, { autoSellMinKeep: values.minKeep, autoSellIntervalMs: settingsDraft.sellIntervalMs, autoSellMaxPerMinute: values.maxSell, autoBuyMaxUnitPrice: values.maxBuyPrice, autoBuyTargetInventory: values.buyTarget, autoSellMinUnitPrice: values.minSellPrice });
     setSettingsResource(null);
   };
 
@@ -77,8 +82,13 @@ export function InventoryView({ buyMarketResource, finance, inventory, market, o
       </View>
     </View>
     <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: onlyInStock }} onPress={() => setOnlyInStock(!onlyInStock)} style={localStyles.filterRow}><Checkbox status={onlyInStock ? 'checked' : 'unchecked'} /><Text>Only show resources with inventory</Text></Pressable>
+    <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: showActiveRecipeInputs }} onPress={() => setShowActiveRecipeInputs(!showActiveRecipeInputs)} style={localStyles.filterRow}><Checkbox status={showActiveRecipeInputs ? 'checked' : 'unchecked'} /><Text>Always show active recipe inputs</Text></Pressable>
     {RESOURCE_GROUPS.map((group) => {
-      const visibleResources = group.resources.filter((resourceType) => !onlyInStock || inventory.getAmount(resourceType) > 0);
+      const activeRecipeInputs = new Set(facilities.getAll().flatMap((facility) => {
+        const view = facility.getView();
+        return view.isActive && view.activeRecipeName ? getRecipe(view.activeRecipeName).inputs.map((input) => input.resourceType) : [];
+      }));
+      const visibleResources = group.resources.filter((resourceType) => !onlyInStock || inventory.getAmount(resourceType) > 0 || (showActiveRecipeInputs && activeRecipeInputs.has(resourceType)));
       if (visibleResources.length === 0) return null;
       const isCollapsed = collapsedGroups[group.id] === true;
       return <View key={group.id} style={styles.cardContent}><Pressable accessibilityLabel={`${isCollapsed ? 'Expand' : 'Collapse'} ${group.label} resource group`} accessibilityRole="button" accessibilityState={{ expanded: !isCollapsed }} onPress={() => setCollapsedGroups((current) => ({ ...current, [group.id]: !isCollapsed }))} style={localStyles.groupHeader}><Text style={styles.cardKicker}>{group.label}</Text><MaterialCommunityIcons color={colors.muted} name={isCollapsed ? APP_ICONS.expand : APP_ICONS.collapse} size={18} /></Pressable>{!isCollapsed && visibleResources.map((resourceType) => {
@@ -100,6 +110,7 @@ export function InventoryView({ buyMarketResource, finance, inventory, market, o
         <Dialog.Content>
           <TextInput dense keyboardType="decimal-pad" label="Minimum inventory to keep" mode="outlined" onChangeText={(value) => setSettingsDraft((draft) => ({ ...draft, minKeep: value }))} style={styles.marketAutomationInput} value={settingsDraft.minKeep} />
           <TextInput dense keyboardType="decimal-pad" label="Maximum autosell per minute" mode="outlined" onChangeText={(value) => setSettingsDraft((draft) => ({ ...draft, maxSell: value }))} style={styles.marketAutomationInput} value={settingsDraft.maxSell} />
+          <TextInput dense keyboardType="decimal-pad" label="Autobuy target inventory" mode="outlined" onChangeText={(value) => setSettingsDraft((draft) => ({ ...draft, buyTarget: value }))} style={styles.marketAutomationInput} value={settingsDraft.buyTarget} />
           <Text variant="labelLarge">Autosell interval</Text>
           <Menu
             anchor={<Button compact icon="chevron-down" mode="outlined" onPress={() => setIntervalMenuOpen(true)}>{MARKET_AUTOSELL_INTERVAL_OPTIONS.find((option) => option.milliseconds === settingsDraft.sellIntervalMs)?.label ?? 'Select interval'}</Button>}
