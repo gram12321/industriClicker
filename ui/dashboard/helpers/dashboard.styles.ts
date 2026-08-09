@@ -74,7 +74,7 @@ export const styles = StyleSheet.create({
   facilityRecipeOptionName: { color: colors.charcoal, fontSize: 13, fontWeight: '700' },
   facilityRecipeOptionDetails: { color: colors.muted, fontSize: 11, lineHeight: 17 },
   facilityRecipeOptionMissing: { color: colors.error },
-  facilityRecipeOptionStats: { flexDirection: 'row', gap: 12 },
+  facilityRecipeOptionStats: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   facilityRecipeOptionValue: { color: colors.primary, fontSize: 11, fontWeight: '700' },
   facilityProductionTop: { alignItems: 'center', flexDirection: 'row', gap: 4 },
   facilityRecipeActions: { flexDirection: 'row', gap: 2, marginTop: 0 },

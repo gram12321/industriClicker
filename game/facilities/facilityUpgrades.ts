@@ -1,4 +1,4 @@
-import { calculateDiminishingBonus, calculatePowerPenalty, scaleExponential } from '../core/math/scaling';
+import { calculateAsymmetricalScaler01, calculateDiminishingBonus, calculatePowerPenalty, scaleExponential } from '../core/math/scaling';
 import { FACILITY_MINIMUM_STAFFING_EFFICIENCY, FACILITY_OUTPUT_BONUS_RATE, FACILITY_OUTPUT_MAXIMUM_BONUS, FACILITY_OVERSTAFFING_BONUS_RATE, FACILITY_OVERSTAFFING_MAXIMUM_BONUS, FACILITY_REPAIR_MATERIAL_COST_RATE, FACILITY_SPEED_BONUS_RATE, FACILITY_SPEED_MAXIMUM_BONUS, FACILITY_UNDERSTAFFING_EXPONENT, FACILITY_UPGRADE_COST_GROWTH, FACILITY_WORKER_REQUIREMENT_GROWTH } from './facilityConstants';
 
 export type FacilityUpgradeKind = 'speed' | 'output';
@@ -62,8 +62,10 @@ export function getStaffingEfficiency(assignedWorkers: number, requiredWorkers: 
 export function getFacilityEfficiency(staffingEfficiency: number, facilityCondition: number): number {
   const staffing = Number.isFinite(staffingEfficiency) ? Math.max(0, staffingEfficiency) : 0;
   const condition = Number.isFinite(facilityCondition) ? Math.min(1, Math.max(0, facilityCondition)) : 0;
+  // Inverting the wear curve makes each lost point of condition increasingly costly.
+  const conditionEfficiency = 1 - calculateAsymmetricalScaler01(1 - condition);
 
-  return staffing * condition;
+  return staffing * conditionEfficiency;
 }
 
 export function getFacilityRepairCost(constructionMaterialsCost: number, facilityCondition: number): number {
