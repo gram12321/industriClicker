@@ -60,6 +60,7 @@ For `levels = speedLevel + outputLevel`:
 - Staffing efficiency at or below target: `0.01 + 0.99 × ratio^1.6`; above target: `1 + 0.25 × (1 - e^(-0.7 × (ratio - 1)))`.
 - Facility condition starts at `1`, is clamped to `0–1`, and loses `1 / 600` per constructed facility per foreground minute. Each completed cycle also loses `recipe.requiredWork / 600` condition.
 - Facility efficiency: `staffingEfficiency × facilityCondition`.
+- Repairing a facility restores condition to `1` and costs only Construction Materials: `constructionMaterialsCost × 0.9 × (1 - facilityCondition)`. Missing materials are bought automatically from the local market; land cost is excluded.
 - Effective work: `baseWork × facilityEfficiency × speedUpgradeWorkSpeedMultiplier × recipeResearchWorkSpeedMultiplier`.
 
 Levels and worker counts are non-negative integers. A zero-worker requirement has 100% efficiency; above-target staffing cannot reach a 25% bonus.

@@ -137,6 +137,12 @@ export class Facility {
     return true;
   }
 
+  repairCondition(): boolean {
+    if (this.facilityCondition >= 1) return false;
+    this.facilityCondition = 1;
+    return true;
+  }
+
   /** Internal production-state command used by the facility production engine. */
   setRecipeProgress(recipeName: RecipeName, progress: number): boolean {
     const recipe = getFacilityDefinition(this.facilityType).recipes.find((candidate) => candidate.name === recipeName);

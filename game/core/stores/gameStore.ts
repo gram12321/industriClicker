@@ -1,6 +1,6 @@
 import { Finance } from '@/game/finance';
 import { Inventory } from '@/game/inventory';
-import { FacilityCollection, advanceAllFacilityProduction, calculateFacilityEffectiveWork, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getFacilityUpgradeCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
+import { FacilityCollection, advanceAllFacilityProduction, calculateFacilityEffectiveWork, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getFacilityRepairCost, getFacilityUpgradeCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
 import type { RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
 import { MARKET_SALES_CONTRACT_PREMIUM, Market, canAutoBuyMarketResource, canBuyMarketResource, canSellMarketResource, type MarketAutomation } from '@/game/market';
@@ -53,6 +53,7 @@ type GameState = {
   setFacilityRecipe: (facilityId: string, recipeName: RecipeName | null) => boolean;
   setFacilityProductionActive: (facilityId: string, active: boolean) => boolean;
   setFacilityWorkers: (facilityId: string, workerCount: number) => boolean;
+  repairFacility: (facilityId: string) => boolean;
   upgradeFacility: (facilityId: string, upgradeKind: FacilityUpgradeKind) => boolean;
   advanceGameTime: (elapsedMilliseconds: number) => number;
   advanceRealtime: (nowMs: number) => number;
@@ -377,6 +378,46 @@ export const useGameStore = create<GameState>((set, get) => {
     }
 
     set({ facilities });
+    return true;
+  },
+  repairFacility: (facilityId) => {
+    get().advanceRealtime(Date.now());
+    const facilities = get().facilities.clone();
+    const inventory = get().inventory.clone();
+    const market = get().market.clone();
+    const finance = get().finance.clone();
+    const facility = facilities.get(facilityId);
+
+    if (!facility) return false;
+
+    const facilityView = facility.getView();
+    const definition = getFacilityDefinition(facility.facilityType);
+    const repairCost = getFacilityRepairCost(definition.constructionMaterialsCost, facilityView.facilityCondition);
+    const missingMaterials = Math.max(0, repairCost - inventory.getAmount(ResourceType.ConstructionMaterials));
+    let purchasedMaterialsCost = 0;
+
+    if (missingMaterials > 0) {
+      const trade = market.buyFromLocal(ResourceType.ConstructionMaterials, missingMaterials);
+      purchasedMaterialsCost = trade.unitPrice * trade.amount;
+
+      if (!trade.success
+        || !finance.canAfford(purchasedMaterialsCost)
+        || !inventory.add(ResourceType.ConstructionMaterials, trade.amount, trade.quality)
+        || !finance.applyTransaction(
+          -purchasedMaterialsCost,
+          `Bought ${trade.amount} Construction Materials to repair ${facilityView.displayName}`,
+          new Date().toISOString(),
+        )) {
+        return false;
+      }
+    }
+
+    if (repairCost <= 0 || !inventory.has(ResourceType.ConstructionMaterials, repairCost)
+      || !facility.repairCondition() || !inventory.remove(ResourceType.ConstructionMaterials, repairCost)) {
+      return false;
+    }
+
+    set({ facilities, inventory, market, finance });
     return true;
   },
   upgradeFacility: (facilityId, upgradeKind) => {

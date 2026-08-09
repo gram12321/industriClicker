@@ -233,7 +233,7 @@ Derived values include facility efficiency, production work/output, contract rew
 |---|---|---|
 | `setInventoryAmount` | Resource and amount | Inventory |
 | `buyMissingConstructionMaterials` | Facility definition; local Construction Materials price/supply; balance; inventory | Market; Finance; Inventory |
-| `buildFacility`, `destroyFacility`, `setFacilityRecipe`, `setFacilityWorkers`, `upgradeFacility` | Facility definition; balance and Construction Materials where applicable | Facilities; Finance; Inventory where applicable |
+| `buildFacility`, `destroyFacility`, `repairFacility`, `setFacilityRecipe`, `setFacilityWorkers`, `upgradeFacility` | Facility definition; balance and Construction Materials where applicable | Facilities; Finance; Inventory where applicable |
 | `advanceRealtime`, `advanceGameTime`, `fastForwardOneMinute` | Time anchors and all timed state | Game time, pipeline, facility condition, inventory, sales contracts, active research |
 | Completed production output | Facility output and output multiplier | Production statistics; production achievements |
 | `fulfillSalesContract`, `rejectSalesContract` | Contract; inventory and finance where applicable | Sales contracts; inventory and finance where applicable |

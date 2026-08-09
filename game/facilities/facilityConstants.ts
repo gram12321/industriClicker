@@ -16,6 +16,8 @@ export const FACILITY_MINIMUM_STAFFING_EFFICIENCY = 0.01;
 export const FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE = 1 / 600;
 /** Additional condition lost for each completed recipe work unit. */
 export const FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT = 1 / 600;
+/** Construction Materials required to restore one point of condition. */
+export const FACILITY_REPAIR_MATERIAL_COST_RATE = 0.9;
 
 /** Fixed order keeps production deterministic and runs utility producers first. */
 export const FACILITY_PRODUCTION_ORDER = [
