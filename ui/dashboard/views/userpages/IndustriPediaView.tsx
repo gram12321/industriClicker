@@ -181,7 +181,7 @@ function FacilitiesSection() {
 function FacilityConditionReference() {
   return <Card mode="contained" style={styles.featureCard}><Card.Content style={localStyles.conditionReferenceContent}>
     <Text style={styles.cardKicker}>FACILITY EFFICIENCY</Text>
-    <Text style={styles.cardDescription}>Wear is fastest at high condition and slows as a facility approaches zero. One 1.00-work production cycle has almost the same base wear as one foreground minute.</Text>
+    <Text style={styles.cardDescription}>Wear is fastest at high condition and slows as a facility approaches zero. One 1.00-work production cycle has almost the same base wear as one foreground minute. Excess staffing increases both wear sources exponentially.</Text>
     <Text style={localStyles.formula}>Staff efficiency: 0.01 + 0.99 × ratio^1.6 when understaffed; 1 + 0.25 × (1 − e^(−0.7 × (ratio − 1))) when overstaffed.</Text>
     <Text style={localStyles.formula}>Facility efficiency: staff efficiency × (1 − condition curve(1 − facility condition)); damage becomes increasingly costly.</Text>
     <Text style={localStyles.formula}>Repair cost: {getResourceIcon(ResourceType.ConstructionMaterials)} construction-material cost × 0.9 × (1 − facility condition).</Text>

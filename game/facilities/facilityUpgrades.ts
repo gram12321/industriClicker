@@ -1,5 +1,5 @@
 import { calculateAsymmetricalScaler01, calculateDiminishingBonus, calculatePowerPenalty, scaleExponential } from '../core/math/scaling';
-import { FACILITY_CONDITION_DECAY_MAX_REDUCTION, FACILITY_CONDITION_DECAY_REDUCTION_RATE, FACILITY_MINIMUM_STAFFING_EFFICIENCY, FACILITY_OUTPUT_BONUS_RATE, FACILITY_OUTPUT_MAXIMUM_BONUS, FACILITY_OVERSTAFFING_BONUS_RATE, FACILITY_OVERSTAFFING_MAXIMUM_BONUS, FACILITY_REPAIR_MATERIAL_COST_RATE, FACILITY_SPEED_BONUS_RATE, FACILITY_SPEED_MAXIMUM_BONUS, FACILITY_UNDERSTAFFING_EXPONENT, FACILITY_UPGRADE_COST_GROWTH, FACILITY_WORKER_REQUIREMENT_GROWTH } from './facilityConstants';
+import { FACILITY_CONDITION_DECAY_MAX_REDUCTION, FACILITY_CONDITION_DECAY_REDUCTION_RATE, FACILITY_MINIMUM_STAFFING_EFFICIENCY, FACILITY_OUTPUT_BONUS_RATE, FACILITY_OUTPUT_MAXIMUM_BONUS, FACILITY_OVERSTAFFING_BONUS_RATE, FACILITY_OVERSTAFFING_CONDITION_DECAY_GROWTH, FACILITY_OVERSTAFFING_MAXIMUM_BONUS, FACILITY_REPAIR_MATERIAL_COST_RATE, FACILITY_SPEED_BONUS_RATE, FACILITY_SPEED_MAXIMUM_BONUS, FACILITY_UNDERSTAFFING_EXPONENT, FACILITY_UPGRADE_COST_GROWTH, FACILITY_WORKER_REQUIREMENT_GROWTH } from './facilityConstants';
 
 export type FacilityUpgradeKind = 'speed' | 'output' | 'condition';
 
@@ -58,6 +58,18 @@ export function getStaffingEfficiency(assignedWorkers: number, requiredWorkers: 
     FACILITY_OVERSTAFFING_MAXIMUM_BONUS,
     FACILITY_OVERSTAFFING_BONUS_RATE,
   );
+}
+
+/** Excess staff accelerate both passive and production wear without a ceiling. */
+export function getOverstaffingConditionDecayMultiplier(assignedWorkers: number, requiredWorkers: number): number {
+  const assigned = Math.max(0, Math.floor(assignedWorkers));
+  const required = Math.max(0, Math.floor(requiredWorkers));
+
+  if (required === 0 || assigned <= required) {
+    return 1;
+  }
+
+  return scaleExponential(1, assigned / required - 1, FACILITY_OVERSTAFFING_CONDITION_DECAY_GROWTH);
 }
 
 /**

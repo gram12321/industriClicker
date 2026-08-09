@@ -22,6 +22,8 @@ export const FACILITY_WORKER_REQUIREMENT_GROWTH = 1.15;
 export const FACILITY_UNDERSTAFFING_EXPONENT = 1.6;
 export const FACILITY_OVERSTAFFING_MAXIMUM_BONUS = 0.25;
 export const FACILITY_OVERSTAFFING_BONUS_RATE = 0.7;
+/** Wear growth applied for each full staffing ratio above the requirement. */
+export const FACILITY_OVERSTAFFING_CONDITION_DECAY_GROWTH = 1.5;
 export const FACILITY_MINIMUM_STAFFING_EFFICIENCY = 0.01;
 /** Additional work contributed by each required worker per foreground minute. */
 export const FACILITY_STAFF_WORK_PER_WORKER_PER_MINUTE = 0.1;

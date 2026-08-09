@@ -2,7 +2,7 @@ import type { RecipeName } from '@/game/recipes';
 import { calculateAsymmetricalScaler01 } from '@/game/core/math/scaling';
 import { getFacilityDefinition } from './facilityConstants';
 import { FacilityType } from './facilityTypes';
-import { getConditionDecayMultiplier, getFacilityConditionEfficiency, getFacilityEfficiency, getOutputUpgradeMultiplier, getRequiredWorkers, getSpeedUpgradeWorkSpeedMultiplier, getStaffingEfficiency } from './facilityUpgrades';
+import { getConditionDecayMultiplier, getFacilityConditionEfficiency, getFacilityEfficiency, getOutputUpgradeMultiplier, getOverstaffingConditionDecayMultiplier, getRequiredWorkers, getSpeedUpgradeWorkSpeedMultiplier, getStaffingEfficiency } from './facilityUpgrades';
 
 /** Plain data used by the game snapshot and Expo SQLite adapter. */
 export type FacilitySnapshot = {
@@ -30,6 +30,7 @@ export type FacilityView = {
   outputUpgradeLevel: number;
   conditionDecayUpgradeLevel: number;
   conditionDecayMultiplier: number;
+  overstaffingConditionDecayMultiplier: number;
   assignedWorkers: number;
   requiredWorkers: number;
   staffingEfficiency: number;
@@ -78,6 +79,7 @@ export class Facility {
       outputUpgradeLevel: this.outputUpgradeLevel,
       conditionDecayUpgradeLevel: this.conditionDecayUpgradeLevel,
       conditionDecayMultiplier: getConditionDecayMultiplier(this.conditionDecayUpgradeLevel),
+      overstaffingConditionDecayMultiplier: getOverstaffingConditionDecayMultiplier(this.assignedWorkers, requiredWorkers),
       assignedWorkers: this.assignedWorkers,
       requiredWorkers,
       staffingEfficiency,
@@ -146,7 +148,10 @@ export class Facility {
       return false;
     }
 
-    const scaledLoss = loss * calculateAsymmetricalScaler01(this.facilityCondition) * getConditionDecayMultiplier(this.conditionDecayUpgradeLevel);
+    const scaledLoss = loss
+      * calculateAsymmetricalScaler01(this.facilityCondition)
+      * getConditionDecayMultiplier(this.conditionDecayUpgradeLevel)
+      * getOverstaffingConditionDecayMultiplier(this.assignedWorkers, this.calculateRequiredWorkers());
     this.facilityCondition = Math.max(0, this.facilityCondition - scaledLoss);
     return true;
   }

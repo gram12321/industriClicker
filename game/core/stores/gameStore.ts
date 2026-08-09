@@ -417,7 +417,12 @@ export const useGameStore = create<GameState>((set, get) => {
       return false;
     }
 
-    set({ facilities, inventory, market, finance });
+    const productionStatistics = get().productionStatistics.clone();
+    productionStatistics.recordRepair(1 - facilityView.facilityCondition, purchasedMaterialsCost + Math.max(0, repairCost - missingMaterials) * market.getLocalPrice(ResourceType.ConstructionMaterials));
+    const prestige = get().prestige.clone();
+    syncCompanyBalancePrestige(prestige, finance, get().lastProcessedAtMs);
+    const achievementResult = applyAchievementUnlocks({ achievements: get().achievements, productionStatistics, facilities, finance, salesContracts: get().salesContracts, prestige, companyStartedAtGameTimeMs: get().companyStartedAtGameTimeMs, currentGameTimeMs: get().lastProcessedAtMs, categories: ['facilities'], inventory });
+    set({ facilities, inventory: achievementResult.inventory, market, finance, productionStatistics, achievements: achievementResult.achievements, prestige: achievementResult.prestige });
     return true;
   },
   upgradeFacility: (facilityId, upgradeKind) => {

@@ -52,6 +52,17 @@ describe('calculateFacilityEffectiveWork', () => {
   });
 });
 
+describe('facility condition wear', () => {
+  it('increases exponentially when a facility is overstaffed', () => {
+    const { facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    facility.setAssignedWorkers(4);
+
+    facility.applyConditionLoss(0.1);
+
+    expect(facility.getView().facilityCondition).toBeCloseTo(0.85);
+  });
+});
+
 describe('advanceAllFacilityProduction', () => {
   it('completes the expected number of fully staffed Grain cycles in one minute', () => {
     const { facilities } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
