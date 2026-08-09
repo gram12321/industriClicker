@@ -1,10 +1,10 @@
 import { Finance } from '@/game/finance';
 import { Inventory } from '@/game/inventory';
-import { FacilityCollection, advanceAllFacilityProduction, calculateFacilityEffectiveWork, getFacilityDefinition, getFacilityMissingInputs, getFacilityUpgradeCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
+import { FacilityCollection, advanceAllFacilityProduction, calculateFacilityEffectiveWork, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getFacilityUpgradeCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
 import type { RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
 import { MARKET_SALES_CONTRACT_PREMIUM, Market, canAutoBuyMarketResource, canBuyMarketResource, canSellMarketResource, type MarketAutomation } from '@/game/market';
-import type { GameSnapshot } from '@/game/core/state';
+import { GAME_SNAPSHOT_VERSION, type GameSnapshot } from '@/game/core/state';
 import { BASE_WORK_PER_MINUTE, FOREGROUND_SIMULATION_STEP_MS, REALTIME_WORK_MINUTE_MS, calculateRealtimeAdvance } from '@/game/core/time';
 import { SalesContracts, calculateSalesContractOfferChance } from '@/game/sales';
 import { AchievementLedger, ProductionStatistics, createAchievementEvaluationContext, evaluateAchievementUnlocks, type AchievementCategory } from '@/game/achievements';
@@ -126,6 +126,7 @@ export function createStartingGameSnapshot(nowMs = Date.now()): GameSnapshot {
   const inventory = new Inventory();
   inventory.setAmount(ResourceType.ConstructionMaterials, STANDARD_START_CONSTRUCTION_MATERIALS);
   return {
+    version: GAME_SNAPSHOT_VERSION,
     finance: finance.toSnapshot(),
     inventory: inventory.toSnapshot(),
     market: new Market().toSnapshot(),
@@ -437,8 +438,9 @@ export const useGameStore = create<GameState>((set, get) => {
     }
 
     const elapsedMs = Math.floor(elapsedMilliseconds);
-    const hasActiveFacility = get().facilities.getAll().some((facility) => facility.getView().isActive);
-    const facilities = hasActiveFacility ? get().facilities.clone() : get().facilities;
+    const hasConstructedFacility = get().facilities.getAll().length > 0;
+    const hasActiveFacility = hasConstructedFacility && get().facilities.getAll().some((facility) => facility.getView().isActive);
+    const facilities = hasConstructedFacility ? get().facilities.clone() : get().facilities;
     let inventory = hasActiveFacility ? get().inventory.clone() : get().inventory;
     let productionStatistics = get().productionStatistics;
     let salesContracts: SalesContracts | null = null;
@@ -452,6 +454,10 @@ export const useGameStore = create<GameState>((set, get) => {
 
     while (remainingMs > 0) {
       const stepMs = Math.min(FOREGROUND_SIMULATION_STEP_MS, remainingMs);
+
+      if (hasConstructedFacility) {
+        facilities.applyPassiveConditionLoss((stepMs / REALTIME_WORK_MINUTE_MS) * FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE);
+      }
 
       if (hasActiveFacility) {
         market ??= get().market.clone();
@@ -594,7 +600,7 @@ export const useGameStore = create<GameState>((set, get) => {
       lastProcessedAtMs: nextGameTimeMs,
       unprocessedWorkMs,
       customerPipelineProgress,
-      ...(hasActiveFacility ? { facilities } : {}),
+      ...(hasConstructedFacility ? { facilities } : {}),
       ...(inventory !== get().inventory ? { inventory } : {}),
       ...(achievementResult.inventory !== get().inventory ? { inventory: achievementResult.inventory } : {}),
       ...(marketFinance ? { finance: marketFinance } : {}),
@@ -765,6 +771,7 @@ export const useGameStore = create<GameState>((set, get) => {
     }
   },
   createSnapshot: () => ({
+    version: GAME_SNAPSHOT_VERSION,
     finance: get().finance.toSnapshot(),
     inventory: get().inventory.toSnapshot(),
     market: get().market.toSnapshot(),

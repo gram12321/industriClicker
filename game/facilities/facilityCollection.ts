@@ -47,6 +47,16 @@ export class FacilityCollection {
     return true;
   }
 
+  applyPassiveConditionLoss(loss: number): boolean {
+    let changed = false;
+
+    for (const facility of this.facilities) {
+      changed = facility.applyConditionLoss(loss) || changed;
+    }
+
+    return changed;
+  }
+
   clone(): FacilityCollection {
     return FacilityCollection.fromSnapshot(this.toSnapshot());
   }

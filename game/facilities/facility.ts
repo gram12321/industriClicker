@@ -1,7 +1,7 @@
 import type { RecipeName } from '@/game/recipes';
 import { getFacilityDefinition } from './facilityConstants';
 import { FacilityType } from './facilityTypes';
-import { getBuildingEfficiency, getOutputUpgradeMultiplier, getRequiredWorkers, getSpeedUpgradeWorkSpeedMultiplier } from './facilityUpgrades';
+import { getBuildingEfficiency, getOutputUpgradeMultiplier, getRequiredWorkers, getSpeedUpgradeWorkSpeedMultiplier, getStaffingEfficiency } from './facilityUpgrades';
 
 /** Plain data used by the game snapshot and Expo SQLite adapter. */
 export type FacilitySnapshot = {
@@ -13,6 +13,7 @@ export type FacilitySnapshot = {
   speedUpgradeLevel?: number;
   outputUpgradeLevel?: number;
   assignedWorkers?: number;
+  facilityCondition: number;
 };
 
 /** Immutable facility state and derived values for game rules and UI rendering. */
@@ -27,6 +28,8 @@ export type FacilityView = {
   outputUpgradeLevel: number;
   assignedWorkers: number;
   requiredWorkers: number;
+  staffingEfficiency: number;
+  facilityCondition: number;
   buildingEfficiency: number;
   speedUpgradeWorkSpeedMultiplier: number;
   outputMultiplier: number;
@@ -40,6 +43,7 @@ export class Facility {
   private speedUpgradeLevel = 0;
   private outputUpgradeLevel = 0;
   private assignedWorkers = 0;
+  private facilityCondition = 1;
 
   constructor(
     public readonly id: string,
@@ -55,7 +59,8 @@ export class Facility {
 
   getView(): FacilityView {
     const requiredWorkers = this.calculateRequiredWorkers();
-    const buildingEfficiency = getBuildingEfficiency(this.assignedWorkers, requiredWorkers);
+    const staffingEfficiency = getStaffingEfficiency(this.assignedWorkers, requiredWorkers);
+    const buildingEfficiency = getBuildingEfficiency(staffingEfficiency, this.facilityCondition);
     return {
       id: this.id,
       facilityType: this.facilityType,
@@ -67,6 +72,8 @@ export class Facility {
       outputUpgradeLevel: this.outputUpgradeLevel,
       assignedWorkers: this.assignedWorkers,
       requiredWorkers,
+      staffingEfficiency,
+      facilityCondition: this.facilityCondition,
       buildingEfficiency,
       speedUpgradeWorkSpeedMultiplier: getSpeedUpgradeWorkSpeedMultiplier(this.speedUpgradeLevel),
       outputMultiplier: getOutputUpgradeMultiplier(this.outputUpgradeLevel),
@@ -120,6 +127,16 @@ export class Facility {
     return true;
   }
 
+  /** Applies a condition loss while keeping the player-owned value in its 0–1 range. */
+  applyConditionLoss(loss: number): boolean {
+    if (!Number.isFinite(loss) || loss <= 0 || this.facilityCondition === 0) {
+      return false;
+    }
+
+    this.facilityCondition = Math.max(0, this.facilityCondition - loss);
+    return true;
+  }
+
   /** Internal production-state command used by the facility production engine. */
   setRecipeProgress(recipeName: RecipeName, progress: number): boolean {
     const recipe = getFacilityDefinition(this.facilityType).recipes.find((candidate) => candidate.name === recipeName);
@@ -141,6 +158,7 @@ export class Facility {
       speedUpgradeLevel: this.speedUpgradeLevel,
       outputUpgradeLevel: this.outputUpgradeLevel,
       assignedWorkers: this.assignedWorkers,
+      facilityCondition: this.facilityCondition,
     };
   }
 
@@ -165,6 +183,9 @@ export class Facility {
     this.assignedWorkers = isValidWorkerCount(snapshot.assignedWorkers)
       ? snapshot.assignedWorkers
       : this.calculateRequiredWorkers();
+    this.facilityCondition = isValidFacilityCondition(snapshot.facilityCondition)
+      ? snapshot.facilityCondition
+      : 1;
 
     for (const recipe of getFacilityDefinition(this.facilityType).recipes) {
       const progress = snapshot.recipeProgress[recipe.name];
@@ -182,4 +203,8 @@ function isValidUpgradeLevel(value: unknown): value is number {
 
 function isValidWorkerCount(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0;
+}
+
+function isValidFacilityCondition(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
 }

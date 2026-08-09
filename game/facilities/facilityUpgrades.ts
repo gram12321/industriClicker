@@ -33,7 +33,7 @@ export function getRequiredWorkers(baseWorkers: number, speedLevel: number, outp
  * Staff below the requirement lose efficiency increasingly quickly. Extra
  * staff remain valid and give a bounded, exponentially diminishing bonus.
  */
-export function getBuildingEfficiency(assignedWorkers: number, requiredWorkers: number): number {
+export function getStaffingEfficiency(assignedWorkers: number, requiredWorkers: number): number {
   const assigned = Math.max(0, Math.floor(assignedWorkers));
   const required = Math.max(0, Math.floor(requiredWorkers));
 
@@ -53,4 +53,15 @@ export function getBuildingEfficiency(assignedWorkers: number, requiredWorkers: 
     FACILITY_OVERSTAFFING_MAXIMUM_BONUS,
     FACILITY_OVERSTAFFING_BONUS_RATE,
   );
+}
+
+/**
+ * Combines the current efficiency factors. Additional factors can be added
+ * here as the system grows without changing production callers.
+ */
+export function getBuildingEfficiency(staffingEfficiency: number, facilityCondition: number): number {
+  const staffing = Number.isFinite(staffingEfficiency) ? Math.max(0, staffingEfficiency) : 0;
+  const condition = Number.isFinite(facilityCondition) ? Math.min(1, Math.max(0, facilityCondition)) : 0;
+
+  return staffing * condition;
 }

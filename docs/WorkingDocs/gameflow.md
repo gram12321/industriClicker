@@ -31,7 +31,7 @@ Players may pause a selected recipe without clearing it; resuming continues its 
 
 | Recipe | Inputs | Output | Work |
 |---|---|---:|---:|
-| Grow Grain | 1 Water, 1 Electricity | 1 Grain | 5 |
+| Grow Grain | 1 Water, 1 Electricity | 1 Grain | 0.05 |
 | Bake Bread | 2 Grain, 1 Water, 1 Electricity | 1 Bread | 10 |
 | Produce Water / Electricity | None | 1 utility resource | 5 |
 | Grow Sugar | 4 Water | 1 Sugar | 3 |
@@ -57,7 +57,9 @@ For `levels = speedLevel + outputLevel`:
 - Speed-upgrade work-speed multiplier: `1 + 0.8 × (1 - e^(-0.22 × speedLevel))`.
 - Output multiplier: `1 + (1 - e^(-0.18 × outputLevel))`.
 - Required workers: `baseWorkers + levels + ceil(baseWorkers × 1.15^levels - baseWorkers)`.
-- Building efficiency from staffing at or below target: `0.01 + 0.99 × ratio^1.6`; above target: `1 + 0.25 × (1 - e^(-0.7 × (ratio - 1)))`.
+- Staffing efficiency at or below target: `0.01 + 0.99 × ratio^1.6`; above target: `1 + 0.25 × (1 - e^(-0.7 × (ratio - 1)))`.
+- Facility condition starts at `1`, is clamped to `0–1`, and loses `0.0001` per constructed facility per foreground minute. Each completed cycle also loses `recipe.requiredWork × 0.0005` condition.
+- Building efficiency: `staffingEfficiency × facilityCondition`.
 - Effective work: `baseWork × buildingEfficiency × speedUpgradeWorkSpeedMultiplier × recipeResearchWorkSpeedMultiplier`.
 
 Levels and worker counts are non-negative integers. A zero-worker requirement has 100% efficiency; above-target staffing cannot reach a 25% bonus.
@@ -87,7 +89,7 @@ Levels and worker counts are non-negative integers. A zero-worker requirement ha
 
 1. `TimeManager` measures active wall-clock time from `lastObservedAtMs`.
 2. `advanceGameTime` splits it into one-second simulation steps.
-3. Each step advances logical time and pipeline, then gives active facilities `elapsedSeconds / 60` base work in fixed order. Completed recipe output is also recorded in lifetime production statistics after output multipliers apply.
+3. Each step advances logical time and pipeline, applies passive condition wear to every constructed facility, then gives active facilities `elapsedSeconds / 60` base work in fixed order. A completed recipe cycle applies its linear production tear before its output is recorded in lifetime production statistics after output multipliers apply.
 4. Active research advances by the same foreground elapsed milliseconds; background/resume time adds none. A completed project clears the active record and applies its one-time effect atomically.
 5. Sales offers resolve only for completed foreground minutes and may be created only while below derived sales capacity; retained partial time carries between ticks.
 6. Fast-forward first processes real foreground time, then simulates 60 seconds through the same path.
@@ -107,4 +109,4 @@ Offline catch-up is deferred and must use this rule path when approved.
 | Delete company | Delete the active company record and its cascaded local save/tutorial rows, then return to local company selection. |
 | Clear local data (admin) | Delete every local profile, company, save, tutorial row, and device session while retaining the empty SQLite schema. |
 
-No save-version compatibility layer exists: the old singleton save is deliberately discarded in favour of company-keyed snapshots. Achievement ledger, production statistics, research ledger, and company-start logical time are required snapshot fields.
+No save-version compatibility layer exists: an older snapshot version is deliberately discarded. Achievement ledger, production statistics, research ledger, facility condition, and company-start logical time are required snapshot fields.

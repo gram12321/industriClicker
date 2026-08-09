@@ -22,7 +22,8 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Sales contract | A customer request for a resource and integer quantity, retained as offered, completed, or rejected. |
 | Speed upgrade / Output upgrade | Money-funded facility levels that respectively improve work speed or recipe output. |
 | Assigned workers / Required workers | The local worker count and calculated staffing target for a facility. |
-| Building efficiency | The production-speed multiplier derived from staffing. |
+| Facility condition | A persisted 0–1 measure of a constructed facility's wear state. It begins at 1 and decreases during foreground time and completed production cycles. |
+| Building efficiency | The production-speed multiplier formed from staffing efficiency and facility condition. |
 | Company prestige | An informational company-standing value derived from prestige events. |
 | Local player profile | A device-local, non-authenticated profile that groups one or more companies. |
 | Active company | The selected company whose snapshot is restored into runtime state and may advance foreground game time. |

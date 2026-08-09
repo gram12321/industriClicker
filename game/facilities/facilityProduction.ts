@@ -1,7 +1,7 @@
 import type { Inventory } from '@/game/inventory';
 import { getRecipe, type RecipeInput, type RecipeName } from '@/game/recipes';
 import type { ResourceType } from '@/game/resources';
-import { FACILITY_PRODUCTION_ORDER } from './facilityConstants';
+import { FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT, FACILITY_PRODUCTION_ORDER } from './facilityConstants';
 import type { FacilityView } from './facility';
 import type { FacilityCollection } from './facilityCollection';
 
@@ -85,6 +85,7 @@ export function advanceAllFacilityProduction(
           const amount = recipe.output.amount * facilityView.outputMultiplier;
           inventory.add(recipe.output.resourceType, amount);
           outputs.push({ facilityType: facilityView.facilityType, recipeName: recipe.name, resourceType: recipe.output.resourceType, amount });
+          facility.applyConditionLoss(recipe.requiredWork * FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT);
           progress = 0;
         }
       }
