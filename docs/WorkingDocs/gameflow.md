@@ -105,6 +105,7 @@ Levels and worker counts are non-negative integers. A zero-worker requirement ha
 - The customer pipeline is visual only and does not affect offer rolls. It fills green through one estimated wait interval, then refills in red for each additional estimated interval until an offer resets it.
 - Research has two five-tier chains: Capital Grants pay one-time money rewards, while Sales Capacity raises the derived open-contract maximum from its base of one to 2, 3, 5, 7, or 10. Capacity blocks only newly created offers; existing offers remain actionable.
 - A research project requires all of its gates at start, deducts its full configured cost immediately, and is the only active project for its company. Completion is durable and applies its grant/effect once. Cancelling refunds the recorded full paid cost and discards partial progress.
+- A progression grant may reduce a specific action's cost to zero. Building a company's first facility grants a one-use waiver for its first listed recipe research; that research retains its normal duration and a cancellation refunds zero.
 
 ## Foreground Time
 

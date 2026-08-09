@@ -1,4 +1,4 @@
-import { PRESTIGE_COMPANY_BALANCE_SOURCE_ID, PRESTIGE_EVENT_MIN_AMOUNT, PRESTIGE_EVENT_TYPES, PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS } from './prestigeConstants';
+import { PRESTIGE_COMPANY_BALANCE_SOURCE_ID, PRESTIGE_FACILITY_CONDITION_SOURCE_ID, PRESTIGE_EVENT_MIN_AMOUNT, PRESTIGE_EVENT_TYPES, PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS } from './prestigeConstants';
 import { calculateCurrentPrestigeAmount, calculateSalesContractPrestige } from './prestigeCalculator';
 
 export type PrestigeEventType = typeof PRESTIGE_EVENT_TYPES[number];
@@ -92,6 +92,10 @@ export class PrestigeLedger {
       sourceId: PRESTIGE_COMPANY_BALANCE_SOURCE_ID,
       description: 'Company cash balance',
     });
+  }
+
+  syncFacilityCondition(amountBase: number, createdAtGameTimeMs: number): void {
+    this.upsert({ type: 'facility_condition', amountBase, createdAtGameTimeMs, decayHalfLifeForegroundHours: null, sourceId: PRESTIGE_FACILITY_CONDITION_SOURCE_ID, description: 'Facility condition' });
   }
 
   recordSalesContract(contractId: string, reward: number, createdAtGameTimeMs: number): void {

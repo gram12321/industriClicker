@@ -220,6 +220,7 @@ flowchart LR
 | `productionStatistics.producedByResource` | Stored | `ProductionStatistics` | Completed facility recipe output only | `ProductionStatisticsSnapshot` |
 | `prestige.events` | Stored | `PrestigeLedger` | Balance changes and fulfilled sales | `PrestigeLedgerSnapshot` |
 | `research.completed`, `.active` | Stored | `ResearchLedger` | Research start, foreground advance, completion, cancellation | `ResearchLedgerSnapshot` |
+| `grants.grants` | Stored | `GrantLedger` | First facility construction and free-action consumption | `GrantLedgerSnapshot` |
 | `startingConditionId` | Runtime | Zustand game store | Company activation/session change | No; source is the local company record |
 | `companyStartedAtGameTimeMs`, `lastProcessedAtMs`, `unprocessedWorkMs`, `customerPipelineProgress` | Stored | Zustand game store | Company creation, deletion, and global time advance | `GameTimeSnapshot` |
 | `lastObservedAtMs` | Runtime | Zustand game store | Foreground observation and lifecycle | No |
@@ -238,7 +239,7 @@ Derived values include facility efficiency, production work/output, contract rew
 | Completed production output | Facility output and output multiplier | Production statistics; production achievements |
 | `fulfillSalesContract`, `rejectSalesContract` | Contract; inventory and finance where applicable | Sales contracts; inventory and finance where applicable |
 | Achievement evaluation | Post-command domain state | Achievement unlocks; idempotent achievement prestige events |
-| `getResearchAvailability`, `startResearch`, `cancelResearch` | Code catalogue, pure gate context, finance, research ledger | Research; finance/prestige and relevant achievements |
+| `getResearchAvailability`, `startResearch`, `cancelResearch` | Code catalogue, pure gate context, finance, research ledger, progression grants | Research; grant use; finance/prestige and relevant achievements |
 | `createSalesContractRequest` | Selected resource, quantity, derived capacity | Sales contracts and pipeline |
 | `activateCompany` | Selected profile, outgoing snapshot, requested company snapshot | Device session; complete runtime game state |
 | `deleteActiveCompany` | Active company ID | Removes the active company and returns to local company selection |
@@ -250,7 +251,7 @@ All normal state changes batch persistence; background and explicit checkpoints 
 
 | State group | Save representation | Restore |
 |---|---|---|
-| Inventory, finance, facilities, sales contracts, achievements, production statistics, prestige, research | Respective snapshot inside a company-keyed `GameSnapshot` | Restore the active company's valid current-version snapshot |
+| Inventory, finance, facilities, sales contracts, achievements, production statistics, prestige, research, progression grants | Respective snapshot inside a company-keyed `GameSnapshot` | Restore the active company's valid current-version snapshot |
 | Foreground game time and pipeline | `GameTimeSnapshot` | Restore logical/partial time and pipeline; reset observation anchor |
 | Catalogues and balance configuration | Typed code definitions | Reload from the app version; never save |
 | Player/company/session/tutorial metadata | Dedicated company-domain SQLite records | Load before an active company runtime session begins |

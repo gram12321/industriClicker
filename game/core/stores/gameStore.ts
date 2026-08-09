@@ -1,6 +1,6 @@
 import { Finance } from '@/game/finance';
 import { Inventory } from '@/game/inventory';
-import { FacilityCollection, advanceAllFacilityProduction, calculateFacilityEffectiveWork, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getFacilityRepairCost, getFacilityUpgradeCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
+import { FACILITIES, FacilityCollection, advanceAllFacilityProduction, calculateFacilityEffectiveWork, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getFacilityRepairCost, getFacilityUpgradeCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
 import type { RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
 import { MARKET_SALES_CONTRACT_PREMIUM, Market, canAutoBuyMarketResource, canBuyMarketResource, canSellMarketResource, type MarketAutomation } from '@/game/market';
@@ -8,9 +8,10 @@ import type { GameSnapshot } from '@/game/core/state';
 import { BASE_WORK_PER_MINUTE, FOREGROUND_SIMULATION_STEP_MS, REALTIME_WORK_MINUTE_MS, calculateRealtimeAdvance } from '@/game/core/time';
 import { SalesContracts, calculateSalesContractOfferChance } from '@/game/sales';
 import { AchievementLedger, ProductionStatistics, createAchievementEvaluationContext, evaluateAchievementUnlocks, type AchievementCategory } from '@/game/achievements';
-import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary } from '@/game/prestige';
+import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary, calculateFacilityConditionPrestige } from '@/game/prestige';
 import { evaluateGateRequirements, type GateContext, type GateEvaluation } from '@/game/gates';
 import { ResearchLedger, getMaximumOpenSalesContracts, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, type ResearchProjectId } from '@/game/research';
+import { FIRST_FACILITY_RECIPE_RESEARCH_GRANT_ID, GrantLedger } from '@/game/grants';
 import type { StartingConditionId } from '@/game/company/companyTypes';
 import { STANDARD_START_CONSTRUCTION_MATERIALS } from '@/game/company/companyConstants';
 import { create } from 'zustand';
@@ -18,6 +19,8 @@ import { create } from 'zustand';
 export type ResearchAvailability = GateEvaluation & {
   startable: boolean;
   unmetReasons: string[];
+  cost: number;
+  usesFreeGrant: boolean;
 };
 
 type GameState = {
@@ -30,6 +33,7 @@ type GameState = {
   productionStatistics: ProductionStatistics;
   prestige: PrestigeLedger;
   research: ResearchLedger;
+  grants: GrantLedger;
   /** Company metadata injected by the session store, never persisted in GameSnapshot. */
   startingConditionId: StartingConditionId | null;
   companyStartedAtGameTimeMs: number;
@@ -81,6 +85,10 @@ function syncCompanyBalancePrestige(
   );
 }
 
+function syncFacilityConditionPrestige(prestige: PrestigeLedger, facilities: FacilityCollection, currentGameTimeMs: number): void {
+  prestige.syncFacilityCondition(calculateFacilityConditionPrestige(facilities.getAll().map((facility) => facility.getView().facilityCondition)), currentGameTimeMs);
+}
+
 function createStartingPrestige(finance: Finance, currentGameTimeMs: number): PrestigeLedger {
   const prestige = new PrestigeLedger();
   syncCompanyBalancePrestige(prestige, finance, currentGameTimeMs);
@@ -102,23 +110,33 @@ function createResearchGateContext(input: {
   };
 }
 
+function getRecipeResearchGrantTarget(project: ReturnType<typeof getResearchProject>): string | null {
+  if (!project || project.effect.kind !== 'recipe-unlock') return null;
+  const recipeName = project.effect.recipeName;
+  return Object.values(FACILITIES).find((facility) => facility.recipes.some((recipe) => recipe.name === recipeName))?.type ?? null;
+}
+
 function getResearchAvailabilityForState(input: {
   projectId: ResearchProjectId;
   achievements: AchievementLedger;
   research: ResearchLedger;
+  grants: GrantLedger;
   prestige: PrestigeLedger;
   finance: Finance;
   currentGameTimeMs: number;
   startingConditionId: StartingConditionId | null;
 }): ResearchAvailability {
   const project = getResearchProject(input.projectId);
-  if (!project) return { allowed: false, startable: false, unmetReasons: ['Unknown research project.'] };
-  if (input.research.hasCompleted(project.id)) return { allowed: false, startable: false, unmetReasons: ['Research already completed.'] };
-  if (input.research.getActiveProject()) return { allowed: false, startable: false, unmetReasons: ['Research in progress.'] };
+  if (!project) return { allowed: false, startable: false, unmetReasons: ['Unknown research project.'], cost: 0, usesFreeGrant: false };
+  if (input.research.hasCompleted(project.id)) return { allowed: false, startable: false, unmetReasons: ['Research already completed.'], cost: project.cost, usesFreeGrant: false };
+  if (input.research.getActiveProject()) return { allowed: false, startable: false, unmetReasons: ['Research in progress.'], cost: project.cost, usesFreeGrant: false };
   const evaluation = evaluateGateRequirements(project.requirements, createResearchGateContext(input));
   const unmetReasons = [...evaluation.unmetReasons];
+  const grantTarget = getRecipeResearchGrantTarget(project);
+  const usesFreeGrant = grantTarget !== null && input.grants.hasAvailableFreeActionForTargets('start-research', [grantTarget, project.id]);
+  if (usesFreeGrant) return { allowed: evaluation.allowed, startable: unmetReasons.length === 0, unmetReasons, cost: 0, usesFreeGrant: true };
   if (!input.finance.canAfford(project.cost)) unmetReasons.push(`Requires €${project.cost.toLocaleString()} available.`);
-  return { allowed: evaluation.allowed, startable: unmetReasons.length === 0, unmetReasons };
+  return { allowed: evaluation.allowed, startable: unmetReasons.length === 0, unmetReasons, cost: project.cost, usesFreeGrant: false };
 }
 
 /** Produces a fresh, current-version company snapshot without touching runtime state. */
@@ -136,6 +154,7 @@ export function createStartingGameSnapshot(nowMs = Date.now()): GameSnapshot {
     productionStatistics: new ProductionStatistics().toSnapshot(),
     prestige: createStartingPrestige(finance, nowMs).toSnapshot(),
     research: new ResearchLedger().toSnapshot(),
+    grants: new GrantLedger().toSnapshot(),
     time: {
       companyStartedAtGameTimeMs: nowMs,
       lastProcessedAtMs: nowMs,
@@ -207,6 +226,7 @@ export const useGameStore = create<GameState>((set, get) => {
   productionStatistics: new ProductionStatistics(),
   prestige: createStartingPrestige(initialFinance, initialGameTimeMs),
   research: new ResearchLedger(),
+  grants: new GrantLedger(),
   startingConditionId: null,
   companyStartedAtGameTimeMs: initialGameTimeMs,
   lastProcessedAtMs: initialGameTimeMs,
@@ -301,6 +321,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const finance = get().finance.clone();
     const inventory = get().inventory.clone();
     const definition = getFacilityDefinition(facilityType);
+    const isFirstFacility = facilities.getAll().length === 0;
 
     if (!finance.canAfford(definition.landCost)
       || !inventory.has(ResourceType.ConstructionMaterials, definition.constructionMaterialsCost)
@@ -330,7 +351,16 @@ export const useGameStore = create<GameState>((set, get) => {
       categories: ['facilities', 'finance', 'prestige'],
       inventory,
     });
-    set({ facilities, finance, ...achievementResult });
+    const grants = get().grants.clone();
+    if (isFirstFacility) {
+      grants.grant({
+        id: FIRST_FACILITY_RECIPE_RESEARCH_GRANT_ID,
+        action: 'start-research',
+        targetId: facilityType,
+        grantedAtGameTimeMs: get().lastProcessedAtMs,
+      });
+    }
+    set({ facilities, finance, grants, ...achievementResult });
     return true;
   },
   destroyFacility: (facilityId) => {
@@ -421,6 +451,7 @@ export const useGameStore = create<GameState>((set, get) => {
     productionStatistics.recordRepair(1 - facilityView.facilityCondition, purchasedMaterialsCost + Math.max(0, repairCost - missingMaterials) * market.getLocalPrice(ResourceType.ConstructionMaterials));
     const prestige = get().prestige.clone();
     syncCompanyBalancePrestige(prestige, finance, get().lastProcessedAtMs);
+    syncFacilityConditionPrestige(prestige, facilities, get().lastProcessedAtMs);
     const achievementResult = applyAchievementUnlocks({ achievements: get().achievements, productionStatistics, facilities, finance, salesContracts: get().salesContracts, prestige, companyStartedAtGameTimeMs: get().companyStartedAtGameTimeMs, currentGameTimeMs: get().lastProcessedAtMs, categories: ['facilities'], inventory });
     set({ facilities, inventory: achievementResult.inventory, market, finance, productionStatistics, achievements: achievementResult.achievements, prestige: achievementResult.prestige });
     return true;
@@ -464,6 +495,7 @@ export const useGameStore = create<GameState>((set, get) => {
 
     const prestige = get().prestige.clone();
     syncCompanyBalancePrestige(prestige, finance, get().lastProcessedAtMs);
+    syncFacilityConditionPrestige(prestige, facilities, get().lastProcessedAtMs);
     const achievementResult = applyAchievementUnlocks({
       achievements: get().achievements,
       productionStatistics: get().productionStatistics,
@@ -687,6 +719,7 @@ export const useGameStore = create<GameState>((set, get) => {
     projectId,
     achievements: get().achievements,
     research: get().research,
+    grants: get().grants,
     prestige: get().prestige,
     finance: get().finance,
     currentGameTimeMs: get().lastProcessedAtMs,
@@ -696,24 +729,29 @@ export const useGameStore = create<GameState>((set, get) => {
     get().advanceRealtime(Date.now());
     const state = get();
     const project = getResearchProject(projectId);
-    if (!project || !getResearchAvailabilityForState({
+    const availability = !project ? null : getResearchAvailabilityForState({
       projectId,
       achievements: state.achievements,
       research: state.research,
+      grants: state.grants,
       prestige: state.prestige,
       finance: state.finance,
       currentGameTimeMs: state.lastProcessedAtMs,
       startingConditionId: state.startingConditionId,
-    }).startable) return false;
+    });
+    if (!project || !availability?.startable) return false;
 
     const research = state.research.clone();
+    const grants = state.grants.clone();
     const finance = state.finance.clone();
-    if (!research.start(projectId, project.cost)
-      || !finance.applyTransaction(-project.cost, `Research started: ${project.name}`, new Date().toISOString())) return false;
+    const grantTarget = getRecipeResearchGrantTarget(project);
+    if ((availability.usesFreeGrant && (!grantTarget || !grants.useFreeActionForTargets('start-research', [grantTarget, project.id], state.lastProcessedAtMs)))
+      || !research.start(projectId, availability.cost)
+      || !finance.applyTransaction(-availability.cost, `Research started: ${project.name}`, new Date().toISOString())) return false;
 
     const prestige = state.prestige.clone();
     syncCompanyBalancePrestige(prestige, finance, state.lastProcessedAtMs);
-    set({ research, finance, prestige });
+    set({ research, grants, finance, prestige });
     return true;
   },
   cancelResearch: () => {
@@ -834,6 +872,7 @@ export const useGameStore = create<GameState>((set, get) => {
     productionStatistics: get().productionStatistics.toSnapshot(),
     prestige: get().prestige.toSnapshot(),
     research: get().research.toSnapshot(),
+    grants: get().grants.toSnapshot(),
     time: {
       companyStartedAtGameTimeMs: get().companyStartedAtGameTimeMs,
       lastProcessedAtMs: get().lastProcessedAtMs,
@@ -850,8 +889,10 @@ export const useGameStore = create<GameState>((set, get) => {
     const productionStatistics = ProductionStatistics.fromSnapshot(snapshot.productionStatistics);
     const prestige = PrestigeLedger.fromSnapshot(snapshot.prestige);
     const research = ResearchLedger.fromSnapshot(snapshot.research);
+    const grants = GrantLedger.fromSnapshot(snapshot.grants);
     const inventory = Inventory.fromSnapshot(snapshot.inventory);
     syncCompanyBalancePrestige(prestige, finance, snapshot.time.lastProcessedAtMs);
+    syncFacilityConditionPrestige(prestige, facilities, snapshot.time.lastProcessedAtMs);
     const achievementResult = applyAchievementUnlocks({
       achievements,
       productionStatistics,
@@ -875,6 +916,7 @@ export const useGameStore = create<GameState>((set, get) => {
     productionStatistics,
     prestige: achievementResult.prestige,
     research,
+    grants,
     companyStartedAtGameTimeMs: snapshot.time.companyStartedAtGameTimeMs,
     // Offline progress is planned; observe a restored foreground session from now.
     lastProcessedAtMs: snapshot.time.lastProcessedAtMs,

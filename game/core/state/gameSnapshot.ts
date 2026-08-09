@@ -9,6 +9,7 @@ import { type MarketSnapshot } from '../../market/marketTypes';
 import { MARKET_AUTOSELL_INTERVAL_OPTIONS } from '../../market/marketConstants';
 import { RESOURCE_TYPES } from '../../resources/resourceConstants';
 import { isResearchLedgerSnapshot, type ResearchLedgerSnapshot } from '../../research/research';
+import { isGrantLedgerSnapshot, type GrantLedgerSnapshot } from '../../grants/grant';
 
 export type GameTimeSnapshot = {
   /** Logical foreground time when the current company began. */
@@ -35,6 +36,7 @@ export type GameSnapshot = {
   productionStatistics: ProductionStatisticsSnapshot;
   prestige: PrestigeLedgerSnapshot;
   research: ResearchLedgerSnapshot;
+  grants: GrantLedgerSnapshot;
   time: GameTimeSnapshot;
 };
 
@@ -73,7 +75,7 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
   if (!isRecord(value) || !isRecord(value.finance) || !isRecord(value.inventory)
     || !isRecord(value.market) || !isRecord(value.facilities) || !isRecord(value.salesContracts)
     || !isRecord(value.achievements) || !isRecord(value.productionStatistics)
-    || !isRecord(value.prestige) || !isResearchLedgerSnapshot(value.research) || !isGameTimeSnapshot(value.time)) {
+    || !isRecord(value.prestige) || !isResearchLedgerSnapshot(value.research) || !isGrantLedgerSnapshot(value.grants) || !isGameTimeSnapshot(value.time)) {
     return false;
   }
 

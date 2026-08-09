@@ -18,6 +18,7 @@ export type AchievementMetric =
   | 'condition-repaired'
   | 'largest-repair'
   | 'repair-value-euros'
+  | 'facility-efficiency-count'
   | 'resource-produced'
   | 'total-produced'
   | 'fulfilled-contract-count'
@@ -38,6 +39,7 @@ export type AchievementDefinition = {
   metric: AchievementMetric;
   threshold: number;
   resourceType?: ResourceType;
+  facilityEfficiencyThreshold?: number;
   prestigeAmount: number;
   prestigeHalfLifeForegroundHours: number;
   rewards?: readonly AchievementReward[];
@@ -88,6 +90,9 @@ export const ACHIEVEMENT_DEFINITIONS: readonly AchievementDefinition[] = [
   ...createTieredAchievements({ seriesId: 'condition_repaired', category: 'facilities', name: 'Restoration Works', description: 'Restore {threshold}% facility condition.', icon: 'wrench', metric: 'condition-repaired', thresholds: [10, 50, 100, 250, 500] }),
   ...createTieredAchievements({ seriesId: 'largest_repair', category: 'facilities', name: 'Major Overhaul', description: 'Restore {threshold}% condition in one repair.', icon: 'tools', metric: 'largest-repair', thresholds: [10, 25, 50, 75, 100] }),
   ...createTieredAchievements({ seriesId: 'repair_value_euros', category: 'facilities', name: 'Maintenance Budget', description: 'Spend €{threshold} on repairs.', icon: 'cash-wrench', metric: 'repair-value-euros', thresholds: [100, 500, 1_000, 5_000, 10_000] }),
+  ...[
+    { tier: 1, count: 1, efficiency: 0.5 }, { tier: 2, count: 3, efficiency: 0.75 }, { tier: 3, count: 6, efficiency: 0.9 }, { tier: 4, count: 10, efficiency: 1 }, { tier: 5, count: 15, efficiency: 1.1 },
+  ].map(({ tier, count, efficiency }) => ({ id: `facility_efficiency_tier_${tier}`, seriesId: 'facility_efficiency', category: 'facilities' as const, tier, name: `Operational Excellence ${tier}`, description: `Have ${count} facilities at ${Math.round(efficiency * 100)}% efficiency or higher at once.`, icon: 'gauge', metric: 'facility-efficiency-count' as const, threshold: count, facilityEfficiencyThreshold: efficiency, prestigeAmount: ACHIEVEMENT_TIER_PRESTIGE[Math.min(tier - 1, ACHIEVEMENT_TIER_PRESTIGE.length - 1)].amount, prestigeHalfLifeForegroundHours: ACHIEVEMENT_TIER_PRESTIGE[Math.min(tier - 1, ACHIEVEMENT_TIER_PRESTIGE.length - 1)].halfLifeForegroundHours })),
   ...RESOURCE_TYPES.flatMap((resourceType) => createResourceProductionAchievements(resourceType, RESOURCES[resourceType].name, RESOURCES[resourceType].icon)),
   ...createTieredAchievements({ seriesId: 'total_production', category: 'production', name: 'Production Line', description: 'Complete {threshold} total output.', icon: 'package-variant', metric: 'total-produced', thresholds: [1, 100, 1_000] }),
   ...createTieredAchievements({ seriesId: 'fulfilled_contracts', category: 'sales', name: 'Contract Closer', description: 'Fulfil {threshold} customer contracts.', icon: 'handshake-outline', metric: 'fulfilled-contract-count', thresholds: [1, 10, 50] }),

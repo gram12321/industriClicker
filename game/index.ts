@@ -3,6 +3,7 @@ export * from './company';
 export * from './achievements';
 export * from './facilities';
 export * from './gates';
+export * from './grants';
 export * from './finance';
 export * from './inventory';
 export * from './market';

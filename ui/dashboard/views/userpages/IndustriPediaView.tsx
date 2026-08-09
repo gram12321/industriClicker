@@ -32,10 +32,11 @@ export function IndustriPediaView({ market }: { market: Market }) {
     {activeSection === 'market-flow' && <MarketFlowSection market={market} />}
     {activeSection === 'finance' && <FinanceSection />}
     {activeSection === 'prestige' && <PrestigeSection />}
+    {activeSection === 'achievements' && <AchievementsSection />}
   </>;
 }
 
-type IndustriPediaSection = 'resources' | 'facilities' | 'recipes' | 'market-flow' | 'finance' | 'prestige';
+type IndustriPediaSection = 'resources' | 'facilities' | 'recipes' | 'market-flow' | 'finance' | 'prestige' | 'achievements';
 
 const INDUSTRIPEDIA_SECTIONS: ReadonlyArray<{ id: IndustriPediaSection; label: string }> = [
   { id: 'resources', label: 'Resources' },
@@ -44,6 +45,7 @@ const INDUSTRIPEDIA_SECTIONS: ReadonlyArray<{ id: IndustriPediaSection; label: s
   { id: 'market-flow', label: 'Market flow' },
   { id: 'finance', label: 'Finance' },
   { id: 'prestige', label: 'Prestige' },
+  { id: 'achievements', label: 'Achievements' },
 ];
 
 function MarketFlowSection({ market }: { market: Market }) {
@@ -262,7 +264,7 @@ function PrestigeSection() {
   return <>
     <SectionHeading eyebrow="PRESTIGE" title="Company standing" subtitle="How company standing is recorded and fades over time." />
     <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text style={styles.cardKicker}>WHAT IT IS</Text><Text style={styles.cardDescription}>Prestige is an informational company-standing score. It does not affect production, pricing, or customer offers yet.</Text></Card.Content></Card>
-    <Card mode="contained" style={styles.featureCard}><Card.Content><List.Item description="A permanent, recalculated source based on current company cash." left={(props) => <List.Icon {...props} icon={APP_ICONS.bank} />} title="Company balance" /><List.Item description={`Each fulfilled contract creates a fading event. Its half-life is ${formatNumber(PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS, { smartDecimals: true })} active hours.`} left={(props) => <List.Icon {...props} icon={APP_ICONS.contracts} />} title="Contract sales" /></Card.Content></Card>
+    <Card mode="contained" style={styles.featureCard}><Card.Content><List.Item description="A permanent, recalculated source based on current company cash." left={(props) => <List.Icon {...props} icon={APP_ICONS.bank} />} title="Company balance" /><List.Item description="A permanent source based on average facility condition. 50% condition is neutral; higher condition grants prestige and lower condition applies a penalty. Facilities currently have equal weight; future asset-value metrics can make larger facilities count more." left={(props) => <List.Icon {...props} icon="factory" />} title="Facility condition" /><List.Item description={`Each fulfilled contract creates a fading event. Its half-life is ${formatNumber(PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS, { smartDecimals: true })} active hours.`} left={(props) => <List.Icon {...props} icon={APP_ICONS.contracts} />} title="Contract sales" /></Card.Content></Card>
     <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text style={styles.cardKicker}>DECAY</Text><Text style={styles.cardDescription}>Prestige decay uses active game time. Background time does not decay prestige; Fast-forward does.</Text><Text style={styles.cardDescription}>For a fading event: current = original × 0.5^(active hours ÷ half-life). Select an event in the Prestige dialog to see its original value, current value, hourly decay, and projections.</Text></Card.Content></Card>
   </>;
 }
@@ -270,6 +272,31 @@ function PrestigeSection() {
 function ResourceMention({ resourceType }: { resourceType: string }) {
   const typedResource = resourceType as ResourceType;
   return <Text accessibilityLabel={getResource(typedResource).name}>{getResourceIcon(typedResource)}</Text>;
+}
+
+function AchievementsSection() {
+  return <>
+    <SectionHeading eyebrow="ACHIEVEMENTS" title="Company milestones" subtitle="Permanent milestones earned from your company’s progress." />
+    <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
+      <Text style={styles.cardKicker}>HOW THEY WORK</Text>
+      <Text style={styles.cardDescription}>Achievements unlock once when their requirement is met. The unlock is permanent, even if the current company state later changes. Each earned tier grants a prestige event; achievement prestige fades over active game time.</Text>
+      <Text style={styles.cardDescription}>The Achievements screen normally shows the next incomplete tier in each series. Turn on completed tiers there to review every earned milestone.</Text>
+    </Card.Content></Card>
+    <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
+      <Text style={styles.cardKicker}>FACILITIES</Text>
+      <Text style={styles.cardDescription}>Industrial Footprint: own 1, 3, 6, 10, then 15 facilities. The first facility also grants starter Water and Electricity.</Text>
+      <Text style={styles.cardDescription}>Moderniser: buy 1, 5, 15, 30, then 60 facility upgrades. Integrated Industry: keep one facility for every six total upgrades, from 1 facility / 6 upgrades through 5 / 30.</Text>
+      <Text style={styles.cardDescription}>Operational Excellence unlocks when 1, 3, 6, 10, or 15 facilities simultaneously meet 50%, 75%, 90%, 100%, or 110% efficiency.</Text>
+    </Card.Content></Card>
+    <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
+      <Text style={styles.cardKicker}>MAINTENANCE</Text>
+      <Text style={styles.cardDescription}>Restoration Works tracks total condition restored. Major Overhaul tracks the highest condition restored by one repair. Maintenance Budget tracks the repair’s effective euro value: purchased materials plus the current local-market value of materials consumed from inventory.</Text>
+    </Card.Content></Card>
+    <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
+      <Text style={styles.cardKicker}>PRODUCTION AND COMPANY</Text>
+      <Text style={styles.cardDescription}>Every resource has a ten-tier production chain, from 10 to 250,000 units. Other series track total production, completed contracts, delivered quantity, largest contract, cash reserves, active time, and company prestige.</Text>
+    </Card.Content></Card>
+  </>;
 }
 
 function getResourceSummary(resourceType: (typeof RESOURCE_TYPES)[number]): ReactNode {

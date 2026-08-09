@@ -13,6 +13,7 @@ export type AchievementEvaluationContext = {
   repairedCondition: number;
   largestRepair: number;
   repairValueEuros: number;
+  facilityEfficiencies: readonly number[];
   producedByResource: ReturnType<ProductionStatistics['toSnapshot']>['producedByResource'];
   totalProduced: number;
   fulfilledContractCount: number;
@@ -50,6 +51,7 @@ export function createAchievementEvaluationContext(input: {
     repairedCondition: input.productionStatistics.getRepairedCondition(),
     largestRepair: input.productionStatistics.getLargestRepair(),
     repairValueEuros: input.productionStatistics.getRepairValueEuros(),
+    facilityEfficiencies: facilityList.map((facility) => facility.getView().facilityEfficiency),
     producedByResource: input.productionStatistics.toSnapshot().producedByResource,
     totalProduced: input.productionStatistics.getTotalProduced(),
     fulfilledContractCount: fulfilledContracts.length,
@@ -69,6 +71,7 @@ export function getAchievementCurrentValue(definition: AchievementDefinition, co
     case 'condition-repaired': return context.repairedCondition * 100;
     case 'largest-repair': return context.largestRepair * 100;
     case 'repair-value-euros': return context.repairValueEuros;
+    case 'facility-efficiency-count': return context.facilityEfficiencies.filter((efficiency) => efficiency >= (definition.facilityEfficiencyThreshold ?? Infinity)).length;
     case 'resource-produced': return definition.resourceType ? context.producedByResource[definition.resourceType] : 0;
     case 'total-produced': return context.totalProduced;
     case 'fulfilled-contract-count': return context.fulfilledContractCount;

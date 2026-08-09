@@ -37,6 +37,7 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Research project | A code-defined, one-time company project with an up-front cost, foreground duration, requirements, and completion effect. |
 | Active research | The one paid research project currently accumulating foreground milliseconds for its company. |
 | Sales capacity | The derived maximum number of open customer contracts. It starts at one and is raised by completed Sales Capacity research. |
+| Progression grant | A durable, one-use entitlement that makes one specific player action free. |
 
 ## Time, State, and Persistence
 
