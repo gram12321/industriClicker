@@ -11,7 +11,6 @@ import type { SalesContracts } from '@/game/sales';
 import { CompanyView } from './CompanyView';
 import { FinanceView } from './FinanceView';
 import { InventoryView } from './InventoryView';
-import { MarketView } from './MarketView';
 import { ProductionView } from './FacilityView';
 import { SalesView } from './SalesView';
 
@@ -72,8 +71,8 @@ export function GameViewContent({
 }) {
   switch (activeTab) {
     case 'company': return <CompanyView companyName={companyName} />;
-    case 'inventory': return <InventoryView inventory={inventory} />;
-    case 'market': return <MarketView buyMarketResource={buyMarketResource} finance={finance} inventory={inventory} market={market} sellMarketResource={sellMarketResource} setMarketAutomation={setMarketAutomation} />;
+    case 'inventory':
+    case 'market': return <InventoryView buyMarketResource={buyMarketResource} finance={finance} inventory={inventory} market={market} sellMarketResource={sellMarketResource} setMarketAutomation={setMarketAutomation} />;
     case 'production': return <ProductionView buyMarketResource={buyMarketResource} facilities={facilities} finance={finance} inventory={inventory} market={market} research={research} isBuildFacilityTutorial={isBuildFacilityTutorial} onBuildFacilityLayout={onBuildFacilityLayout} openConstructionYard={openConstructionYard} repairFacility={repairFacility} requestFacilityDestruction={requestFacilityDestruction} setFacilityProductionActive={setFacilityProductionActive} setFacilityRecipe={setFacilityRecipe} setFacilityWorkers={setFacilityWorkers} setMarketAutomation={setMarketAutomation} upgradeFacility={upgradeFacility} />;
     case 'sales': return <SalesView customerPipelineProgress={customerPipelineProgress} fulfillSalesContract={fulfillSalesContract} getResearchAvailability={getResearchAvailability} inventory={inventory} market={market} maximumOpenContracts={maximumOpenContracts} rejectSalesContract={rejectSalesContract} research={research} salesContracts={salesContracts} />;
     case 'finance': return <FinanceView finance={finance} />;

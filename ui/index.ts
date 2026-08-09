@@ -14,7 +14,6 @@ export * from './dashboard/views/CompanyView';
 export * from './dashboard/views/FinanceView';
 export * from './dashboard/views/GameView';
 export * from './dashboard/views/InventoryView';
-export * from './dashboard/views/MarketView';
 export * from './dashboard/views/FacilityView';
 export * from './dashboard/views/ResearchView';
 export * from './dashboard/views/SalesView';

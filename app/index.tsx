@@ -12,16 +12,15 @@ import { formatCurrency, formatElapsedTime, formatNumber } from '@/utils';
 
 type ActiveScreen = GameViewId | 'achievements' | 'admin' | 'profile' | 'pedia' | 'settings' | 'leaderboard';
 
-const tabs: Array<{ key: GameViewId; label: string; symbol: string }> = [
+const tabs: Array<{ key: GameViewId; label: string; symbol: string; icon?: string }> = [
   { key: 'company', label: 'Company', symbol: '⌂' },
   { key: 'inventory', label: 'Inventory', symbol: '▣' },
-  { key: 'production', label: 'Production', symbol: '⚙' },
-  { key: 'market', label: 'Market', symbol: 'M' },
+  { key: 'production', label: 'Facility', symbol: '⚙' },
   { key: 'finance', label: 'Finance', symbol: '€' },
 ];
 
-const salesTab: { key: GameViewId; label: string; symbol: string } = { key: 'sales', label: 'Sales', symbol: '$' };
-const researchTab: { key: GameViewId; label: string; symbol: string } = { key: 'research', label: 'Research', symbol: 'R' };
+const salesTab: { key: GameViewId; label: string; symbol: string; icon?: string } = { key: 'sales', label: 'Sales', symbol: '$' };
+const researchTab: { key: GameViewId; label: string; symbol: string; icon?: string } = { key: 'research', label: 'Research', symbol: '', icon: APP_ICONS.research };
 const SIMULUCIUS_TUTORIAL_BUTTON = require('../assets/simulucius/frontremovebg.png');
 
 export default function HomeScreen() {
@@ -148,7 +147,7 @@ function GameShell({ companyName }: { companyName: string }) {
                       : <GameViewContent activeTab={activeView === 'admin' ? 'company' : activeView} buyMarketResource={buyMarketResource} companyName={companyName} customerPipelineProgress={customerPipelineProgress} facilities={facilities} finance={finance} fulfillSalesContract={fulfillSalesContract} getResearchAvailability={getResearchAvailability} inventory={inventory} isBuildFacilityTutorial={isBuildFacilityTutorialOpen} market={market} maximumOpenContracts={maximumOpenContracts} onBuildFacilityLayout={setBuildFacilityButtonLayout} openConstructionYard={() => { if (isBuildFacilityTutorialOpen) setIsBuildFacilityTutorialOpen(false); setIsConstructionYardOpen(true); if (isBuildFacilityTutorialOpen) setIsConstructionTutorialOpen(true); }} rejectSalesContract={rejectSalesContract} repairFacility={repairFacility} requestFacilityDestruction={setPendingDestruction} research={research} salesContracts={salesContracts} sellMarketResource={sellMarketResource} setFacilityProductionActive={setFacilityProductionActive} setFacilityRecipe={setFacilityRecipe} setFacilityWorkers={setFacilityWorkers} setMarketAutomation={setMarketAutomation} upgradeFacility={upgradeFacility} />}
         </ScrollView>
         {tutorial.completedWelcome && <ActiveProcessesOverlay customerPipelineProgress={customerPipelineProgress} facilities={facilities} inventory={inventory} maximumOpenContracts={maximumOpenContracts} research={research} salesContracts={salesContracts} />}
-        <View style={styles.bottomNavigation}>{(tutorial.completedWelcome ? [...tabs.slice(0, 3), salesTab, researchTab, ...tabs.slice(3)] : tutorialStep === 5 ? [tabs[0], tabs[2]] : [tabs[0]]).map((tab) => <BottomNavigationItem active={activeView === tab.key} highlight={tutorialStep === 5 && activeView !== 'production' && tab.key === 'production'} key={tab.key} label={tab.label} onPress={() => { setActiveView(tab.key); if (tutorial.completedWelcome) return; if (tab.key === 'company') { setIsProductionTutorialOpen(false); setIsBuildFacilityTutorialOpen(false); setIsTutorialOpen(true); } if (tab.key === 'production') { setIsTutorialOpen(false); hasProductionTutorialStarted ? setIsBuildFacilityTutorialOpen(true) : setIsProductionTutorialOpen(true); } }} symbol={tab.symbol} />)}</View>
+        <View style={styles.bottomNavigation}>{(tutorial.completedWelcome ? [...tabs.slice(0, 3), salesTab, researchTab, ...tabs.slice(3)] : tutorialStep === 5 ? [tabs[0], tabs[2]] : [tabs[0]]).map((tab) => <BottomNavigationItem active={activeView === tab.key} highlight={tutorialStep === 5 && activeView !== 'production' && tab.key === 'production'} icon={tab.icon} key={tab.key} label={tab.label} onPress={() => { setActiveView(tab.key); if (tutorial.completedWelcome) return; if (tab.key === 'company') { setIsProductionTutorialOpen(false); setIsBuildFacilityTutorialOpen(false); setIsTutorialOpen(true); } if (tab.key === 'production') { setIsTutorialOpen(false); hasProductionTutorialStarted ? setIsBuildFacilityTutorialOpen(true) : setIsProductionTutorialOpen(true); } }} symbol={tab.symbol} />)}</View>
       </View>
       <FacilityConstructionDialog facilities={facilities} finance={finance} inventory={inventory} isConstructionYardOpen={isConstructionYardOpen} market={market} onBuyMissingConstructionMaterials={() => { if (pendingConstruction) buyMissingConstructionMaterials(pendingConstruction); }} onCloseConstructionYard={() => setIsConstructionYardOpen(false)} onConfirmConstruction={() => { if (pendingConstruction && buildFacility(pendingConstruction)) { if (facilities.getAll().length === 0 && !tutorial.completedWelcome) { setFirstBuiltFacilityType(pendingConstruction); setIsFirstFacilityTutorialOpen(true); } setPendingConstruction(null); } }} onConfirmDestruction={() => { if (pendingDestruction && destroyFacility(pendingDestruction)) setPendingDestruction(null); }} onDismissConstruction={() => setPendingConstruction(null)} onDismissDestruction={() => setPendingDestruction(null)} onSelectFacility={(facilityType) => { setIsConstructionYardOpen(false); setPendingConstruction(facilityType); }} pendingConstruction={pendingConstruction} pendingDestruction={pendingDestruction} />
       <PrestigeDialog currentGameTimeMs={lastProcessedAtMs} isOpen={isPrestigeOpen} onClose={() => setIsPrestigeOpen(false)} summary={prestigeSummary} />
@@ -162,7 +161,7 @@ function GameShell({ companyName }: { companyName: string }) {
   );
 }
 
-function BottomNavigationItem({ active, highlight, label, onPress, symbol }: { active: boolean; highlight?: boolean; label: string; onPress: () => void; symbol: string }) {
+function BottomNavigationItem({ active, highlight, icon, label, onPress, symbol }: { active: boolean; highlight?: boolean; icon?: string; label: string; onPress: () => void; symbol: string }) {
   const activeStyle: StyleProp<ViewStyle> = active ? styles.activeNavigationItem : undefined;
-  return <Pressable accessibilityLabel={`${label} tab`} accessibilityRole="tab" accessibilityState={{ selected: active }} onPress={onPress} style={[styles.navigationItem, activeStyle, highlight && styles.tutorialProductionNavigation]}><Text style={[styles.navigationSymbol, active && styles.activeNavigationText]}>{symbol}</Text><Text style={[styles.navigationLabel, active && styles.activeNavigationText]}>{label}</Text></Pressable>;
+  return <Pressable accessibilityLabel={`${label} tab`} accessibilityRole="tab" accessibilityState={{ selected: active }} onPress={onPress} style={[styles.navigationItem, activeStyle, highlight && styles.tutorialProductionNavigation]}>{icon ? <MaterialCommunityIcons color={active ? colors.primary : colors.muted} name={icon as never} size={18} /> : <Text style={[styles.navigationSymbol, active && styles.activeNavigationText]}>{symbol}</Text>}<Text style={[styles.navigationLabel, active && styles.activeNavigationText]}>{label}</Text></Pressable>;
 }
