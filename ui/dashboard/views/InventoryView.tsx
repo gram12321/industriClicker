@@ -25,18 +25,19 @@ function sliderValue(position: number) {
   return Math.max(sliderMinimum, Math.min(sliderMaximum, Math.round(sliderMinimum * (sliderMaximum / sliderMinimum) ** clamped)));
 }
 
-export function InventoryView({ buyMarketResource, finance, inventory, market, sellMarketResource, setMarketAutomation }: {
+export function InventoryView({ buyMarketResource, finance, inventory, market, onlyInStock, sellMarketResource, setMarketAutomation, setOnlyInStock }: {
   buyMarketResource: (resourceType: (typeof RESOURCE_TYPES)[number], amount: number) => boolean;
   finance: Finance;
   inventory: Inventory;
   market: Market;
+  onlyInStock: boolean;
   sellMarketResource: (resourceType: (typeof RESOURCE_TYPES)[number], amount: number) => boolean;
   setMarketAutomation: (resourceType: (typeof RESOURCE_TYPES)[number], updates: Partial<MarketAutomation>) => boolean;
+  setOnlyInStock: (value: boolean) => void;
 }) {
   const [multiplier, setMultiplier] = useState<MarketTradeMultiplier>(1);
   const [selectedResource, setSelectedResource] = useState<(typeof RESOURCE_TYPES)[number] | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
-  const [onlyInStock, setOnlyInStock] = useState(false);
   const [settingsResource, setSettingsResource] = useState<(typeof RESOURCE_TYPES)[number] | null>(null);
   const [intervalMenuOpen, setIntervalMenuOpen] = useState(false);
   const [settingsDraft, setSettingsDraft] = useState({ minKeep: '', maxSell: '', maxBuyPrice: '', minSellPrice: '', sellIntervalMs: MARKET_AUTOSELL_DEFAULT_INTERVAL_MS });
@@ -75,7 +76,7 @@ export function InventoryView({ buyMarketResource, finance, inventory, market, s
         <Pressable accessibilityLabel="Set trade amount to all" accessibilityRole="button" onPress={() => setMultiplier('all')} style={styles.marketSliderStep}><Text style={[styles.marketSliderLabel, multiplier === 'all' && styles.marketSliderLabelActive]}>All</Text></Pressable>
       </View>
     </View>
-    <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: onlyInStock }} onPress={() => setOnlyInStock((current) => !current)} style={localStyles.filterRow}><Checkbox status={onlyInStock ? 'checked' : 'unchecked'} /><Text>Only show resources with inventory</Text></Pressable>
+    <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: onlyInStock }} onPress={() => setOnlyInStock(!onlyInStock)} style={localStyles.filterRow}><Checkbox status={onlyInStock ? 'checked' : 'unchecked'} /><Text>Only show resources with inventory</Text></Pressable>
     {RESOURCE_GROUPS.map((group) => {
       const visibleResources = group.resources.filter((resourceType) => !onlyInStock || inventory.getAmount(resourceType) > 0);
       if (visibleResources.length === 0) return null;
