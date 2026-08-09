@@ -6,6 +6,8 @@ import { isAchievementLedgerSnapshot, type AchievementLedgerSnapshot } from '../
 import { isProductionStatisticsSnapshot, type ProductionStatisticsSnapshot } from '../../achievements/productionStatistics';
 import { isPrestigeLedgerSnapshot, type PrestigeLedgerSnapshot } from '../../prestige/prestige';
 import { type MarketSnapshot } from '../../market/marketTypes';
+import { MARKET_AUTOSELL_INTERVAL_OPTIONS } from '../../market/marketConstants';
+import { RESOURCE_TYPES } from '../../resources/resourceConstants';
 import { isResearchLedgerSnapshot, type ResearchLedgerSnapshot } from '../../research/research';
 
 export type GameTimeSnapshot = {
@@ -55,6 +57,17 @@ function isGameTimeSnapshot(value: unknown): value is GameTimeSnapshot {
     && value.customerPipelineProgress >= 0;
 }
 
+function isMarketAutomationSnapshot(value: unknown): boolean {
+  return isRecord(value)
+    && typeof value.autoBuyEnabled === 'boolean'
+    && typeof value.autoSellEnabled === 'boolean'
+    && typeof value.autoBuyMaxUnitPrice === 'number' && Number.isFinite(value.autoBuyMaxUnitPrice) && value.autoBuyMaxUnitPrice >= 0
+    && typeof value.autoSellIntervalMs === 'number' && MARKET_AUTOSELL_INTERVAL_OPTIONS.some((option) => option.milliseconds === value.autoSellIntervalMs)
+    && typeof value.autoSellMaxPerMinute === 'number' && Number.isFinite(value.autoSellMaxPerMinute) && value.autoSellMaxPerMinute >= 0
+    && typeof value.autoSellMinKeep === 'number' && Number.isFinite(value.autoSellMinKeep) && value.autoSellMinKeep >= 0
+    && typeof value.autoSellMinUnitPrice === 'number' && Number.isFinite(value.autoSellMinUnitPrice) && value.autoSellMinUnitPrice >= 0;
+}
+
 /** Structural guard used by the company-scoped SQLite save adapter. */
 export function isGameSnapshot(value: unknown): value is GameSnapshot {
   if (!isRecord(value) || !isRecord(value.finance) || !isRecord(value.inventory)
@@ -64,12 +77,15 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
     return false;
   }
 
+  const marketAutomation = value.market.automation;
+
   return typeof value.finance.balance === 'number'
     && Array.isArray(value.finance.transactions)
     && isRecord(value.inventory.entries)
     && isRecord(value.market.local)
     && isRecord(value.market.global)
-    && isRecord(value.market.automation)
+    && isRecord(marketAutomation)
+    && RESOURCE_TYPES.every((resourceType) => isMarketAutomationSnapshot(marketAutomation[resourceType]))
     && Array.isArray(value.facilities.facilities)
     && value.facilities.facilities.every((facility) => isRecord(facility)
       && typeof facility.facilityCondition === 'number'

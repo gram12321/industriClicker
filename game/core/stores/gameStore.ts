@@ -537,6 +537,32 @@ export const useGameStore = create<GameState>((set, get) => {
       const offerChance = calculateSalesContractOfferChance(currentSalesContracts.getOfferedContracts().length);
       customerPipelineProgress += (stepMs / 1_000) * offerChance / 60;
 
+      const stepStartGameTimeMs = get().lastProcessedAtMs + elapsedMs - remainingMs;
+      const stepEndGameTimeMs = stepStartGameTimeMs + stepMs;
+      for (const resourceType of RESOURCE_TYPES) {
+        const activeMarket = market ?? get().market;
+        const automation = activeMarket.getAutomation(resourceType);
+        const completedIntervals = Math.floor(stepEndGameTimeMs / automation.autoSellIntervalMs) - Math.floor(stepStartGameTimeMs / automation.autoSellIntervalMs);
+        if (!automation.autoSellEnabled || completedIntervals <= 0) continue;
+        const currentPrice = activeMarket.getLocalPrice(resourceType);
+        const amount = Math.min(
+          automation.autoSellMaxPerMinute * automation.autoSellIntervalMs * completedIntervals / REALTIME_WORK_MINUTE_MS,
+          Math.max(0, inventory.getAmount(resourceType) - automation.autoSellMinKeep),
+        );
+        if (amount <= 0 || currentPrice < automation.autoSellMinUnitPrice) continue;
+        market ??= activeMarket.clone();
+        marketFinance ??= get().finance.clone();
+        if (inventory === get().inventory) inventory = inventory.clone();
+        const trade = market.sellToLocal(resourceType, amount, inventory.getQuality(resourceType));
+        if (trade.success && inventory.remove(resourceType, amount)) {
+          marketFinance.applyTransaction(
+            trade.unitPrice * trade.amount,
+            `Autosold ${trade.amount} ${resourceType} to local market`,
+            new Date().toISOString(),
+          );
+        }
+      }
+
       const totalSalesMs = unprocessedWorkMs + stepMs;
       const completedSalesMinutes = Math.floor(totalSalesMs / REALTIME_WORK_MINUTE_MS);
       unprocessedWorkMs = totalSalesMs - completedSalesMinutes * REALTIME_WORK_MINUTE_MS;
@@ -551,25 +577,6 @@ export const useGameStore = create<GameState>((set, get) => {
           (resourceType) => activeMarket.getGlobalPrice(resourceType) * MARKET_SALES_CONTRACT_PREMIUM,
           getMaximumOpenSalesContracts(research.getCompletedProjectIds()),
         );
-        marketFinance ??= get().finance.clone();
-        if (inventory === get().inventory) inventory = inventory.clone();
-        for (const resourceType of RESOURCE_TYPES) {
-          const automation = activeMarket.getAutomation(resourceType);
-          const currentPrice = activeMarket.getLocalPrice(resourceType);
-          const amount = Math.min(
-            automation.autoSellMaxPerMinute,
-            Math.max(0, inventory.getAmount(resourceType) - automation.autoSellMinKeep),
-          );
-          if (!automation.autoSellEnabled || amount <= 0 || currentPrice < automation.autoSellMinUnitPrice) continue;
-          const trade = activeMarket.sellToLocal(resourceType, amount, inventory.getQuality(resourceType));
-          if (trade.success && inventory.remove(resourceType, amount)) {
-            marketFinance.applyTransaction(
-              trade.unitPrice * trade.amount,
-              `Autosold ${trade.amount} ${resourceType} to local market`,
-              new Date().toISOString(),
-            );
-          }
-        }
         activeMarket.diffuse();
         elapsedMinutes += completedSalesMinutes;
 

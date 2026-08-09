@@ -1,10 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRef, useState } from 'react';
 import { PanResponder, Pressable, StyleSheet, View } from 'react-native';
-import { Button, Card, Checkbox, Dialog, IconButton, Portal, Text, TextInput } from 'react-native-paper';
+import { Button, Card, Checkbox, Dialog, IconButton, Menu, Portal, Text, TextInput } from 'react-native-paper';
 import type { Finance } from '@/game/finance';
 import type { Inventory } from '@/game/inventory';
-import type { Market, MarketAutomation, MarketTradeMultiplier } from '@/game/market';
+import { MARKET_AUTOSELL_DEFAULT_INTERVAL_MS, MARKET_AUTOSELL_INTERVAL_OPTIONS, type Market, type MarketAutomation, type MarketTradeMultiplier } from '@/game/market';
 import { RESOURCE_GROUPS, RESOURCE_TYPES, getResource, getResourceIcon } from '@/game/resources';
 import { APP_ICONS } from '@/icons';
 import { formatCurrency, formatNumber } from '@/utils';
@@ -38,7 +38,8 @@ export function InventoryView({ buyMarketResource, finance, inventory, market, s
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [onlyInStock, setOnlyInStock] = useState(false);
   const [settingsResource, setSettingsResource] = useState<(typeof RESOURCE_TYPES)[number] | null>(null);
-  const [settingsDraft, setSettingsDraft] = useState({ minKeep: '', maxSell: '', maxBuyPrice: '', minSellPrice: '' });
+  const [intervalMenuOpen, setIntervalMenuOpen] = useState(false);
+  const [settingsDraft, setSettingsDraft] = useState({ minKeep: '', maxSell: '', maxBuyPrice: '', minSellPrice: '', sellIntervalMs: MARKET_AUTOSELL_DEFAULT_INTERVAL_MS });
   const sliderWidthRef = useRef(0);
   const panResponder = useRef(PanResponder.create({
     onStartShouldSetPanResponderCapture: () => true,
@@ -50,14 +51,14 @@ export function InventoryView({ buyMarketResource, finance, inventory, market, s
   const sliderProgress = sliderPosition(sliderAmount);
   const openSettings = (resourceType: (typeof RESOURCE_TYPES)[number]) => {
     const automation = market.getAutomation(resourceType);
-    setSettingsDraft({ minKeep: String(automation.autoSellMinKeep), maxSell: String(automation.autoSellMaxPerMinute), maxBuyPrice: String(automation.autoBuyMaxUnitPrice), minSellPrice: String(automation.autoSellMinUnitPrice) });
+    setSettingsDraft({ minKeep: String(automation.autoSellMinKeep), maxSell: String(automation.autoSellMaxPerMinute), maxBuyPrice: String(automation.autoBuyMaxUnitPrice), minSellPrice: String(automation.autoSellMinUnitPrice), sellIntervalMs: automation.autoSellIntervalMs });
     setSettingsResource(resourceType);
   };
   const saveSettings = () => {
     if (!settingsResource) return;
     const values = Object.fromEntries(Object.entries(settingsDraft).map(([key, value]) => [key, Number(value)]));
     if (Object.values(values).some((value) => !Number.isFinite(value) || value < 0)) return;
-    setMarketAutomation(settingsResource, { autoSellMinKeep: values.minKeep, autoSellMaxPerMinute: values.maxSell, autoBuyMaxUnitPrice: values.maxBuyPrice, autoSellMinUnitPrice: values.minSellPrice });
+    setMarketAutomation(settingsResource, { autoSellMinKeep: values.minKeep, autoSellIntervalMs: settingsDraft.sellIntervalMs, autoSellMaxPerMinute: values.maxSell, autoBuyMaxUnitPrice: values.maxBuyPrice, autoSellMinUnitPrice: values.minSellPrice });
     setSettingsResource(null);
   };
 
@@ -93,11 +94,19 @@ export function InventoryView({ buyMarketResource, finance, inventory, market, s
       })}</View>;
     })}
     <Portal>
-      <Dialog dismissable onDismiss={() => setSettingsResource(null)} visible={settingsResource !== null}>
+      <Dialog dismissable onDismiss={() => { setIntervalMenuOpen(false); setSettingsResource(null); }} visible={settingsResource !== null}>
         <Dialog.Title>{settingsResource ? `${getResource(settingsResource).name} automation` : 'Automation settings'}</Dialog.Title>
         <Dialog.Content>
           <TextInput dense keyboardType="decimal-pad" label="Minimum inventory to keep" mode="outlined" onChangeText={(value) => setSettingsDraft((draft) => ({ ...draft, minKeep: value }))} style={styles.marketAutomationInput} value={settingsDraft.minKeep} />
           <TextInput dense keyboardType="decimal-pad" label="Maximum autosell per minute" mode="outlined" onChangeText={(value) => setSettingsDraft((draft) => ({ ...draft, maxSell: value }))} style={styles.marketAutomationInput} value={settingsDraft.maxSell} />
+          <Text variant="labelLarge">Autosell interval</Text>
+          <Menu
+            anchor={<Button compact icon="chevron-down" mode="outlined" onPress={() => setIntervalMenuOpen(true)}>{MARKET_AUTOSELL_INTERVAL_OPTIONS.find((option) => option.milliseconds === settingsDraft.sellIntervalMs)?.label ?? 'Select interval'}</Button>}
+            onDismiss={() => setIntervalMenuOpen(false)}
+            visible={intervalMenuOpen}
+          >
+            {MARKET_AUTOSELL_INTERVAL_OPTIONS.map((option) => <Menu.Item key={option.milliseconds} onPress={() => { setSettingsDraft((draft) => ({ ...draft, sellIntervalMs: option.milliseconds })); setIntervalMenuOpen(false); }} title={option.label} />)}
+          </Menu>
           <TextInput dense keyboardType="decimal-pad" label="Maximum autobuy price" mode="outlined" onChangeText={(value) => setSettingsDraft((draft) => ({ ...draft, maxBuyPrice: value }))} style={styles.marketAutomationInput} value={settingsDraft.maxBuyPrice} />
           <TextInput dense keyboardType="decimal-pad" label="Minimum autosell price" mode="outlined" onChangeText={(value) => setSettingsDraft((draft) => ({ ...draft, minSellPrice: value }))} style={styles.marketAutomationInput} value={settingsDraft.minSellPrice} />
         </Dialog.Content>
