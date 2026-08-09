@@ -54,6 +54,7 @@ export const APP_ICONS = {
   close: 'close',
   speed: 'trending-up',
   output: 'package-variant',
+  upgrade: 'arrow-up-bold-circle-outline',
   staffing: 'account-group-outline',
   efficiency: 'gauge',
   pause: 'pause',

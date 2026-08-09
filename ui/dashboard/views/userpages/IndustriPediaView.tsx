@@ -202,13 +202,19 @@ function FacilityConditionReference() {
 
 function FacilityUpgradeReference() {
   return <Card mode="contained" style={styles.featureCard}><Card.Content style={localStyles.conditionReferenceContent}>
-    <Text style={styles.cardKicker}>FACILITY UPGRADES</Text>
-    <Text style={styles.cardDescription}>Speed, Output, and Condition upgrades are purchased independently for each facility. Speed and Output levels increase worker requirements; Condition levels do not.</Text>
-    <Text style={localStyles.formula}>Upgrade cost: ceil(base upgrade cost × 1.5^current level).</Text>
-    <Text style={localStyles.formula}>Speed: work speed × (1 + 0.8 × (1 − e^(−0.22 × speed level))).</Text>
-    <Text style={localStyles.formula}>Output: output × (1 + 1 × (1 − e^(−0.18 × output level))).</Text>
-    <Text style={localStyles.formula}>Condition: decay × (1 − 0.75 × (1 − e^(−0.18 × condition level))); the reduction approaches 75% without reaching it.</Text>
+    <View style={localStyles.upgradeReferenceHeading}><MaterialCommunityIcons color={colors.primary} name={APP_ICONS.upgrade} size={16} /><Text style={styles.cardKicker}>FACILITY UPGRADES</Text></View>
+    <Text style={styles.cardDescription}>Each facility has its own Speed, Output, and Condition upgrade tracks. Every new level costs more than the previous one.</Text>
+    <Text style={styles.cardDescription}>Speed upgrades complete production work faster. Output upgrades produce more from each finished cycle. Both raise the facility's worker requirement.</Text>
+    <Text style={styles.cardDescription}>Condition upgrades slow both passive and production wear without requiring more workers. Each level helps less than the last, but fully developed maintenance can reduce decay by almost 75%.</Text>
+    <Text style={styles.cardKicker}>EXAMPLE LEVELS</Text>
+    <UpgradeExample icon={APP_ICONS.speed} label="Speed" values="L0 x1.00 → L1 x1.16 → L5 x1.53" />
+    <UpgradeExample icon={APP_ICONS.output} label="Output" values="L0 x1.00 → L1 x1.16 → L5 x1.59" />
+    <UpgradeExample icon="shield-check-outline" label="Condition decay" values="L0 x1.00 → L1 x0.88 → L5 x0.55" />
   </Card.Content></Card>;
+}
+
+function UpgradeExample({ icon, label, values }: { icon: string; label: string; values: string }) {
+  return <View style={localStyles.upgradeExample}><MaterialCommunityIcons color={colors.primary} name={icon as never} size={15} /><Text style={styles.cardDescription}><Text style={localStyles.upgradeExampleLabel}>{label}</Text>: {values}</Text></View>;
 }
 
 const FACILITY_CONDITION_REFERENCE = [
@@ -318,6 +324,9 @@ const localStyles = StyleSheet.create({
   resourceGroupButtons: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   sectionTabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingBottom: 4 },
   conditionReferenceContent: { gap: 8 },
+  upgradeReferenceHeading: { alignItems: 'center', flexDirection: 'row', gap: 4 },
+  upgradeExample: { alignItems: 'center', flexDirection: 'row', gap: 5 },
+  upgradeExampleLabel: { color: colors.charcoal, fontWeight: '700' },
   catalogueGroup: { gap: 8 },
   catalogueGroupTitle: { color: colors.charcoal, fontSize: 16, fontWeight: '700', marginHorizontal: 16, marginTop: 4 },
   balanceValueContainer: { alignItems: 'flex-end' },
