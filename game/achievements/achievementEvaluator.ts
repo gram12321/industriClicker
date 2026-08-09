@@ -40,9 +40,10 @@ export function createAchievementEvaluationContext(input: {
 
   return {
     facilityCount: facilityList.length,
-    totalUpgradeLevels: facilityList.reduce((total, facility) => (
-      total + facility.getSpeedUpgradeLevel() + facility.getOutputUpgradeLevel()
-    ), 0),
+    totalUpgradeLevels: facilityList.reduce((total, facility) => {
+      const facilityView = facility.getView();
+      return total + facilityView.speedUpgradeLevel + facilityView.outputUpgradeLevel;
+    }, 0),
     producedByResource: input.productionStatistics.toSnapshot().producedByResource,
     totalProduced: input.productionStatistics.getTotalProduced(),
     fulfilledContractCount: fulfilledContracts.length,

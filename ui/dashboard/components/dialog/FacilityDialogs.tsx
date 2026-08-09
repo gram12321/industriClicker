@@ -224,7 +224,7 @@ function DestructionDialog({
   return (
     <Portal>
       <Dialog dismissable onDismiss={onDismiss} visible>
-        <Dialog.Title>{`Destroy ${facility.getDisplayName()}?`}</Dialog.Title>
+        <Dialog.Title>{`Destroy ${facility.getView().displayName}?`}</Dialog.Title>
         <Dialog.Content>
           <Text style={styles.dialogDescription}>
             This permanently removes the facility from your company. Land and construction materials are not refunded.

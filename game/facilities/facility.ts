@@ -15,6 +15,23 @@ export type FacilitySnapshot = {
   assignedWorkers?: number;
 };
 
+/** Immutable facility state and derived values for game rules and UI rendering. */
+export type FacilityView = {
+  id: string;
+  facilityType: FacilityType;
+  displayName: string;
+  activeRecipeName: RecipeName | null;
+  isActive: boolean;
+  recipeProgress: Readonly<Partial<Record<RecipeName, number>>>;
+  speedUpgradeLevel: number;
+  outputUpgradeLevel: number;
+  assignedWorkers: number;
+  requiredWorkers: number;
+  buildingEfficiency: number;
+  speedUpgradeWorkSpeedMultiplier: number;
+  outputMultiplier: number;
+};
+
 /** Player-owned state for one constructed facility. */
 export class Facility {
   private activeRecipeName: RecipeName | null = null;
@@ -32,56 +49,36 @@ export class Facility {
     if (snapshot) {
       this.restore(snapshot);
     } else {
-      this.assignedWorkers = this.getRequiredWorkers();
+      this.assignedWorkers = this.calculateRequiredWorkers();
     }
   }
 
-  getActiveRecipeName(): RecipeName | null {
-    return this.activeRecipeName;
+  getView(): FacilityView {
+    const requiredWorkers = this.calculateRequiredWorkers();
+    const buildingEfficiency = getBuildingEfficiency(this.assignedWorkers, requiredWorkers);
+    return {
+      id: this.id,
+      facilityType: this.facilityType,
+      displayName: `${getFacilityDefinition(this.facilityType).name} #${this.id.split('-').at(-1)}`,
+      activeRecipeName: this.activeRecipeName,
+      isActive: this.active,
+      recipeProgress: { ...this.recipeProgress },
+      speedUpgradeLevel: this.speedUpgradeLevel,
+      outputUpgradeLevel: this.outputUpgradeLevel,
+      assignedWorkers: this.assignedWorkers,
+      requiredWorkers,
+      buildingEfficiency,
+      speedUpgradeWorkSpeedMultiplier: getSpeedUpgradeWorkSpeedMultiplier(this.speedUpgradeLevel),
+      outputMultiplier: getOutputUpgradeMultiplier(this.outputUpgradeLevel),
+    };
   }
 
-  getDisplayName(): string {
-    return `${getFacilityDefinition(this.facilityType).name} #${this.id.split('-').at(-1)}`;
-  }
-
-  isActive(): boolean {
-    return this.active;
-  }
-
-  getRecipeProgress(recipeName: RecipeName): number {
-    return this.recipeProgress[recipeName] ?? 0;
-  }
-
-  getSpeedUpgradeLevel(): number {
-    return this.speedUpgradeLevel;
-  }
-
-  getOutputUpgradeLevel(): number {
-    return this.outputUpgradeLevel;
-  }
-
-  getAssignedWorkers(): number {
-    return this.assignedWorkers;
-  }
-
-  getRequiredWorkers(): number {
+  private calculateRequiredWorkers(): number {
     return getRequiredWorkers(
       getFacilityDefinition(this.facilityType).baseWorkers,
       this.speedUpgradeLevel,
       this.outputUpgradeLevel,
     );
-  }
-
-  getBuildingEfficiency(): number {
-    return getBuildingEfficiency(this.assignedWorkers, this.getRequiredWorkers());
-  }
-
-  getSpeedUpgradeWorkSpeedMultiplier(): number {
-    return getSpeedUpgradeWorkSpeedMultiplier(this.speedUpgradeLevel);
-  }
-
-  getOutputMultiplier(): number {
-    return getOutputUpgradeMultiplier(this.outputUpgradeLevel);
   }
 
   setAssignedWorkers(workerCount: number): boolean {
@@ -167,7 +164,7 @@ export class Facility {
     this.outputUpgradeLevel = isValidUpgradeLevel(snapshot.outputUpgradeLevel) ? snapshot.outputUpgradeLevel : 0;
     this.assignedWorkers = isValidWorkerCount(snapshot.assignedWorkers)
       ? snapshot.assignedWorkers
-      : this.getRequiredWorkers();
+      : this.calculateRequiredWorkers();
 
     for (const recipe of getFacilityDefinition(this.facilityType).recipes) {
       const progress = snapshot.recipeProgress[recipe.name];

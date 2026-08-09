@@ -309,7 +309,7 @@ export const useGameStore = create<GameState>((set, get) => {
 
     if (!finance.applyTransaction(
       -definition.landCost,
-      `Purchased land for ${facilities.getAllByType(facilityType).at(-1)?.getDisplayName() ?? definition.name}`,
+      `Purchased land for ${facilities.getAllByType(facilityType).at(-1)?.getView().displayName ?? definition.name}`,
       new Date().toISOString(),
     ) || !inventory.remove(ResourceType.ConstructionMaterials, definition.constructionMaterialsCost)) {
       return false;
@@ -389,9 +389,10 @@ export const useGameStore = create<GameState>((set, get) => {
       return false;
     }
 
+    const facilityView = facility.getView();
     const currentLevel = upgradeKind === 'speed'
-      ? facility.getSpeedUpgradeLevel()
-      : facility.getOutputUpgradeLevel();
+      ? facilityView.speedUpgradeLevel
+      : facilityView.outputUpgradeLevel;
     const definition = getFacilityDefinition(facility.facilityType);
     const cost = getFacilityUpgradeCost(definition.upgradeCost, currentLevel);
 
@@ -407,7 +408,7 @@ export const useGameStore = create<GameState>((set, get) => {
 
     if (!finance.applyTransaction(
       -cost,
-      `${upgradeKind === 'speed' ? 'Speed' : 'Output'} upgrade for ${facility.getDisplayName()}`,
+      `${upgradeKind === 'speed' ? 'Speed' : 'Output'} upgrade for ${facilityView.displayName}`,
       new Date().toISOString(),
     )) {
       return false;
@@ -436,7 +437,7 @@ export const useGameStore = create<GameState>((set, get) => {
     }
 
     const elapsedMs = Math.floor(elapsedMilliseconds);
-    const hasActiveFacility = get().facilities.getAll().some((facility) => facility.isActive());
+    const hasActiveFacility = get().facilities.getAll().some((facility) => facility.getView().isActive);
     const facilities = hasActiveFacility ? get().facilities.clone() : get().facilities;
     let inventory = hasActiveFacility ? get().inventory.clone() : get().inventory;
     let productionStatistics = get().productionStatistics;
@@ -456,7 +457,7 @@ export const useGameStore = create<GameState>((set, get) => {
         market ??= get().market.clone();
         marketFinance ??= get().finance.clone();
         for (const facility of facilities.getAll()) {
-          for (const input of getFacilityMissingInputs(facility, inventory)) {
+          for (const input of getFacilityMissingInputs(facility.getView().activeRecipeName, inventory)) {
             const automation = market.getAutomation(input.resourceType);
             const unitPrice = market.getLocalPrice(input.resourceType);
             if (!automation.autoBuyEnabled || !canAutoBuyMarketResource(input.resourceType)

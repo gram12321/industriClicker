@@ -56,15 +56,17 @@ export function ActiveProcessesOverlay({ customerPipelineProgress, facilities, i
 
 function getActiveProcesses({ customerPipelineProgress, facilities, inventory, maximumOpenContracts, research, salesContracts }: Parameters<typeof ActiveProcessesOverlay>[0]): ActiveProcess[] {
   const production = facilities.getAll().flatMap((facility) => {
-    if (getFacilityProductionStatus(facility, inventory) !== 'producing') return [];
-    const recipeName = facility.getActiveRecipeName();
-    const recipe = recipeName ? getFacilityDefinition(facility.facilityType).recipes.find((candidate) => candidate.name === recipeName) : null;
+    const facilityView = facility.getView();
+    if (getFacilityProductionStatus(facilityView, inventory) !== 'producing') return [];
+    const recipeName = facilityView.activeRecipeName;
+    const recipe = recipeName ? getFacilityDefinition(facilityView.facilityType).recipes.find((candidate) => candidate.name === recipeName) : null;
     if (!recipe) return [];
 
-    const progress = clamp(facility.getRecipeProgress(recipe.name) / recipe.requiredWork, 0, 1);
-    const workPerMinute = calculateFacilityEffectiveWork(facility, BASE_WORK_PER_MINUTE, getRecipeResearchWorkSpeedMultiplier(recipe.name, research.getCompletedProjectIds()));
-    const minutesRemaining = workPerMinute > 0 ? (recipe.requiredWork - facility.getRecipeProgress(recipe.name)) / workPerMinute : 0;
-    return [{ id: facility.id, icon: getFacilityDefinition(facility.facilityType).icon, label: formatRecipeName(recipe), progress, timing: `${formatNumber(progress * 100, { decimals: 0 })}% · ${formatDuration(minutesRemaining)} left`, title: facility.getDisplayName() }];
+    const recipeProgress = facilityView.recipeProgress[recipe.name] ?? 0;
+    const progress = clamp(recipeProgress / recipe.requiredWork, 0, 1);
+    const workPerMinute = calculateFacilityEffectiveWork(facilityView, BASE_WORK_PER_MINUTE, getRecipeResearchWorkSpeedMultiplier(recipe.name, research.getCompletedProjectIds()));
+    const minutesRemaining = workPerMinute > 0 ? (recipe.requiredWork - recipeProgress) / workPerMinute : 0;
+    return [{ id: facilityView.id, icon: getFacilityDefinition(facilityView.facilityType).icon, label: formatRecipeName(recipe), progress, timing: `${formatNumber(progress * 100, { decimals: 0 })}% · ${formatDuration(minutesRemaining)} left`, title: facilityView.displayName }];
   });
 
   const activeResearch = research.getActiveProject();
