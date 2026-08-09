@@ -12,7 +12,7 @@ import { CompanyView } from './CompanyView';
 import { FinanceView } from './FinanceView';
 import { InventoryView } from './InventoryView';
 import { MarketView } from './MarketView';
-import { ProductionView } from './ProductionView';
+import { ProductionView } from './FacilityView';
 import { SalesView } from './SalesView';
 
 export type GameViewId = 'company' | 'inventory' | 'market' | 'production' | 'research' | 'sales' | 'finance';

@@ -5,7 +5,7 @@ import { Button, Card, Dialog, List, Portal, SegmentedButtons, Text } from 'reac
 import { colors } from '@/theme';
 import type { Finance } from '@/game/finance';
 import type { FacilityCollection, FacilityType } from '@/game/facilities';
-import { FACILITY_TYPES, getFacilityDefinition } from '@/game/facilities';
+import { FACILITY_GROUPS, getFacilityDefinition } from '@/game/facilities';
 import type { Inventory } from '@/game/inventory';
 import type { Market } from '@/game/market';
 import type { Recipe } from '@/game/recipes/recipeTypes';
@@ -69,14 +69,13 @@ function BuildFacilityDialog({
   const { height } = useWindowDimensions();
   const facilityListMaxHeight = clamp(height - 280, 160, 480);
   const [facilityFilter, setFacilityFilter] = useState<'all' | 'available' | 'unavailable'>('all');
-  const facilities = FACILITY_TYPES.map((facilityType) => {
+  const facilities = FACILITY_GROUPS.flatMap((group) => group.facilities.map((facilityType) => {
     const definition = getFacilityDefinition(facilityType);
     const missingMaterials = Math.max(0, definition.constructionMaterialsCost - inventory.getAmount(ResourceType.ConstructionMaterials));
     const canAffordConstruction = market.getLocalEntry(ResourceType.ConstructionMaterials).supply >= missingMaterials
       && finance.canAfford(definition.landCost + missingMaterials * market.getLocalPrice(ResourceType.ConstructionMaterials));
-    return { canAffordConstruction, definition, facilityType };
-  }).sort((left, right) => Number(right.canAffordConstruction) - Number(left.canAffordConstruction)
-    || left.definition.name.localeCompare(right.definition.name));
+    return { canAffordConstruction, definition, facilityType, groupLabel: group.label };
+  }));
   const filteredFacilities = facilities.filter(({ canAffordConstruction }) => facilityFilter === 'all'
     || (facilityFilter === 'available' ? canAffordConstruction : !canAffordConstruction));
 
@@ -101,14 +100,16 @@ function BuildFacilityDialog({
             showsVerticalScrollIndicator
             style={[styles.constructionYardListViewport, { maxHeight: facilityListMaxHeight }]}
           >
-            {filteredFacilities.map(({ canAffordConstruction, definition, facilityType }) => {
+            {filteredFacilities.map(({ canAffordConstruction, definition, facilityType, groupLabel }, index) => {
               const constructionMaterialsPrice = market.getLocalPrice(ResourceType.ConstructionMaterials);
               const totalConstructionCost = definition.landCost + definition.constructionMaterialsCost * constructionMaterialsPrice;
+              const showGroup = index === 0 || filteredFacilities[index - 1].groupLabel !== groupLabel;
               return (
+                <View key={facilityType}>
+                {showGroup && <Text style={styles.cardKicker}>{groupLabel}</Text>}
                 <Card
                   accessibilityLabel={`${definition.name}${canAffordConstruction ? '' : ' unavailable'}`}
                   accessibilityState={{ disabled: !canAffordConstruction }}
-                  key={facilityType}
                   mode="contained"
                   onPress={canAffordConstruction ? () => onSelectFacility(facilityType) : undefined}
                   style={[styles.constructionYardCard, !canAffordConstruction && styles.constructionYardCardDisabled]}
@@ -126,6 +127,7 @@ function BuildFacilityDialog({
                     </View>
                   </Card.Content>
                 </Card>
+                </View>
               );
             })}
           </ScrollView>

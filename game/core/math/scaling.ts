@@ -117,6 +117,7 @@ function isValidControlPoint(point: NormalizationControlPoint): boolean {
  *
  * Consumers:
  * - `game/sales/salesContracts.ts` for inverting the unfulfilled-contract pressure curve.
+ * - `game/facilities/facility.ts` for condition wear scaling.
  *
  * Maintenance note: Future coding AIs adding a consumer must register it in
  * this comment and keep the consumer list current.

@@ -2,11 +2,11 @@ import type { Recipe } from '@/game/recipes/recipeTypes';
 import { getResource, getResourceIcon } from '@/game/resources/resourceConstants';
 import { formatNumber } from '@/utils';
 
-export function formatRecipeInputs(recipe: Recipe): string {
+export function formatRecipeInputs(recipe: Recipe, options: { includeNames?: boolean } = {}): string {
   if (recipe.inputs.length === 0) return 'No inputs';
 
   return recipe.inputs
-    .map(({ resourceType, amount }) => `${getResourceIcon(resourceType)} ${getResource(resourceType).name} ×${formatNumber(amount, { smartDecimals: true })}`)
+    .map(({ resourceType, amount }) => `${getResourceIcon(resourceType)}${options.includeNames === false ? '' : ` ${getResource(resourceType).name}`} ×${formatNumber(amount, { smartDecimals: true })}`)
     .join(' + ');
 }
 
@@ -38,7 +38,7 @@ export function formatRecipeName(recipe: Recipe): string {
   }
 }
 
-export function formatRecipeOutput(recipe: Recipe): string {
-  return `${getResourceIcon(recipe.output.resourceType)} ${getResource(recipe.output.resourceType).name} ×${formatNumber(recipe.output.amount, { smartDecimals: true })}`;
+export function formatRecipeOutput(recipe: Recipe, options: { includeNames?: boolean } = {}): string {
+  return `${getResourceIcon(recipe.output.resourceType)}${options.includeNames === false ? '' : ` ${getResource(recipe.output.resourceType).name}`} ×${formatNumber(recipe.output.amount, { smartDecimals: true })}`;
 }
 

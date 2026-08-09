@@ -58,10 +58,27 @@ For `levels = speedLevel + outputLevel`:
 - Output multiplier: `1 + (1 - e^(-0.18 × outputLevel))`.
 - Required workers: `baseWorkers + levels + ceil(baseWorkers × 1.15^levels - baseWorkers)`.
 - Staffing efficiency at or below target: `0.01 + 0.99 × ratio^1.6`; above target: `1 + 0.25 × (1 - e^(-0.7 × (ratio - 1)))`.
-- Facility condition starts at `1`, is clamped to `0–1`, and loses `1 / 600` per constructed facility per foreground minute. Each completed cycle also loses `recipe.requiredWork / 600` condition.
+- Facility condition starts at `1`, is clamped to `0–1`, and loses `1 / 600` per constructed facility per foreground minute. Each completed cycle also loses `recipe.requiredWork / 600` condition. Both losses are multiplied by `calculateAsymmetricalScaler01(facilityCondition)`, so wear is fastest at high condition and slows toward zero.
 - Facility efficiency: `staffingEfficiency × facilityCondition`.
 - Repairing a facility restores condition to `1` and costs only Construction Materials: `constructionMaterialsCost × 0.9 × (1 - facilityCondition)`. Missing materials are bought automatically from the local market; land cost is excluded.
 - Effective work: `baseWork × facilityEfficiency × speedUpgradeWorkSpeedMultiplier × recipeResearchWorkSpeedMultiplier`.
+
+The following reference values use the current condition curve. Passive time advances in one-second steps; production uses completed `1.00`-work cycles. Their nearly identical results differ only because of that step size.
+
+| Foreground time | Completed 1.00-work cycles | Passive condition | Production condition |
+|---:|---:|---:|---:|
+| Start | 0 | 100.00% | 100.00% |
+| 1 hour | 60 | 90.11% | 90.11% |
+| 2 hours | 120 | 80.50% | 80.49% |
+| 4 hours | 240 | 62.58% | 62.57% |
+| 6 hours | 360 | 47.61% | 47.59% |
+| 8 hours | 480 | 35.45% | 35.42% |
+| 10 hours | 600 | 26.26% | 26.23% |
+| 15 hours | 900 | 12.40% | 12.38% |
+| 20 hours | 1,200 | 5.86% | 5.84% |
+| 30 hours | 1,800 | 1.31% | 1.30% |
+| 40 hours | 2,400 | 0.29% | 0.29% |
+| 60 hours | 3,600 | 0.01% | 0.01% |
 
 Levels and worker counts are non-negative integers. A zero-worker requirement has 100% efficiency; above-target staffing cannot reach a 25% bonus.
 

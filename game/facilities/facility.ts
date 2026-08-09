@@ -1,4 +1,5 @@
 import type { RecipeName } from '@/game/recipes';
+import { calculateAsymmetricalScaler01 } from '@/game/core/math/scaling';
 import { getFacilityDefinition } from './facilityConstants';
 import { FacilityType } from './facilityTypes';
 import { getFacilityEfficiency, getOutputUpgradeMultiplier, getRequiredWorkers, getSpeedUpgradeWorkSpeedMultiplier, getStaffingEfficiency } from './facilityUpgrades';
@@ -127,13 +128,14 @@ export class Facility {
     return true;
   }
 
-  /** Applies a condition loss while keeping the player-owned value in its 0–1 range. */
+  /** Applies condition-scaled wear while keeping the player-owned value in its 0–1 range. */
   applyConditionLoss(loss: number): boolean {
     if (!Number.isFinite(loss) || loss <= 0 || this.facilityCondition === 0) {
       return false;
     }
 
-    this.facilityCondition = Math.max(0, this.facilityCondition - loss);
+    const scaledLoss = loss * calculateAsymmetricalScaler01(this.facilityCondition);
+    this.facilityCondition = Math.max(0, this.facilityCondition - scaledLoss);
     return true;
   }
 

@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { View } from 'react-native';
 import { Text } from 'react-native-paper';
-import { getResource, getResourceIcon, RESOURCE_TYPES } from '@/game/resources';
+import { getResource, getResourceIcon, RESOURCE_GROUPS } from '@/game/resources';
 import type { Inventory } from '@/game/inventory';
 import { APP_ICONS } from '@/icons';
 import { formatNumber } from '@/utils';
@@ -12,7 +12,7 @@ export function InventoryView({ inventory }: { inventory: Inventory }) {
   return (
     <>
       <SectionHeading eyebrow="STOCK" title="Inventory" subtitle="Review the resources currently held by your company." />
-      {RESOURCE_TYPES.map((resourceType) => {
+      {RESOURCE_GROUPS.map((group) => <View key={group.id} style={styles.cardContent}><Text style={styles.cardKicker}>{group.label}</Text>{group.resources.map((resourceType) => {
         const resource = getResource(resourceType);
         const entry = inventory.getEntry(resourceType);
 
@@ -24,7 +24,7 @@ export function InventoryView({ inventory }: { inventory: Inventory }) {
             <Text style={styles.detailValue}>{formatNumber(entry.quality, { smartDecimals: true })}</Text>
           </View>
         </View>;
-      })}
+      })}</View>)}
     </>
   );
 }

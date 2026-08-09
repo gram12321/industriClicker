@@ -5,7 +5,7 @@ import { Button, Card, IconButton, List, ProgressBar, Text, TouchableRipple } fr
 import { colors } from '@/theme';
 import type { Finance } from '@/game/finance';
 import type { FacilityCollection, FacilityUpgradeKind } from '@/game/facilities';
-import { calculateFacilityEffectiveWork, getFacilityDefinition, getFacilityProductionStatus, getFacilityRepairCost, getFacilityUpgradeCost } from '@/game/facilities';
+import { calculateFacilityEffectiveWork, FACILITY_GROUPS, getFacilityDefinition, getFacilityProductionStatus, getFacilityRepairCost, getFacilityUpgradeCost } from '@/game/facilities';
 import type { Inventory } from '@/game/inventory';
 import type { Market, MarketAutomation } from '@/game/market';
 import type { Recipe } from '@/game/recipes';
@@ -46,11 +46,14 @@ export function ProductionView({
   const completedResearchProjectIds = research.getCompletedProjectIds();
   const buildFacilityButtonRef = useRef<View>(null);
   const builtFacilities = facilities.getAll();
+  const orderedFacilities = FACILITY_GROUPS.flatMap((group) => group.facilities.flatMap((facilityType) => builtFacilities
+    .filter((facility) => facility.getView().facilityType === facilityType)
+    .map((facility) => ({ facility, group }))));
 
   return <>
     <SectionHeading eyebrow="OPERATIONS" title="Facilities" subtitle="Manage your constructed facilities and build new ones." />
     <View ref={buildFacilityButtonRef} onLayout={() => buildFacilityButtonRef.current?.measureInWindow((x, y, width, height) => onBuildFacilityLayout?.({ height, width, x, y }))}><Button icon={APP_ICONS.add} mode="contained" style={isBuildFacilityTutorial ? styles.tutorialBuildFacilityButton : undefined} onPress={openConstructionYard}>Build facility</Button></View>
-    {builtFacilities.map((facility) => {
+    {orderedFacilities.map(({ facility, group }, index) => {
       const facilityView = facility.getView();
       const facilityType = facilityView.facilityType;
       const facilityId = facilityView.id;
@@ -73,7 +76,8 @@ export function ProductionView({
       const allInputsAutoBuyEnabled = Boolean(activeRecipe && activeRecipe.inputs.length > 0 && activeRecipe.inputs.every((input) => market.getAutomation(input.resourceType).autoBuyEnabled));
       const hasMissingInputs = Boolean(activeRecipe && activeRecipe.inputs.some((input) => input.amount > inventory.getAmount(input.resourceType)));
 
-      return <Card key={facilityId} mode="contained" style={styles.featureCard}><Card.Content>
+      const showGroup = index === 0 || orderedFacilities[index - 1].group.id !== group.id;
+      return <View key={facilityId}>{showGroup && <Text style={styles.cardKicker}>{group.label}</Text>}<Card mode="contained" style={styles.featureCard}><Card.Content>
         <List.Item
           description={<View style={styles.facilityHeader}>
             <View style={styles.facilityHeaderRow}><Text style={styles.cardDescription}>{activeRecipe ? formatRecipeName(activeRecipe) : 'No active recipe'}</Text>{activeRecipe && <WorkMetric value={formatRecipeProgress(facilityView.recipeProgress[activeRecipe.name] ?? 0, activeRecipe.requiredWork, effectiveWorkPerMinute)} />}</View>
@@ -139,7 +143,7 @@ export function ProductionView({
             </View>
           </View>}
         </>}
-      </Card.Content></Card>;
+      </Card.Content></Card></View>;
     })}
     {builtFacilities.length === 0 && <DetailRow label="Constructed facilities" value="None yet" />}
   </>;

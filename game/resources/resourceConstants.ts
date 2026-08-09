@@ -21,6 +21,16 @@ export const RESOURCE_TYPES = [
   ResourceType.Cake,
 ] as const;
 
+export type ResourceGroup = 'food' | 'raw-resources' | 'construction' | 'utilities';
+
+/** Player-facing resource groupings shared by Pedia and other catalogues; each group is alphabetized by display name. */
+export const RESOURCE_GROUPS: ReadonlyArray<{ id: ResourceGroup; label: string; resources: readonly ResourceType[] }> = [
+  { id: 'food', label: 'Food', resources: [ResourceType.Bread, ResourceType.Cake, ResourceType.Grain, ResourceType.Sugar] },
+  { id: 'raw-resources', label: 'Raw Resources', resources: [ResourceType.Clay, ResourceType.Coal, ResourceType.Copper, ResourceType.Iron, ResourceType.Sand, ResourceType.Stone] },
+  { id: 'construction', label: 'Construction', resources: [ResourceType.Bricks, ResourceType.Cement, ResourceType.ConstructionMaterials, ResourceType.ElectricCircuits, ResourceType.ReinforcedConcrete, ResourceType.Steel] },
+  { id: 'utilities', label: 'Utilities', resources: [ResourceType.Electricity, ResourceType.Water] },
+];
+
 /** Code-owned resource catalogue. It is never stored in a player save. */
 export const RESOURCES: Readonly<Record<ResourceType, { name: string; icon: string; market: ResourceMarketDefinition }>> = {
   [ResourceType.Grain]: {

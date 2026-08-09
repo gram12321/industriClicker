@@ -5,7 +5,7 @@ import { Button, Card, Dialog, IconButton, Portal, Text, TextInput } from 'react
 import type { Finance } from '@/game/finance';
 import type { Inventory } from '@/game/inventory';
 import { Market, type MarketAutomation, type MarketTradeMultiplier } from '@/game/market';
-import { RESOURCE_TYPES, getResource, getResourceIcon } from '@/game/resources';
+import { RESOURCE_GROUPS, RESOURCE_TYPES, getResource, getResourceIcon } from '@/game/resources';
 import { formatCurrency, formatNumber } from '@/utils';
 import { colors } from '@/theme';
 import { APP_ICONS } from '@/icons';
@@ -80,7 +80,7 @@ export function MarketView({ buyMarketResource, finance, inventory, market, sell
         </Pressable>
       </View>
     </View>
-    {RESOURCE_TYPES.map((resourceType) => {
+    {RESOURCE_GROUPS.map((group) => <View key={group.id} style={styles.cardContent}><Text style={styles.cardKicker}>{group.label}</Text>{group.resources.map((resourceType) => {
       const local = market.getLocalEntry(resourceType);
       const global = market.getGlobalEntry(resourceType);
       const automation = market.getAutomation(resourceType);
@@ -117,7 +117,7 @@ export function MarketView({ buyMarketResource, finance, inventory, market, sell
           <IconButton accessibilityLabel={`Automation settings for ${getResource(resourceType).name}`} containerColor={colors.marketAutomation} icon={APP_ICONS.settings} iconColor={colors.onDark} onPress={() => openSettings(resourceType)} size={19} style={styles.marketActionButton} />
         </View>
       </Card.Content></Card>;
-    })}
+    })}</View>)}
     <Portal>
       <Dialog dismissable onDismiss={() => setSettingsResource(null)} visible={settingsResource !== null}>
         <Dialog.Title>{settingsResource ? `${getResource(settingsResource).name} automation` : 'Automation settings'}</Dialog.Title>
