@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Market } from './market';
+import { MARKET_AUTOTRADE_DEFAULT_INTERVAL_MS } from './marketConstants';
 import { RESOURCE_TYPES, ResourceType } from '../resources';
 
 describe('Market regional tier', () => {
@@ -13,6 +14,7 @@ describe('Market regional tier', () => {
 
     expect(market.getLocalEntry(ResourceType.Grain).supply).toBe(10_000);
     expect(market.getRegionalEntry(ResourceType.Grain).supply).toBe(100_000);
+    expect(market.getAutomation(ResourceType.Grain).autoTradeIntervalMs).toBe(MARKET_AUTOTRADE_DEFAULT_INTERVAL_MS);
   });
 
   it('diffuses between both adjacent tiers without changing total supply', () => {

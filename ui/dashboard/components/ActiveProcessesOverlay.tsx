@@ -7,7 +7,7 @@ import { BASE_WORK_PER_MINUTE } from '@/game/core/time';
 import type { Inventory } from '@/game/inventory';
 import { getRecipeResearchWorkSpeedMultiplier, getResearchProject, type ResearchLedger } from '@/game/research';
 import { calculateSalesContractEstimatedWaitMinutes, calculateSalesContractOfferChance, type SalesContracts } from '@/game/sales';
-import { APP_ICONS } from '@/icons';
+import { APP_ICONS, RECIPE_ICONS } from '@/icons';
 import { colors } from '@/theme';
 import { clamp, formatDuration, formatElapsedTime, formatNumber } from '@/utils';
 import { formatRecipeName } from '@/ui/dashboard/helpers/recipeFormatters';
@@ -66,7 +66,7 @@ function getActiveProcesses({ customerPipelineProgress, facilities, inventory, m
     const progress = clamp(recipeProgress / recipe.requiredWork, 0, 1);
     const workPerMinute = calculateFacilityEffectiveWork(facilityView, BASE_WORK_PER_MINUTE, getRecipeResearchWorkSpeedMultiplier(recipe.name, research.getCompletedProjectIds()));
     const minutesRemaining = workPerMinute > 0 ? (recipe.requiredWork - recipeProgress) / workPerMinute : 0;
-    return [{ id: facilityView.id, icon: getFacilityDefinition(facilityView.facilityType).icon, label: formatRecipeName(recipe), progress, timing: `${formatNumber(progress * 100, { decimals: 0 })}% · ${formatDuration(minutesRemaining)} left`, title: facilityView.displayName }];
+    return [{ id: facilityView.id, icon: RECIPE_ICONS[recipe.name], label: formatRecipeName(recipe), progress, timing: `${formatNumber(progress * 100, { decimals: 0 })}% · ${formatDuration(minutesRemaining)} left`, title: facilityView.displayName }];
   });
 
   const activeResearch = research.getActiveProject();

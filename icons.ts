@@ -1,3 +1,4 @@
+import { RecipeName } from '@/game/recipes/recipeTypes';
 import { ResourceType } from '@/game/resources/resourceTypes';
 
 /** Shared Material Community icon names used by the app UI. */
@@ -27,6 +28,7 @@ export const APP_ICONS = {
   help: 'book-open-variant',
   logout: 'logout',
   localMarket: 'storefront-outline',
+  regionalMarket: 'city-variant-outline',
   minus: 'minus',
   next: 'chevron-right',
   package: 'package-variant-closed',
@@ -48,6 +50,7 @@ export const APP_ICONS = {
   marketFlowToLocal: 'arrow-left',
   marketGlobalPrice: 'earth',
   marketLocalPrice: 'cash-multiple',
+  marketRegionalPrice: 'city-variant-outline',
   marketSell: 'cash-fast',
   marketTrendDown: 'arrow-down',
   marketTrendUp: 'arrow-up',
@@ -61,6 +64,32 @@ export const APP_ICONS = {
   resume: 'play',
   work: 'progress-clock',
 } as const;
+
+/** Shared Material Community icon names for recipe presentation. */
+export const RECIPE_ICONS: Readonly<Record<RecipeName, string>> = {
+  [RecipeName.GrowGrain]: 'sprout-outline',
+  [RecipeName.BakeBread]: 'bread-slice-outline',
+  [RecipeName.ProduceWater]: 'water-outline',
+  [RecipeName.ProduceElectricity]: 'flash-outline',
+  [RecipeName.GrowSugar]: 'candy-outline',
+  [RecipeName.MineIron]: 'pickaxe',
+  [RecipeName.MineCoal]: 'pickaxe',
+  [RecipeName.MineCopper]: 'pickaxe',
+  [RecipeName.QuarrySand]: 'image-filter-hdr',
+  [RecipeName.QuarryClay]: 'image-filter-hdr',
+  [RecipeName.QuarryStone]: 'image-filter-hdr',
+  [RecipeName.ProduceSteel]: 'hammer-wrench',
+  [RecipeName.ProduceElectricCircuits]: 'chip',
+  [RecipeName.ProduceBricks]: 'wall',
+  [RecipeName.ProduceCement]: 'mixer',
+  [RecipeName.ProduceReinforcedConcrete]: 'office-building-outline',
+  [RecipeName.ProduceConstructionMaterials]: 'package-variant-closed',
+  [RecipeName.BakeCake]: 'cake-variant-outline',
+  [RecipeName.ManualPumping]: 'water-pump',
+  [RecipeName.ElectricPumping]: 'water-pump',
+  [RecipeName.CoalPower]: 'transmission-tower',
+  [RecipeName.SolarPower]: 'solar-power-variant-outline',
+};
 
 /** Shared emoji resource symbols used in compact inventory and recipe labels. */
 export const RESOURCE_ICONS: Readonly<Record<ResourceType, string>> = {

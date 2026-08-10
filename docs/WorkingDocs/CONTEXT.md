@@ -15,6 +15,7 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Value-density multiplier | A resource catalogue value for the economic value of moving a resource relative to its transport burden. |
 | Market urgency multiplier | A bounded, derived diffusion multiplier based on current adjacent-market prices relative to the resource's initial price level. |
 | Regional market | The device-local market reservoir between the player-facing local market and the global reservoir. |
+| Autotrade interval | The per-resource foreground cadence for both enabled autobuy and autosell; it defaults to five seconds. |
 | Market-flow diagnostics | Read-only price, balance-target, rate, and multiplier details for one resource's local/regional and regional/global diffusion, shown in IndustriPedia. |
 | Recipe | A named production transformation with inputs, output, and required work. |
 | Facility | A player-owned production unit. Several of the same type may be constructed; each is numbered by type, such as Mine #1 and Mine #2. Current types are Farm, Bakery, Small Utility Works, Mine, Quarry, Industrial Processing Factory, Construction Factory, Water Well, and Power Plant. |

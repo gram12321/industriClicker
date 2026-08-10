@@ -6,7 +6,7 @@ import type { Finance } from '@/game/finance';
 import type { Inventory } from '@/game/inventory';
 import type { FacilityCollection } from '@/game/facilities/facilityCollection';
 import { getRecipe } from '@/game/recipes';
-import { MARKET_AUTOSELL_DEFAULT_INTERVAL_MS, MARKET_AUTOSELL_INTERVAL_OPTIONS, type Market, type MarketAutomation, type MarketTradeMultiplier } from '@/game/market';
+import { MARKET_AUTOTRADE_DEFAULT_INTERVAL_MS, MARKET_AUTOTRADE_INTERVAL_OPTIONS, type Market, type MarketAutomation, type MarketTradeMultiplier } from '@/game/market';
 import { RESOURCE_GROUPS, RESOURCE_TYPES, getResource, getResourceIcon } from '@/game/resources';
 import { APP_ICONS } from '@/icons';
 import { formatCurrency, formatNumber } from '@/utils';
@@ -45,7 +45,7 @@ export function InventoryView({ buyMarketResource, facilities, finance, inventor
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [settingsResource, setSettingsResource] = useState<(typeof RESOURCE_TYPES)[number] | null>(null);
   const [intervalMenuOpen, setIntervalMenuOpen] = useState(false);
-  const [settingsDraft, setSettingsDraft] = useState({ minKeep: '', maxSell: '', maxBuyPrice: '', minSellPrice: '', buyTarget: '', sellIntervalMs: MARKET_AUTOSELL_DEFAULT_INTERVAL_MS });
+  const [settingsDraft, setSettingsDraft] = useState({ minKeep: '', maxSell: '', maxBuyPrice: '', minSellPrice: '', buyTarget: '', tradeIntervalMs: MARKET_AUTOTRADE_DEFAULT_INTERVAL_MS });
   const sliderWidthRef = useRef(0);
   const panResponder = useRef(PanResponder.create({
     onStartShouldSetPanResponderCapture: () => true,
@@ -57,14 +57,14 @@ export function InventoryView({ buyMarketResource, facilities, finance, inventor
   const sliderProgress = sliderPosition(sliderAmount);
   const openSettings = (resourceType: (typeof RESOURCE_TYPES)[number]) => {
     const automation = market.getAutomation(resourceType);
-    setSettingsDraft({ minKeep: String(automation.autoSellMinKeep), maxSell: String(automation.autoSellMaxPerMinute), maxBuyPrice: String(automation.autoBuyMaxUnitPrice), minSellPrice: String(automation.autoSellMinUnitPrice), buyTarget: String(automation.autoBuyTargetInventory), sellIntervalMs: automation.autoSellIntervalMs });
+    setSettingsDraft({ minKeep: String(automation.autoSellMinKeep), maxSell: String(automation.autoSellMaxPerMinute), maxBuyPrice: String(automation.autoBuyMaxUnitPrice), minSellPrice: String(automation.autoSellMinUnitPrice), buyTarget: String(automation.autoBuyTargetInventory), tradeIntervalMs: automation.autoTradeIntervalMs });
     setSettingsResource(resourceType);
   };
   const saveSettings = () => {
     if (!settingsResource) return;
     const values = Object.fromEntries(Object.entries(settingsDraft).map(([key, value]) => [key, Number(value)]));
     if (Object.values(values).some((value) => !Number.isFinite(value) || value < 0)) return;
-    setMarketAutomation(settingsResource, { autoSellMinKeep: values.minKeep, autoSellIntervalMs: settingsDraft.sellIntervalMs, autoSellMaxPerMinute: values.maxSell, autoBuyMaxUnitPrice: values.maxBuyPrice, autoBuyTargetInventory: values.buyTarget, autoSellMinUnitPrice: values.minSellPrice });
+    setMarketAutomation(settingsResource, { autoSellMinKeep: values.minKeep, autoTradeIntervalMs: settingsDraft.tradeIntervalMs, autoSellMaxPerMinute: values.maxSell, autoBuyMaxUnitPrice: values.maxBuyPrice, autoBuyTargetInventory: values.buyTarget, autoSellMinUnitPrice: values.minSellPrice });
     setSettingsResource(null);
   };
 
@@ -111,13 +111,13 @@ export function InventoryView({ buyMarketResource, facilities, finance, inventor
           <TextInput dense keyboardType="decimal-pad" label="Minimum inventory to keep" mode="outlined" onChangeText={(value) => setSettingsDraft((draft) => ({ ...draft, minKeep: value }))} style={styles.marketAutomationInput} value={settingsDraft.minKeep} />
           <TextInput dense keyboardType="decimal-pad" label="Maximum autosell per minute" mode="outlined" onChangeText={(value) => setSettingsDraft((draft) => ({ ...draft, maxSell: value }))} style={styles.marketAutomationInput} value={settingsDraft.maxSell} />
           <TextInput dense keyboardType="decimal-pad" label="Autobuy target inventory" mode="outlined" onChangeText={(value) => setSettingsDraft((draft) => ({ ...draft, buyTarget: value }))} style={styles.marketAutomationInput} value={settingsDraft.buyTarget} />
-          <Text variant="labelLarge">Autosell interval</Text>
+          <Text variant="labelLarge">Autotrade interval</Text>
           <Menu
-            anchor={<Button compact icon="chevron-down" mode="outlined" onPress={() => setIntervalMenuOpen(true)}>{MARKET_AUTOSELL_INTERVAL_OPTIONS.find((option) => option.milliseconds === settingsDraft.sellIntervalMs)?.label ?? 'Select interval'}</Button>}
+            anchor={<Button compact icon="chevron-down" mode="outlined" onPress={() => setIntervalMenuOpen(true)}>{MARKET_AUTOTRADE_INTERVAL_OPTIONS.find((option) => option.milliseconds === settingsDraft.tradeIntervalMs)?.label ?? 'Select interval'}</Button>}
             onDismiss={() => setIntervalMenuOpen(false)}
             visible={intervalMenuOpen}
           >
-            {MARKET_AUTOSELL_INTERVAL_OPTIONS.map((option) => <Menu.Item key={option.milliseconds} onPress={() => { setSettingsDraft((draft) => ({ ...draft, sellIntervalMs: option.milliseconds })); setIntervalMenuOpen(false); }} title={option.label} />)}
+            {MARKET_AUTOTRADE_INTERVAL_OPTIONS.map((option) => <Menu.Item key={option.milliseconds} onPress={() => { setSettingsDraft((draft) => ({ ...draft, tradeIntervalMs: option.milliseconds })); setIntervalMenuOpen(false); }} title={option.label} />)}
           </Menu>
           <TextInput dense keyboardType="decimal-pad" label="Maximum autobuy price" mode="outlined" onChangeText={(value) => setSettingsDraft((draft) => ({ ...draft, maxBuyPrice: value }))} style={styles.marketAutomationInput} value={settingsDraft.maxBuyPrice} />
           <TextInput dense keyboardType="decimal-pad" label="Minimum autosell price" mode="outlined" onChangeText={(value) => setSettingsDraft((draft) => ({ ...draft, minSellPrice: value }))} style={styles.marketAutomationInput} value={settingsDraft.minSellPrice} />
@@ -162,7 +162,7 @@ function MarketCard({ buyMarketResource, finance, inventory, market, multiplier,
   const resourceName = getResource(resourceType).name;
   return <Card mode="contained" style={styles.marketCard}><Card.Content style={styles.marketCardContent}>
     <View style={styles.marketResourceHeader}><Text variant="titleMedium" style={styles.marketResourceName}>{`${getResourceIcon(resourceType)} ${resourceName}`}</Text><Text style={styles.marketInventory}>{formatNumber(inventory.getAmount(resourceType), { smartDecimals: true })}</Text></View>
-    <View style={styles.marketMetrics}><View style={styles.marketMetricColumn}><MarketMetric color={colors.marketGold} icon={APP_ICONS.marketLocalPrice} trend={localPriceTrend} label="Local price" value={formatCurrency(localPrice)} /><MarketMetric color={colors.muted} label="Regional price" value={formatCurrency(regionalPrice)} /><MarketMetric color={colors.muted} icon={APP_ICONS.marketGlobalPrice} trend={globalPriceTrend} label="Global price" value={formatCurrency(globalPrice)} /></View><View style={styles.marketMetricColumn}><MarketMetric color={colors.charcoal} icon={APP_ICONS.localMarket} trend={localSupplyTrend} label="Local market" value={formatNumber(local.supply, { smartDecimals: true })} /><MarketMetric color={colors.muted} label="Regional market" value={formatNumber(regional.supply, { smartDecimals: true })} /><MarketMetric color={colors.muted} icon={APP_ICONS.globalMarket} trend={globalSupplyTrend} label="Global market" value={formatNumber(global.supply, { smartDecimals: true })} /></View><View style={styles.marketMetricFlowColumn}><MarketMetric color={colors.marketGreen} label="Local ↔ Regional" value={localRegionalDiffusion.direction === 'none' ? '—' : `${formatNumber(localRegionalDiffusion.amount, { smartDecimals: true })}/m`} /><MarketMetric color={colors.marketGreen} label="Regional ↔ Global" value={regionalGlobalDiffusion.direction === 'none' ? '—' : `${formatNumber(regionalGlobalDiffusion.amount, { smartDecimals: true })}/m`} /></View></View>
+    <View style={styles.marketMetrics}><View style={styles.marketMetricColumn}><MarketMetric color={colors.marketGold} icon={APP_ICONS.marketLocalPrice} trend={localPriceTrend} label="Local price" value={formatCurrency(localPrice)} /><MarketMetric color={colors.muted} icon={APP_ICONS.marketRegionalPrice} label="Regional price" value={formatCurrency(regionalPrice)} /><MarketMetric color={colors.muted} icon={APP_ICONS.marketGlobalPrice} trend={globalPriceTrend} label="Global price" value={formatCurrency(globalPrice)} /></View><View style={styles.marketMetricColumn}><MarketMetric color={colors.charcoal} icon={APP_ICONS.localMarket} trend={localSupplyTrend} label="Local market" value={formatNumber(local.supply, { smartDecimals: true })} /><MarketMetric color={colors.muted} icon={APP_ICONS.regionalMarket} label="Regional market" value={formatNumber(regional.supply, { smartDecimals: true })} /><MarketMetric color={colors.muted} icon={APP_ICONS.globalMarket} trend={globalSupplyTrend} label="Global market" value={formatNumber(global.supply, { smartDecimals: true })} /></View><View style={styles.marketMetricFlowColumn}><MarketMetric color={colors.marketGreen} label="Local ↔ Regional" value={localRegionalDiffusion.direction === 'none' ? '—' : `${formatNumber(localRegionalDiffusion.amount, { smartDecimals: true })}/m`} /><MarketMetric color={colors.marketGreen} label="Regional ↔ Global" value={regionalGlobalDiffusion.direction === 'none' ? '—' : `${formatNumber(regionalGlobalDiffusion.amount, { smartDecimals: true })}/m`} /></View></View>
     <View style={styles.marketActions}><IconButton accessibilityLabel={`Buy ${formatNumber(buyAmount)} ${resourceName}`} containerColor={colors.marketBuy} disabled={buyAmount <= 0} icon={APP_ICONS.marketBuy} iconColor={colors.onDark} onPress={() => buyMarketResource(resourceType, buyAmount)} size={19} style={styles.marketActionButton} /><IconButton accessibilityLabel={`Sell ${formatNumber(sellAmount)} ${resourceName}`} containerColor={colors.marketSell} disabled={sellAmount <= 0} icon={APP_ICONS.marketSell} iconColor={colors.onDark} onPress={() => sellMarketResource(resourceType, sellAmount)} size={19} style={styles.marketActionButton} /><IconButton accessibilityLabel={`${automation.autoBuyEnabled ? 'Disable' : 'Enable'} autobuy for ${resourceName}`} containerColor={automation.autoBuyEnabled ? colors.marketAutomationActive : colors.marketAutomation} icon={APP_ICONS.marketAutoBuy} iconColor={colors.onDark} onPress={() => setMarketAutomation(resourceType, { autoBuyEnabled: !automation.autoBuyEnabled })} size={19} style={styles.marketActionButton} /><IconButton accessibilityLabel={`${automation.autoSellEnabled ? 'Disable' : 'Enable'} autosell for ${resourceName}`} containerColor={automation.autoSellEnabled ? colors.marketAutomationActive : colors.marketAutomation} icon={APP_ICONS.marketAutoSell} iconColor={colors.onDark} onPress={() => setMarketAutomation(resourceType, { autoSellEnabled: !automation.autoSellEnabled })} size={19} style={styles.marketActionButton} /><IconButton accessibilityLabel={`Automation settings for ${resourceName}`} containerColor={colors.marketAutomation} icon={APP_ICONS.settings} iconColor={colors.onDark} onPress={() => openSettings(resourceType)} size={19} style={styles.marketActionButton} /></View>
   </Card.Content></Card>;
 }

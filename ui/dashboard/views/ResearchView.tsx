@@ -4,13 +4,13 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button, ProgressBar, Text } from 'react-native-paper';
 import type { Finance } from '@/game/finance';
 import { FACILITIES, type FacilityCollection } from '@/game/facilities';
-import { getRecipe } from '@/game/recipes';
+import { getRecipe, getRecipeDisplayName } from '@/game/recipes';
 import { calculateDiminishingBonus } from '@/game/core/math/scaling';
 import { RESEARCH_PROJECTS, type ResearchChainId, type ResearchLedger, type ResearchProjectDefinition, type ResearchProjectId } from '@/game/research';
 import type { GateRequirement } from '@/game/gates';
 import type { ResearchAvailability } from '@/game/core/stores';
 import { colors } from '@/theme';
-import { APP_ICONS } from '@/icons';
+import { APP_ICONS, RECIPE_ICONS } from '@/icons';
 import { formatCurrency as formatCurrencyWithSymbol, formatDuration, formatElapsedTime } from '@/utils';
 import { SectionHeading } from '@/ui/dashboard/components/DashboardPrimitives';
 import { styles as dashboardStyles } from '@/ui/dashboard/helpers/dashboard.styles';
@@ -22,6 +22,8 @@ const CHAIN_DETAILS: Record<ResearchChainId, { eyebrow: string; icon: string; ti
 };
 
 const RESEARCH_CHAIN_IDS: readonly ResearchChainId[] = ['capital-grants', 'sales-capacity', 'recipe-unlocks'];
+
+type ResearchSeries = { completedCount: number; project: ResearchProjectDefinition; projects: readonly ResearchProjectDefinition[] };
 
 const formatCurrency = (value: number) => formatCurrencyWithSymbol(value).replace(/\s*€/u, '');
 
@@ -43,10 +45,32 @@ function isRequirementFulfilled(requirement: GateRequirement, availability: Rese
 
 function getRecipeTimeComparison(project: ResearchProjectDefinition): { before: string; after: string } | null {
   if (project.effect.kind !== 'recipe-work-speed-bonus') return null;
-  const recipe = getRecipe(project.effect.recipeName as Parameters<typeof getRecipe>[0]);
+  const recipe = getRecipe(project.effect.recipeName);
   const beforeBonus = calculateDiminishingBonus(Math.max(0, project.effect.level - 1), 0.75, 0.35);
   const afterBonus = calculateDiminishingBonus(project.effect.level, 0.75, 0.35);
   return { before: formatDuration(recipe.requiredWork / (1 + beforeBonus)), after: formatDuration(recipe.requiredWork / (1 + afterBonus)) };
+}
+
+function getResearchSeries(projects: readonly ResearchProjectDefinition[], completedIds: readonly string[]): ResearchSeries[] {
+  const projectsBySeries = new Map<string, ResearchProjectDefinition[]>();
+  for (const project of projects) {
+    const seriesId = project.effect.kind === 'recipe-unlock' || project.effect.kind === 'recipe-work-speed-bonus'
+      ? project.effect.recipeName
+      : project.chainId;
+    projectsBySeries.set(seriesId, [...(projectsBySeries.get(seriesId) ?? []), project]);
+  }
+
+  return Array.from(projectsBySeries.values()).map((seriesProjects) => {
+    const orderedProjects = [...seriesProjects].sort((left, right) => left.tier - right.tier);
+    const completedCount = orderedProjects.filter((project) => completedIds.includes(project.id)).length;
+    return { completedCount, project: orderedProjects.find((project) => !completedIds.includes(project.id)) ?? orderedProjects[orderedProjects.length - 1], projects: orderedProjects };
+  });
+}
+
+function getProjectIcon(project: ResearchProjectDefinition): string {
+  return project.effect.kind === 'recipe-unlock' || project.effect.kind === 'recipe-work-speed-bonus'
+    ? RECIPE_ICONS[project.effect.recipeName]
+    : CHAIN_DETAILS[project.chainId].icon;
 }
 
 export function ResearchView({
@@ -65,7 +89,6 @@ export function ResearchView({
   research: ResearchLedger;
 }) {
   const [selectedChain, setSelectedChain] = useState<ResearchChainId | 'all'>('all');
-  const [showCompletedTiers, setShowCompletedTiers] = useState(false);
   const [showOnlyConstructedRecipes, setShowOnlyConstructedRecipes] = useState(true);
   const [expandedProjectIds, setExpandedProjectIds] = useState<Record<string, boolean>>({});
   const active = research.getActiveProject();
@@ -74,6 +97,7 @@ export function ResearchView({
   const completedCount = completedIds.length;
   const completion = RESEARCH_PROJECTS.length === 0 ? 0 : completedCount / RESEARCH_PROJECTS.length;
   const visibleChains = selectedChain === 'all' ? RESEARCH_CHAIN_IDS : [selectedChain];
+  const visibleSeriesCount = getResearchSeries(RESEARCH_PROJECTS, completedIds).length;
 
   return (
     <View style={localStyles.layout}>
@@ -97,7 +121,7 @@ export function ResearchView({
         <View style={localStyles.researchCard}>
           <View style={localStyles.cardBody}>
             <Text style={dashboardStyles.cardKicker}>ACTIVE PROJECT</Text>
-            <Text style={localStyles.activeTitle} variant="titleLarge">{activeProject.name}</Text>
+            <View style={localStyles.projectNameRow}><MaterialCommunityIcons color={colors.primary} name={getProjectIcon(activeProject) as never} size={20} /><Text style={localStyles.activeTitle} variant="titleLarge">{activeProject.name}</Text></View>
             <View style={localStyles.iconValueRow}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={[dashboardStyles.cardDescription, localStyles.timeLabel]}>{`${formatElapsedTime(active.progressMs)} / ${formatElapsedTime(activeProject.durationMs)}`}</Text></View>
             <ProgressBar accessible accessibilityLabel={`${activeProject.name} progress ${formatElapsedTime(active.progressMs)} of ${formatElapsedTime(activeProject.durationMs)}`} color={colors.primary} progress={Math.min(1, active.progressMs / activeProject.durationMs)} style={localStyles.progress} />
             <View style={[localStyles.iconValueRow, localStyles.paidCost]}><Text style={dashboardStyles.cardDescription}>Cost paid:</Text><CurrencyValue value={active.paidCost} /></View>
@@ -107,37 +131,38 @@ export function ResearchView({
         </View>
       )}
       <View style={[localStyles.researchCard, localStyles.filters]}>
-        <Button compact icon="view-grid-outline" mode={selectedChain === 'all' ? 'contained' : 'outlined'} onPress={() => setSelectedChain('all')}>{`All (${RESEARCH_PROJECTS.length})`}</Button>
+        <Button compact icon="view-grid-outline" mode={selectedChain === 'all' ? 'contained' : 'outlined'} onPress={() => setSelectedChain('all')}>{`All (${visibleSeriesCount})`}</Button>
         {RESEARCH_CHAIN_IDS.map((chainId) => {
           const chain = CHAIN_DETAILS[chainId];
-          const projectCount = RESEARCH_PROJECTS.filter((project) => project.chainId === chainId).length;
-          return <Button compact icon={chain.icon} key={chainId} mode={selectedChain === chainId ? 'contained' : 'outlined'} onPress={() => setSelectedChain(chainId)}>{`${chain.title} (${projectCount})`}</Button>;
+          const seriesCount = getResearchSeries(RESEARCH_PROJECTS.filter((project) => project.chainId === chainId), completedIds).length;
+          return <Button compact icon={chain.icon} key={chainId} mode={selectedChain === chainId ? 'contained' : 'outlined'} onPress={() => setSelectedChain(chainId)}>{`${chain.title} (${seriesCount})`}</Button>;
         })}
-        <Button compact icon={showCompletedTiers ? 'chevron-up' : 'history'} mode={showCompletedTiers ? 'contained' : 'outlined'} onPress={() => setShowCompletedTiers((current) => !current)}>{showCompletedTiers ? 'Hide completed tiers' : 'Show completed tiers'}</Button>
       </View>
       {visibleChains.map((chainId) => {
         const chain = CHAIN_DETAILS[chainId];
         const chainProjects = RESEARCH_PROJECTS.filter((project) => project.chainId === chainId && (chainId !== 'recipe-unlocks' || !showOnlyConstructedRecipes || isRecipeProjectForConstructedFacility(project, facilities)));
-        const sortedProjects = [...chainProjects].sort((left, right) => Number(getAvailability(right.id).startable) - Number(getAvailability(left.id).startable) || left.cost - right.cost || left.name.localeCompare(right.name));
-        const displayedProjects = chainId === 'recipe-unlocks' || showCompletedTiers
-          ? sortedProjects
-          : [sortedProjects.find((project) => !completedIds.includes(project.id)) ?? sortedProjects[sortedProjects.length - 1]].filter(Boolean);
+        const displayedSeries = getResearchSeries(chainProjects, completedIds)
+          .sort((left, right) => Number(right.project.id === active?.projectId) - Number(left.project.id === active?.projectId)
+            || Number(getAvailability(right.project.id).startable) - Number(getAvailability(left.project.id).startable)
+            || left.project.name.localeCompare(right.project.name));
         return (
           <View key={chainId} style={localStyles.chain}>
             <View style={localStyles.chainHeading}>
               <SectionHeading eyebrow={chain.eyebrow} title={chain.title} subtitle={chain.subtitle} />
             </View>
             {chainId === 'recipe-unlocks' && <Button compact mode={showOnlyConstructedRecipes ? 'contained' : 'outlined'} onPress={() => setShowOnlyConstructedRecipes((current) => !current)}>{showOnlyConstructedRecipes ? 'Constructed facilities only' : 'All facility recipes'}</Button>}
-            {displayedProjects.map((project) => (
-              <View key={project.id} style={localStyles.projectCardWrap}>
+            {displayedSeries.map((series) => (
+              <View key={series.project.id} style={localStyles.projectCardWrap}>
                 <ResearchProjectCard
                   activeProjectId={active?.projectId ?? null}
-                  availability={getAvailability(project.id)}
-                  completed={completedIds.includes(project.id)}
-                  expanded={expandedProjectIds[project.id] ?? getAvailability(project.id).startable}
+                  availability={getAvailability(series.project.id)}
+                  completed={completedIds.includes(series.project.id)}
+                  expanded={expandedProjectIds[series.project.id] ?? getAvailability(series.project.id).startable}
                   onStart={onStart}
-                  onToggleExpanded={() => setExpandedProjectIds((current) => ({ ...current, [project.id]: !(current[project.id] ?? getAvailability(project.id).startable) }))}
-                  project={project}
+                  onToggleExpanded={() => setExpandedProjectIds((current) => ({ ...current, [series.project.id]: !(current[series.project.id] ?? getAvailability(series.project.id).startable) }))}
+                  project={series.project}
+                  seriesCompletedCount={series.completedCount}
+                  seriesProjectCount={series.projects.length}
                 />
               </View>
             ))}
@@ -149,7 +174,7 @@ export function ResearchView({
   );
 }
 
-function ResearchProjectCard({ activeProjectId, availability, completed, expanded, onStart, onToggleExpanded, project }: {
+function ResearchProjectCard({ activeProjectId, availability, completed, expanded, onStart, onToggleExpanded, project, seriesCompletedCount, seriesProjectCount }: {
   activeProjectId: ResearchProjectId | null;
   availability: ResearchAvailability;
   completed: boolean;
@@ -157,6 +182,8 @@ function ResearchProjectCard({ activeProjectId, availability, completed, expande
   onStart: (projectId: ResearchProjectId) => boolean;
   onToggleExpanded: () => void;
   project: ResearchProjectDefinition;
+  seriesCompletedCount: number;
+  seriesProjectCount: number;
 }) {
   const isActive = activeProjectId === project.id;
   const status = completed ? 'Completed' : isActive ? 'In progress' : availability.startable ? 'Ready to start' : 'Locked';
@@ -165,9 +192,11 @@ function ResearchProjectCard({ activeProjectId, availability, completed, expande
   return (
     <View style={[localStyles.researchCard, !completed && !isActive && !availability.startable && localStyles.lockedCard]}>
       <View style={localStyles.cardBody}>
-        <View style={localStyles.projectHeader}><View style={localStyles.projectTitle}><Text variant="titleMedium">{project.name}</Text><View style={localStyles.iconValueRow}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.coin} size={15} /><Text style={dashboardStyles.cardDescription}>{availability.usesFreeGrant ? 'Free tutorial grant' : formatCurrency(availability.cost)}</Text><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={dashboardStyles.cardDescription}>{formatElapsedTime(project.durationMs)}</Text></View></View><Text style={[localStyles.status, completed ? localStyles.completedStatus : availability.startable ? localStyles.readyStatus : localStyles.lockedStatus]}>{status}</Text></View>
+        <View style={localStyles.projectHeader}><View style={localStyles.projectTitle}><View style={localStyles.projectNameRow}><MaterialCommunityIcons color={colors.primary} name={getProjectIcon(project) as never} size={20} /><Text variant="titleMedium">{project.name}</Text></View><View style={localStyles.iconValueRow}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.coin} size={15} /><Text style={dashboardStyles.cardDescription}>{availability.usesFreeGrant ? 'Free tutorial grant' : formatCurrency(availability.cost)}</Text><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={dashboardStyles.cardDescription}>{formatElapsedTime(project.durationMs)}</Text></View></View><Text style={[localStyles.status, completed ? localStyles.completedStatus : availability.startable ? localStyles.readyStatus : localStyles.lockedStatus]}>{status}</Text></View>
+        <View style={localStyles.seriesProgressHeader}><Text style={dashboardStyles.cardKicker}>RESEARCH CHAIN</Text><Text style={dashboardStyles.cardKicker}>{`${seriesCompletedCount} / ${seriesProjectCount}`}</Text></View>
+        <View style={localStyles.seriesProgressTrack}><ProgressBar accessible accessibilityLabel={`${seriesCompletedCount} of ${seriesProjectCount} research projects completed in this chain`} color={colors.primary} progress={seriesProjectCount === 0 ? 0 : seriesCompletedCount / seriesProjectCount} style={localStyles.seriesProgress} /></View>
         {recipeTimeComparison && <View style={localStyles.recipeTimeComparison}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={dashboardStyles.cardDescription}>Recipe time: {recipeTimeComparison.before} → {recipeTimeComparison.after}</Text></View>}
-        {!expanded ? <Button compact onPress={onToggleExpanded}>Show details</Button> : <><Text style={[dashboardStyles.cardDescription, localStyles.reward]}>{project.effect.kind === 'grant' ? `Completion reward: ${formatCurrency(project.effect.amount)}` : project.effect.kind === 'max-open-sales-contracts' ? `Completion reward: maximum ${project.effect.maximum} open contracts` : `Completion reward: unlock ${project.effect.recipeName}`}</Text><Text style={[dashboardStyles.cardKicker, localStyles.requirementsHeading]}>REQUIREMENTS</Text>{requirementRows}{!completed && !isActive && !availability.startable && availability.unmetReasons.map((reason) => <Text accessibilityLabel={`Locked condition: ${reason}`} key={reason} style={localStyles.unmetRequirement}>{reason}</Text>)}{completed && <Text style={localStyles.completedStatus}>Reward applied permanently.</Text>}{!completed && !isActive && <Button accessibilityLabel={`Start ${project.name}`} disabled={!availability.startable} mode="contained" onPress={() => onStart(project.id)} style={localStyles.startButton}>Start research</Button>}<Button compact onPress={onToggleExpanded}>Hide details</Button></>}
+        {!expanded ? <Button compact onPress={onToggleExpanded}>Show details</Button> : <><Text style={[dashboardStyles.cardDescription, localStyles.reward]}>{project.effect.kind === 'grant' ? `Completion reward: ${formatCurrency(project.effect.amount)}` : project.effect.kind === 'max-open-sales-contracts' ? `Completion reward: maximum ${project.effect.maximum} open contracts` : `Completion reward: unlock ${getRecipeDisplayName(project.effect.recipeName)}`}</Text><Text style={[dashboardStyles.cardKicker, localStyles.requirementsHeading]}>REQUIREMENTS</Text>{requirementRows}{!completed && !isActive && !availability.startable && availability.unmetReasons.map((reason) => <Text accessibilityLabel={`Locked condition: ${reason}`} key={reason} style={localStyles.unmetRequirement}>{reason}</Text>)}{completed && <Text style={localStyles.completedStatus}>Reward applied permanently.</Text>}{!completed && !isActive && <Button accessibilityLabel={`Start ${project.name}`} disabled={!availability.startable} mode="contained" onPress={() => onStart(project.id)} style={localStyles.startButton}>Start research</Button>}<Button compact onPress={onToggleExpanded}>Hide details</Button></>}
       </View>
     </View>
   );
@@ -206,6 +235,7 @@ const localStyles = StyleSheet.create({
   progress: { borderRadius: 6, height: 8, marginTop: 10 },
   projectCardWrap: { marginBottom: 12 },
   projectHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  projectNameRow: { alignItems: 'center', flexDirection: 'row', gap: 6 },
   projectTitle: { flex: 1, marginRight: 12 },
   readyStatus: { color: colors.primary },
   researchCard: { backgroundColor: colors.surface, borderRadius: 12, padding: 16, width: '100%' },
@@ -214,6 +244,9 @@ const localStyles = StyleSheet.create({
   requirementRow: { alignItems: 'center', flexDirection: 'row', gap: 6, marginTop: 8 },
   recipeTimeComparison: { alignItems: 'center', flexDirection: 'row', gap: 4, marginTop: 6 },
   reward: { marginTop: 10 },
+  seriesProgress: { borderRadius: 4, height: 6 },
+  seriesProgressHeader: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 },
+  seriesProgressTrack: { height: 6, marginTop: 5 },
   requirementsHeading: { marginTop: 12 },
   status: { fontSize: 12, fontWeight: '700', textAlign: 'right' },
   startButton: { marginTop: 12 },

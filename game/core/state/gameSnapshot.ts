@@ -6,7 +6,7 @@ import { isAchievementLedgerSnapshot, type AchievementLedgerSnapshot } from '../
 import { isProductionStatisticsSnapshot, type ProductionStatisticsSnapshot } from '../../achievements/productionStatistics';
 import { isPrestigeLedgerSnapshot, type PrestigeLedgerSnapshot } from '../../prestige/prestige';
 import { type MarketSnapshot } from '../../market/marketTypes';
-import { MARKET_AUTOSELL_INTERVAL_OPTIONS } from '../../market/marketConstants';
+import { MARKET_AUTOTRADE_INTERVAL_OPTIONS } from '../../market/marketConstants';
 import { RESOURCE_TYPES } from '../../resources/resourceConstants';
 import { isResearchLedgerSnapshot, type ResearchLedgerSnapshot } from '../../research/research';
 import { isGrantLedgerSnapshot, type GrantLedgerSnapshot } from '../../grants/grant';
@@ -65,7 +65,7 @@ function isMarketAutomationSnapshot(value: unknown): boolean {
     && typeof value.autoSellEnabled === 'boolean'
     && typeof value.autoBuyMaxUnitPrice === 'number' && Number.isFinite(value.autoBuyMaxUnitPrice) && value.autoBuyMaxUnitPrice >= 0
     && typeof value.autoBuyTargetInventory === 'number' && Number.isFinite(value.autoBuyTargetInventory) && value.autoBuyTargetInventory >= 0
-    && typeof value.autoSellIntervalMs === 'number' && MARKET_AUTOSELL_INTERVAL_OPTIONS.some((option) => option.milliseconds === value.autoSellIntervalMs)
+    && typeof value.autoTradeIntervalMs === 'number' && MARKET_AUTOTRADE_INTERVAL_OPTIONS.some((option) => option.milliseconds === value.autoTradeIntervalMs)
     && typeof value.autoSellMaxPerMinute === 'number' && Number.isFinite(value.autoSellMaxPerMinute) && value.autoSellMaxPerMinute >= 0
     && typeof value.autoSellMinKeep === 'number' && Number.isFinite(value.autoSellMinKeep) && value.autoSellMinKeep >= 0
     && typeof value.autoSellMinUnitPrice === 'number' && Number.isFinite(value.autoSellMinUnitPrice) && value.autoSellMinUnitPrice >= 0;

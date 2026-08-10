@@ -533,6 +533,8 @@ export const useGameStore = create<GameState>((set, get) => {
 
     while (remainingMs > 0) {
       const stepMs = Math.min(FOREGROUND_SIMULATION_STEP_MS, remainingMs);
+      const stepStartGameTimeMs = get().lastProcessedAtMs + elapsedMs - remainingMs;
+      const stepEndGameTimeMs = stepStartGameTimeMs + stepMs;
 
       if (hasConstructedFacility) {
         facilities.applyPassiveConditionLoss((stepMs / REALTIME_WORK_MINUTE_MS) * FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE);
@@ -541,8 +543,9 @@ export const useGameStore = create<GameState>((set, get) => {
       const automationMarket: Market = market ?? get().market;
       for (const resourceType of RESOURCE_TYPES) {
         const automation = automationMarket.getAutomation(resourceType);
+        const completedIntervals = Math.floor(stepEndGameTimeMs / automation.autoTradeIntervalMs) - Math.floor(stepStartGameTimeMs / automation.autoTradeIntervalMs);
         const targetDeficit = automation.autoBuyTargetInventory - inventory.getAmount(resourceType);
-        if (!automation.autoBuyEnabled || targetDeficit <= 0 || !canAutoBuyMarketResource(resourceType)) continue;
+        if (!automation.autoBuyEnabled || completedIntervals <= 0 || targetDeficit <= 0 || !canAutoBuyMarketResource(resourceType)) continue;
         const unitPrice = automationMarket.getLocalPrice(resourceType);
         const availableFinance = marketFinance ?? get().finance;
         if (unitPrice > automation.autoBuyMaxUnitPrice || !availableFinance.canAfford(unitPrice * targetDeficit)) continue;
@@ -562,10 +565,11 @@ export const useGameStore = create<GameState>((set, get) => {
         for (const facility of facilities.getAll()) {
           for (const input of getFacilityMissingInputs(facility.getView().activeRecipeName, inventory)) {
             const automation = market.getAutomation(input.resourceType);
+            const completedIntervals = Math.floor(stepEndGameTimeMs / automation.autoTradeIntervalMs) - Math.floor(stepStartGameTimeMs / automation.autoTradeIntervalMs);
             const unitPrice = market.getLocalPrice(input.resourceType);
             const targetDeficit = automation.autoBuyTargetInventory - inventory.getAmount(input.resourceType);
             const purchaseAmount = Math.max(input.amount, targetDeficit);
-            if (!automation.autoBuyEnabled || !canAutoBuyMarketResource(input.resourceType)
+            if (!automation.autoBuyEnabled || completedIntervals <= 0 || !canAutoBuyMarketResource(input.resourceType)
               || unitPrice > automation.autoBuyMaxUnitPrice || !marketFinance.canAfford(unitPrice * purchaseAmount)) continue;
             const trade = market.buyFromLocal(input.resourceType, purchaseAmount);
             if (trade.success && inventory.add(input.resourceType, trade.amount, trade.quality)) {
@@ -594,16 +598,14 @@ export const useGameStore = create<GameState>((set, get) => {
       const offerChance = calculateSalesContractOfferChance(currentSalesContracts.getOfferedContracts().length);
       customerPipelineProgress += (stepMs / 1_000) * offerChance / 60;
 
-      const stepStartGameTimeMs = get().lastProcessedAtMs + elapsedMs - remainingMs;
-      const stepEndGameTimeMs = stepStartGameTimeMs + stepMs;
       for (const resourceType of RESOURCE_TYPES) {
         const activeMarket = market ?? get().market;
         const automation = activeMarket.getAutomation(resourceType);
-        const completedIntervals = Math.floor(stepEndGameTimeMs / automation.autoSellIntervalMs) - Math.floor(stepStartGameTimeMs / automation.autoSellIntervalMs);
+        const completedIntervals = Math.floor(stepEndGameTimeMs / automation.autoTradeIntervalMs) - Math.floor(stepStartGameTimeMs / automation.autoTradeIntervalMs);
         if (!automation.autoSellEnabled || completedIntervals <= 0) continue;
         const currentPrice = activeMarket.getLocalPrice(resourceType);
         const amount = Math.min(
-          automation.autoSellMaxPerMinute * automation.autoSellIntervalMs * completedIntervals / REALTIME_WORK_MINUTE_MS,
+          automation.autoSellMaxPerMinute * automation.autoTradeIntervalMs * completedIntervals / REALTIME_WORK_MINUTE_MS,
           Math.max(0, inventory.getAmount(resourceType) - automation.autoSellMinKeep),
         );
         if (amount <= 0 || currentPrice < automation.autoSellMinUnitPrice) continue;

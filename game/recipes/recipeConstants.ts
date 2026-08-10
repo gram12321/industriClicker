@@ -203,6 +203,35 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
   },
 };
 
+export const RECIPE_DISPLAY_NAMES: Readonly<Record<RecipeName, string>> = {
+  [RecipeName.GrowGrain]: 'Grow Grain',
+  [RecipeName.BakeBread]: 'Bake Bread',
+  [RecipeName.ProduceWater]: 'Produce Water',
+  [RecipeName.ProduceElectricity]: 'Produce Electricity',
+  [RecipeName.GrowSugar]: 'Grow Sugar',
+  [RecipeName.MineIron]: 'Mine Iron',
+  [RecipeName.MineCoal]: 'Mine Coal',
+  [RecipeName.MineCopper]: 'Mine Copper',
+  [RecipeName.QuarrySand]: 'Quarry Sand',
+  [RecipeName.QuarryClay]: 'Quarry Clay',
+  [RecipeName.QuarryStone]: 'Quarry Stone',
+  [RecipeName.ProduceSteel]: 'Produce Steel',
+  [RecipeName.ProduceElectricCircuits]: 'Produce Electric Circuits',
+  [RecipeName.ProduceBricks]: 'Produce Bricks',
+  [RecipeName.ProduceCement]: 'Produce Cement',
+  [RecipeName.ProduceReinforcedConcrete]: 'Produce Reinforced Concrete',
+  [RecipeName.ProduceConstructionMaterials]: 'Produce Construction Materials',
+  [RecipeName.BakeCake]: 'Bake Cake',
+  [RecipeName.ManualPumping]: 'Manual Pumping',
+  [RecipeName.ElectricPumping]: 'Electric Pumping',
+  [RecipeName.CoalPower]: 'Coal Power',
+  [RecipeName.SolarPower]: 'Solar Power',
+};
+
+export function getRecipeDisplayName(recipeName: RecipeName): string {
+  return RECIPE_DISPLAY_NAMES[recipeName];
+}
+
 export function getRecipe(recipeName: RecipeName): Recipe {
   return ALL_RECIPES[recipeName];
 }

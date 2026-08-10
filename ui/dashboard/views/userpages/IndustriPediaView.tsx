@@ -10,7 +10,7 @@ import { formatCurrency, formatNumber, formatSigned } from '@/utils';
 import { SectionHeading, WorkMetric } from '@/ui/dashboard/components/DashboardPrimitives';
 import { formatRecipeInputs, formatRecipeName, formatRecipeOutput } from '@/ui/dashboard/helpers/recipeFormatters';
 import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
-import { APP_ICONS } from '@/icons';
+import { APP_ICONS, RECIPE_ICONS } from '@/icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '@/theme';
 
@@ -247,7 +247,7 @@ function RecipesSection() {
         {recipes.map((recipe) => <List.Item
           description={<View><Text style={styles.cardDescription}>{`${formatRecipeInputs(recipe, { includeNames: false })} → ${formatRecipeOutput(recipe, { includeNames: false })}`}</Text><WorkMetric value={formatNumber(recipe.requiredWork, { smartDecimals: true })} /></View>}
           key={recipe.name}
-          left={(props) => <List.Icon {...props} icon={APP_ICONS.production} />}
+          left={(props) => <List.Icon {...props} icon={RECIPE_ICONS[recipe.name]} />}
           title={formatRecipeName(recipe)}
         />)}
       </List.Section></Card.Content></Card>;
