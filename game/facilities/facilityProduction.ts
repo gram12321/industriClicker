@@ -1,7 +1,7 @@
 import type { Inventory } from '@/game/inventory';
-import { getRecipe, type RecipeInput, type RecipeName } from '@/game/recipes';
+import { getRecipe, type Recipe, type RecipeInput, type RecipeName } from '@/game/recipes';
 import type { ResourceType } from '@/game/resources';
-import { FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT, FACILITY_PRODUCTION_ORDER, FACILITY_STAFF_WORK_PER_WORKER_PER_MINUTE } from './facilityConstants';
+import { FACILITY_PRODUCTION_CONDITION_LOSS_PER_CYCLE, FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT, FACILITY_PRODUCTION_ORDER, FACILITY_STAFF_WORK_PER_WORKER_PER_MINUTE } from './facilityConstants';
 import type { FacilityView } from './facility';
 import type { FacilityCollection } from './facilityCollection';
 
@@ -15,6 +15,12 @@ export type ProductionOutput = {
   resourceType: ResourceType;
   amount: number;
 };
+
+/** Deterministic production wear for one completed recipe cycle. */
+export function getRecipeProductionConditionLoss(recipe: Recipe): number {
+  return (recipe.requiredWork * FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT + FACILITY_PRODUCTION_CONDITION_LOSS_PER_CYCLE)
+    * recipe.conditionWearMultiplier;
+}
 
 /** Returns the speed-adjusted work an individual facility can apply. */
 export function calculateFacilityEffectiveWork(
@@ -90,7 +96,7 @@ export function advanceAllFacilityProduction(
           const amount = recipe.output.amount * facilityView.outputMultiplier;
           inventory.add(recipe.output.resourceType, amount);
           outputs.push({ facilityType: facilityView.facilityType, recipeName: recipe.name, resourceType: recipe.output.resourceType, amount });
-          facility.applyConditionLoss(recipe.requiredWork * FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT);
+          facility.applyConditionLoss(getRecipeProductionConditionLoss(recipe));
           progress = 0;
         }
       }

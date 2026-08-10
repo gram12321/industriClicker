@@ -35,35 +35,35 @@ export const RESOURCE_GROUPS: ReadonlyArray<{ id: ResourceGroup; label: string; 
 export const RESOURCES: Readonly<Record<ResourceType, { name: string; icon: string; market: ResourceMarketDefinition }>> = {
   [ResourceType.Grain]: {
     name: 'Grain', icon: '🌾',
-    market: { localBenchmarkSupply: 6_000, localInitialSupply: 10_000, regionalBenchmarkSupply: 60_000, regionalInitialSupply: 100_000, globalBenchmarkSupply: 600_000, globalInitialSupply: 1_000_000, logisticsMultiplier: 1, valueDensityMultiplier: 0.9 },
+    market: { localBenchmarkSupply: 600, localInitialSupply: 1_000, regionalBenchmarkSupply: 60_000, regionalInitialSupply: 100_000, globalBenchmarkSupply: 600_000, globalInitialSupply: 1_000_000, logisticsMultiplier: 1, valueDensityMultiplier: 0.9 },
   },
   [ResourceType.Bread]: {
     name: 'Bread', icon: '🍞',
-    market: { localBenchmarkSupply: 9_000, localInitialSupply: 5_000, regionalBenchmarkSupply: 90_000, regionalInitialSupply: 50_000, globalBenchmarkSupply: 900_000, globalInitialSupply: 500_000, logisticsMultiplier: 0.5, valueDensityMultiplier: 1.1 },
+    market: { localBenchmarkSupply: 4_500, localInitialSupply: 2_500, regionalBenchmarkSupply: 90_000, regionalInitialSupply: 50_000, globalBenchmarkSupply: 900_000, globalInitialSupply: 500_000, logisticsMultiplier: 0.5, valueDensityMultiplier: 1.1 },
   },
   [ResourceType.Water]: {
     name: 'Water', icon: '💧',
-    market: { localBenchmarkSupply: 500, localInitialSupply: 10_000, regionalBenchmarkSupply: 5_000, regionalInitialSupply: 100_000, globalBenchmarkSupply: 50_000, globalInitialSupply: 1_000_000, logisticsMultiplier: 0.6, valueDensityMultiplier: 0.7 },
+    market: { localBenchmarkSupply: 50, localInitialSupply: 1_000, regionalBenchmarkSupply: 5_000, regionalInitialSupply: 100_000, globalBenchmarkSupply: 50_000, globalInitialSupply: 1_000_000, logisticsMultiplier: 0.6, valueDensityMultiplier: 0.7 },
   },
   [ResourceType.Electricity]: {
     name: 'Electricity', icon: '⚡',
-    market: { localBenchmarkSupply: 1_250, localInitialSupply: 5_000, regionalBenchmarkSupply: 12_500, regionalInitialSupply: 50_000, globalBenchmarkSupply: 125_000, globalInitialSupply: 500_000, logisticsMultiplier: 1.5, valueDensityMultiplier: 1 },
+    market: { localBenchmarkSupply: 125, localInitialSupply: 500, regionalBenchmarkSupply: 12_500, regionalInitialSupply: 50_000, globalBenchmarkSupply: 125_000, globalInitialSupply: 500_000, logisticsMultiplier: 1.5, valueDensityMultiplier: 1 },
   },
   [ResourceType.Sugar]: {
     name: 'Sugar', icon: '🍬',
-    market: { localBenchmarkSupply: 4_000, localInitialSupply: 10_000, regionalBenchmarkSupply: 40_000, regionalInitialSupply: 100_000, globalBenchmarkSupply: 400_000, globalInitialSupply: 1_000_000, logisticsMultiplier: 1, valueDensityMultiplier: 0.95 },
+    market: { localBenchmarkSupply: 400, localInitialSupply: 1_000, regionalBenchmarkSupply: 40_000, regionalInitialSupply: 100_000, globalBenchmarkSupply: 400_000, globalInitialSupply: 1_000_000, logisticsMultiplier: 1, valueDensityMultiplier: 0.95 },
   },
   [ResourceType.Coal]: {
     name: 'Coal', icon: '🪨',
-    market: { localBenchmarkSupply: 600, localInitialSupply: 500, regionalBenchmarkSupply: 6_000, regionalInitialSupply: 5_000, globalBenchmarkSupply: 60_000, globalInitialSupply: 50_000, logisticsMultiplier: 0.8, valueDensityMultiplier: 0.9 },
+    market: { localBenchmarkSupply: 300, localInitialSupply: 250, regionalBenchmarkSupply: 6_000, regionalInitialSupply: 5_000, globalBenchmarkSupply: 60_000, globalInitialSupply: 50_000, logisticsMultiplier: 0.8, valueDensityMultiplier: 0.9 },
   },
   [ResourceType.Iron]: {
     name: 'Iron', icon: '⛓️',
-    market: { localBenchmarkSupply: 1_250, localInitialSupply: 500, regionalBenchmarkSupply: 12_500, regionalInitialSupply: 5_000, globalBenchmarkSupply: 125_000, globalInitialSupply: 50_000, logisticsMultiplier: 0.8, valueDensityMultiplier: 1.1 },
+    market: { localBenchmarkSupply: 625, localInitialSupply: 250, regionalBenchmarkSupply: 12_500, regionalInitialSupply: 5_000, globalBenchmarkSupply: 125_000, globalInitialSupply: 50_000, logisticsMultiplier: 0.8, valueDensityMultiplier: 1.1 },
   },
   [ResourceType.Copper]: {
     name: 'Copper', icon: '🟠',
-    market: { localBenchmarkSupply: 1_750, localInitialSupply: 500, regionalBenchmarkSupply: 17_500, regionalInitialSupply: 5_000, globalBenchmarkSupply: 175_000, globalInitialSupply: 50_000, logisticsMultiplier: 1, valueDensityMultiplier: 1.15 },
+    market: { localBenchmarkSupply: 875, localInitialSupply: 250, regionalBenchmarkSupply: 17_500, regionalInitialSupply: 5_000, globalBenchmarkSupply: 175_000, globalInitialSupply: 50_000, logisticsMultiplier: 1, valueDensityMultiplier: 1.15 },
   },
   [ResourceType.Steel]: {
     name: 'Steel', icon: '🔩',
@@ -75,11 +75,11 @@ export const RESOURCES: Readonly<Record<ResourceType, { name: string; icon: stri
   },
   [ResourceType.Bricks]: {
     name: 'Bricks', icon: '🧱',
-    market: { localBenchmarkSupply: 1_500, localInitialSupply: 1_500, regionalBenchmarkSupply: 15_000, regionalInitialSupply: 15_000, globalBenchmarkSupply: 150_000, globalInitialSupply: 150_000, logisticsMultiplier: 0.4, valueDensityMultiplier: 0.8 },
+    market: { localBenchmarkSupply: 150, localInitialSupply: 150, regionalBenchmarkSupply: 15_000, regionalInitialSupply: 15_000, globalBenchmarkSupply: 150_000, globalInitialSupply: 150_000, logisticsMultiplier: 0.4, valueDensityMultiplier: 0.8 },
   },
   [ResourceType.Cement]: {
     name: 'Cement', icon: '🏗️',
-    market: { localBenchmarkSupply: 1_500, localInitialSupply: 500, regionalBenchmarkSupply: 15_000, regionalInitialSupply: 5_000, globalBenchmarkSupply: 150_000, globalInitialSupply: 50_000, logisticsMultiplier: 0.45, valueDensityMultiplier: 0.9 },
+    market: { localBenchmarkSupply: 750, localInitialSupply: 250, regionalBenchmarkSupply: 15_000, regionalInitialSupply: 5_000, globalBenchmarkSupply: 150_000, globalInitialSupply: 50_000, logisticsMultiplier: 0.45, valueDensityMultiplier: 0.9 },
   },
   [ResourceType.ReinforcedConcrete]: {
     name: 'Reinforced Concrete', icon: '🏢',
@@ -91,19 +91,19 @@ export const RESOURCES: Readonly<Record<ResourceType, { name: string; icon: stri
   },
   [ResourceType.Sand]: {
     name: 'Sand', icon: '🏜️',
-    market: { localBenchmarkSupply: 1_500, localInitialSupply: 10_000, regionalBenchmarkSupply: 15_000, regionalInitialSupply: 100_000, globalBenchmarkSupply: 150_000, globalInitialSupply: 1_000_000, logisticsMultiplier: 0.35, valueDensityMultiplier: 0.7 },
+    market: { localBenchmarkSupply: 150, localInitialSupply: 1_000, regionalBenchmarkSupply: 15_000, regionalInitialSupply: 100_000, globalBenchmarkSupply: 150_000, globalInitialSupply: 1_000_000, logisticsMultiplier: 0.35, valueDensityMultiplier: 0.7 },
   },
   [ResourceType.Clay]: {
     name: 'Clay', icon: '🟫',
-    market: { localBenchmarkSupply: 3_000, localInitialSupply: 10_000, regionalBenchmarkSupply: 30_000, regionalInitialSupply: 100_000, globalBenchmarkSupply: 300_000, globalInitialSupply: 1_000_000, logisticsMultiplier: 0.5, valueDensityMultiplier: 0.75 },
+    market: { localBenchmarkSupply: 300, localInitialSupply: 1_000, regionalBenchmarkSupply: 30_000, regionalInitialSupply: 100_000, globalBenchmarkSupply: 300_000, globalInitialSupply: 1_000_000, logisticsMultiplier: 0.5, valueDensityMultiplier: 0.75 },
   },
   [ResourceType.Stone]: {
     name: 'Stone', icon: '⛰️',
-    market: { localBenchmarkSupply: 4_000, localInitialSupply: 5_000, regionalBenchmarkSupply: 40_000, regionalInitialSupply: 50_000, globalBenchmarkSupply: 400_000, globalInitialSupply: 500_000, logisticsMultiplier: 0.35, valueDensityMultiplier: 0.7 },
+    market: { localBenchmarkSupply: 400, localInitialSupply: 500, regionalBenchmarkSupply: 40_000, regionalInitialSupply: 50_000, globalBenchmarkSupply: 400_000, globalInitialSupply: 500_000, logisticsMultiplier: 0.35, valueDensityMultiplier: 0.7 },
   },
   [ResourceType.Cake]: {
     name: 'Cake', icon: '🍰',
-    market: { localBenchmarkSupply: 2_250, localInitialSupply: 500, regionalBenchmarkSupply: 22_500, regionalInitialSupply: 5_000, globalBenchmarkSupply: 225_000, globalInitialSupply: 50_000, logisticsMultiplier: 0.4, valueDensityMultiplier: 1.15 },
+    market: { localBenchmarkSupply: 1_125, localInitialSupply: 250, regionalBenchmarkSupply: 22_500, regionalInitialSupply: 5_000, globalBenchmarkSupply: 225_000, globalInitialSupply: 50_000, logisticsMultiplier: 0.4, valueDensityMultiplier: 1.15 },
   },
 };
 

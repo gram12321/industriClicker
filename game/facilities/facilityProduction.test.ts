@@ -3,7 +3,7 @@ import { Inventory } from '../inventory';
 import { getRecipe, RecipeName } from '../recipes';
 import { ResourceType } from '../resources';
 import { FacilityCollection } from './facilityCollection';
-import { advanceAllFacilityProduction, calculateFacilityEffectiveWork } from './facilityProduction';
+import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, getRecipeProductionConditionLoss } from './facilityProduction';
 import { FacilityType } from './facilityTypes';
 
 function createActiveFacility(facilityType: FacilityType, recipeName: RecipeName) {
@@ -60,6 +60,16 @@ describe('facility condition wear', () => {
     facility.applyConditionLoss(0.1);
 
     expect(facility.getView().facilityCondition).toBeCloseTo(0.85);
+  });
+
+  it('gives faster recipes more production wear per minute and applies their recipe multiplier', () => {
+    const grain = getRecipe(RecipeName.GrowGrain);
+    const sugar = getRecipe(RecipeName.GrowSugar);
+    const grainWearPerMinute = getRecipeProductionConditionLoss(grain) / grain.requiredWork;
+    const sugarWearPerMinute = getRecipeProductionConditionLoss(sugar) / sugar.requiredWork;
+
+    expect(grainWearPerMinute).toBeGreaterThan(sugarWearPerMinute);
+    expect(getRecipeProductionConditionLoss(getRecipe(RecipeName.ProduceConstructionMaterials))).toBeGreaterThan(getRecipeProductionConditionLoss(grain));
   });
 });
 

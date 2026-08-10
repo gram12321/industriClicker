@@ -25,6 +25,7 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Speed upgrade / Output upgrade | Money-funded facility levels that respectively improve work speed or recipe output. |
 | Assigned workers / Required workers | The local worker count and calculated staffing target for a facility. |
 | Facility condition | A persisted 0–1 measure of a constructed facility's wear state. It begins at 1 and decreases during foreground time and completed production cycles. |
+| Recipe condition-wear multiplier | A static per-recipe balance value that scales production wear without following live market prices. |
 | Facility efficiency | The production-speed multiplier formed from staffing efficiency and facility condition. |
 | Company prestige | An informational company-standing value derived from prestige events. |
 | Local player profile | A device-local, non-authenticated profile that groups one or more companies. |
@@ -38,7 +39,9 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Progression gate | A pure all-of requirement check over achievements, current prestige, completed research, and a starting condition. |
 | Research project | A code-defined, one-time company project with an up-front cost, foreground duration, requirements, and completion effect. |
 | Active research | The one paid research project currently accumulating foreground milliseconds for its company. |
-| Sales capacity | The derived maximum number of open customer contracts. It starts at one and is raised by completed Sales Capacity research. |
+| Sales capacity | The derived maximum number of open customer contracts. It starts at two and is raised by completed Sales Capacity research. |
+| Sales targeting | Research that first favors, then exclusively selects, resources with recorded company production when creating customer offers. |
+| Contract value | Research that increases the premium paid by customer contracts; it does not change ordinary market-sale prices. |
 | Progression grant | A durable, one-use entitlement that makes one specific player action free. |
 
 ## Time, State, and Persistence

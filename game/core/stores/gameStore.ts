@@ -10,7 +10,7 @@ import { SalesContracts, calculateSalesContractOfferChance } from '@/game/sales'
 import { AchievementLedger, ProductionStatistics, createAchievementEvaluationContext, evaluateAchievementUnlocks, type AchievementCategory } from '@/game/achievements';
 import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary, calculateFacilityConditionPrestige } from '@/game/prestige';
 import { evaluateGateRequirements, type GateContext, type GateEvaluation } from '@/game/gates';
-import { ResearchLedger, getMaximumOpenSalesContracts, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, type ResearchProjectId } from '@/game/research';
+import { ResearchLedger, getMaximumOpenSalesContracts, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, getSalesContractPremiumMultiplier, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, type ResearchProjectId } from '@/game/research';
 import { FIRST_FACILITY_RECIPE_RESEARCH_GRANT_ID, GrantLedger } from '@/game/grants';
 import type { StartingConditionId } from '@/game/company/companyTypes';
 import { STANDARD_START_CONSTRUCTION_MATERIALS } from '@/game/company/companyConstants';
@@ -632,9 +632,13 @@ export const useGameStore = create<GameState>((set, get) => {
         const activeMarket = market;
         const contractsCreated = salesContracts.advanceTime(
           completedSalesMinutes,
-          RESOURCE_TYPES,
-          (resourceType) => activeMarket.getGlobalPrice(resourceType) * MARKET_SALES_CONTRACT_PREMIUM,
+          getSalesOfferResourceTypes(research.getCompletedProjectIds(), productionStatistics.toSnapshot().producedByResource),
+          (resourceType) => activeMarket.getGlobalPrice(resourceType) * getSalesContractPremiumMultiplier(research.getCompletedProjectIds(), MARKET_SALES_CONTRACT_PREMIUM),
           getMaximumOpenSalesContracts(research.getCompletedProjectIds()),
+          Math.random,
+          (resourceType) => productionStatistics.toSnapshot().producedByResource[resourceType] > 0
+            ? getSalesOfferProducedResourceWeight(research.getCompletedProjectIds())
+            : 1,
         );
         activeMarket.diffuse();
         elapsedMinutes += completedSalesMinutes;
@@ -813,7 +817,7 @@ export const useGameStore = create<GameState>((set, get) => {
     if (!salesContracts.createOfferForResource(
       resourceType,
       quantity,
-      get().market.getGlobalPrice(resourceType) * MARKET_SALES_CONTRACT_PREMIUM,
+      get().market.getGlobalPrice(resourceType) * getSalesContractPremiumMultiplier(get().research.getCompletedProjectIds(), MARKET_SALES_CONTRACT_PREMIUM),
       getMaximumOpenSalesContracts(get().research.getCompletedProjectIds()),
     )) {
       return false;
