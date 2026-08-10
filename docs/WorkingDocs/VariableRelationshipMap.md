@@ -212,7 +212,7 @@ flowchart LR
 | State | Kind | Owner | Changes through | Saved as |
 |---|---|---|---|---|
 | `inventory.entries.*.quantity`, `.quality` | Stored | `Inventory` | Resource commands and production | `InventorySnapshot` |
-| `finance.balance`, `.transactions` | Stored | `Finance` | Accepted transactions | `FinanceSnapshot` |
+| `finance.balance`, `.transactions`, `.loans`, `.lenders`, `.activeLoanSearch`, `.loanSearchOffers`, economy phase, loan-payment history | Stored | `Finance` | Accepted transactions, timed lender searches, loan actions, economy transitions, and foreground repayment attempts | `FinanceSnapshot` |
 | Numbered facility instances and recipe progress | Stored | `FacilityCollection` | Construction, setup, upgrades, and production | Facility snapshot |
 | Facility upgrade levels, assigned workers, and 0–1 condition | Stored | `Facility` | Upgrade/staffing commands and foreground wear/production tear | Facility snapshot |
 | `salesContracts.offered`, `.completed`, `.nextCustomerNumber` | Stored | `SalesContracts` | Offers and contract actions | `SalesContractsSnapshot` |
@@ -235,8 +235,10 @@ Derived values include facility efficiency, production work/output, contract rew
 |---|---|---|
 | `setInventoryAmount` | Resource and amount | Inventory |
 | `buyMissingConstructionMaterials` | Facility definition; local Construction Materials price/supply; balance; inventory | Market; Finance; Inventory |
+| `acceptLoanOffer` | Derived credit rating and selected deterministic lender offer | Finance loan/transaction state, prestige, finance achievements |
+| `startLoanSearch`, `makeExtraLoanPayment`, `repayLoanInFull` | Selected criteria or active loan, lender policy caps, balance | Search activity/fee or finance transactions, loans, payment history, and derived credit rating |
 | `buildFacility`, `destroyFacility`, `repairFacility`, `setFacilityRecipe`, `setFacilityWorkers`, `upgradeFacility` | Facility definition; balance and Construction Materials where applicable | Facilities; Finance; Inventory where applicable |
-| `advanceRealtime`, `advanceGameTime`, `fastForwardOneMinute` | Time anchors and all timed state | Game time, pipeline, facility condition, inventory, sales contracts, local/regional/global market, active research |
+| `advanceRealtime`, `advanceGameTime`, `fastForwardOneMinute` | Time anchors and all timed state | Game time, pipeline, facility condition, inventory, sales contracts, local/regional/global market, active research, active lender searches, due loan payments |
 | Completed production output | Facility output and output multiplier | Production statistics; production achievements |
 | `fulfillSalesContract`, `rejectSalesContract` | Contract; inventory and finance where applicable | Sales contracts; inventory and finance where applicable |
 | Achievement evaluation | Post-command domain state | Achievement unlocks; idempotent achievement prestige events |
@@ -252,7 +254,7 @@ All normal state changes batch persistence; background and explicit checkpoints 
 
 | State group | Save representation | Restore |
 |---|---|---|
-| Inventory, finance, facilities, sales contracts, achievements, production statistics, prestige, research, progression grants | Respective snapshot inside a company-keyed `GameSnapshot` | Restore the active company's valid current-version snapshot |
+| Inventory, finance (including loans), facilities, sales contracts, achievements, production statistics, prestige, research, progression grants | Respective snapshot inside a company-keyed `GameSnapshot` | Restore the active company's valid current-version snapshot |
 | Foreground game time and pipeline | `GameTimeSnapshot` | Restore logical/partial time and pipeline; reset observation anchor |
 | Catalogues and balance configuration | Typed code definitions | Reload from the app version; never save |
 | Player/company/session/tutorial metadata | Dedicated company-domain SQLite records | Load before an active company runtime session begins |

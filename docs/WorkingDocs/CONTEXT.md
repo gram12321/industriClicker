@@ -19,7 +19,15 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Recipe | A named production transformation with inputs, output, and required work. |
 | Facility | A player-owned production unit. Several of the same type may be constructed; each is numbered by type, such as Mine #1 and Mine #2. Current types are Farm, Bakery, Small Utility Works, Mine, Quarry, Industrial Processing Factory, Construction Factory, Water Well, and Power Plant. |
 | Euro (€) | The company currency. |
-| Finance | Company balance and its append-only balance-change record. |
+| Finance | Company balance, classified append-only ledger, debt, credit history, and derived financial statements. |
+| Finance transaction | A signed cash movement with an accounting kind, source, nested detail lines, and logical foreground-game timestamp. |
+| Finance report period | A rolling foreground-time window: last 1 minute, 15 minutes, 1 hour, 10 hours, 24 hours, or all time. |
+| Asset value | A derived euro value of cash, inventory at current local-market prices, condition-scaled facilities, or completed research. |
+| Loan offer / loan | A lender's deterministic financing proposal / an accepted loan with foreground-minute repayment attempts. |
+| Credit rating | A derived score and grade based on asset health, liquidity, company age, and loan-payment history. |
+| Lender availability | A per-lender eligibility and borrowing-cap calculation derived from the company's assets, credit score, outstanding debt, lender market exposure, and lender contract cap. |
+| Lender search | A paid, foreground-time finance activity. Its fee and work requirement scale with offer count and how tightly lender type, amount, and term are constrained; matching offers appear only when the work completes. |
+| Economy phase | The persistent crash, recession, stable, expansion, or boom state. It changes deterministically every 24 foreground hours and adjusts future loan interest offers. |
 | Sales contract | A customer request for a resource and integer quantity, retained as offered, completed, or rejected. |
 | Speed upgrade / Output upgrade | Money-funded facility levels that respectively improve work speed or recipe output. |
 | Assigned workers / Required workers | The local worker count and calculated staffing target for a facility. |

@@ -1,4 +1,4 @@
-import { Finance } from '@/game/finance';
+import { Finance, buildFinanceStatementData, calculateLoanSearchEstimate, generateLoanOffers, LENDER_TYPES, type LoanOffer, type LoanSearchCriteria } from '@/game/finance';
 import { Inventory } from '@/game/inventory';
 import { FACILITIES, FacilityCollection, advanceAllFacilityProduction, calculateFacilityEffectiveWork, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getFacilityRepairCost, getFacilityUpgradeCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
 import type { RecipeName } from '@/game/recipes';
@@ -69,6 +69,10 @@ type GameState = {
   getResearchAvailability: (projectId: ResearchProjectId) => ResearchAvailability;
   startResearch: (projectId: ResearchProjectId) => boolean;
   cancelResearch: () => boolean;
+  acceptLoanOffer: (offer: LoanOffer) => boolean;
+  startLoanSearch: (criteria: LoanSearchCriteria) => { success: boolean; reason?: string };
+  makeExtraLoanPayment: (loanId: string) => { success: boolean; reason?: string };
+  repayLoanInFull: (loanId: string) => { success: boolean; reason?: string };
   resetRealtimeClock: (nowMs: number) => void;
   createSnapshot: () => GameSnapshot;
   restoreSnapshot: (snapshot: GameSnapshot) => void;
@@ -236,7 +240,7 @@ export const useGameStore = create<GameState>((set, get) => {
   addAdminFunds: (amount) => {
     if (!Number.isFinite(amount) || amount === 0) return false;
     const finance = get().finance.clone();
-    if (!finance.applyTransaction(amount, 'Admin balance adjustment', new Date().toISOString())) return false;
+    if (!finance.applyTransaction({ amount, description: 'Admin balance adjustment', detailLines: [], kind: 'equity', source: 'admin-adjustment', occurredAtGameTimeMs: get().lastProcessedAtMs })) return false;
     set({ finance });
     return true;
   },
@@ -264,7 +268,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const trade = market.buyFromLocal(resourceType, amount);
     const total = trade.unitPrice * trade.amount;
     if (!trade.success || !finance.canAfford(total) || !inventory.add(resourceType, trade.amount, trade.quality)
-      || !finance.applyTransaction(-total, `Bought ${trade.amount} ${resourceType} from local market`, new Date().toISOString())) return false;
+      || !finance.applyTransaction({ amount: -total, description: `Bought ${trade.amount} ${resourceType} from local market`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: get().lastProcessedAtMs })) return false;
     set({ market, inventory, finance });
     return true;
   },
@@ -279,7 +283,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const trade = market.sellToLocal(resourceType, amount, quality);
     const total = trade.unitPrice * trade.amount;
     if (!trade.success || !inventory.remove(resourceType, amount)
-      || !finance.applyTransaction(total, `Sold ${trade.amount} ${resourceType} to local market`, new Date().toISOString())) return false;
+      || !finance.applyTransaction({ amount: total, description: `Sold ${trade.amount} ${resourceType} to local market`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-sale', occurredAtGameTimeMs: get().lastProcessedAtMs })) return false;
     set({ market, inventory, finance });
     return true;
   },
@@ -306,11 +310,7 @@ export const useGameStore = create<GameState>((set, get) => {
     if (missingAmount === 0 || !trade.success
       || !finance.canAfford(definition.landCost + materialsTotal)
       || !inventory.add(ResourceType.ConstructionMaterials, trade.amount, trade.quality)
-      || !finance.applyTransaction(
-        -materialsTotal,
-        `Bought ${trade.amount} Construction Materials for ${definition.name}`,
-        new Date().toISOString(),
-      )) return false;
+      || !finance.applyTransaction({ amount: -materialsTotal, description: `Bought ${trade.amount} Construction Materials for ${definition.name}`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: get().lastProcessedAtMs })) return false;
 
     set({ market, inventory, finance });
     return true;
@@ -329,11 +329,7 @@ export const useGameStore = create<GameState>((set, get) => {
       return false;
     }
 
-    if (!finance.applyTransaction(
-      -definition.landCost,
-      `Purchased land for ${facilities.getAllByType(facilityType).at(-1)?.getView().displayName ?? definition.name}`,
-      new Date().toISOString(),
-    ) || !inventory.remove(ResourceType.ConstructionMaterials, definition.constructionMaterialsCost)) {
+    if (!finance.applyTransaction({ amount: -definition.landCost, description: `Purchased land for ${facilities.getAllByType(facilityType).at(-1)?.getView().displayName ?? definition.name}`, detailLines: [`Construction materials committed: ${definition.constructionMaterialsCost}`], kind: 'investing', source: 'facility-construction', occurredAtGameTimeMs: get().lastProcessedAtMs }) || !inventory.remove(ResourceType.ConstructionMaterials, definition.constructionMaterialsCost)) {
       return false;
     }
 
@@ -433,11 +429,7 @@ export const useGameStore = create<GameState>((set, get) => {
       if (!trade.success
         || !finance.canAfford(purchasedMaterialsCost)
         || !inventory.add(ResourceType.ConstructionMaterials, trade.amount, trade.quality)
-        || !finance.applyTransaction(
-          -purchasedMaterialsCost,
-          `Bought ${trade.amount} Construction Materials to repair ${facilityView.displayName}`,
-          new Date().toISOString(),
-        )) {
+        || !finance.applyTransaction({ amount: -purchasedMaterialsCost, description: `Bought ${trade.amount} Construction Materials to repair ${facilityView.displayName}`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'facility-repair', occurredAtGameTimeMs: get().lastProcessedAtMs })) {
         return false;
       }
     }
@@ -485,11 +477,7 @@ export const useGameStore = create<GameState>((set, get) => {
       facility.upgradeConditionDecay();
     }
 
-    if (!finance.applyTransaction(
-      -cost,
-      `${upgradeKind === 'speed' ? 'Speed' : upgradeKind === 'output' ? 'Output' : 'Condition decay'} upgrade for ${facilityView.displayName}`,
-      new Date().toISOString(),
-    )) {
+    if (!finance.applyTransaction({ amount: -cost, description: `${upgradeKind === 'speed' ? 'Speed' : upgradeKind === 'output' ? 'Output' : 'Condition decay'} upgrade for ${facilityView.displayName}`, detailLines: [`Level ${currentLevel + 1}`], kind: 'investing', source: 'facility-upgrade', occurredAtGameTimeMs: get().lastProcessedAtMs })) {
       return false;
     }
 
@@ -533,6 +521,8 @@ export const useGameStore = create<GameState>((set, get) => {
 
     while (remainingMs > 0) {
       const stepMs = Math.min(FOREGROUND_SIMULATION_STEP_MS, remainingMs);
+      const stepStartGameTimeMs = get().lastProcessedAtMs + elapsedMs - remainingMs;
+      const stepEndGameTimeMs = stepStartGameTimeMs + stepMs;
 
       if (hasConstructedFacility) {
         facilities.applyPassiveConditionLoss((stepMs / REALTIME_WORK_MINUTE_MS) * FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE);
@@ -552,7 +542,7 @@ export const useGameStore = create<GameState>((set, get) => {
         if (inventory === get().inventory) inventory = inventory.clone();
         const trade = buyingMarket.buyFromLocal(resourceType, targetDeficit);
         if (trade.success && inventory.add(resourceType, trade.amount, trade.quality)) {
-          marketFinance.applyTransaction(-trade.unitPrice * trade.amount, `Autobought ${trade.amount} ${resourceType} to target inventory`, new Date().toISOString());
+          marketFinance.applyTransaction({ amount: -trade.unitPrice * trade.amount, description: `Autobought ${trade.amount} ${resourceType} to target inventory`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: stepEndGameTimeMs });
         }
       }
 
@@ -569,7 +559,7 @@ export const useGameStore = create<GameState>((set, get) => {
               || unitPrice > automation.autoBuyMaxUnitPrice || !marketFinance.canAfford(unitPrice * purchaseAmount)) continue;
             const trade = market.buyFromLocal(input.resourceType, purchaseAmount);
             if (trade.success && inventory.add(input.resourceType, trade.amount, trade.quality)) {
-              marketFinance.applyTransaction(-trade.unitPrice * trade.amount, `Autobought ${trade.amount} ${input.resourceType} for production`, new Date().toISOString());
+              marketFinance.applyTransaction({ amount: -trade.unitPrice * trade.amount, description: `Autobought ${trade.amount} ${input.resourceType} for production`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: stepEndGameTimeMs });
             }
           }
         }
@@ -594,8 +584,6 @@ export const useGameStore = create<GameState>((set, get) => {
       const offerChance = calculateSalesContractOfferChance(currentSalesContracts.getOfferedContracts().length);
       customerPipelineProgress += (stepMs / 1_000) * offerChance / 60;
 
-      const stepStartGameTimeMs = get().lastProcessedAtMs + elapsedMs - remainingMs;
-      const stepEndGameTimeMs = stepStartGameTimeMs + stepMs;
       for (const resourceType of RESOURCE_TYPES) {
         const activeMarket = market ?? get().market;
         const automation = activeMarket.getAutomation(resourceType);
@@ -612,11 +600,7 @@ export const useGameStore = create<GameState>((set, get) => {
         if (inventory === get().inventory) inventory = inventory.clone();
         const trade = market.sellToLocal(resourceType, amount, inventory.getQuality(resourceType));
         if (trade.success && inventory.remove(resourceType, amount)) {
-          marketFinance.applyTransaction(
-            trade.unitPrice * trade.amount,
-            `Autosold ${trade.amount} ${resourceType} to local market`,
-            new Date().toISOString(),
-          );
+          marketFinance.applyTransaction({ amount: trade.unitPrice * trade.amount, description: `Autosold ${trade.amount} ${resourceType} to local market`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-sale', occurredAtGameTimeMs: stepEndGameTimeMs });
         }
       }
 
@@ -647,6 +631,15 @@ export const useGameStore = create<GameState>((set, get) => {
 
     const previousGameTimeMs = get().lastProcessedAtMs;
     const nextGameTimeMs = previousGameTimeMs + elapsedMs;
+    const financeForLoanProcessing = marketFinance ?? get().finance.clone();
+    let financeChanged = financeForLoanProcessing.advanceLoanAndEconomy(nextGameTimeMs);
+    const completedSearchCriteria = financeForLoanProcessing.advanceLoanSearch(elapsedMs);
+    if (financeForLoanProcessing.getActiveLoanSearch() || completedSearchCriteria) financeChanged = true;
+    if (completedSearchCriteria) {
+      const report = buildFinanceStatementData({ achievements: get().achievements, companyStartedAtGameTimeMs: get().companyStartedAtGameTimeMs, currentGameTimeMs: nextGameTimeMs, facilities, finance: financeForLoanProcessing, inventory, market: market ?? get().market, period: 'all-time', research });
+      financeForLoanProcessing.completeLoanSearch(generateLoanOffers({ lenders: financeForLoanProcessing.getLenders(), limitBreakdown: report.loanLimitBreakdown, creditRating: report.creditRating, economyPhase: financeForLoanProcessing.getEconomyPhase(), criteria: completedSearchCriteria }));
+    }
+    if (financeChanged) marketFinance = financeForLoanProcessing;
     let prestige = get().prestige;
     let completedResearchProjectId: ResearchProjectId | null = null;
 
@@ -658,11 +651,7 @@ export const useGameStore = create<GameState>((set, get) => {
         const completedProject = getResearchProject(completedResearchProjectId);
         if (completedProject?.effect.kind === 'grant') {
           marketFinance ??= get().finance.clone();
-          marketFinance.applyTransaction(
-            completedProject.effect.amount,
-            `Research completed: ${completedProject.name}`,
-            new Date().toISOString(),
-          );
+          marketFinance.applyTransaction({ amount: completedProject.effect.amount, description: `Research completed: ${completedProject.name}`, detailLines: [], kind: 'equity', source: 'research-grant', occurredAtGameTimeMs: nextGameTimeMs });
           prestige = prestige.clone();
           syncCompanyBalancePrestige(prestige, marketFinance, nextGameTimeMs);
         }
@@ -732,6 +721,54 @@ export const useGameStore = create<GameState>((set, get) => {
     get().advanceRealtime(Date.now());
     return get().advanceGameTime(REALTIME_WORK_MINUTE_MS) > 0;
   },
+  acceptLoanOffer: (offer) => {
+    get().advanceRealtime(Date.now());
+    const state = get();
+    const finance = state.finance.clone();
+    const report = buildFinanceStatementData({ achievements: state.achievements, companyStartedAtGameTimeMs: state.companyStartedAtGameTimeMs, currentGameTimeMs: state.lastProcessedAtMs, facilities: state.facilities, finance, inventory: state.inventory, market: state.market, period: 'all-time', research: state.research });
+    const lenderLimit = report.loanLimitBreakdown.lenderBreakdowns.find((candidate) => candidate.lenderId === offer.lenderId);
+    if (!lenderLimit?.isAvailable || offer.principal > lenderLimit.availableLimit) return false;
+    if (!finance.acceptLoan(offer, state.lastProcessedAtMs)) return false;
+    const prestige = state.prestige.clone();
+    syncCompanyBalancePrestige(prestige, finance, state.lastProcessedAtMs);
+    const achievementResult = applyAchievementUnlocks({
+      achievements: state.achievements,
+      productionStatistics: state.productionStatistics,
+      facilities: state.facilities,
+      finance,
+      salesContracts: state.salesContracts,
+      prestige,
+      companyStartedAtGameTimeMs: state.companyStartedAtGameTimeMs,
+      currentGameTimeMs: state.lastProcessedAtMs,
+      categories: ['finance', 'prestige'],
+      inventory: state.inventory,
+    });
+    set({ finance, ...achievementResult });
+    return true;
+  },
+  startLoanSearch: (criteria) => {
+    get().advanceRealtime(Date.now());
+    const state = get();
+    const finance = state.finance.clone();
+    const result = finance.startLoanSearch(criteria, calculateLoanSearchEstimate(criteria, LENDER_TYPES.length), state.lastProcessedAtMs);
+    if (!result.success) return result;
+    set({ finance });
+    return result;
+  },
+  makeExtraLoanPayment: (loanId) => {
+    get().advanceRealtime(Date.now());
+    const finance = get().finance.clone();
+    const result = finance.makeExtraLoanPayment(loanId, get().lastProcessedAtMs);
+    if (result.success) set({ finance });
+    return result;
+  },
+  repayLoanInFull: (loanId) => {
+    get().advanceRealtime(Date.now());
+    const finance = get().finance.clone();
+    const result = finance.repayLoanInFull(loanId, get().lastProcessedAtMs);
+    if (result.success) set({ finance });
+    return result;
+  },
   setStartingConditionId: (startingConditionId) => {
     set({ startingConditionId });
   },
@@ -767,7 +804,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const grantTarget = getRecipeResearchGrantTarget(project);
     if ((availability.usesFreeGrant && (!grantTarget || !grants.useFreeActionForTargets('start-research', [grantTarget, project.id], state.lastProcessedAtMs)))
       || !research.start(projectId, availability.cost)
-      || !finance.applyTransaction(-availability.cost, `Research started: ${project.name}`, new Date().toISOString())) return false;
+      || !finance.applyTransaction({ amount: -availability.cost, description: `Research started: ${project.name}`, detailLines: [`Capitalized cost: €${availability.cost.toFixed(2)}`], kind: 'investing', source: 'research-investment', occurredAtGameTimeMs: state.lastProcessedAtMs })) return false;
 
     const prestige = state.prestige.clone();
     syncCompanyBalancePrestige(prestige, finance, state.lastProcessedAtMs);
@@ -783,11 +820,7 @@ export const useGameStore = create<GameState>((set, get) => {
 
     const project = getResearchProject(cancelled.projectId);
     const finance = state.finance.clone();
-    if (!finance.applyTransaction(
-      cancelled.paidCost,
-      `Research cancelled: ${project?.name ?? cancelled.projectId}`,
-      new Date().toISOString(),
-    )) return false;
+    if (!finance.applyTransaction({ amount: cancelled.paidCost, description: `Research cancelled: ${project?.name ?? cancelled.projectId}`, detailLines: [], kind: 'investing', source: 'research-refund', occurredAtGameTimeMs: state.lastProcessedAtMs })) return false;
 
     const prestige = state.prestige.clone();
     syncCompanyBalancePrestige(prestige, finance, state.lastProcessedAtMs);
@@ -839,15 +872,15 @@ export const useGameStore = create<GameState>((set, get) => {
 
     const quality = inventory.getQuality(contract.resourceType);
     const occurredAt = new Date().toISOString();
+    const currentGameTimeMs = get().lastProcessedAtMs;
     if (!inventory.remove(contract.resourceType, contract.quantity)
-      || !finance.applyTransaction(contract.reward, `Contract fulfilled: ${contract.customerName}`, occurredAt)
+      || !finance.applyTransaction({ amount: contract.reward, description: `Contract fulfilled: ${contract.customerName}`, detailLines: [`Delivered ${contract.quantity} ${contract.resourceType}`], kind: 'operating', source: 'contract-sale', occurredAtGameTimeMs: currentGameTimeMs })
       || !salesContracts.fulfill(contract.id, occurredAt)
       || !market.addToGlobal(contract.resourceType, contract.quantity, quality)) {
       return false;
     }
 
     const prestige = get().prestige.clone();
-    const currentGameTimeMs = get().lastProcessedAtMs;
     syncCompanyBalancePrestige(prestige, finance, currentGameTimeMs);
     prestige.recordSalesContract(contract.id, contract.reward, currentGameTimeMs);
 
