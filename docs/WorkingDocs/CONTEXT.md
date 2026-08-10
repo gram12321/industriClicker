@@ -11,10 +11,11 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Grain, Bread, Water, Electricity, Sugar, Coal, Iron, Copper, Steel, Electric Circuits, Bricks, Cement, Reinforced Concrete, Construction Materials, Sand, Clay, Stone, Cake | Current resource names. |
 | Inventory | Player-owned resource quantities and their associated quality. |
 | Resource quality | A property of an inventory entry; its gameplay rule is not yet designed. |
-| Logistics multiplier | A resource catalogue value for physical shipping, storage, and market-network constraints on local/global diffusion. |
+| Logistics multiplier | A resource catalogue value for physical shipping, storage, and market-network constraints on adjacent-market diffusion. |
 | Value-density multiplier | A resource catalogue value for the economic value of moving a resource relative to its transport burden. |
-| Market urgency multiplier | A bounded, derived diffusion multiplier based on current local/global prices relative to the resource's initial price level. |
-| Market-flow diagnostics | Read-only price, balance-target, rate, and multiplier details for one resource's local/global diffusion, shown in IndustriPedia. |
+| Market urgency multiplier | A bounded, derived diffusion multiplier based on current adjacent-market prices relative to the resource's initial price level. |
+| Regional market | The device-local market reservoir between the player-facing local market and the global reservoir. |
+| Market-flow diagnostics | Read-only price, balance-target, rate, and multiplier details for one resource's local/regional and regional/global diffusion, shown in IndustriPedia. |
 | Recipe | A named production transformation with inputs, output, and required work. |
 | Facility | A player-owned production unit. Several of the same type may be constructed; each is numbered by type, such as Mine #1 and Mine #2. Current types are Farm, Bakery, Small Utility Works, Mine, Quarry, Industrial Processing Factory, Construction Factory, Water Well, and Power Plant. |
 | Euro (€) | The company currency. |

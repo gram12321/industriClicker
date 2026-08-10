@@ -86,6 +86,7 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
     && Array.isArray(value.finance.transactions)
     && isRecord(value.inventory.entries)
     && isRecord(value.market.local)
+    && isRecord(value.market.regional)
     && isRecord(value.market.global)
     && isRecord(marketAutomation)
     && RESOURCE_TYPES.every((resourceType) => isMarketAutomationSnapshot(marketAutomation[resourceType]))

@@ -52,17 +52,19 @@ function MarketFlowSection({ market }: { market: Market }) {
   const [selectedResource, setSelectedResource] = useState<(typeof RESOURCE_TYPES)[number]>(RESOURCE_TYPES[0]);
   const resource = getResource(selectedResource);
   const local = market.getLocalEntry(selectedResource);
+  const regional = market.getRegionalEntry(selectedResource);
   const global = market.getGlobalEntry(selectedResource);
-  const details = market.getDiffusionDetails(selectedResource);
+  const details = market.getLocalRegionalDiffusionDetails(selectedResource);
+  const regionalGlobalDetails = market.getRegionalGlobalDiffusionDetails(selectedResource);
   const isToLocal = details.direction === 'to-local';
-  const isToGlobal = details.direction === 'to-global';
-  const flowColor = isToLocal ? colors.marketGreen : isToGlobal ? colors.marketGold : colors.muted;
-  const flowIcon = isToLocal ? APP_ICONS.marketFlowToLocal : isToGlobal ? APP_ICONS.marketFlowToGlobal : APP_ICONS.marketBalanced;
+  const isToRegional = details.direction === 'to-regional';
+  const flowColor = isToLocal ? colors.marketGreen : isToRegional ? colors.marketGold : colors.muted;
+  const flowIcon = isToLocal ? APP_ICONS.marketFlowToLocal : isToRegional ? APP_ICONS.marketFlowToGlobal : APP_ICONS.marketBalanced;
   const pressureWidth = `${Math.min(details.priceGap * 50, 50)}%` as `${number}%`;
-  const localBalanceDelta = details.localTargetSupply - local.supply;
+  const localBalanceDelta = details.lowerTargetSupply - local.supply;
 
   return <>
-    <SectionHeading eyebrow="MARKET FLOW" title="Follow market balancing" subtitle="Prices guide resources between the local and global reservoirs once per minute." />
+    <SectionHeading eyebrow="MARKET FLOW" title="Follow market balancing" subtitle="Prices guide resources through local, regional, and global reservoirs once per minute." />
     <View style={localStyles.resourceTabs}>
       {RESOURCE_GROUPS.map((group) => <View key={group.id} style={localStyles.resourceGroupTabs}><Text style={styles.cardKicker}>{group.label}</Text><View style={localStyles.resourceGroupButtons}>{group.resources.map((resourceType) => <Button accessibilityLabel={getResource(resourceType).name} compact key={resourceType} mode={selectedResource === resourceType ? 'contained' : 'outlined'} onPress={() => setSelectedResource(resourceType)}>
         {`${getResourceIcon(resourceType)} ${getResource(resourceType).name}`}
@@ -70,14 +72,17 @@ function MarketFlowSection({ market }: { market: Market }) {
     </View>
     <Card mode="contained" style={styles.featureCard}><Card.Content style={localStyles.flowCardContent}>
       <Text accessibilityLabel={resource.name} variant="titleMedium" style={localStyles.flowTitle}>{`${getResourceIcon(selectedResource)} ${resource.name}`}</Text>
-      <MarketPool label="Global market" price={details.globalPrice} supply={global.supply} />
+      <MarketPool label="Global market" price={regionalGlobalDetails.higherPrice} supply={global.supply} />
+      <Text style={localStyles.flowDirection}>{getFlowDescription(regionalGlobalDetails.direction)}</Text>
+      <Text style={localStyles.flowAmount}>{regionalGlobalDetails.direction === 'none' ? 'Prices balanced' : `${formatNumber(regionalGlobalDetails.amount, { smartDecimals: true })} / minute`}</Text>
+      <MarketPool label="Regional market" price={details.higherPrice} supply={regional.supply} />
       <View accessibilityLabel={getFlowAccessibilityLabel(details.direction, details.amount)} style={localStyles.flowConnector}>
         <MaterialCommunityIcons color={flowColor} name={flowIcon as never} size={28} />
         <Text style={[localStyles.flowAmount, { color: flowColor }]}>{details.direction === 'none' ? 'Prices balanced' : `${formatNumber(details.amount, { smartDecimals: true })} / minute`}</Text>
         <Text style={localStyles.flowDirection}>{getFlowDescription(details.direction)}</Text>
       </View>
-      <MarketPool label="Local market" price={details.localPrice} supply={local.supply} />
-      <Text style={localStyles.priceGapText}>{details.direction === 'none' ? 'Local and global prices are equal.' : `Price gap: ${formatNumber(details.priceGap, { percent: true, decimals: 1 })}`}</Text>
+      <MarketPool label="Local market" price={details.lowerPrice} supply={local.supply} />
+      <Text style={localStyles.priceGapText}>{details.direction === 'none' ? 'Local and regional prices are equal.' : `Local/regional price gap: ${formatNumber(details.priceGap, { percent: true, decimals: 1 })}`}</Text>
       <View accessibilityLabel={`Price gap ${formatNumber(details.priceGap, { percent: true, decimals: 1 })}`} style={localStyles.balanceTrack}>
         <View style={localStyles.balanceCentre} />
         {details.direction !== 'none' && <View style={[localStyles.balanceFill, isToLocal ? localStyles.balanceFillToLocal : localStyles.balanceFillToGlobal, { width: pressureWidth, backgroundColor: flowColor }]} />}
@@ -85,8 +90,8 @@ function MarketFlowSection({ market }: { market: Market }) {
     </Card.Content></Card>
     <Card mode="contained" style={styles.featureCard}><Card.Content style={localStyles.flowCardContent}>
       <Text style={styles.cardKicker}>BALANCE</Text>
-      <BalanceRow label="Local target" value={formatNumber(details.localTargetSupply, { smartDecimals: true })} />
-      <BalanceRow label="Global target" value={formatNumber(details.globalTargetSupply, { smartDecimals: true })} />
+      <BalanceRow label="Local target" value={formatNumber(details.lowerTargetSupply, { smartDecimals: true })} />
+      <BalanceRow label="Regional target" value={formatNumber(details.higherTargetSupply, { smartDecimals: true })} />
       <BalanceRow label="Local adjustment remaining" value={`${formatSigned(localBalanceDelta, { smartDecimals: true })} units`} />
       <BalanceRow label="Next correction" value={details.direction === 'none' ? 'None needed' : `${formatNumber(details.amount, { smartDecimals: true })} units`} />
     </Card.Content></Card>
@@ -94,8 +99,8 @@ function MarketFlowSection({ market }: { market: Market }) {
       <List.Accordion left={(props) => <List.Icon {...props} icon={APP_ICONS.help} />} title="Why is it moving?">
         <View style={localStyles.accordionBody}>
           <Text style={styles.cardDescription}>{getFlowDescription(details.direction)}</Text>
-          <BalanceRow label="Local price" value={<CurrencyValue value={details.localPrice} />} />
-          <BalanceRow label="Global price" value={<CurrencyValue value={details.globalPrice} />} />
+          <BalanceRow label="Local price" value={<CurrencyValue value={details.lowerPrice} />} />
+          <BalanceRow label="Regional price" value={<CurrencyValue value={details.higherPrice} />} />
           <BalanceRow label="Price ratio" value={formatNumber(details.priceRatio, { decimals: 3, forceDecimals: true })} />
         </View>
       </List.Accordion>
@@ -136,13 +141,14 @@ function CurrencyValue({ value, style }: { value: number; style?: object }) {
   return <View style={localStyles.iconValue}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.coin} size={14} /><Text style={style}>{formatCurrency(value).replace(/\s*€/u, '')}</Text></View>;
 }
 
-function getFlowDescription(direction: 'to-local' | 'to-global' | 'none'): string {
-  if (direction === 'to-local') return 'The local price is higher, so the global market supplies the local market.';
-  if (direction === 'to-global') return 'The global price is higher, so the local market supplies the global market.';
-  return 'Local and global prices are balanced, so no market flow is needed.';
+function getFlowDescription(direction: 'to-local' | 'to-regional' | 'to-global' | 'none'): string {
+  if (direction === 'to-local') return 'The local price is higher, so the regional market supplies the local market.';
+  if (direction === 'to-regional') return 'The adjacent higher-priced market is supplied by its neighboring reservoir.';
+  if (direction === 'to-global') return 'The global price is higher, so the regional market supplies the global market.';
+  return 'Adjacent market prices are balanced, so no market flow is needed.';
 }
 
-function getFlowAccessibilityLabel(direction: 'to-local' | 'to-global' | 'none', amount: number): string {
+function getFlowAccessibilityLabel(direction: 'to-local' | 'to-regional' | 'to-global' | 'none', amount: number): string {
   if (direction === 'none') return 'Market prices are balanced.';
   return `${getFlowDescription(direction)} Next correction ${formatNumber(amount, { smartDecimals: true })} units per minute.`;
 }

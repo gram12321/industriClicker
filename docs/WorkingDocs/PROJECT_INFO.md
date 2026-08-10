@@ -6,7 +6,7 @@ Verified repository facts for Industri Clicker. Product choices belong in [desig
 
 - Stage: foundation.
 - Product: single-player, mobile-first industrial clicker for Android.
-- Implemented foundation: dashboard shell, local player/company selection, company-keyed local saves, standard-start onboarding, tutorial-guide placeholder, inventory, local/global market, facilities, finance, sales contracts, foreground production, tiered company achievements, company prestige, local-first progression gates and grants, foreground research, IndustriPedia, and local saves.
+- Implemented foundation: dashboard shell, local player/company selection, company-keyed local saves, standard-start onboarding, tutorial-guide placeholder, inventory, local/regional/global market, facilities, finance, sales contracts, foreground production, tiered company achievements, company prestige, local-first progression gates and grants, foreground research, IndustriPedia, and local saves.
 - Deferred: offline catch-up, broader workforce systems and maintenance interactions, and cloud services.
 
 ## Code Size

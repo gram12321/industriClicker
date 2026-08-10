@@ -29,6 +29,8 @@ export enum ResourceType {
 export type ResourceMarketDefinition = {
   localBenchmarkSupply: number;
   localInitialSupply: number;
+  regionalBenchmarkSupply: number;
+  regionalInitialSupply: number;
   globalBenchmarkSupply: number;
   globalInitialSupply: number;
   /** Physical shipping, storage, and market-network constraints. */
