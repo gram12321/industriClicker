@@ -2,9 +2,9 @@ import { RESOURCES, RESOURCE_TYPES, type ResourceType } from '@/game/resources';
 import {
   MARKET_AUTOBUY_DEFAULT_MAX_PRICE_MULTIPLIER,
   MARKET_AUTOBUY_DEFAULT_TARGET_INVENTORY,
-  MARKET_AUTOSELL_DEFAULT_INTERVAL_MS,
+  MARKET_AUTOTRADE_DEFAULT_INTERVAL_MS,
   MARKET_AUTOSELL_DEFAULT_MAX_PER_MINUTE,
-  MARKET_AUTOSELL_INTERVAL_OPTIONS,
+  MARKET_AUTOTRADE_INTERVAL_OPTIONS,
   MARKET_AUTOSELL_DEFAULT_MIN_KEEP,
   MARKET_AUTOSELL_DEFAULT_MIN_PRICE,
   MARKET_DEFAULT_QUALITY,
@@ -14,7 +14,7 @@ import type { MarketAutomation, MarketDiffusionDetails, MarketDiffusionInfo, Mar
 
 function isNonNegativeFinite(value: number): boolean { return Number.isFinite(value) && value >= 0; }
 function isPositiveFinite(value: number): boolean { return Number.isFinite(value) && value > 0; }
-function isAutoSellInterval(value: number): boolean { return MARKET_AUTOSELL_INTERVAL_OPTIONS.some((option) => option.milliseconds === value); }
+function isAutoTradeInterval(value: number): boolean { return MARKET_AUTOTRADE_INTERVAL_OPTIONS.some((option) => option.milliseconds === value); }
 
 function mixQuality(existing: MarketPoolEntry, addedAmount: number, addedQuality: number): number {
   if (existing.supply + addedAmount <= 0) return MARKET_DEFAULT_QUALITY;
@@ -42,7 +42,7 @@ function createAutomation(local: Record<ResourceType, MarketPoolEntry>): Record<
       autoBuyMaxUnitPrice: price * MARKET_AUTOBUY_DEFAULT_MAX_PRICE_MULTIPLIER,
       autoBuyTargetInventory: MARKET_AUTOBUY_DEFAULT_TARGET_INVENTORY,
       autoSellEnabled: false,
-      autoSellIntervalMs: MARKET_AUTOSELL_DEFAULT_INTERVAL_MS,
+      autoTradeIntervalMs: MARKET_AUTOTRADE_DEFAULT_INTERVAL_MS,
       autoSellMaxPerMinute: MARKET_AUTOSELL_DEFAULT_MAX_PER_MINUTE,
       autoSellMinKeep: MARKET_AUTOSELL_DEFAULT_MIN_KEEP,
       autoSellMinUnitPrice: MARKET_AUTOSELL_DEFAULT_MIN_PRICE,
@@ -155,7 +155,7 @@ export class Market {
   setAutomation(resourceType: ResourceType, updates: Partial<MarketAutomation>): boolean {
     const current = this.automation[resourceType];
     const next = { ...current, ...updates };
-    if (!isNonNegativeFinite(next.autoBuyMaxUnitPrice) || !isNonNegativeFinite(next.autoBuyTargetInventory) || !isAutoSellInterval(next.autoSellIntervalMs) || !isNonNegativeFinite(next.autoSellMaxPerMinute) || !isNonNegativeFinite(next.autoSellMinKeep) || !isNonNegativeFinite(next.autoSellMinUnitPrice)) return false;
+    if (!isNonNegativeFinite(next.autoBuyMaxUnitPrice) || !isNonNegativeFinite(next.autoBuyTargetInventory) || !isAutoTradeInterval(next.autoTradeIntervalMs) || !isNonNegativeFinite(next.autoSellMaxPerMinute) || !isNonNegativeFinite(next.autoSellMinKeep) || !isNonNegativeFinite(next.autoSellMinUnitPrice)) return false;
     this.automation[resourceType] = next;
     return true;
   }
@@ -182,7 +182,7 @@ export class Market {
       if (regional && isNonNegativeFinite(regional.supply) && isPositiveFinite(regional.quality)) this.regional[resourceType] = { ...regional };
       if (global && isNonNegativeFinite(global.supply) && isPositiveFinite(global.quality)) this.global[resourceType] = { ...global };
       if (automation && typeof automation.autoBuyEnabled === 'boolean' && typeof automation.autoSellEnabled === 'boolean'
-        && isNonNegativeFinite(automation.autoBuyMaxUnitPrice) && isNonNegativeFinite(automation.autoBuyTargetInventory) && isAutoSellInterval(automation.autoSellIntervalMs) && isNonNegativeFinite(automation.autoSellMaxPerMinute) && isNonNegativeFinite(automation.autoSellMinKeep) && isNonNegativeFinite(automation.autoSellMinUnitPrice)) this.automation[resourceType] = { ...automation };
+        && isNonNegativeFinite(automation.autoBuyMaxUnitPrice) && isNonNegativeFinite(automation.autoBuyTargetInventory) && isAutoTradeInterval(automation.autoTradeIntervalMs) && isNonNegativeFinite(automation.autoSellMaxPerMinute) && isNonNegativeFinite(automation.autoSellMinKeep) && isNonNegativeFinite(automation.autoSellMinUnitPrice)) this.automation[resourceType] = { ...automation };
     }
   }
 

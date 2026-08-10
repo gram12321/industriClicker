@@ -14,7 +14,7 @@ import { clamp, formatCurrency, formatNumber } from '@/utils';
 import { WorkMetric } from '@/ui/dashboard/components/DashboardPrimitives';
 import { formatRecipeName } from '@/ui/dashboard/helpers/recipeFormatters';
 import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
-import { APP_ICONS } from '@/icons';
+import { APP_ICONS, RECIPE_ICONS } from '@/icons';
 
 function CurrencyValue({ value }: { value: number }) {
   return <View style={styles.currencyValue}><MaterialCommunityIcons name={APP_ICONS.coin} size={16} color={styles.detailValue.color} /><Text style={styles.detailValue}>{formatCurrency(value).replace(/\s*€/u, '')}</Text></View>;
@@ -191,9 +191,9 @@ function ConfirmConstrution({
           {definition.recipes.map((recipe) => (
             <List.Item
               key={recipe.name}
+              left={(props) => <List.Icon {...props} icon={RECIPE_ICONS[recipe.name]} />}
               title={formatRecipeName(recipe)}
               description={<View><Text style={styles.cardDescription}>{`${formatRecipeInputs(recipe)} → ${formatRecipeOutput(recipe)}`}</Text><WorkMetric value={String(recipe.requiredWork)} /></View>}
-              left={(props) => <List.Icon {...props} icon={APP_ICONS.play} />}
             />
           ))}
         </Dialog.Content>

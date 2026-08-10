@@ -10,6 +10,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     ],
     output: { resourceType: ResourceType.Grain, amount: 1 },
     requiredWork: 0.06,
+    conditionWearMultiplier: 0.75,
   },
   [RecipeName.BakeBread]: {
     name: RecipeName.BakeBread,
@@ -20,24 +21,28 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     ],
     output: { resourceType: ResourceType.Bread, amount: 3 },
     requiredWork: 0.26,
+    conditionWearMultiplier: 0.9,
   },
   [RecipeName.ProduceWater]: {
     name: RecipeName.ProduceWater,
     inputs: [],
     output: { resourceType: ResourceType.Water, amount: 1 },
     requiredWork: 0.073,
+    conditionWearMultiplier: 0.5,
   },
   [RecipeName.ProduceElectricity]: {
     name: RecipeName.ProduceElectricity,
     inputs: [],
     output: { resourceType: ResourceType.Electricity, amount: 1 },
     requiredWork: 0.11,
+    conditionWearMultiplier: 0.8,
   },
   [RecipeName.GrowSugar]: {
     name: RecipeName.GrowSugar,
     inputs: [{ resourceType: ResourceType.Water, amount: 4 }],
     output: { resourceType: ResourceType.Sugar, amount: 1 },
     requiredWork: 0.12,
+    conditionWearMultiplier: 0.8,
   },
   [RecipeName.MineIron]: {
     name: RecipeName.MineIron,
@@ -47,6 +52,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     ],
     output: { resourceType: ResourceType.Iron, amount: 1 },
     requiredWork: 0.267,
+    conditionWearMultiplier: 1.1,
   },
   [RecipeName.MineCoal]: {
     name: RecipeName.MineCoal,
@@ -56,6 +62,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     ],
     output: { resourceType: ResourceType.Coal, amount: 2 },
     requiredWork: 0.2,
+    conditionWearMultiplier: 1,
   },
   [RecipeName.MineCopper]: {
     name: RecipeName.MineCopper,
@@ -65,6 +72,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     ],
     output: { resourceType: ResourceType.Copper, amount: 1 },
     requiredWork: 0.333,
+    conditionWearMultiplier: 1.2,
   },
   [RecipeName.QuarrySand]: {
     name: RecipeName.QuarrySand,
@@ -74,6 +82,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     ],
     output: { resourceType: ResourceType.Sand, amount: 3 },
     requiredWork: 0.107,
+    conditionWearMultiplier: 0.6,
   },
   [RecipeName.QuarryClay]: {
     name: RecipeName.QuarryClay,
@@ -83,6 +92,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     ],
     output: { resourceType: ResourceType.Clay, amount: 2 },
     requiredWork: 0.16,
+    conditionWearMultiplier: 0.7,
   },
   [RecipeName.QuarryStone]: {
     name: RecipeName.QuarryStone,
@@ -92,6 +102,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     ],
     output: { resourceType: ResourceType.Stone, amount: 3 },
     requiredWork: 0.213,
+    conditionWearMultiplier: 0.8,
   },
   [RecipeName.ProduceSteel]: {
     name: RecipeName.ProduceSteel,
@@ -103,6 +114,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     ],
     output: { resourceType: ResourceType.Steel, amount: 5 },
     requiredWork: 1.1,
+    conditionWearMultiplier: 1.2,
   },
   [RecipeName.ProduceElectricCircuits]: {
     name: RecipeName.ProduceElectricCircuits,
@@ -114,6 +126,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     ],
     output: { resourceType: ResourceType.ElectricCircuits, amount: 4 },
     requiredWork: 1.65,
+    conditionWearMultiplier: 1.4,
   },
   [RecipeName.ProduceBricks]: {
     name: RecipeName.ProduceBricks,
@@ -125,6 +138,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     ],
     output: { resourceType: ResourceType.Bricks, amount: 10 },
     requiredWork: 0.65,
+    conditionWearMultiplier: 0.75,
   },
   [RecipeName.ProduceCement]: {
     name: RecipeName.ProduceCement,
@@ -136,6 +150,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     ],
     output: { resourceType: ResourceType.Cement, amount: 5 },
     requiredWork: 1.083,
+    conditionWearMultiplier: 1,
   },
   [RecipeName.ProduceReinforcedConcrete]: {
     name: RecipeName.ProduceReinforcedConcrete,
@@ -149,6 +164,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     ],
     output: { resourceType: ResourceType.ReinforcedConcrete, amount: 6 },
     requiredWork: 2.6,
+    conditionWearMultiplier: 1.3,
   },
   [RecipeName.ProduceConstructionMaterials]: {
     name: RecipeName.ProduceConstructionMaterials,
@@ -162,6 +178,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     ],
     output: { resourceType: ResourceType.ConstructionMaterials, amount: 4 },
     requiredWork: 5.2,
+    conditionWearMultiplier: 1.5,
   },
   [RecipeName.BakeCake]: {
     name: RecipeName.BakeCake,
@@ -173,18 +190,21 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     ],
     output: { resourceType: ResourceType.Cake, amount: 3 },
     requiredWork: 0.39,
+    conditionWearMultiplier: 1.1,
   },
   [RecipeName.ManualPumping]: {
     name: RecipeName.ManualPumping,
     inputs: [],
     output: { resourceType: ResourceType.Water, amount: 1 },
     requiredWork: 0.073,
+    conditionWearMultiplier: 0.5,
   },
   [RecipeName.ElectricPumping]: {
     name: RecipeName.ElectricPumping,
     inputs: [{ resourceType: ResourceType.Electricity, amount: 1 }],
     output: { resourceType: ResourceType.Water, amount: 5 },
     requiredWork: 0.12,
+    conditionWearMultiplier: 0.75,
   },
   [RecipeName.CoalPower]: {
     name: RecipeName.CoalPower,
@@ -194,14 +214,45 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     ],
     output: { resourceType: ResourceType.Electricity, amount: 10 },
     requiredWork: 0.467,
+    conditionWearMultiplier: 1.1,
   },
   [RecipeName.SolarPower]: {
     name: RecipeName.SolarPower,
     inputs: [],
     output: { resourceType: ResourceType.Electricity, amount: 1 },
     requiredWork: 0.933,
+    conditionWearMultiplier: 0.8,
   },
 };
+
+export const RECIPE_DISPLAY_NAMES: Readonly<Record<RecipeName, string>> = {
+  [RecipeName.GrowGrain]: 'Grow Grain',
+  [RecipeName.BakeBread]: 'Bake Bread',
+  [RecipeName.ProduceWater]: 'Produce Water',
+  [RecipeName.ProduceElectricity]: 'Produce Electricity',
+  [RecipeName.GrowSugar]: 'Grow Sugar',
+  [RecipeName.MineIron]: 'Mine Iron',
+  [RecipeName.MineCoal]: 'Mine Coal',
+  [RecipeName.MineCopper]: 'Mine Copper',
+  [RecipeName.QuarrySand]: 'Quarry Sand',
+  [RecipeName.QuarryClay]: 'Quarry Clay',
+  [RecipeName.QuarryStone]: 'Quarry Stone',
+  [RecipeName.ProduceSteel]: 'Produce Steel',
+  [RecipeName.ProduceElectricCircuits]: 'Produce Electric Circuits',
+  [RecipeName.ProduceBricks]: 'Produce Bricks',
+  [RecipeName.ProduceCement]: 'Produce Cement',
+  [RecipeName.ProduceReinforcedConcrete]: 'Produce Reinforced Concrete',
+  [RecipeName.ProduceConstructionMaterials]: 'Produce Construction Materials',
+  [RecipeName.BakeCake]: 'Bake Cake',
+  [RecipeName.ManualPumping]: 'Manual Pumping',
+  [RecipeName.ElectricPumping]: 'Electric Pumping',
+  [RecipeName.CoalPower]: 'Coal Power',
+  [RecipeName.SolarPower]: 'Solar Power',
+};
+
+export function getRecipeDisplayName(recipeName: RecipeName): string {
+  return RECIPE_DISPLAY_NAMES[recipeName];
+}
 
 export function getRecipe(recipeName: RecipeName): Recipe {
   return ALL_RECIPES[recipeName];

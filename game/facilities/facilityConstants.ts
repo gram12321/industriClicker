@@ -31,6 +31,8 @@ export const FACILITY_STAFF_WORK_PER_WORKER_PER_MINUTE = 0.1;
 export const FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE = 1 / 600;
 /** Additional condition lost for each completed recipe work unit. */
 export const FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT = 1 / 600;
+/** Fixed work-equivalent condition loss for every completed production cycle. */
+export const FACILITY_PRODUCTION_CONDITION_LOSS_PER_CYCLE = 0.05 / 600;
 /** Construction Materials required to restore one point of condition. */
 export const FACILITY_REPAIR_MATERIAL_COST_RATE = 0.9;
 

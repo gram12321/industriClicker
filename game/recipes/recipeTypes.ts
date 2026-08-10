@@ -41,4 +41,6 @@ export type Recipe = {
   output: RecipeOutput;
   /** Deterministic work units required for one production cycle. */
   requiredWork: number;
+  /** Static balance multiplier for production wear; it never follows live market prices. */
+  conditionWearMultiplier: number;
 };

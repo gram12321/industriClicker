@@ -121,7 +121,7 @@ export class SalesContracts {
     return cloneContract(offer);
   }
 
-  advanceTime(elapsedMinutes: number, resourceTypes: readonly ResourceType[], getUnitReward: (resourceType: ResourceType) => number, maximumOpenContracts: number, random = Math.random): number {
+  advanceTime(elapsedMinutes: number, resourceTypes: readonly ResourceType[], getUnitReward: (resourceType: ResourceType) => number, maximumOpenContracts: number, random = Math.random, getResourceWeight: (resourceType: ResourceType) => number = () => 1): number {
     if (!Number.isInteger(elapsedMinutes) || elapsedMinutes <= 0 || resourceTypes.length === 0
       || !Number.isInteger(maximumOpenContracts) || maximumOpenContracts < 0) {
       return 0;
@@ -132,8 +132,7 @@ export class SalesContracts {
     for (let minute = 0; minute < elapsedMinutes; minute += 1) {
       if (this.offered.length >= maximumOpenContracts) break;
       if (clampRandom(random()) < calculateSalesContractOfferChance(this.offered.length)) {
-        const resourceRoll = clampRandom(random());
-        const resourceType = resourceTypes[Math.floor(resourceRoll * resourceTypes.length)];
+        const resourceType = selectWeightedResourceType(resourceTypes, random, getResourceWeight);
         this.offered.push(this.createOffer(resourceType, random, getUnitReward(resourceType)));
         contractsCreated += 1;
       }
@@ -234,4 +233,20 @@ function clampRandom(value: number): number {
   }
 
   return Math.max(0, Math.min(0.999999999, value));
+}
+
+function selectWeightedResourceType(resourceTypes: readonly ResourceType[], random: () => number, getResourceWeight: (resourceType: ResourceType) => number): ResourceType {
+  const weights = resourceTypes.map((resourceType) => ({ resourceType, weight: Math.max(0, getResourceWeight(resourceType)) }));
+  const totalWeight = weights.reduce((total, entry) => total + entry.weight, 0);
+  if (!Number.isFinite(totalWeight) || totalWeight <= 0) {
+    return resourceTypes[Math.floor(clampRandom(random()) * resourceTypes.length)];
+  }
+
+  let remainingWeight = clampRandom(random()) * totalWeight;
+  for (const entry of weights) {
+    remainingWeight -= entry.weight;
+    if (remainingWeight < 0) return entry.resourceType;
+  }
+
+  return weights[weights.length - 1].resourceType;
 }

@@ -154,7 +154,8 @@ export function formatNumber(value: number, options: NumberFormatOptions = {}): 
 export function formatCurrency(value: number, options: CurrencyFormatOptions = {}): string {
   const safeValue = Number.isFinite(value) ? value : 0;
   const decimals = Math.max(0, options.decimals ?? 2);
-  const minimumFractionDigits = Math.max(0, Math.min(options.minimumFractionDigits ?? 0, decimals));
+  const roundedValue = Number(safeValue.toFixed(decimals));
+  const minimumFractionDigits = Math.max(0, Math.min(options.minimumFractionDigits ?? (Number.isInteger(roundedValue) ? 0 : decimals), decimals));
 
   return new Intl.NumberFormat(DISPLAY_LOCALE, {
     style: 'currency',

@@ -1,5 +1,5 @@
 import type { ResourceType } from '../resources/resourceTypes';
-import type { MarketAutoSellIntervalMs } from './marketConstants';
+import type { MarketAutoTradeIntervalMs } from './marketConstants';
 
 export type MarketPoolEntry = { supply: number; quality: number };
 export type MarketPoolKind = 'local' | 'regional' | 'global';
@@ -9,7 +9,7 @@ export type MarketAutomation = {
   autoBuyMaxUnitPrice: number;
   autoBuyTargetInventory: number;
   autoSellEnabled: boolean;
-  autoSellIntervalMs: MarketAutoSellIntervalMs;
+  autoTradeIntervalMs: MarketAutoTradeIntervalMs;
   autoSellMaxPerMinute: number;
   autoSellMinKeep: number;
   autoSellMinUnitPrice: number;
