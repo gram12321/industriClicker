@@ -41,6 +41,20 @@ export function getSalesContractPremiumMultiplier(completedProjectIds: readonly 
   }, baseMultiplier);
 }
 
+export function getLocalMarketDepthMultiplier(completedProjectIds: readonly string[]): number {
+  return completedProjectIds.reduce((multiplier, projectId) => {
+    const effect = getResearchProject(projectId)?.effect;
+    return effect?.kind === 'local-market-depth' ? Math.max(multiplier, effect.multiplier) : multiplier;
+  }, 1);
+}
+
+export function getLocalRegionalDiffusionMultiplier(completedProjectIds: readonly string[]): number {
+  return completedProjectIds.reduce((multiplier, projectId) => {
+    const effect = getResearchProject(projectId)?.effect;
+    return effect?.kind === 'local-regional-diffusion' ? Math.max(multiplier, effect.multiplier) : multiplier;
+  }, 1);
+}
+
 function isProjectId(value: unknown): value is ResearchProjectId {
   return typeof value === 'string' && (RESEARCH_PROJECT_IDS as readonly string[]).includes(value);
 }

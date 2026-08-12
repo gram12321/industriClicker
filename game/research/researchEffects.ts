@@ -6,6 +6,8 @@ export type ResearchEffect =
   | { kind: 'sales-contract-premium'; multiplier: number }
   | { kind: 'sales-offer-produced-resource-weight'; multiplier: number }
   | { kind: 'sales-offer-produced-only' }
+  | { kind: 'local-market-depth'; multiplier: number }
+  | { kind: 'local-regional-diffusion'; multiplier: number }
   | { kind: 'recipe-unlock'; recipeName: RecipeName }
   | { kind: 'recipe-work-speed-bonus'; recipeName: RecipeName; level: number };
 
@@ -16,6 +18,8 @@ export function describeResearchEffect(effect: ResearchEffect): string {
     case 'sales-contract-premium': return `Contract sale premium: ${Math.round((effect.multiplier - 1) * 100)}%`;
     case 'sales-offer-produced-resource-weight': return `Produced resources are ${effect.multiplier}× more likely in sales offers`;
     case 'sales-offer-produced-only': return 'Sales offers only request resources your company has produced';
+    case 'local-market-depth': return `Local market depth: ${effect.multiplier.toFixed(1)}×`;
+    case 'local-regional-diffusion': return `Local-regional diffusion rate: ${effect.multiplier.toFixed(2)}×`;
     case 'recipe-unlock': return `Unlock recipe: ${getRecipeDisplayName(effect.recipeName)}`;
     case 'recipe-work-speed-bonus': return `Recipe work speed bonus: ${getRecipeDisplayName(effect.recipeName)} level ${effect.level}`;
   }

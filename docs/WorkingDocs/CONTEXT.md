@@ -13,8 +13,10 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Resource quality | A property of an inventory entry; its gameplay rule is not yet designed. |
 | Logistics multiplier | A resource catalogue value for physical shipping, storage, and market-network constraints on adjacent-market diffusion. |
 | Value-density multiplier | A resource catalogue value for the economic value of moving a resource relative to its transport burden. |
-| Market urgency multiplier | A bounded, derived diffusion multiplier based on current adjacent-market prices relative to the resource's initial price level. |
-| Regional market | The device-local market reservoir between the player-facing local market and the global reservoir. |
+| Local market depth | A completed-research multiplier that proportionally expands each local resource supply and benchmark supply, retaining price at completion while reducing local price volatility. |
+| Local-regional diffusion rate | A completed-research multiplier applied only to the raw local-to-regional and regional-to-local diffusion request; it cannot override equilibrium or source-supply caps. |
+| Market diffusion interval | The five-second foreground cadence at which adjacent market pools exchange resources. |
+| Regional market | The device-local market reservoir between the player-facing local market and the global reservoir; its initial supply is the rate base for both adjacent-market diffusion pairs. |
 | Autotrade interval | The per-resource foreground cadence for both enabled autobuy and autosell; it defaults to five seconds. |
 | Market-flow diagnostics | Read-only price, balance-target, rate, and multiplier details for one resource's local/regional and regional/global diffusion, shown in IndustriPedia. |
 | Recipe | A named production transformation with inputs, output, and required work. |

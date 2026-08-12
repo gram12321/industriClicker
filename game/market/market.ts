@@ -56,6 +56,8 @@ export class Market {
   private regional: Record<ResourceType, MarketPoolEntry>;
   private global: Record<ResourceType, MarketPoolEntry>;
   private automation: Record<ResourceType, MarketAutomation>;
+  private localMarketDepthMultiplier = 1;
+  private localRegionalDiffusionMultiplier = 1;
 
   constructor(snapshot?: MarketSnapshot) {
     this.local = createPool('local');
@@ -72,7 +74,29 @@ export class Market {
 
   getLocalPrice(resourceType: ResourceType): number {
     const definition = RESOURCES[resourceType].market;
-    return calculateMarketPrice(definition.localBenchmarkSupply, this.local[resourceType]);
+    return calculateMarketPrice(definition.localBenchmarkSupply * this.localMarketDepthMultiplier, this.local[resourceType]);
+  }
+
+  /** Expands every local pool proportionally, retaining current local prices. */
+  setLocalMarketDepthMultiplier(multiplier: number): boolean {
+    if (!isPositiveFinite(multiplier)) return false;
+    const scale = multiplier / this.localMarketDepthMultiplier;
+    for (const resourceType of RESOURCE_TYPES) this.local[resourceType].supply *= scale;
+    this.localMarketDepthMultiplier = multiplier;
+    return true;
+  }
+
+  /** Restores a depth multiplier after its already-scaled local pools are loaded. */
+  restoreLocalMarketDepthMultiplier(multiplier: number): boolean {
+    if (!isPositiveFinite(multiplier)) return false;
+    this.localMarketDepthMultiplier = multiplier;
+    return true;
+  }
+
+  setLocalRegionalDiffusionMultiplier(multiplier: number): boolean {
+    if (!isPositiveFinite(multiplier)) return false;
+    this.localRegionalDiffusionMultiplier = multiplier;
+    return true;
   }
 
   getGlobalPrice(resourceType: ResourceType): number {
@@ -103,21 +127,23 @@ export class Market {
     );
   }
 
-  getLocalRegionalDiffusionDetails(resourceType: ResourceType): MarketDiffusionDetails {
+  getLocalRegionalDiffusionDetails(resourceType: ResourceType, elapsedMilliseconds?: number): MarketDiffusionDetails {
     return calculateMarketDiffusionDetails(
       this.local[resourceType],
       this.regional[resourceType],
       RESOURCES[resourceType].market,
       this.getLocalRegionalPair(resourceType),
+      elapsedMilliseconds,
     );
   }
 
-  getRegionalGlobalDiffusionDetails(resourceType: ResourceType): MarketDiffusionDetails {
+  getRegionalGlobalDiffusionDetails(resourceType: ResourceType, elapsedMilliseconds?: number): MarketDiffusionDetails {
     return calculateMarketDiffusionDetails(
       this.regional[resourceType],
       this.global[resourceType],
       RESOURCES[resourceType].market,
       this.getRegionalGlobalPair(resourceType),
+      elapsedMilliseconds,
     );
   }
 
@@ -145,10 +171,10 @@ export class Market {
     return true;
   }
 
-  diffuse(): void {
+  diffuse(elapsedMilliseconds?: number): void {
     for (const resourceType of RESOURCE_TYPES) {
-      this.applyDiffusion(this.getLocalRegionalDiffusionDetails(resourceType), this.local[resourceType], this.regional[resourceType]);
-      this.applyDiffusion(this.getRegionalGlobalDiffusionDetails(resourceType), this.regional[resourceType], this.global[resourceType]);
+      this.applyDiffusion(this.getLocalRegionalDiffusionDetails(resourceType, elapsedMilliseconds), this.local[resourceType], this.regional[resourceType]);
+      this.applyDiffusion(this.getRegionalGlobalDiffusionDetails(resourceType, elapsedMilliseconds), this.regional[resourceType], this.global[resourceType]);
     }
   }
 
@@ -169,7 +195,12 @@ export class Market {
     };
   }
 
-  clone(): Market { return new Market(this.toSnapshot()); }
+  clone(): Market {
+    const clone = new Market(this.toSnapshot());
+    clone.localMarketDepthMultiplier = this.localMarketDepthMultiplier;
+    clone.localRegionalDiffusionMultiplier = this.localRegionalDiffusionMultiplier;
+    return clone;
+  }
   static fromSnapshot(snapshot: MarketSnapshot): Market { return new Market(snapshot); }
 
   private restore(snapshot: MarketSnapshot): void {
@@ -191,10 +222,10 @@ export class Market {
     return {
       lowerMarket: 'local' as const,
       higherMarket: 'regional' as const,
-      lowerBenchmarkSupply: definition.localBenchmarkSupply,
-      lowerInitialSupply: definition.localInitialSupply,
+      lowerBenchmarkSupply: definition.localBenchmarkSupply * this.localMarketDepthMultiplier,
+      rateBaseSupply: definition.regionalInitialSupply,
+      diffusionMultiplier: this.localRegionalDiffusionMultiplier,
       higherBenchmarkSupply: definition.regionalBenchmarkSupply,
-      higherInitialSupply: definition.regionalInitialSupply,
     };
   }
 
@@ -204,9 +235,9 @@ export class Market {
       lowerMarket: 'regional' as const,
       higherMarket: 'global' as const,
       lowerBenchmarkSupply: definition.regionalBenchmarkSupply,
-      lowerInitialSupply: definition.regionalInitialSupply,
+      rateBaseSupply: definition.regionalInitialSupply,
+      diffusionMultiplier: 1,
       higherBenchmarkSupply: definition.globalBenchmarkSupply,
-      higherInitialSupply: definition.globalInitialSupply,
     };
   }
 

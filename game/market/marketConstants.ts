@@ -2,9 +2,10 @@ export const MARKET_DEFAULT_QUALITY = 1;
 export const MARKET_DIFFUSION_DIVISOR = 1_000;
 export const MARKET_DIFFUSION_CURVATURE = 0.75;
 export const MARKET_DIFFUSION_MAX_EQUILIBRIUM_CORRECTION = 0.5;
-export const MARKET_DIFFUSION_URGENCY_ELASTICITY = 0.2;
-export const MARKET_DIFFUSION_MIN_URGENCY_MULTIPLIER = 0.75;
-export const MARKET_DIFFUSION_MAX_URGENCY_MULTIPLIER = 1.5;
+/** The reference duration used by diffusion's per-minute balance values. */
+export const MARKET_DIFFUSION_REFERENCE_INTERVAL_MS = 60_000;
+/** Foreground cadence for applying market-pool diffusion. */
+export const MARKET_DIFFUSION_INTERVAL_MS = 5_000;
 export const MARKET_SALES_CONTRACT_PREMIUM = 1.2;
 export const MARKET_AUTOSELL_DEFAULT_MAX_PER_MINUTE = 50;
 export const MARKET_AUTOTRADE_INTERVAL_OPTIONS = [

@@ -37,7 +37,7 @@ export type MarketDiffusionDetails = MarketDiffusionInfo & {
   higherTargetSupply: number;
   logisticsMultiplier: number;
   valueDensityMultiplier: number;
-  marketUrgencyMultiplier: number;
+  diffusionMultiplier: number;
   rawAmount: number;
   equilibriumCappedAmount: number;
 };

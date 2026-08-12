@@ -1,5 +1,5 @@
 import { Inventory } from '@/game/inventory';
-import { Market } from '@/game/market';
+import { MARKET_DIFFUSION_INTERVAL_MS, Market } from '@/game/market';
 import { getRecipe, type RecipeName } from '@/game/recipes';
 import { ResourceType } from '@/game/resources';
 import { FACILITIES, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE } from './facilityConstants';
@@ -45,7 +45,8 @@ export type RecipeEconomyResult = {
 
 /**
  * Simulates one fully staffed facility buying recipe inputs and selling its
- * output on the local market once per foreground minute. Initial margin uses
+ * output on the local market once per foreground minute while applying normal
+ * five-second market diffusion. Initial margin uses
  * a full-cycle initial-market rate, so recipes longer than one minute are not
  * penalized for buying their inputs before their first completed cycle.
  * Maintenance is charged as realised repair spend plus the outstanding repair
@@ -156,7 +157,9 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
     cumulativeNetProfit += minuteNetMargin;
     if (paybackMinute === null && cumulativeNetProfit >= totalInvestmentCost) paybackMinute = minute;
     totalCondition += facility.getView().facilityCondition;
-    market.diffuse();
+    for (let interval = 0; interval < 60_000 / MARKET_DIFFUSION_INTERVAL_MS; interval += 1) {
+      market.diffuse(MARKET_DIFFUSION_INTERVAL_MS);
+    }
   }
 
   const totalMaintenanceCost = repairSpend + outstandingMaintenanceCost;

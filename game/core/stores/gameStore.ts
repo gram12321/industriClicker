@@ -3,14 +3,14 @@ import { Inventory } from '@/game/inventory';
 import { FACILITIES, FacilityCollection, advanceAllFacilityProduction, calculateFacilityEffectiveWork, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getFacilityRepairCost, getFacilityUpgradeCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
 import type { RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
-import { MARKET_SALES_CONTRACT_PREMIUM, Market, canAutoBuyMarketResource, canBuyMarketResource, canSellMarketResource, type MarketAutomation } from '@/game/market';
+import { MARKET_DIFFUSION_INTERVAL_MS, MARKET_SALES_CONTRACT_PREMIUM, Market, canAutoBuyMarketResource, canBuyMarketResource, canSellMarketResource, type MarketAutomation } from '@/game/market';
 import type { GameSnapshot } from '@/game/core/state';
 import { BASE_WORK_PER_MINUTE, FOREGROUND_SIMULATION_STEP_MS, REALTIME_WORK_MINUTE_MS, calculateRealtimeAdvance } from '@/game/core/time';
 import { SalesContracts, calculateSalesContractOfferChance } from '@/game/sales';
 import { AchievementLedger, ProductionStatistics, createAchievementEvaluationContext, evaluateAchievementUnlocks, type AchievementCategory } from '@/game/achievements';
 import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary, calculateFacilityConditionPrestige } from '@/game/prestige';
 import { evaluateGateRequirements, type GateContext, type GateEvaluation } from '@/game/gates';
-import { ResearchLedger, getMaximumOpenSalesContracts, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, getSalesContractPremiumMultiplier, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, type ResearchProjectId } from '@/game/research';
+import { ResearchLedger, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesContracts, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, getSalesContractPremiumMultiplier, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, type ResearchProjectId } from '@/game/research';
 import { FIRST_FACILITY_RECIPE_RESEARCH_GRANT_ID, GrantLedger } from '@/game/grants';
 import type { StartingConditionId } from '@/game/company/companyTypes';
 import { STANDARD_START_CONSTRUCTION_MATERIALS } from '@/game/company/companyConstants';
@@ -609,14 +609,22 @@ export const useGameStore = create<GameState>((set, get) => {
         }
       }
 
+      const completedDiffusionIntervals = Math.floor(stepEndGameTimeMs / MARKET_DIFFUSION_INTERVAL_MS)
+        - Math.floor(stepStartGameTimeMs / MARKET_DIFFUSION_INTERVAL_MS);
+      if (completedDiffusionIntervals > 0) {
+        market ??= get().market.clone();
+        for (let interval = 0; interval < completedDiffusionIntervals; interval += 1) {
+          market.diffuse(MARKET_DIFFUSION_INTERVAL_MS);
+        }
+      }
+
       const totalSalesMs = unprocessedWorkMs + stepMs;
       const completedSalesMinutes = Math.floor(totalSalesMs / REALTIME_WORK_MINUTE_MS);
       unprocessedWorkMs = totalSalesMs - completedSalesMinutes * REALTIME_WORK_MINUTE_MS;
 
       if (completedSalesMinutes > 0) {
         salesContracts ??= get().salesContracts.clone();
-        market ??= get().market.clone();
-        const activeMarket = market;
+        const activeMarket = market ?? get().market;
         const contractsCreated = salesContracts.advanceTime(
           completedSalesMinutes,
           getSalesOfferResourceTypes(research.getCompletedProjectIds(), productionStatistics.toSnapshot().producedByResource),
@@ -627,7 +635,6 @@ export const useGameStore = create<GameState>((set, get) => {
             ? getSalesOfferProducedResourceWeight(research.getCompletedProjectIds())
             : 1,
         );
-        activeMarket.diffuse();
         elapsedMinutes += completedSalesMinutes;
 
         if (contractsCreated > 0) {
@@ -658,6 +665,14 @@ export const useGameStore = create<GameState>((set, get) => {
       if (completedResearchProjectId) {
         research.complete(completedResearchProjectId, nextGameTimeMs);
         const completedProject = getResearchProject(completedResearchProjectId);
+        if (completedProject?.effect.kind === 'local-market-depth') {
+          market ??= get().market.clone();
+          market.setLocalMarketDepthMultiplier(getLocalMarketDepthMultiplier(research.getCompletedProjectIds()));
+        }
+        if (completedProject?.effect.kind === 'local-regional-diffusion') {
+          market ??= get().market.clone();
+          market.setLocalRegionalDiffusionMultiplier(getLocalRegionalDiffusionMultiplier(research.getCompletedProjectIds()));
+        }
         if (completedProject?.effect.kind === 'grant') {
           marketFinance ??= get().finance.clone();
           marketFinance.applyTransaction({ amount: completedProject.effect.amount, description: `Research completed: ${completedProject.name}`, detailLines: [], kind: 'equity', source: 'research-grant', occurredAtGameTimeMs: nextGameTimeMs });
@@ -967,6 +982,8 @@ export const useGameStore = create<GameState>((set, get) => {
     const productionStatistics = ProductionStatistics.fromSnapshot(snapshot.productionStatistics);
     const prestige = PrestigeLedger.fromSnapshot(snapshot.prestige);
     const research = ResearchLedger.fromSnapshot(snapshot.research);
+    market.restoreLocalMarketDepthMultiplier(getLocalMarketDepthMultiplier(research.getCompletedProjectIds()));
+    market.setLocalRegionalDiffusionMultiplier(getLocalRegionalDiffusionMultiplier(research.getCompletedProjectIds()));
     const grants = GrantLedger.fromSnapshot(snapshot.grants);
     const inventory = Inventory.fromSnapshot(snapshot.inventory);
     syncCompanyBalancePrestige(prestige, finance, snapshot.time.lastProcessedAtMs);

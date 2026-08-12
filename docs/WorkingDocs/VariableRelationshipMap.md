@@ -227,7 +227,7 @@ flowchart LR
 | `lastObservedAtMs` | Runtime | Zustand game store | Foreground observation and lifecycle | No |
 | Local profile, company record, tutorial state, device session | Stored | Company domain SQLite adapters | Local player/company commands | Dedicated local tables |
 
-Derived values include facility efficiency, production work/output, contract reward and offer chance, current prestige, market diffusion amount, and UI view models.
+Derived values include facility efficiency, production work/output, contract reward and offer chance, current prestige, market diffusion amount, completed-research local market depth and local-regional diffusion rate, and UI view models.
 
 ## Command Effects
 
@@ -254,7 +254,7 @@ All normal state changes batch persistence; background and explicit checkpoints 
 
 | State group | Save representation | Restore |
 |---|---|---|
-| Inventory, finance (including loans), facilities, sales contracts, achievements, production statistics, prestige, research, progression grants | Respective snapshot inside a company-keyed `GameSnapshot` | Restore the active company's valid current-version snapshot |
+| Inventory, finance (including loans), facilities, sales contracts, achievements, production statistics, prestige, research, progression grants | Respective snapshot inside a company-keyed `GameSnapshot` | Restore the active company's valid snapshot |
 | Foreground game time and pipeline | `GameTimeSnapshot` | Restore logical/partial time and pipeline; reset observation anchor |
 | Catalogues and balance configuration | Typed code definitions | Reload from the app version; never save |
 | Player/company/session/tutorial metadata | Dedicated company-domain SQLite records | Load before an active company runtime session begins |

@@ -20,10 +20,12 @@ const CHAIN_DETAILS: Record<ResearchChainId, { eyebrow: string; icon: string; ti
   'sales-capacity': { eyebrow: 'SALES', icon: 'handshake-outline', title: 'Sales capacity', subtitle: 'Increase the number of customer contracts your company may keep open.' },
   'sales-targeting': { eyebrow: 'SALES', icon: 'bullseye-arrow', title: 'Sales targeting', subtitle: 'Focus customer offers on goods your company has produced.' },
   'contract-value': { eyebrow: 'SALES', icon: 'cash-multiple', title: 'Contract value', subtitle: 'Increase the premium paid by customer contracts.' },
+  'local-market-network': { eyebrow: 'MARKET', icon: 'storefront-outline', title: 'Local market network', subtitle: 'Expand local market depth so each trade shifts prices less.' },
+  'market-diffusion-network': { eyebrow: 'MARKET', icon: 'transit-connection-variant', title: 'Market diffusion network', subtitle: 'Increase the rate at which local and regional markets rebalance.' },
   'recipe-unlocks': { eyebrow: 'RECIPES', icon: 'flask-outline', title: 'Recipe research', subtitle: 'Unlock production recipes for your facilities.' },
 };
 
-const RESEARCH_CHAIN_IDS: readonly ResearchChainId[] = ['capital-grants', 'sales-capacity', 'sales-targeting', 'contract-value', 'recipe-unlocks'];
+const RESEARCH_CHAIN_IDS: readonly ResearchChainId[] = ['capital-grants', 'sales-capacity', 'sales-targeting', 'contract-value', 'local-market-network', 'market-diffusion-network', 'recipe-unlocks'];
 
 type ResearchSeries = { completedCount: number; project: ResearchProjectDefinition; projects: readonly ResearchProjectDefinition[] };
 

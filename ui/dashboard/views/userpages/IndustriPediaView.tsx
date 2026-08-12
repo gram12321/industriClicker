@@ -60,7 +60,7 @@ function MarketFlowSection({ market }: { market: Market }) {
   const regionalBalanceDelta = regionalGlobalDetails.lowerTargetSupply - regional.supply;
 
   return <>
-    <SectionHeading eyebrow="MARKET FLOW" title="Follow market balancing" subtitle="Prices guide resources through local, regional, and global reservoirs once per minute." />
+    <SectionHeading eyebrow="MARKET FLOW" title="Follow market balancing" subtitle="Prices guide resources through local, regional, and global reservoirs every five foreground seconds." />
     <View style={localStyles.resourceTabs}>
       {RESOURCE_GROUPS.map((group) => <View key={group.id} style={localStyles.resourceGroupTabs}><Text style={styles.cardKicker}>{group.label}</Text><View style={localStyles.resourceGroupButtons}>{group.resources.map((resourceType) => <Button accessibilityLabel={getResource(resourceType).name} compact key={resourceType} mode={selectedResource === resourceType ? 'contained' : 'outlined'} onPress={() => setSelectedResource(resourceType)}>
         {`${getResourceIcon(resourceType)} ${getResource(resourceType).name}`}
@@ -100,13 +100,13 @@ function MarketFlowSection({ market }: { market: Market }) {
         <View style={localStyles.accordionBody}>
           <BalanceRow label="Logistics" value={`${formatNumber(details.logisticsMultiplier, { decimals: 2, forceDecimals: true })}×`} />
           <BalanceRow label="Value density" value={`${formatNumber(details.valueDensityMultiplier, { decimals: 2, forceDecimals: true })}×`} />
-          <BalanceRow label="Market urgency" value={`${formatNumber(details.marketUrgencyMultiplier, { decimals: 2, forceDecimals: true })}×`} />
-          <Text style={styles.cardDescription}>Logistics covers transport and storage. Value density reflects how worthwhile the resource is to move. Urgency responds to the current price level.</Text>
+          <BalanceRow label="Local-regional research" value={`${formatNumber(details.diffusionMultiplier, { decimals: 2, forceDecimals: true })}×`} />
+          <Text style={styles.cardDescription}>Logistics covers transport and storage. Value density reflects how worthwhile the resource is to move.</Text>
         </View>
       </List.Accordion>
       <List.Accordion left={(props) => <List.Icon {...props} icon={APP_ICONS.settings} />} title="Formula and safeguards">
         <View style={localStyles.accordionBody}>
-          <Text style={localStyles.formula}>base × price gap × nonlinear response × logistics × value density × urgency</Text>
+          <Text style={localStyles.formula}>base × symmetric price gap × nonlinear response × logistics × value density × local-regional research</Text>
           <BalanceRow label="Raw request" value={`${formatNumber(details.rawAmount, { smartDecimals: true })} units`} />
           <BalanceRow label="After equilibrium cap" value={`${formatNumber(details.equilibriumCappedAmount, { smartDecimals: true })} units`} />
           <BalanceRow label="Next correction" value={`${formatNumber(details.amount, { smartDecimals: true })} units`} />

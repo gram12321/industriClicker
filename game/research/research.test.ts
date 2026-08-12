@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
 import { SalesContracts } from '@/game/sales';
-import { BASE_MAXIMUM_OPEN_SALES_CONTRACTS, getMaximumOpenSalesContracts, getSalesContractPremiumMultiplier, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes } from './research';
+import { BASE_MAXIMUM_OPEN_SALES_CONTRACTS, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesContracts, getSalesContractPremiumMultiplier, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes } from './research';
 
 function createProductionTotals(produced: readonly ResourceType[]): Record<ResourceType, number> {
   return RESOURCE_TYPES.reduce((totals, resourceType) => {
@@ -39,5 +39,15 @@ describe('sales research effects', () => {
 
     expect(contracts.getOfferedContracts()).toHaveLength(1);
     expect(contracts.getOfferedContracts()[0].resourceType).toBe(ResourceType.Grain);
+  });
+
+  it('uses the highest completed local market network tier as the market-depth multiplier', () => {
+    expect(getLocalMarketDepthMultiplier([])).toBe(1);
+    expect(getLocalMarketDepthMultiplier(['local-market-network-1', 'local-market-network-10'])).toBe(8);
+  });
+
+  it('caps the market diffusion network at a fourfold local-regional rate', () => {
+    expect(getLocalRegionalDiffusionMultiplier([])).toBe(1);
+    expect(getLocalRegionalDiffusionMultiplier(['market-diffusion-network-1', 'market-diffusion-network-10'])).toBe(4);
   });
 });
