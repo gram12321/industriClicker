@@ -28,7 +28,7 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Credit rating | A derived score and grade based on asset health, liquidity, company age, and loan-payment history. |
 | Lender availability | A per-lender eligibility and borrowing-cap calculation derived from the company's assets, credit score, outstanding debt, lender market exposure, and lender contract cap. |
 | Lender search | A paid, foreground-time finance activity. Its fee and work requirement scale with offer count and how tightly lender type, amount, and term are constrained; matching offers appear only when the work completes. |
-| Economy phase | The persistent crash, recession, stable, expansion, or boom state. It changes deterministically every 24 foreground hours and adjusts future loan interest offers. |
+| Economy phase | The persistent crash, recession, stable, expansion, or boom state. It changes deterministically every 10 foreground minutes with a bias toward stable and adjusts future loan interest offers. |
 | Sales contract | A customer request for a resource and integer quantity, retained as offered, completed, or rejected. |
 | Speed upgrade / Output upgrade | Money-funded facility levels that respectively improve work speed or recipe output. |
 | Assigned workers / Required workers | The local worker count and calculated staffing target for a facility. |

@@ -279,6 +279,13 @@ function FinanceSection() {
       <Text style={styles.cardDescription}>A facility needs both its land purchase and Construction Materials. You can sell one for 70% of its current condition-adjusted book value.</Text>
     </Card.Content></Card>
     <Card mode="contained" style={styles.featureCard}><Card.Content><List.Item description={<View style={localStyles.iconValue}><Text>Each fulfilled unit pays</Text><CurrencyValue value={1} /><Text>. The requested quantity must be fully available in inventory before a contract can be supplied.</Text></View>} left={(props) => <List.Icon {...props} icon={APP_ICONS.contracts} />} title="Customer contracts" /><List.Item description="Each facility has separate Speed and Output upgrades. The next level costs more than the previous one." left={(props) => <List.Icon {...props} icon={APP_ICONS.speed} />} title="Facility upgrades" /><List.Item description="Every accepted cost and income is recorded in the Finance activity list." left={(props) => <List.Icon {...props} icon={APP_ICONS.financeHistory} />} title="Transaction history" /></Card.Content></Card>
+    <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
+      <Text style={styles.cardKicker}>LOANS AND LENDER LIMITS</Text>
+      <Text style={styles.cardDescription}>A lender must consider your company eligible before it contributes to borrowing. Company stability is one part of credit rating: it combines company age, recent operating consistency, and how efficiently income covers expenses.</Text>
+      <Text style={styles.cardDescription}>Each eligible lender has four caps. Asset cap is what your assets support; rating cap is what your credit supports; market cap is that lender’s exposure to one borrower; and contract cap is that lender product’s own maximum. The lowest is that lender’s policy cap.</Text>
+      <Text style={styles.cardDescription}>Company ceiling is the largest policy cap among eligible lenders. Borrowing available is company ceiling minus outstanding debt. The Loans screen highlights the cap currently holding each lender back.</Text>
+      <Text style={styles.cardDescription}>Economy phase changes deterministically with foreground time and currently changes rates on future loan offers only. It does not change existing loan rates, production, market prices, or lender caps.</Text>
+    </Card.Content></Card>
   </>;
 }
 

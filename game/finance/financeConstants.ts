@@ -102,4 +102,11 @@ export const LENDER_SEARCH_CONFIG = {
 export const ECONOMY_PHASES = ['crash', 'recession', 'stable', 'expansion', 'boom'] as const;
 export type EconomyPhase = (typeof ECONOMY_PHASES)[number];
 export const ECONOMY_INTEREST_MULTIPLIERS: Readonly<Record<EconomyPhase, number>> = { crash: 1.35, recession: 1.16, stable: 1, expansion: 0.93, boom: 0.86 };
-export const ECONOMY_TRANSITION = { edgeShiftProbability: 0.26, middleShiftProbability: 0.16, periodMs: 24 * 60 * 60_000 } as const;
+/** Ten-minute deterministic economy transitions favour returning to Stable. */
+export const ECONOMY_TRANSITION = {
+  periodMs: 10 * 60_000,
+  edgeReturnProbability: 0.35,
+  middleReturnProbability: 0.35,
+  middleWorsenProbability: 0.1,
+  stableShiftProbability: 0.15,
+} as const;
