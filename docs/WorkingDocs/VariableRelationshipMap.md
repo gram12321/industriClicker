@@ -9,10 +9,10 @@ The catalogue in `game/resources/resourceConstants.ts` is the source of truth fo
 | Resource | Produced by | Inputs per cycle |
 |---|---|---|
 | Water | Small Utility Works: Produce Water; Water Well: Manual / Electric Pumping | None / None / 1 Electricity |
-| Electricity | Small Utility Works: Produce Electricity; Power Plant: Coal / Solar Power | None / 1 Coal, 2 Water / None |
+| Electricity | Small Utility Works: Produce Electricity; Power Plant: Coal / Solar Power | None / 0.5 Coal, 1 Water / None |
 | Grain | Farm: Grow Grain | 1 Water, 1 Electricity |
-| Sugar | Farm: Grow Sugar | 4 Water |
-| Bread | Bakery: Bake Bread | 2 Grain, 1 Water, 1 Electricity |
+| Sugar | Farm: Grow Sugar | 3 Water |
+| Bread | Bakery: Bake Bread | 1.5 Grain, 1 Water, 1 Electricity |
 | Cake | Bakery: Bake Cake | 1 Grain, 0.5 Sugar, 2 Water, 2 Electricity |
 | Coal | Mine: Mine Coal | 1 Water, 2 Electricity |
 | Iron | Mine: Mine Iron | 2 Water, 4 Electricity |
@@ -25,7 +25,7 @@ The catalogue in `game/resources/resourceConstants.ts` is the source of truth fo
 | Bricks | Construction Factory: Produce Bricks | 2 Clay, 1 Sand, 1 Water, 3 Electricity |
 | Cement | Construction Factory: Produce Cement | 3 Stone, 1 Clay, 1 Water, 5 Electricity |
 | Reinforced Concrete | Construction Factory: Produce Reinforced Concrete | 2 Cement, 3 Sand, 2 Stone, 2 Steel, 2 Water, 2 Electricity |
-| Construction Materials | Construction Factory: Produce Construction Materials | 4 Bricks, 2 Reinforced Concrete, 2 Steel, 2 Sand, 2 Cement, 3 Electricity |
+| Construction Materials | Construction Factory: Produce Construction Materials | 2 Bricks, 1 Reinforced Concrete, 1 Steel, 1 Sand, 1 Cement, 2 Electricity |
 
 ```mermaid
 flowchart LR

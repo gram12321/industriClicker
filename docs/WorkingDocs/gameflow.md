@@ -31,34 +31,34 @@ Players may pause a selected recipe without clearing it; resuming continues its 
 
 | Recipe | Inputs | Output | Work |
 |---|---|---:|---:|
-| Grow Grain | 1 Water, 1 Electricity | 1 Grain | 0.06 |
-| Bake Bread | 2 Grain, 1 Water, 1 Electricity | 3 Bread | 0.26 |
-| Produce Water / Electricity | None | 1 utility resource | 0.073 / 0.11 |
-| Grow Sugar | 4 Water | 1 Sugar | 0.12 |
-| Mine Coal | 1 Water, 2 Electricity | 2 Coal | 0.2 |
-| Mine Iron | 2 Water, 4 Electricity | 1 Iron | 0.267 |
-| Mine Copper | 2 Water, 5 Electricity | 1 Copper | 0.333 |
+| Grow Grain | 1 Water, 1 Electricity | 1.2 Grain | 0.06 |
+| Bake Bread | 1.5 Grain, 1 Water, 1 Electricity | 4.5 Bread | 0.26 |
+| Produce Water / Electricity | None | 2 utility resources | 0.073 / 0.11 |
+| Grow Sugar | 3 Water | 1.2 Sugar | 0.12 |
+| Mine Coal | 1 Water, 2 Electricity | 2.5 Coal | 0.2 |
+| Mine Iron | 2 Water, 4 Electricity | 1.25 Iron | 0.267 |
+| Mine Copper | 2 Water, 5 Electricity | 1.25 Copper | 0.333 |
 | Quarry Sand | 1 Water, 1 Electricity | 3 Sand | 0.107 |
 | Quarry Clay | 2 Water, 1 Electricity | 2 Clay | 0.16 |
 | Quarry Stone | 1 Water, 4 Electricity | 3 Stone | 0.213 |
-| Produce Steel | 2 Iron, 1 Coal, 2 Water, 6 Electricity | 5 Steel | 1.1 |
-| Produce Electric Circuits | 2 Sand, 2 Copper, 1 Water, 4 Electricity | 4 Electric Circuits | 1.65 |
-| Produce Bricks | 2 Clay, 1 Sand, 1 Water, 3 Electricity | 10 Bricks | 0.65 |
-| Produce Cement | 3 Stone, 1 Clay, 1 Water, 5 Electricity | 5 Cement | 1.083 |
-| Produce Reinforced Concrete | 2 Cement, 3 Sand, 2 Stone, 2 Steel, 2 Water, 2 Electricity | 6 Reinforced Concrete | 2.6 |
-| Produce Construction Materials | 4 Bricks, 2 Reinforced Concrete, 2 Steel, 2 Sand, 3 Electricity | 4 Construction Materials | 5.2 |
-| Bake Cake | 1 Grain, 0.5 Sugar, 2 Electricity, 2 Water | 3 Cake | 0.39 |
-| Manual / Electric Pumping | None / 1 Electricity | 1 / 5 Water | 0.073 / 0.12 |
-| Coal / Solar Power | 1 Coal, 2 Water / None | 10 / 1 Electricity | 0.467 / 0.933 |
+| Produce Steel | 2 Iron, 1 Coal, 2 Water, 6 Electricity | 6 Steel | 1.1 |
+| Produce Electric Circuits | 2 Sand, 2 Copper, 1 Water, 4 Electricity | 5 Electric Circuits | 1.65 |
+| Produce Bricks | 2 Clay, 1 Sand, 1 Water, 3 Electricity | 12 Bricks | 0.65 |
+| Produce Cement | 3 Stone, 1 Clay, 1 Water, 5 Electricity | 7 Cement | 1.083 |
+| Produce Reinforced Concrete | 2 Cement, 3 Sand, 2 Stone, 2 Steel, 2 Water, 2 Electricity | 7 Reinforced Concrete | 2.6 |
+| Produce Construction Materials | 2 Bricks, 1 Reinforced Concrete, 1 Steel, 1 Sand, 1 Cement, 2 Electricity | 8 Construction Materials | 5.2 |
+| Bake Cake | 1 Grain, 0.5 Sugar, 2 Electricity, 2 Water | 4 Cake | 0.39 |
+| Manual / Electric Pumping | None / 1 Electricity | 2 / 7 Water | 0.073 / 0.12 |
+| Coal / Solar Power | 0.5 Coal, 1 Water / None | 6 / 3 Electricity | 0.467 / 0.933 |
 
 For `levels = speedLevel + outputLevel`:
 
 - Upgrade cost: `ceil(upgradeCost × 1.5^currentLevel)`.
 - Speed-upgrade work-speed multiplier: `1 + 0.8 × (1 - e^(-0.22 × speedLevel))`.
-- Output multiplier: `1 + (1 - e^(-0.18 × outputLevel))`.
+- Output multiplier: `1 + 1.5 × (1 - e^(-0.18 × outputLevel))`.
 - Required workers: `baseWorkers + levels + ceil(baseWorkers × 1.15^levels - baseWorkers)`.
 - Staffing efficiency at or below target: `0.01 + 0.99 × ratio^1.6`; above target: `1 + 0.25 × (1 - e^(-0.7 × (ratio - 1)))`.
-- Facility condition starts at `1`, is clamped to `0–1`, and loses `1 / 600` per constructed facility per foreground minute. Each completed recipe cycle loses `(recipe.requiredWork / 600 + 0.05 / 600) × recipe.conditionWearMultiplier` condition. The fixed per-cycle term makes shorter cycles wear more per minute; the static per-recipe multiplier reflects machinery intensity and never follows live market prices. Both losses are multiplied by `calculateAsymmetricalScaler01(facilityCondition)`, so wear is fastest at high condition and slows toward zero.
+- Facility condition starts at `1`, is clamped to `0–1`, and loses `1 / 1,200` per constructed facility per foreground minute. Each completed recipe cycle loses `(recipe.requiredWork / 1,200 + 0.05 / 1,200) × recipe.conditionWearMultiplier` condition. The fixed per-cycle term makes shorter cycles wear more per minute; the static per-recipe multiplier reflects machinery intensity and never follows live market prices. Both losses are multiplied by `calculateAsymmetricalScaler01(facilityCondition)`, so wear is fastest at high condition and slows toward zero.
 - Overstaffing also multiplies both condition losses by `1.5^(staffingRatio - 1)` whenever staffing exceeds the requirement. This exponential wear penalty has no ceiling.
 - Condition upgrades reduce both wear sources by `1 - 0.75 × (1 - e^(-0.18 × conditionUpgradeLevel))`; the reduction approaches 75% without reaching it, uses the same facility upgrade cost curve, and does not increase worker requirements.
 - Facility efficiency: `staffingEfficiency × conditionEfficiency`, where `conditionEfficiency = 1 - calculateAsymmetricalScaler01(1 - facilityCondition)`, so each lost point of condition is increasingly costly.
@@ -71,19 +71,23 @@ The following reference values use the current condition curve. Passive time adv
 | Foreground time | Completed 1.00-work cycles | Passive condition | Production condition |
 |---:|---:|---:|---:|
 | Start | 0 | 100.00% | 100.00% |
-| 1 hour | 60 | 90.11% | 90.11% |
-| 2 hours | 120 | 80.50% | 80.49% |
-| 4 hours | 240 | 62.58% | 62.57% |
-| 6 hours | 360 | 47.61% | 47.59% |
-| 8 hours | 480 | 35.45% | 35.42% |
-| 10 hours | 600 | 26.26% | 26.23% |
-| 15 hours | 900 | 12.40% | 12.38% |
-| 20 hours | 1,200 | 5.86% | 5.84% |
-| 30 hours | 1,800 | 1.31% | 1.30% |
-| 40 hours | 2,400 | 0.29% | 0.29% |
-| 60 hours | 3,600 | 0.01% | 0.01% |
+| 1 hour | 60 | 95.03% | 95.03% |
+| 2 hours | 120 | 90.11% | 90.11% |
+| 4 hours | 240 | 80.49% | 80.49% |
+| 6 hours | 360 | 71.26% | 71.25% |
+| 8 hours | 480 | 62.58% | 62.57% |
+| 10 hours | 600 | 54.71% | 54.70% |
+| 15 hours | 900 | 38.20% | 38.19% |
+| 20 hours | 1,200 | 26.24% | 26.23% |
+| 30 hours | 1,800 | 12.39% | 12.38% |
+| 40 hours | 2,400 | 5.85% | 5.84% |
+| 60 hours | 3,600 | 1.30% | 1.30% |
 
 Levels and worker counts are non-negative integers. A zero-worker requirement has 100% efficiency; above-target staffing cannot reach a 25% bonus.
+
+### Recipe Economy Validation
+
+The deterministic recipe-economy simulator models one fully staffed facility buying its recipe inputs locally, continuously selling its completed output locally, applying normal foreground wear and adjacent-market diffusion once per minute. Initial net margin is calculated from a full initial-market cycle rate, including expected maintenance, rather than treating inputs bought before a long recipe's first output as a loss. It reports initial and sustained net margin after inputs and maintenance, facility and upgrade investment, payback time, condition, repairs, market stalls, and the first non-positive completed-cycle margin when one occurs. Standard diagnostics cover 15 minutes, 60 minutes, and an optional four-hour break-even horizon. The simulated facility repairs to 100% whenever condition reaches 70%; outstanding repair cost is included as maintenance even before the threshold is reached.
 
 ## Market
 

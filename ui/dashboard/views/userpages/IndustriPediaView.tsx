@@ -4,7 +4,7 @@ import { Button, Card, List, Text } from 'react-native-paper';
 import { FACILITY_GROUPS, getFacilityDefinition } from '@/game/facilities';
 import { FINANCE_INITIAL_BALANCE } from '@/game/finance';
 import { PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS } from '@/game/prestige';
-import type { Market } from '@/game/market';
+import type { Market, MarketDiffusionDetails } from '@/game/market';
 import { getResource, getResourceIcon, RESOURCE_GROUPS, RESOURCE_TYPES, ResourceType } from '@/game/resources';
 import { formatCurrency, formatNumber, formatSigned } from '@/utils';
 import { SectionHeading, WorkMetric } from '@/ui/dashboard/components/DashboardPrimitives';
@@ -56,12 +56,8 @@ function MarketFlowSection({ market }: { market: Market }) {
   const global = market.getGlobalEntry(selectedResource);
   const details = market.getLocalRegionalDiffusionDetails(selectedResource);
   const regionalGlobalDetails = market.getRegionalGlobalDiffusionDetails(selectedResource);
-  const isToLocal = details.direction === 'to-local';
-  const isToRegional = details.direction === 'to-regional';
-  const flowColor = isToLocal ? colors.marketGreen : isToRegional ? colors.marketGold : colors.muted;
-  const flowIcon = isToLocal ? APP_ICONS.marketFlowToLocal : isToRegional ? APP_ICONS.marketFlowToGlobal : APP_ICONS.marketBalanced;
-  const pressureWidth = `${Math.min(details.priceGap * 50, 50)}%` as `${number}%`;
   const localBalanceDelta = details.lowerTargetSupply - local.supply;
+  const regionalBalanceDelta = regionalGlobalDetails.lowerTargetSupply - regional.supply;
 
   return <>
     <SectionHeading eyebrow="MARKET FLOW" title="Follow market balancing" subtitle="Prices guide resources through local, regional, and global reservoirs once per minute." />
@@ -73,27 +69,23 @@ function MarketFlowSection({ market }: { market: Market }) {
     <Card mode="contained" style={styles.featureCard}><Card.Content style={localStyles.flowCardContent}>
       <Text accessibilityLabel={resource.name} variant="titleMedium" style={localStyles.flowTitle}>{`${getResourceIcon(selectedResource)} ${resource.name}`}</Text>
       <MarketPool label="Global market" price={regionalGlobalDetails.higherPrice} supply={global.supply} />
-      <Text style={localStyles.flowDirection}>{getFlowDescription(regionalGlobalDetails.direction)}</Text>
-      <Text style={localStyles.flowAmount}>{regionalGlobalDetails.direction === 'none' ? 'Prices balanced' : `${formatNumber(regionalGlobalDetails.amount, { smartDecimals: true })} / minute`}</Text>
+      <MarketFlowConnector details={regionalGlobalDetails} />
       <MarketPool label="Regional market" price={details.higherPrice} supply={regional.supply} />
-      <View accessibilityLabel={getFlowAccessibilityLabel(details.direction, details.amount)} style={localStyles.flowConnector}>
-        <MaterialCommunityIcons color={flowColor} name={flowIcon as never} size={28} />
-        <Text style={[localStyles.flowAmount, { color: flowColor }]}>{details.direction === 'none' ? 'Prices balanced' : `${formatNumber(details.amount, { smartDecimals: true })} / minute`}</Text>
-        <Text style={localStyles.flowDirection}>{getFlowDescription(details.direction)}</Text>
-      </View>
+      <MarketFlowConnector details={details} />
       <MarketPool label="Local market" price={details.lowerPrice} supply={local.supply} />
-      <Text style={localStyles.priceGapText}>{details.direction === 'none' ? 'Local and regional prices are equal.' : `Local/regional price gap: ${formatNumber(details.priceGap, { percent: true, decimals: 1 })}`}</Text>
-      <View accessibilityLabel={`Price gap ${formatNumber(details.priceGap, { percent: true, decimals: 1 })}`} style={localStyles.balanceTrack}>
-        <View style={localStyles.balanceCentre} />
-        {details.direction !== 'none' && <View style={[localStyles.balanceFill, isToLocal ? localStyles.balanceFillToLocal : localStyles.balanceFillToGlobal, { width: pressureWidth, backgroundColor: flowColor }]} />}
-      </View>
     </Card.Content></Card>
     <Card mode="contained" style={styles.featureCard}><Card.Content style={localStyles.flowCardContent}>
       <Text style={styles.cardKicker}>BALANCE</Text>
+      <Text style={localStyles.balancePairHeading}>LOCAL ↔ REGIONAL</Text>
       <BalanceRow label="Local target" value={formatNumber(details.lowerTargetSupply, { smartDecimals: true })} />
       <BalanceRow label="Regional target" value={formatNumber(details.higherTargetSupply, { smartDecimals: true })} />
       <BalanceRow label="Local adjustment remaining" value={`${formatSigned(localBalanceDelta, { smartDecimals: true })} units`} />
       <BalanceRow label="Next correction" value={details.direction === 'none' ? 'None needed' : `${formatNumber(details.amount, { smartDecimals: true })} units`} />
+      <Text style={localStyles.balancePairHeading}>REGIONAL ↔ GLOBAL</Text>
+      <BalanceRow label="Regional target" value={formatNumber(regionalGlobalDetails.lowerTargetSupply, { smartDecimals: true })} />
+      <BalanceRow label="Global target" value={formatNumber(regionalGlobalDetails.higherTargetSupply, { smartDecimals: true })} />
+      <BalanceRow label="Regional adjustment remaining" value={`${formatSigned(regionalBalanceDelta, { smartDecimals: true })} units`} />
+      <BalanceRow label="Next correction" value={regionalGlobalDetails.direction === 'none' ? 'None needed' : `${formatNumber(regionalGlobalDetails.amount, { smartDecimals: true })} units`} />
     </Card.Content></Card>
     <Card mode="contained" style={styles.featureCard}><Card.Content style={localStyles.accordionCardContent}>
       <List.Accordion left={(props) => <List.Icon {...props} icon={APP_ICONS.help} />} title="Why is it moving?">
@@ -135,6 +127,30 @@ function MarketPool({ label, price, supply }: { label: string; price: number; su
 
 function BalanceRow({ label, value }: { label: string; value: ReactNode }) {
   return <View style={localStyles.balanceRow}><Text style={localStyles.balanceLabel}>{label}</Text><View style={localStyles.balanceValueContainer}>{typeof value === 'string' ? <Text style={styles.balanceValue}>{value}</Text> : value}</View></View>;
+}
+
+function MarketFlowConnector({ details }: { details: MarketDiffusionDetails }) {
+  const isToLowerMarket = details.direction === `to-${details.lowerMarket}`;
+  const isToHigherMarket = details.direction === `to-${details.higherMarket}`;
+  const flowColor = isToLowerMarket ? colors.marketGreen : isToHigherMarket ? colors.marketGold : colors.muted;
+  const flowIcon = isToLowerMarket ? APP_ICONS.marketFlowToLocal : isToHigherMarket ? APP_ICONS.marketFlowToGlobal : APP_ICONS.marketBalanced;
+  const pressureWidth = `${Math.min(details.priceGap * 50, 50)}%` as `${number}%`;
+  const pairLabel = `${capitalize(details.lowerMarket)}/${capitalize(details.higherMarket)}`;
+
+  return <View accessibilityLabel={getFlowAccessibilityLabel(details.direction, details.amount)} style={localStyles.flowConnector}>
+    <MaterialCommunityIcons color={flowColor} name={flowIcon as never} size={28} />
+    <Text style={[localStyles.flowAmount, { color: flowColor }]}>{details.direction === 'none' ? 'Prices balanced' : `${formatNumber(details.amount, { smartDecimals: true })} / minute`}</Text>
+    <Text style={localStyles.flowDirection}>{getFlowDescription(details.direction)}</Text>
+    <Text style={localStyles.priceGapText}>{`${pairLabel} price gap: ${formatNumber(details.priceGap, { percent: true, decimals: 1 })}`}</Text>
+    <View accessibilityLabel={`${pairLabel} price gap ${formatNumber(details.priceGap, { percent: true, decimals: 1 })}`} style={localStyles.balanceTrack}>
+      <View style={localStyles.balanceCentre} />
+      {details.direction !== 'none' && <View style={[localStyles.balanceFill, isToLowerMarket ? localStyles.balanceFillToLocal : localStyles.balanceFillToGlobal, { width: pressureWidth, backgroundColor: flowColor }]} />}
+    </View>
+  </View>;
+}
+
+function capitalize(value: string): string {
+  return `${value[0]!.toUpperCase()}${value.slice(1)}`;
 }
 
 function CurrencyValue({ value, style }: { value: number; style?: object }) {
@@ -337,6 +353,7 @@ const localStyles = StyleSheet.create({
   balanceFillToGlobal: { right: '50%' },
   balanceFillToLocal: { left: '50%' },
   balanceLabel: { color: colors.muted, flex: 1, fontSize: 12 },
+  balancePairHeading: { color: colors.primary, fontSize: 11, fontWeight: '700', marginTop: 4 },
   balanceRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   balanceTrack: { backgroundColor: '#E4ECE8', borderRadius: 6, height: 8, overflow: 'hidden', position: 'relative' },
   balanceValue: { color: colors.charcoal, fontSize: 13, fontWeight: '700' },
