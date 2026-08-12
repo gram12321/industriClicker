@@ -131,6 +131,6 @@ When the relevant documents exist and are current:
 
 ## Verification
 
-Use the smallest useful validation for the change. For code or behavior work, run the focused test, type, or build check that the chosen stack supplies. For documentation-only work, review links and stale project-name references, then run `git diff --check` when handing off.
+Use the smallest useful validation for the change. Run `npm test` only when a change can affect facility production, recipe balance, facility work/upgrade formulas, production tick order, or the corresponding tests; otherwise use a focused check appropriate to the touched files. For documentation-only work, review links and stale project-name references, then run `git diff --check` when handing off.
 
 Before claiming a mobile UI task is complete, verify the intended narrow-phone layout and the interaction path, as well as automated checks appropriate to the selected stack.

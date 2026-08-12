@@ -1,16 +1,44 @@
-import { getResearchProject, RESEARCH_PROJECT_IDS, type ResearchProjectId } from './researchConstants';
+import { getRecipeResearchLevelProjectId, getResearchProject, RESEARCH_PROJECT_IDS, type ResearchProjectId } from './researchConstants';
+import type { RecipeName } from '@/game/recipes';
+import { RESOURCE_TYPES, type ResourceType } from '@/game/resources';
+import { calculateDiminishingBonus } from '@/game/core/math/scaling';
 
 export type CompletedResearchProject = { projectId: ResearchProjectId; completedAtGameTimeMs: number };
 export type ActiveResearchProject = { projectId: ResearchProjectId; progressMs: number; paidCost: number };
 export type ResearchLedgerSnapshot = { completed: CompletedResearchProject[]; active: ActiveResearchProject | null };
 
-export const BASE_MAXIMUM_OPEN_SALES_CONTRACTS = 1;
+export const BASE_MAXIMUM_OPEN_SALES_CONTRACTS = 2;
 
 export function getMaximumOpenSalesContracts(completedProjectIds: readonly string[]): number {
   return completedProjectIds.reduce((maximum, projectId) => {
     const effect = getResearchProject(projectId)?.effect;
     return effect?.kind === 'max-open-sales-contracts' ? Math.max(maximum, effect.maximum) : maximum;
   }, BASE_MAXIMUM_OPEN_SALES_CONTRACTS);
+}
+
+export function getRecipeResearchWorkSpeedMultiplier(recipeName: RecipeName, completedProjectIds: readonly string[]): number {
+  const level = Array.from({ length: 10 }, (_, index) => index + 1).filter((candidate) => completedProjectIds.includes(getRecipeResearchLevelProjectId(recipeName, candidate))).length;
+  return 1 + calculateDiminishingBonus(level, 0.75, 0.35);
+}
+
+export function getSalesOfferResourceTypes(completedProjectIds: readonly string[], producedByResource: Readonly<Record<ResourceType, number>>): readonly ResourceType[] {
+  const hasProducedOnlyTargeting = completedProjectIds.some((projectId) => getResearchProject(projectId)?.effect.kind === 'sales-offer-produced-only');
+  const producedResourceTypes = RESOURCE_TYPES.filter((resourceType) => producedByResource[resourceType] > 0);
+  return hasProducedOnlyTargeting && producedResourceTypes.length > 0 ? producedResourceTypes : RESOURCE_TYPES;
+}
+
+export function getSalesOfferProducedResourceWeight(completedProjectIds: readonly string[]): number {
+  return completedProjectIds.reduce((weight, projectId) => {
+    const effect = getResearchProject(projectId)?.effect;
+    return effect?.kind === 'sales-offer-produced-resource-weight' ? Math.max(weight, effect.multiplier) : weight;
+  }, 1);
+}
+
+export function getSalesContractPremiumMultiplier(completedProjectIds: readonly string[], baseMultiplier: number): number {
+  return completedProjectIds.reduce((multiplier, projectId) => {
+    const effect = getResearchProject(projectId)?.effect;
+    return effect?.kind === 'sales-contract-premium' ? Math.max(multiplier, effect.multiplier) : multiplier;
+  }, baseMultiplier);
 }
 
 function isProjectId(value: unknown): value is ResearchProjectId {

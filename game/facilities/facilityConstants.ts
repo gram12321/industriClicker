@@ -2,16 +2,39 @@ import { ALL_RECIPES, RecipeName, type Recipe } from '@/game/recipes';
 import { FacilityType } from './facilityTypes';
 
 export const FACILITY_TYPES = [FacilityType.Farm, FacilityType.Bakery, FacilityType.SmallUtilityWorks, FacilityType.Mine, FacilityType.Quarry, FacilityType.IndustrialProcessingFactory, FacilityType.ConstructionFactory, FacilityType.WaterWell, FacilityType.PowerPlant] as const;
+export type FacilityGroup = 'agriculture' | 'extraction' | 'manufacturing' | 'utilities';
+
+/** Player-facing facility groupings shared by Pedia and other catalogues; each group is alphabetized by display name. */
+export const FACILITY_GROUPS: ReadonlyArray<{ id: FacilityGroup; label: string; facilities: readonly FacilityType[] }> = [
+  { id: 'agriculture', label: 'Agriculture', facilities: [FacilityType.Bakery, FacilityType.Farm] },
+  { id: 'extraction', label: 'Extraction', facilities: [FacilityType.Mine, FacilityType.Quarry] },
+  { id: 'manufacturing', label: 'Manufacturing', facilities: [FacilityType.ConstructionFactory, FacilityType.IndustrialProcessingFactory] },
+  { id: 'utilities', label: 'Utilities', facilities: [FacilityType.PowerPlant, FacilityType.SmallUtilityWorks, FacilityType.WaterWell] },
+];
 export const FACILITY_UPGRADE_COST_GROWTH = 1.5;
 export const FACILITY_SPEED_MAXIMUM_BONUS = 0.8;
 export const FACILITY_SPEED_BONUS_RATE = 0.22;
 export const FACILITY_OUTPUT_MAXIMUM_BONUS = 1;
 export const FACILITY_OUTPUT_BONUS_RATE = 0.18;
+export const FACILITY_CONDITION_DECAY_MAX_REDUCTION = 0.75;
+export const FACILITY_CONDITION_DECAY_REDUCTION_RATE = 0.18;
 export const FACILITY_WORKER_REQUIREMENT_GROWTH = 1.15;
 export const FACILITY_UNDERSTAFFING_EXPONENT = 1.6;
 export const FACILITY_OVERSTAFFING_MAXIMUM_BONUS = 0.25;
 export const FACILITY_OVERSTAFFING_BONUS_RATE = 0.7;
+/** Wear growth applied for each full staffing ratio above the requirement. */
+export const FACILITY_OVERSTAFFING_CONDITION_DECAY_GROWTH = 1.5;
 export const FACILITY_MINIMUM_STAFFING_EFFICIENCY = 0.01;
+/** Additional work contributed by each required worker per foreground minute. */
+export const FACILITY_STAFF_WORK_PER_WORKER_PER_MINUTE = 0.1;
+/** Condition lost by every constructed facility per foreground minute. */
+export const FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE = 1 / 600;
+/** Additional condition lost for each completed recipe work unit. */
+export const FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT = 1 / 600;
+/** Fixed work-equivalent condition loss for every completed production cycle. */
+export const FACILITY_PRODUCTION_CONDITION_LOSS_PER_CYCLE = 0.05 / 600;
+/** Construction Materials required to restore one point of condition. */
+export const FACILITY_REPAIR_MATERIAL_COST_RATE = 0.9;
 
 /** Fixed order keeps production deterministic and runs utility producers first. */
 export const FACILITY_PRODUCTION_ORDER = [
@@ -67,7 +90,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     name: 'Small Utility Works',
     icon: 'flash-outline',
     landCost: 100,
-    constructionMaterialsCost: 400,
+    constructionMaterialsCost: 10,
     upgradeCost: 500,
     baseWorkers: 1,
     recipes: [ALL_RECIPES[RecipeName.ProduceWater], ALL_RECIPES[RecipeName.ProduceElectricity]],
@@ -77,7 +100,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     name: 'Mine',
     icon: 'pickaxe',
     landCost: 30,
-    constructionMaterialsCost: 120,
+    constructionMaterialsCost: 10,
     upgradeCost: 150,
     baseWorkers: 10,
     recipes: [ALL_RECIPES[RecipeName.MineIron], ALL_RECIPES[RecipeName.MineCoal], ALL_RECIPES[RecipeName.MineCopper]],

@@ -9,7 +9,8 @@ import type { PrestigeLedger } from '@/game/prestige';
 import type { SalesContracts } from '@/game/sales';
 import { colors } from '@/theme';
 import { formatNumber, getAchievementMasteryName } from '@/utils';
-import { SectionHeading, styles as dashboardStyles } from '@/ui/dashboard/shared';
+import { SectionHeading } from '@/ui/dashboard/components/DashboardPrimitives';
+import { styles as dashboardStyles } from '@/ui/dashboard/helpers/dashboard.styles';
 
 const CATEGORY_LABELS: Record<AchievementCategory, string> = {
   facilities: 'Facilities',

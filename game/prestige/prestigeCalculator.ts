@@ -16,6 +16,7 @@ export type CurrentPrestigeEvent = PrestigeEvent & {
 export type CompanyPrestigeSummary = {
   totalPrestige: number;
   balancePrestige: number;
+  facilityConditionPrestige: number;
   salesPrestige: number;
   achievementPrestige: number;
   events: CurrentPrestigeEvent[];
@@ -49,6 +50,13 @@ export function calculateSalesContractPrestige(reward: number): number {
   // Prestige deliberately has no fixed maximum. Finite inputs keep this logarithmic
   // formula finite; a cap adds no safety and would silently limit late-game progression.
   return roundPrestige(0.1 + 0.15 * Math.log(1 + reward));
+}
+
+/** Temporary equal-weight facility model; use total facility asset value when that metric exists. */
+export function calculateFacilityConditionPrestige(conditions: readonly number[]): number {
+  if (conditions.length === 0) return 0;
+  const averageCondition = conditions.reduce((sum, condition) => sum + Math.min(1, Math.max(0, condition)), 0) / conditions.length;
+  return roundPrestige((averageCondition - 0.5) * conditions.length);
 }
 
 export function calculateCurrentPrestigeAmount(event: PrestigeEvent, currentGameTimeMs: number): number {
@@ -102,6 +110,7 @@ export function calculateCompanyPrestigeSummary(
   const balancePrestige = currentEvents
     .filter((event) => event.type === 'company_balance')
     .reduce((sum, event) => sum + event.currentAmount, 0);
+  const facilityConditionPrestige = currentEvents.filter((event) => event.type === 'facility_condition').reduce((sum, event) => sum + event.currentAmount, 0);
   const salesPrestige = currentEvents
     .filter((event) => event.type === 'sales_contract')
     .reduce((sum, event) => sum + event.currentAmount, 0);
@@ -112,6 +121,7 @@ export function calculateCompanyPrestigeSummary(
   return {
     totalPrestige: roundPrestige(currentEvents.reduce((sum, event) => sum + event.currentAmount, 0)),
     balancePrestige: roundPrestige(balancePrestige),
+    facilityConditionPrestige: roundPrestige(facilityConditionPrestige),
     salesPrestige: roundPrestige(salesPrestige),
     achievementPrestige: roundPrestige(achievementPrestige),
     events: currentEvents,

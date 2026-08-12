@@ -1,5 +1,8 @@
 import type { StartingConditionId } from './companyTypes';
 
+/** Starting inventory for the Standard start. */
+export const STANDARD_START_CONSTRUCTION_MATERIALS = 10;
+
 export type StartingCondition = {
   id: StartingConditionId;
   name: string;
@@ -13,6 +16,6 @@ export const STARTING_CONDITIONS: Readonly<Record<StartingConditionId, StartingC
     id: 'standard',
     name: 'Standard start',
     description: 'Begin with the current Industri Clicker opening company state.',
-    openingFundsDescription: 'Opening funds follow the current Finance starting balance.',
+    openingFundsDescription: 'Start with €100 and 10 Construction Materials.',
   },
 };

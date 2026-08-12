@@ -18,3 +18,7 @@ expo-android*.log
 
 # Local environment files
 .env*.local
+
+# Local Android signing material
+credentials.json
+credentials/

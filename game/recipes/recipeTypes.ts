@@ -40,5 +40,7 @@ export type Recipe = {
   inputs: readonly RecipeInput[];
   output: RecipeOutput;
   /** Deterministic work units required for one production cycle. */
-  workAmount: number;
+  requiredWork: number;
+  /** Static balance multiplier for production wear; it never follows live market prices. */
+  conditionWearMultiplier: number;
 };

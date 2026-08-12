@@ -1,10 +1,8 @@
-import { getRecipe, type RecipeInput, type RecipeName } from '@/game/recipes';
-import type { Inventory } from '@/game/inventory';
+import type { RecipeName } from '@/game/recipes';
+import { calculateAsymmetricalScaler01 } from '@/game/core/math/scaling';
 import { getFacilityDefinition } from './facilityConstants';
 import { FacilityType } from './facilityTypes';
-import { getOutputUpgradeMultiplier, getRequiredWorkers, getSpeedUpgradeMultiplier, getStaffingEfficiency } from './facilityUpgrades';
-
-const WORK_COMPLETION_EPSILON = 1e-9;
+import { getConditionDecayMultiplier, getFacilityConditionEfficiency, getFacilityEfficiency, getOutputUpgradeMultiplier, getOverstaffingConditionDecayMultiplier, getRequiredWorkers, getSpeedUpgradeWorkSpeedMultiplier, getStaffingEfficiency } from './facilityUpgrades';
 
 /** Plain data used by the game snapshot and Expo SQLite adapter. */
 export type FacilitySnapshot = {
@@ -15,14 +13,32 @@ export type FacilitySnapshot = {
   recipeProgress: Partial<Record<RecipeName, number>>;
   speedUpgradeLevel?: number;
   outputUpgradeLevel?: number;
+  conditionDecayUpgradeLevel?: number;
   assignedWorkers?: number;
+  facilityCondition: number;
 };
 
-export type ProductionOutput = {
+/** Immutable facility state and derived values for game rules and UI rendering. */
+export type FacilityView = {
+  id: string;
   facilityType: FacilityType;
-  recipeName: RecipeName;
-  resourceType: ReturnType<typeof getRecipe>['output']['resourceType'];
-  amount: number;
+  displayName: string;
+  activeRecipeName: RecipeName | null;
+  isActive: boolean;
+  recipeProgress: Readonly<Partial<Record<RecipeName, number>>>;
+  speedUpgradeLevel: number;
+  outputUpgradeLevel: number;
+  conditionDecayUpgradeLevel: number;
+  conditionDecayMultiplier: number;
+  overstaffingConditionDecayMultiplier: number;
+  assignedWorkers: number;
+  requiredWorkers: number;
+  staffingEfficiency: number;
+  facilityCondition: number;
+  conditionEfficiency: number;
+  facilityEfficiency: number;
+  speedUpgradeWorkSpeedMultiplier: number;
+  outputMultiplier: number;
 };
 
 /** Player-owned state for one constructed facility. */
@@ -32,7 +48,9 @@ export class Facility {
   private recipeProgress: Partial<Record<RecipeName, number>> = {};
   private speedUpgradeLevel = 0;
   private outputUpgradeLevel = 0;
+  private conditionDecayUpgradeLevel = 0;
   private assignedWorkers = 0;
+  private facilityCondition = 1;
 
   constructor(
     public readonly id: string,
@@ -42,56 +60,43 @@ export class Facility {
     if (snapshot) {
       this.restore(snapshot);
     } else {
-      this.assignedWorkers = this.getRequiredWorkers();
+      this.assignedWorkers = this.calculateRequiredWorkers();
     }
   }
 
-  getActiveRecipeName(): RecipeName | null {
-    return this.activeRecipeName;
+  getView(): FacilityView {
+    const requiredWorkers = this.calculateRequiredWorkers();
+    const staffingEfficiency = getStaffingEfficiency(this.assignedWorkers, requiredWorkers);
+    const facilityEfficiency = getFacilityEfficiency(staffingEfficiency, this.facilityCondition);
+    return {
+      id: this.id,
+      facilityType: this.facilityType,
+      displayName: `${getFacilityDefinition(this.facilityType).name} #${this.id.split('-').at(-1)}`,
+      activeRecipeName: this.activeRecipeName,
+      isActive: this.active,
+      recipeProgress: { ...this.recipeProgress },
+      speedUpgradeLevel: this.speedUpgradeLevel,
+      outputUpgradeLevel: this.outputUpgradeLevel,
+      conditionDecayUpgradeLevel: this.conditionDecayUpgradeLevel,
+      conditionDecayMultiplier: getConditionDecayMultiplier(this.conditionDecayUpgradeLevel),
+      overstaffingConditionDecayMultiplier: getOverstaffingConditionDecayMultiplier(this.assignedWorkers, requiredWorkers),
+      assignedWorkers: this.assignedWorkers,
+      requiredWorkers,
+      staffingEfficiency,
+      facilityCondition: this.facilityCondition,
+      conditionEfficiency: getFacilityConditionEfficiency(this.facilityCondition),
+      facilityEfficiency,
+      speedUpgradeWorkSpeedMultiplier: getSpeedUpgradeWorkSpeedMultiplier(this.speedUpgradeLevel),
+      outputMultiplier: getOutputUpgradeMultiplier(this.outputUpgradeLevel),
+    };
   }
 
-  getDisplayName(): string {
-    return `${getFacilityDefinition(this.facilityType).name} #${this.id.split('-').at(-1)}`;
-  }
-
-  isActive(): boolean {
-    return this.active;
-  }
-
-  getRecipeProgress(recipeName: RecipeName): number {
-    return this.recipeProgress[recipeName] ?? 0;
-  }
-
-  getSpeedUpgradeLevel(): number {
-    return this.speedUpgradeLevel;
-  }
-
-  getOutputUpgradeLevel(): number {
-    return this.outputUpgradeLevel;
-  }
-
-  getAssignedWorkers(): number {
-    return this.assignedWorkers;
-  }
-
-  getRequiredWorkers(): number {
+  private calculateRequiredWorkers(): number {
     return getRequiredWorkers(
       getFacilityDefinition(this.facilityType).baseWorkers,
       this.speedUpgradeLevel,
       this.outputUpgradeLevel,
     );
-  }
-
-  getEfficiency(): number {
-    return getStaffingEfficiency(this.assignedWorkers, this.getRequiredWorkers());
-  }
-
-  getSpeedMultiplier(): number {
-    return getSpeedUpgradeMultiplier(this.speedUpgradeLevel);
-  }
-
-  getOutputMultiplier(): number {
-    return getOutputUpgradeMultiplier(this.outputUpgradeLevel);
   }
 
   setAssignedWorkers(workerCount: number): boolean {
@@ -111,27 +116,8 @@ export class Facility {
     this.outputUpgradeLevel += 1;
   }
 
-  getProductionStatus(inventory: Inventory): 'not-started' | 'paused' | 'missing-inputs' | 'producing' {
-    if (!this.activeRecipeName) {
-      return 'not-started';
-    }
-
-    if (!this.active) return 'paused';
-
-    const recipe = getRecipe(this.activeRecipeName);
-    const isAtCycleStart = this.getRecipeProgress(recipe.name) === 0;
-
-    return isAtCycleStart && this.getMissingInputs(inventory).length > 0 ? 'missing-inputs' : 'producing';
-  }
-
-  getMissingInputs(inventory: Inventory): RecipeInput[] {
-    if (!this.activeRecipeName) {
-      return [];
-    }
-
-    return getRecipe(this.activeRecipeName).inputs.filter((input) => (
-      !inventory.has(input.resourceType, input.amount)
-    ));
+  upgradeConditionDecay(): void {
+    this.conditionDecayUpgradeLevel += 1;
   }
 
   setActiveRecipe(recipeName: RecipeName | null): boolean {
@@ -156,49 +142,35 @@ export class Facility {
     return true;
   }
 
-  /**
-   * Applies work to the selected recipe. Inputs are paid at the beginning of
-   * each cycle, matching the Baseclicker production rule.
-   */
-  advanceProduction(inventory: Inventory, workAmount: number): ProductionOutput[] {
-    const outputs: ProductionOutput[] = [];
-    if (!Number.isFinite(workAmount) || workAmount <= 0 || !this.active || !this.activeRecipeName) {
-      return outputs;
+  /** Applies condition-scaled wear while keeping the player-owned value in its 0–1 range. */
+  applyConditionLoss(loss: number): boolean {
+    if (!Number.isFinite(loss) || loss <= 0 || this.facilityCondition === 0) {
+      return false;
     }
 
-    const recipe = getRecipe(this.activeRecipeName);
-    if (!recipe || recipe.workAmount <= 0) {
-      return outputs;
+    const scaledLoss = loss
+      * calculateAsymmetricalScaler01(this.facilityCondition)
+      * getConditionDecayMultiplier(this.conditionDecayUpgradeLevel)
+      * getOverstaffingConditionDecayMultiplier(this.assignedWorkers, this.calculateRequiredWorkers());
+    this.facilityCondition = Math.max(0, this.facilityCondition - scaledLoss);
+    return true;
+  }
+
+  repairCondition(): boolean {
+    if (this.facilityCondition >= 1) return false;
+    this.facilityCondition = 1;
+    return true;
+  }
+
+  /** Internal production-state command used by the facility production engine. */
+  setRecipeProgress(recipeName: RecipeName, progress: number): boolean {
+    const recipe = getFacilityDefinition(this.facilityType).recipes.find((candidate) => candidate.name === recipeName);
+    if (!recipe || !Number.isFinite(progress) || progress < 0 || progress >= recipe.requiredWork) {
+      return false;
     }
 
-    let remainingWork = workAmount * this.getEfficiency() * this.getSpeedMultiplier();
-    let progress = this.getRecipeProgress(recipe.name);
-
-    while (remainingWork > 0) {
-      if (progress === 0 && !recipe.inputs.every((input) => inventory.has(input.resourceType, input.amount))) {
-        break;
-      }
-
-      if (progress === 0) {
-        for (const input of recipe.inputs) {
-          inventory.remove(input.resourceType, input.amount);
-        }
-      }
-
-      const appliedWork = Math.min(remainingWork, recipe.workAmount - progress);
-      progress += appliedWork;
-      remainingWork -= appliedWork;
-
-      if (progress + WORK_COMPLETION_EPSILON >= recipe.workAmount) {
-        const amount = recipe.output.amount * this.getOutputMultiplier();
-        inventory.add(recipe.output.resourceType, amount);
-        outputs.push({ facilityType: this.facilityType, recipeName: recipe.name, resourceType: recipe.output.resourceType, amount });
-        progress = 0;
-      }
-    }
-
-    this.recipeProgress[recipe.name] = progress;
-    return outputs;
+    this.recipeProgress[recipeName] = progress;
+    return true;
   }
 
   toSnapshot(): FacilitySnapshot {
@@ -210,7 +182,9 @@ export class Facility {
       recipeProgress: { ...this.recipeProgress },
       speedUpgradeLevel: this.speedUpgradeLevel,
       outputUpgradeLevel: this.outputUpgradeLevel,
+      conditionDecayUpgradeLevel: this.conditionDecayUpgradeLevel,
       assignedWorkers: this.assignedWorkers,
+      facilityCondition: this.facilityCondition,
     };
   }
 
@@ -232,14 +206,18 @@ export class Facility {
     this.recipeProgress = {};
     this.speedUpgradeLevel = isValidUpgradeLevel(snapshot.speedUpgradeLevel) ? snapshot.speedUpgradeLevel : 0;
     this.outputUpgradeLevel = isValidUpgradeLevel(snapshot.outputUpgradeLevel) ? snapshot.outputUpgradeLevel : 0;
+    this.conditionDecayUpgradeLevel = isValidUpgradeLevel(snapshot.conditionDecayUpgradeLevel) ? snapshot.conditionDecayUpgradeLevel : 0;
     this.assignedWorkers = isValidWorkerCount(snapshot.assignedWorkers)
       ? snapshot.assignedWorkers
-      : this.getRequiredWorkers();
+      : this.calculateRequiredWorkers();
+    this.facilityCondition = isValidFacilityCondition(snapshot.facilityCondition)
+      ? snapshot.facilityCondition
+      : 1;
 
     for (const recipe of getFacilityDefinition(this.facilityType).recipes) {
       const progress = snapshot.recipeProgress[recipe.name];
 
-      if (Number.isFinite(progress) && progress !== undefined && progress >= 0 && progress < recipe.workAmount) {
+      if (Number.isFinite(progress) && progress !== undefined && progress >= 0 && progress < recipe.requiredWork) {
         this.recipeProgress[recipe.name] = progress;
       }
     }
@@ -252,4 +230,8 @@ function isValidUpgradeLevel(value: unknown): value is number {
 
 function isValidWorkerCount(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0;
+}
+
+function isValidFacilityCondition(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
 }

@@ -10,6 +10,10 @@ import type { ProductionStatistics } from './productionStatistics';
 export type AchievementEvaluationContext = {
   facilityCount: number;
   totalUpgradeLevels: number;
+  repairedCondition: number;
+  largestRepair: number;
+  repairValueEuros: number;
+  facilityEfficiencies: readonly number[];
   producedByResource: ReturnType<ProductionStatistics['toSnapshot']>['producedByResource'];
   totalProduced: number;
   fulfilledContractCount: number;
@@ -40,9 +44,14 @@ export function createAchievementEvaluationContext(input: {
 
   return {
     facilityCount: facilityList.length,
-    totalUpgradeLevels: facilityList.reduce((total, facility) => (
-      total + facility.getSpeedUpgradeLevel() + facility.getOutputUpgradeLevel()
-    ), 0),
+    totalUpgradeLevels: facilityList.reduce((total, facility) => {
+      const facilityView = facility.getView();
+      return total + facilityView.speedUpgradeLevel + facilityView.outputUpgradeLevel + facilityView.conditionDecayUpgradeLevel;
+    }, 0),
+    repairedCondition: input.productionStatistics.getRepairedCondition(),
+    largestRepair: input.productionStatistics.getLargestRepair(),
+    repairValueEuros: input.productionStatistics.getRepairValueEuros(),
+    facilityEfficiencies: facilityList.map((facility) => facility.getView().facilityEfficiency),
     producedByResource: input.productionStatistics.toSnapshot().producedByResource,
     totalProduced: input.productionStatistics.getTotalProduced(),
     fulfilledContractCount: fulfilledContracts.length,
@@ -58,6 +67,11 @@ export function getAchievementCurrentValue(definition: AchievementDefinition, co
   switch (definition.metric) {
     case 'facility-count': return context.facilityCount;
     case 'upgrade-levels': return context.totalUpgradeLevels;
+    case 'facility-upgrade-depth': return Math.min(context.facilityCount, Math.floor(context.totalUpgradeLevels / 6));
+    case 'condition-repaired': return context.repairedCondition * 100;
+    case 'largest-repair': return context.largestRepair * 100;
+    case 'repair-value-euros': return context.repairValueEuros;
+    case 'facility-efficiency-count': return context.facilityEfficiencies.filter((efficiency) => efficiency >= (definition.facilityEfficiencyThreshold ?? Infinity)).length;
     case 'resource-produced': return definition.resourceType ? context.producedByResource[definition.resourceType] : 0;
     case 'total-produced': return context.totalProduced;
     case 'fulfilled-contract-count': return context.fulfilledContractCount;

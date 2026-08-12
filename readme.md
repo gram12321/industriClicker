@@ -85,6 +85,7 @@ Use the smallest useful verification for each change:
 
 - Documentation-only changes: review links and stale terminology; run `git diff --check` before handoff.
 - Gameplay changes: add or update focused tests for player-visible behavior, formulas, and tick order.
+- Run `npm test` only when facility production, recipe balance, facility work/upgrade formulas, production tick order, or their tests change.
 - UI changes: inspect the narrow physical-device layout and the affected interaction path; use the emulator only when available.
 - Cross-cutting or release-style work: run the relevant full test/build checks once at the integration gate.
 

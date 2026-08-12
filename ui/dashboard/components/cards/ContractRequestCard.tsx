@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { Button, Card, Menu, Text, TextInput } from 'react-native-paper';
 import { getResource, getResourceIcon, RESOURCE_TYPES, type ResourceType } from '@/game/resources';
 import { SALES_CONTRACT_MAX_REQUEST_QUANTITY, SALES_CONTRACT_MIN_REQUEST_QUANTITY } from '@/game/sales';
-import { styles } from '@/ui/dashboard/shared';
+import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS } from '@/icons';
 
 export function ContractRequestCard({
