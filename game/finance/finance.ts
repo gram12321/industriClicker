@@ -59,11 +59,14 @@ export class Finance {
   }
 
   acceptLoan(offer: LoanOffer, occurredAtGameTimeMs: number): Loan | null {
+    const selectedOffer = this.loanSearchOffers.find((candidate) => candidate.id === offer.id);
+    if (!selectedOffer) return null;
+    offer = selectedOffer;
     if (!offer.isAvailable || !nonNegative(offer.principal) || offer.principal <= 0 || !Number.isInteger(offer.durationPeriods) || offer.durationPeriods < 1 || !Number.isFinite(occurredAtGameTimeMs)) return null;
     const loan: Loan = { id: `loan-${this.nextLoanNumber}`, lenderId: offer.lenderId, lenderName: offer.lenderName, lenderType: offer.lenderType, principal: offer.principal, remainingBalance: offer.principal, annualInterestRate: offer.annualInterestRate, periodicInterestRate: offer.periodicInterestRate, paymentAmount: offer.paymentAmount, originationFee: offer.originationFee, totalPeriods: offer.durationPeriods, remainingPeriods: offer.durationPeriods, nextPaymentAtGameTimeMs: occurredAtGameTimeMs + offer.paymentIntervalMs, missedPayments: 0, totalPaid: 0, status: 'active' };
-    if (!this.applyTransaction({ amount: offer.principal, description: `Loan received from ${offer.lenderName}`, detailLines: [`Principal: €${offer.principal.toFixed(2)}`, `Annual rate: ${(offer.annualInterestRate * 100).toFixed(2)}%`, `Term: ${offer.durationPeriods} payments`], kind: 'financing', source: 'loan-proceeds', occurredAtGameTimeMs })) return null;
+    if (!this.applyTransaction({ amount: offer.principal, description: `Loan received from ${offer.lenderName}`, detailLines: [`Principal: €${offer.principal.toFixed(2)}`, `Per-minute rate: ${(offer.periodicInterestRate * 100).toFixed(3)}%`, `Term: ${offer.durationPeriods} payments`], kind: 'financing', source: 'loan-proceeds', occurredAtGameTimeMs })) return null;
     if (offer.originationFee > 0 && !this.applyTransaction({ amount: -offer.originationFee, description: `Loan origination fee (${offer.lenderName})`, detailLines: [`Fee: €${offer.originationFee.toFixed(2)}`], kind: 'financing', source: 'loan-origination-fee', occurredAtGameTimeMs })) return null;
-    this.loans.push(loan); this.nextLoanNumber += 1; return loanClone(loan);
+    this.loans.push(loan); this.nextLoanNumber += 1; this.loanSearchOffers = this.loanSearchOffers.filter((candidate) => candidate.id !== offer.id); return loanClone(loan);
   }
 
   startLoanSearch(criteria: LoanSearchCriteria, estimate: LoanSearchEstimate, occurredAtGameTimeMs: number): LoanOperationResult {
@@ -87,6 +90,9 @@ export class Finance {
   }
 
   completeLoanSearch(offers: readonly LoanOffer[]): void { this.loanSearchOffers = offers.map(offerClone); }
+  refreshLoanSearchOffers(offers: readonly LoanOffer[]): void { this.loanSearchOffers = offers.map(offerClone); }
+  removeUnavailableLoanSearchOffers(): number { const count = this.loanSearchOffers.filter((offer) => !offer.isAvailable).length; this.loanSearchOffers = this.loanSearchOffers.filter((offer) => offer.isAvailable); return count; }
+  removeLoanSearchOffer(offerId: string): boolean { const count = this.loanSearchOffers.length; this.loanSearchOffers = this.loanSearchOffers.filter((offer) => offer.id !== offerId); return this.loanSearchOffers.length !== count; }
 
   makeExtraLoanPayment(loanId: string, occurredAtGameTimeMs: number): LoanOperationResult {
     const loan = this.loans.find((candidate) => candidate.id === loanId);

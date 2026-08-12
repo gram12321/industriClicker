@@ -1,4 +1,4 @@
-import { Finance, buildFinanceStatementData, calculateLoanSearchEstimate, generateLoanOffers, LENDER_TYPES, type LoanOffer, type LoanSearchCriteria } from '@/game/finance';
+import { Finance, buildFinanceStatementData, calculateLoanSearchEstimate, generateLoanOffers, LENDER_TYPES, refreshLoanOfferAvailability, type LoanOffer, type LoanSearchCriteria } from '@/game/finance';
 import { Inventory } from '@/game/inventory';
 import { FACILITIES, FacilityCollection, advanceAllFacilityProduction, calculateFacilityEffectiveWork, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getFacilityRepairCost, getFacilityUpgradeCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
 import type { RecipeName } from '@/game/recipes';
@@ -15,6 +15,7 @@ import { FIRST_FACILITY_RECIPE_RESEARCH_GRANT_ID, GrantLedger } from '@/game/gra
 import type { StartingConditionId } from '@/game/company/companyTypes';
 import { STANDARD_START_CONSTRUCTION_MATERIALS } from '@/game/company/companyConstants';
 import { create } from 'zustand';
+import { formatNumber } from '@/utils';
 
 export type ResearchAvailability = GateEvaluation & {
   startable: boolean;
@@ -70,6 +71,8 @@ type GameState = {
   startResearch: (projectId: ResearchProjectId) => boolean;
   cancelResearch: () => boolean;
   acceptLoanOffer: (offer: LoanOffer) => boolean;
+  removeUnavailableLoanOffers: () => number;
+  removeLoanOffer: (offerId: string) => boolean;
   startLoanSearch: (criteria: LoanSearchCriteria) => { success: boolean; reason?: string };
   makeExtraLoanPayment: (loanId: string) => { success: boolean; reason?: string };
   repayLoanInFull: (loanId: string) => { success: boolean; reason?: string };
@@ -543,7 +546,7 @@ export const useGameStore = create<GameState>((set, get) => {
         if (inventory === get().inventory) inventory = inventory.clone();
         const trade = buyingMarket.buyFromLocal(resourceType, targetDeficit);
         if (trade.success && inventory.add(resourceType, trade.amount, trade.quality)) {
-          marketFinance.applyTransaction({ amount: -trade.unitPrice * trade.amount, description: `Autobought ${trade.amount} ${resourceType} to target inventory`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: stepEndGameTimeMs });
+          marketFinance.applyTransaction({ amount: -trade.unitPrice * trade.amount, description: `Autobought ${formatNumber(trade.amount, { smartDecimals: true })} ${resourceType}`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: stepEndGameTimeMs });
         }
       }
 
@@ -561,7 +564,7 @@ export const useGameStore = create<GameState>((set, get) => {
               || unitPrice > automation.autoBuyMaxUnitPrice || !marketFinance.canAfford(unitPrice * purchaseAmount)) continue;
             const trade = market.buyFromLocal(input.resourceType, purchaseAmount);
             if (trade.success && inventory.add(input.resourceType, trade.amount, trade.quality)) {
-              marketFinance.applyTransaction({ amount: -trade.unitPrice * trade.amount, description: `Autobought ${trade.amount} ${input.resourceType} for production`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: stepEndGameTimeMs });
+              marketFinance.applyTransaction({ amount: -trade.unitPrice * trade.amount, description: `Autobought ${formatNumber(trade.amount, { smartDecimals: true })} ${input.resourceType} for production`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: stepEndGameTimeMs });
             }
           }
         }
@@ -731,10 +734,14 @@ export const useGameStore = create<GameState>((set, get) => {
     get().advanceRealtime(Date.now());
     const state = get();
     const finance = state.finance.clone();
+    const selectedOffer = finance.getLoanSearchOffers().find((candidate) => candidate.id === offer.id);
+    if (!selectedOffer) return false;
     const report = buildFinanceStatementData({ achievements: state.achievements, companyStartedAtGameTimeMs: state.companyStartedAtGameTimeMs, currentGameTimeMs: state.lastProcessedAtMs, facilities: state.facilities, finance, inventory: state.inventory, market: state.market, period: 'all-time', research: state.research });
-    const lenderLimit = report.loanLimitBreakdown.lenderBreakdowns.find((candidate) => candidate.lenderId === offer.lenderId);
-    if (!lenderLimit?.isAvailable || offer.principal > lenderLimit.availableLimit) return false;
-    if (!finance.acceptLoan(offer, state.lastProcessedAtMs)) return false;
+    const lenderLimit = report.loanLimitBreakdown.lenderBreakdowns.find((candidate) => candidate.lenderId === selectedOffer.lenderId);
+    if (!lenderLimit?.isAvailable || selectedOffer.principal > lenderLimit.availableLimit) return false;
+    if (!finance.acceptLoan(selectedOffer, state.lastProcessedAtMs)) return false;
+    const refreshedReport = buildFinanceStatementData({ achievements: state.achievements, companyStartedAtGameTimeMs: state.companyStartedAtGameTimeMs, currentGameTimeMs: state.lastProcessedAtMs, facilities: state.facilities, finance, inventory: state.inventory, market: state.market, period: 'all-time', research: state.research });
+    finance.refreshLoanSearchOffers(refreshLoanOfferAvailability(finance.getLoanSearchOffers(), refreshedReport.loanLimitBreakdown));
     const prestige = state.prestige.clone();
     syncCompanyBalancePrestige(prestige, finance, state.lastProcessedAtMs);
     const achievementResult = applyAchievementUnlocks({
@@ -750,6 +757,18 @@ export const useGameStore = create<GameState>((set, get) => {
       inventory: state.inventory,
     });
     set({ finance, ...achievementResult });
+    return true;
+  },
+  removeUnavailableLoanOffers: () => {
+    const finance = get().finance.clone();
+    const removed = finance.removeUnavailableLoanSearchOffers();
+    if (removed > 0) set({ finance });
+    return removed;
+  },
+  removeLoanOffer: (offerId) => {
+    const finance = get().finance.clone();
+    if (!finance.removeLoanSearchOffer(offerId)) return false;
+    set({ finance });
     return true;
   },
   startLoanSearch: (criteria) => {

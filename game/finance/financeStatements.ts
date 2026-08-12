@@ -14,8 +14,9 @@ export type IncomeStatement = { income: number; expenses: number; netIncome: num
 export type FinanceBreakdown = { label: string; amount: number };
 export type AssetsStatement = { cash: number; inventory: number; facilities: number; research: number; currentAssets: number; fixedAssets: number; intangibleAssets: number; totalAssets: number };
 export type LiabilitiesEquityStatement = { loans: Loan[]; totalLiabilities: number; contributedCapital: number; retainedEarnings: number; assetRevaluation: number; totalEquity: number };
-export type CashFlowDetailGroup = { id: string; label: string; amount: number; detailLines: string[] };
-export type CashFlowRow = { id: string; atGameTimeMs: number; type: string; description: string; detailLines: string[]; detailGroups: CashFlowDetailGroup[]; amount: number; balance: number };
+export type CashFlowDetail = { id: string; description: string; detailLines: string[]; count: number };
+export type CashFlowDetailGroup = { id: string; label: string; amount: number; details: CashFlowDetail[] };
+export type CashFlowRow = { id: string; atGameTimeMs: number; type: string; description: string; detailGroups: CashFlowDetailGroup[]; amount: number; balance: number };
 export type FinanceStatementData = { incomeStatement: IncomeStatement; assets: AssetsStatement; liabilitiesEquity: LiabilitiesEquityStatement; creditRating: CreditRating; loanLimitBreakdown: LoanLimitBreakdown; economyPhase: ReturnType<Finance['getEconomyPhase']>; cashFlowRows: CashFlowRow[] };
 
 const SOURCE_LABELS: Record<FinanceTransaction['source'], string> = {
@@ -94,7 +95,7 @@ export function buildFinanceStatementData(input: { finance: Finance; inventory: 
     creditRating,
     loanLimitBreakdown,
     economyPhase: input.finance.getEconomyPhase(),
-    cashFlowRows: buildCashFlowRows(filtered, input.cashFlowGroupDurationMs),
+    cashFlowRows: buildCashFlowRows(filtered, input.cashFlowGroupDurationMs, input.companyStartedAtGameTimeMs),
   };
 }
 
@@ -106,16 +107,16 @@ function cashFlowHeading(kind: FinanceTransaction['kind'], amount: number): stri
   return `Equity ${direction}`;
 }
 
-function buildCashFlowRows(transactions: FinanceTransaction[], groupDurationMs = 60_000): CashFlowRow[] {
+function buildCashFlowRows(transactions: FinanceTransaction[], groupDurationMs = 60_000, bucketOriginGameTimeMs = 0): CashFlowRow[] {
   const groups = new Map<string, CashFlowRow>();
   const duration = Math.max(1, groupDurationMs);
   for (const transaction of [...transactions].sort((left, right) => left.occurredAtGameTimeMs - right.occurredAtGameTimeMs)) {
-    const bucket = Math.floor(transaction.occurredAtGameTimeMs / duration);
+    const bucket = Math.floor(Math.max(0, transaction.occurredAtGameTimeMs - bucketOriginGameTimeMs) / duration);
     const direction = transaction.amount >= 0 ? 'income' : 'expenses';
     const key = `${transaction.kind}-${bucket}-${direction}`;
     let row = groups.get(key);
     if (!row) {
-      row = { id: key, atGameTimeMs: transaction.occurredAtGameTimeMs, type: transaction.kind, description: cashFlowHeading(transaction.kind, transaction.amount), detailLines: [], detailGroups: [], amount: 0, balance: transaction.balanceAfter };
+      row = { id: key, atGameTimeMs: bucketOriginGameTimeMs + bucket * duration, type: transaction.kind, description: cashFlowHeading(transaction.kind, transaction.amount), detailGroups: [], amount: 0, balance: transaction.balanceAfter };
       groups.set(key, row);
     }
     row.amount += transaction.amount;
@@ -123,11 +124,13 @@ function buildCashFlowRows(transactions: FinanceTransaction[], groupDurationMs =
     const label = SOURCE_LABELS[transaction.source];
     let detailGroup = row.detailGroups.find((candidate) => candidate.label === label);
     if (!detailGroup) {
-      detailGroup = { id: `${key}-${transaction.source}`, label, amount: 0, detailLines: [] };
+      detailGroup = { id: `${key}-${transaction.source}`, label, amount: 0, details: [] };
       row.detailGroups.push(detailGroup);
     }
     detailGroup.amount += transaction.amount;
-    detailGroup.detailLines.push(transaction.description, ...transaction.detailLines);
+    const matchingDetail = detailGroup.details.find((candidate) => candidate.description === transaction.description && candidate.detailLines.join('\n') === transaction.detailLines.join('\n'));
+    if (matchingDetail) matchingDetail.count += 1;
+    else detailGroup.details.push({ id: `${detailGroup.id}-${detailGroup.details.length}`, description: transaction.description, detailLines: transaction.detailLines, count: 1 });
   }
   return Array.from(groups.values()).sort((left, right) => right.atGameTimeMs - left.atGameTimeMs);
 }
