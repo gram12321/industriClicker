@@ -1,4 +1,4 @@
-import { Finance, buildFinanceStatementData, calculateLoanSearchEstimate, generateLoanOffers, LENDER_TYPES, refreshLoanOfferAvailability, type LoanOffer, type LoanSearchCriteria } from '@/game/finance';
+import { Finance, buildFinanceStatementData, calculateAssets, calculateLoanSearchEstimate, generateLoanOffers, LENDER_TYPES, refreshLoanOfferAvailability, type LoanOffer, type LoanSearchCriteria } from '@/game/finance';
 import { Inventory } from '@/game/inventory';
 import { FACILITIES, FacilityCollection, advanceAllFacilityProduction, calculateFacilityEffectiveWork, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getFacilityRepairCost, getFacilityUpgradeCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
 import type { RecipeName } from '@/game/recipes';
@@ -8,7 +8,7 @@ import type { GameSnapshot } from '@/game/core/state';
 import { BASE_WORK_PER_MINUTE, FOREGROUND_SIMULATION_STEP_MS, REALTIME_WORK_MINUTE_MS, calculateRealtimeAdvance } from '@/game/core/time';
 import { SalesContracts, calculateSalesContractOfferChance } from '@/game/sales';
 import { AchievementLedger, ProductionStatistics, createAchievementEvaluationContext, evaluateAchievementUnlocks, type AchievementCategory } from '@/game/achievements';
-import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary, calculateFacilityConditionPrestige } from '@/game/prestige';
+import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyAssetsPrestige, calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary, calculateFacilityConditionPrestige } from '@/game/prestige';
 import { evaluateGateRequirements, type GateContext, type GateEvaluation } from '@/game/gates';
 import { ResearchLedger, getMaximumOpenSalesContracts, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, getSalesContractPremiumMultiplier, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, type ResearchProjectId } from '@/game/research';
 import { FIRST_FACILITY_RECIPE_RESEARCH_GRANT_ID, GrantLedger } from '@/game/grants';
@@ -92,6 +92,12 @@ function syncCompanyBalancePrestige(
   );
 }
 
+function syncCompanyAssetsPrestige(prestige: PrestigeLedger, input: { finance: Finance; inventory: Inventory; market: Market; facilities: FacilityCollection; research: ResearchLedger }, currentGameTimeMs: number): void {
+  const assets = calculateAssets(input);
+  const liabilities = input.finance.getLoans().filter((loan) => loan.status !== 'repaid').reduce((total, loan) => total + loan.remainingBalance, 0);
+  prestige.syncCompanyAssets(calculateCompanyAssetsPrestige({ assetBookValue: assets.totalAssets, liabilities }), currentGameTimeMs);
+}
+
 function syncFacilityConditionPrestige(prestige: PrestigeLedger, facilities: FacilityCollection, currentGameTimeMs: number): void {
   prestige.syncFacilityCondition(calculateFacilityConditionPrestige(facilities.getAll().map((facility) => facility.getView().facilityCondition)), currentGameTimeMs);
 }
@@ -99,6 +105,7 @@ function syncFacilityConditionPrestige(prestige: PrestigeLedger, facilities: Fac
 function createStartingPrestige(finance: Finance, currentGameTimeMs: number): PrestigeLedger {
   const prestige = new PrestigeLedger();
   syncCompanyBalancePrestige(prestige, finance, currentGameTimeMs);
+  prestige.syncCompanyAssets(calculateCompanyAssetsPrestige({ assetBookValue: finance.getBalance(), liabilities: 0 }), currentGameTimeMs);
   return prestige;
 }
 
@@ -338,6 +345,8 @@ export const useGameStore = create<GameState>((set, get) => {
 
     const prestige = get().prestige.clone();
     syncCompanyBalancePrestige(prestige, finance, get().lastProcessedAtMs);
+    syncCompanyAssetsPrestige(prestige, { finance, inventory, market: get().market, facilities, research: get().research }, get().lastProcessedAtMs);
+    syncFacilityConditionPrestige(prestige, facilities, get().lastProcessedAtMs);
     const achievementResult = applyAchievementUnlocks({
       achievements: get().achievements,
       productionStatistics: get().productionStatistics,
@@ -370,7 +379,9 @@ export const useGameStore = create<GameState>((set, get) => {
       return false;
     }
 
-    set({ facilities });
+    const prestige = get().prestige.clone();
+    syncFacilityConditionPrestige(prestige, facilities, get().lastProcessedAtMs);
+    set({ facilities, prestige });
     return true;
   },
   setFacilityRecipe: (facilityId, recipeName) => {
@@ -446,6 +457,7 @@ export const useGameStore = create<GameState>((set, get) => {
     productionStatistics.recordRepair(1 - facilityView.facilityCondition, purchasedMaterialsCost + Math.max(0, repairCost - missingMaterials) * market.getLocalPrice(ResourceType.ConstructionMaterials));
     const prestige = get().prestige.clone();
     syncCompanyBalancePrestige(prestige, finance, get().lastProcessedAtMs);
+    syncCompanyAssetsPrestige(prestige, { finance, inventory: get().inventory, market: get().market, facilities, research: get().research }, get().lastProcessedAtMs);
     syncFacilityConditionPrestige(prestige, facilities, get().lastProcessedAtMs);
     const achievementResult = applyAchievementUnlocks({ achievements: get().achievements, productionStatistics, facilities, finance, salesContracts: get().salesContracts, prestige, companyStartedAtGameTimeMs: get().companyStartedAtGameTimeMs, currentGameTimeMs: get().lastProcessedAtMs, categories: ['facilities'], inventory });
     set({ facilities, inventory: achievementResult.inventory, market, finance, productionStatistics, achievements: achievementResult.achievements, prestige: achievementResult.prestige });
@@ -486,6 +498,7 @@ export const useGameStore = create<GameState>((set, get) => {
 
     const prestige = get().prestige.clone();
     syncCompanyBalancePrestige(prestige, finance, get().lastProcessedAtMs);
+    syncCompanyAssetsPrestige(prestige, { finance, inventory: get().inventory, market: get().market, facilities, research: get().research }, get().lastProcessedAtMs);
     syncFacilityConditionPrestige(prestige, facilities, get().lastProcessedAtMs);
     const achievementResult = applyAchievementUnlocks({
       achievements: get().achievements,
@@ -652,6 +665,12 @@ export const useGameStore = create<GameState>((set, get) => {
     let prestige = get().prestige;
     let completedResearchProjectId: ResearchProjectId | null = null;
 
+    prestige = prestige.clone();
+    syncCompanyAssetsPrestige(prestige, { finance: marketFinance ?? get().finance, inventory, market: market ?? get().market, facilities, research }, nextGameTimeMs);
+    if (hasConstructedFacility) {
+      syncFacilityConditionPrestige(prestige, facilities, nextGameTimeMs);
+    }
+
     if (research.getActiveProject()) {
       research = research.clone();
       completedResearchProjectId = research.advance(elapsedMs);
@@ -663,6 +682,7 @@ export const useGameStore = create<GameState>((set, get) => {
           marketFinance.applyTransaction({ amount: completedProject.effect.amount, description: `Research completed: ${completedProject.name}`, detailLines: [], kind: 'equity', source: 'research-grant', occurredAtGameTimeMs: nextGameTimeMs });
           prestige = prestige.clone();
           syncCompanyBalancePrestige(prestige, marketFinance, nextGameTimeMs);
+          syncCompanyAssetsPrestige(prestige, { finance: marketFinance, inventory, market: market ?? get().market, facilities, research }, nextGameTimeMs);
         }
       }
     }
@@ -744,6 +764,7 @@ export const useGameStore = create<GameState>((set, get) => {
     finance.refreshLoanSearchOffers(refreshLoanOfferAvailability(finance.getLoanSearchOffers(), refreshedReport.loanLimitBreakdown));
     const prestige = state.prestige.clone();
     syncCompanyBalancePrestige(prestige, finance, state.lastProcessedAtMs);
+    syncCompanyAssetsPrestige(prestige, { finance, inventory: state.inventory, market: state.market, facilities: state.facilities, research: state.research }, state.lastProcessedAtMs);
     const achievementResult = applyAchievementUnlocks({
       achievements: state.achievements,
       productionStatistics: state.productionStatistics,
@@ -833,6 +854,7 @@ export const useGameStore = create<GameState>((set, get) => {
 
     const prestige = state.prestige.clone();
     syncCompanyBalancePrestige(prestige, finance, state.lastProcessedAtMs);
+    syncCompanyAssetsPrestige(prestige, { finance, inventory: state.inventory, market: state.market, facilities: state.facilities, research: state.research }, state.lastProcessedAtMs);
     set({ research, grants, finance, prestige });
     return true;
   },
@@ -849,6 +871,7 @@ export const useGameStore = create<GameState>((set, get) => {
 
     const prestige = state.prestige.clone();
     syncCompanyBalancePrestige(prestige, finance, state.lastProcessedAtMs);
+    syncCompanyAssetsPrestige(prestige, { finance, inventory: state.inventory, market: state.market, facilities: state.facilities, research: state.research }, state.lastProcessedAtMs);
     const achievementResult = applyAchievementUnlocks({
       achievements: state.achievements,
       productionStatistics: state.productionStatistics,
@@ -907,6 +930,7 @@ export const useGameStore = create<GameState>((set, get) => {
 
     const prestige = get().prestige.clone();
     syncCompanyBalancePrestige(prestige, finance, currentGameTimeMs);
+    syncCompanyAssetsPrestige(prestige, { finance, inventory: get().inventory, market: get().market, facilities: get().facilities, research: get().research }, currentGameTimeMs);
     prestige.recordSalesContract(contract.id, contract.reward, currentGameTimeMs);
 
     const achievementResult = applyAchievementUnlocks({
@@ -970,6 +994,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const grants = GrantLedger.fromSnapshot(snapshot.grants);
     const inventory = Inventory.fromSnapshot(snapshot.inventory);
     syncCompanyBalancePrestige(prestige, finance, snapshot.time.lastProcessedAtMs);
+    syncCompanyAssetsPrestige(prestige, { finance, inventory, market, facilities, research }, snapshot.time.lastProcessedAtMs);
     syncFacilityConditionPrestige(prestige, facilities, snapshot.time.lastProcessedAtMs);
     const achievementResult = applyAchievementUnlocks({
       achievements,
