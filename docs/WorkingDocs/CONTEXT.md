@@ -27,7 +27,7 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Finance report period | A rolling foreground-time window: last 1 minute, 15 minutes, 1 hour, 10 hours, 24 hours, or all time. |
 | Asset value | A derived euro value of cash, inventory at current local-market prices, condition-scaled facilities, or completed research. |
 | Loan offer / loan | A lender's deterministic financing proposal / an accepted loan with foreground-minute repayment attempts. |
-| Credit rating | A derived score and grade based on asset health, liquidity, company age, and loan-payment history. |
+| Credit rating | A derived score and grade based on asset strength, liquidity, company age, and loan-payment history. |
 | Lender availability | A per-lender eligibility and borrowing-cap calculation derived from the company's assets, credit score, outstanding debt, lender market exposure, and lender contract cap. |
 | Lender search | A paid, foreground-time finance activity. Its fee and work requirement scale with offer count and how tightly lender type, amount, and term are constrained; matching offers appear only when the work completes. |
 | Economy phase | The persistent crash, recession, stable, expansion, or boom state. It changes deterministically every 10 foreground minutes with a bias toward stable and adjusts future loan interest offers. |

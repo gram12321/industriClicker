@@ -1,4 +1,4 @@
-import { ADVANCED_LOAN_CONFIG, CREDIT_GRADE_THRESHOLDS, CREDIT_RATING_CONFIG, ECONOMY_INTEREST_MULTIPLIERS, LENDER_NAME_POOLS, LENDER_OFFER_CONFIG, LENDER_SEARCH_CONFIG, LENDER_TYPE_CONFIG, LOAN_PAYMENT_INTERVAL_MS, LOAN_TERMS, type EconomyPhase, type LenderType } from './financeConstants';
+import { ADVANCED_LOAN_CONFIG, COMPANY_STABILITY_CONFIG, CREDIT_GRADE_THRESHOLDS, CREDIT_RATING_CONFIG, ECONOMY_INTEREST_MULTIPLIERS, LENDER_NAME_POOLS, LENDER_OFFER_CONFIG, LENDER_SEARCH_CONFIG, LENDER_TYPE_CONFIG, LOAN_PAYMENT_INTERVAL_MS, LOAN_TERMS, type EconomyPhase, type LenderType } from './financeConstants';
 import type { FinanceTransaction, Loan, LoanOffer } from './finance';
 
 export type Lender = {
@@ -55,16 +55,20 @@ export function createInitialLenders(seed = 20260810): Lender[] {
 function normalizedCoverage(value: number, fair: number, good: number, excellent: number): number { if (!Number.isFinite(value) || value >= excellent) return 1; if (value >= good) return 0.67 + (value - good) / (excellent - good) * 0.33; if (value >= fair) return 0.33 + (value - fair) / (good - fair) * 0.34; return Math.max(0, value / fair * 0.33); }
 function calculateStability(transactions: readonly FinanceTransaction[], companyAgeMs: number): CreditRatingBreakdown['companyStability'] {
   const periodNets = new Map<number, number>();
-  for (const transaction of transactions.filter((entry) => entry.kind === 'operating')) { const bucket = Math.floor(transaction.occurredAtGameTimeMs / (15 * 60_000)); periodNets.set(bucket, (periodNets.get(bucket) ?? 0) + transaction.amount); }
-  const series = Array.from(periodNets.values()).slice(-16);
-  const mean = series.length < 2 ? 0 : series.reduce((sum, value) => sum + value, 0) / series.length;
+  for (const transaction of transactions.filter((entry) => entry.kind === 'operating')) { const bucket = Math.floor(transaction.occurredAtGameTimeMs / COMPANY_STABILITY_CONFIG.recentPeriodMs); periodNets.set(bucket, (periodNets.get(bucket) ?? 0) + transaction.amount); }
+  const series = Array.from(periodNets.values()).slice(-COMPANY_STABILITY_CONFIG.recentPeriodCount);
+  const mean = series.length === 0 ? 0 : series.reduce((sum, value) => sum + value, 0) / series.length;
   const deviation = series.length < 2 ? 0 : Math.sqrt(series.reduce((sum, value) => sum + (value - mean) ** 2, 0) / series.length);
-  const profitConsistency = series.length < 2 ? 0 : clamp01(1 - deviation / (Math.abs(mean) + 1));
+  const observedConsistency = series.length < 2 ? COMPANY_STABILITY_CONFIG.starterConsistency : clamp01(1 - deviation / (Math.abs(mean) + 1));
+  const profitabilityMultiplier = mean > 0 ? COMPANY_STABILITY_CONFIG.positiveProfitabilityMultiplier : mean < 0 ? COMPANY_STABILITY_CONFIG.negativeProfitabilityMultiplier : COMPANY_STABILITY_CONFIG.breakEvenProfitabilityMultiplier;
+  const coverage = Math.min(1, series.length / COMPANY_STABILITY_CONFIG.recentPeriodCount);
+  const profitConsistency = clamp01(observedConsistency * profitabilityMultiplier * coverage + COMPANY_STABILITY_CONFIG.starterConsistency * (1 - coverage));
   const income = transactions.filter((entry) => entry.kind === 'operating' && entry.amount > 0).reduce((sum, entry) => sum + entry.amount, 0);
   const expenses = transactions.filter((entry) => entry.kind === 'operating' && entry.amount < 0).reduce((sum, entry) => sum + Math.abs(entry.amount), 0);
-  const expenseEfficiency = income > 0 ? clamp01(1 - expenses / income) : 0;
+  const expenseEfficiency = income > 0 ? clamp01((income - expenses) / income / COMPANY_STABILITY_CONFIG.healthyOperatingMargin) : 0;
   const companyAgeHours = Math.max(0, companyAgeMs) / (60 * 60_000);
-  const score = clamp01(clamp01(companyAgeHours / 240) * 0.35 + profitConsistency * 0.4 + expenseEfficiency * 0.25);
+  const ageScore = Math.sqrt(clamp01(companyAgeHours / COMPANY_STABILITY_CONFIG.ageTargetHours));
+  const score = clamp01(ageScore * COMPANY_STABILITY_CONFIG.ageWeight + profitConsistency * COMPANY_STABILITY_CONFIG.consistencyWeight + expenseEfficiency * COMPANY_STABILITY_CONFIG.efficiencyWeight);
   return { companyAgeHours, profitConsistency, expenseEfficiency, score };
 }
 
@@ -74,7 +78,7 @@ export function calculateCreditRating(input: { cash: number; totalAssets: number
   const liquidityRatio = input.totalDebt > 0 ? input.cash / input.totalDebt : 999;
   const fixedAssetRatio = input.totalAssets > 0 ? input.fixedAssets / input.totalAssets : 0;
   const assetHealthScore = clamp01((debtToAssetRatio <= 0 ? 1 : debtToAssetRatio >= 1 ? 0 : 1 - debtToAssetRatio ** 1.5) * 0.35 + normalizedCoverage(assetCoverage, 1, 2, 4) * 0.3 + normalizedCoverage(liquidityRatio, 0.5, 1, 2) * 0.2 + normalizedCoverage(fixedAssetRatio, 0.2, 0.4, 0.6) * 0.15);
-  const paymentHistoryScore = clamp01(clamp01(input.onTimePayments / 30) * 0.45 + clamp01(input.paidOffLoans / 8) * 0.2 + (1 / (1 + input.missedPayments * 0.6)) * 0.2 + (1 / (1 + input.defaults * 1.5)) * 0.15);
+  const paymentHistoryScore = clamp01(1 - input.missedPayments * CREDIT_RATING_CONFIG.paymentHistoryMissPenalty - input.defaults * CREDIT_RATING_CONFIG.paymentHistoryDefaultPenalty);
   const companyStability = calculateStability(input.transactions, input.companyAgeMs);
   const consecutiveNegativePeriods = input.consecutiveNegativePeriods ?? 0;
   const penalty = Math.min(CREDIT_RATING_CONFIG.maxNegativePenalty, consecutiveNegativePeriods * 0.015);

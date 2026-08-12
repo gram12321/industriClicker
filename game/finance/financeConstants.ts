@@ -61,7 +61,22 @@ export const LOAN_COLLECTION = {
 
 export const CREDIT_RATING_CONFIG = {
   base: 0.55, min: 0.1, max: 0.98, weightAssetHealth: 0.35, weightPaymentHistory: 0.35,
-  weightCompanyStability: 0.2, maxNegativePenalty: 0.2,
+  weightCompanyStability: 0.2, maxNegativePenalty: 0.2, paymentHistoryMissPenalty: 0.08,
+  paymentHistoryDefaultPenalty: 0.3,
+} as const;
+/** Tunable inputs for the company-stability component of a credit rating. */
+export const COMPANY_STABILITY_CONFIG = {
+  ageTargetHours: 240,
+  recentPeriodMs: 15 * 60_000,
+  recentPeriodCount: 16,
+  starterConsistency: 0.6,
+  positiveProfitabilityMultiplier: 1,
+  breakEvenProfitabilityMultiplier: 0.75,
+  negativeProfitabilityMultiplier: 0.5,
+  healthyOperatingMargin: 0.25,
+  ageWeight: 0.35,
+  consistencyWeight: 0.4,
+  efficiencyWeight: 0.25,
 } as const;
 export const CREDIT_GRADE_THRESHOLDS = [
   { minimumScore: 0.9, grade: 'AAA' }, { minimumScore: 0.84, grade: 'AA' }, { minimumScore: 0.78, grade: 'A' },
