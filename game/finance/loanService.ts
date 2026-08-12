@@ -111,24 +111,38 @@ function offerForLender(lender: Lender, amount: number, periods: number, creditS
  * filter raises both the fee and the foreground work required to find offers.
  */
 export function calculateLoanSearchEstimate(criteria: LoanSearchCriteria, totalLenderTypeCount: number): LoanSearchEstimate {
-  const lenderTypes = criteria.lenderTypes.length > 0 ? criteria.lenderTypes : [];
-  const selectedTypes = lenderTypes.length || totalLenderTypeCount;
-  const offers = Math.max(1, Math.floor(criteria.offerCount));
+  const lenderTypes = criteria.lenderTypes;
+  const regularLenderTypeCount = Math.max(1, totalLenderTypeCount - 1);
+  const selectedRegularTypes = lenderTypes.length === 0 ? regularLenderTypeCount : lenderTypes.filter((type) => type !== 'quickloan').length;
+  const offers = clamp(Math.floor(criteria.offerCount), 1, LENDER_OFFER_CONFIG.maximumOfferCount);
   const offerMultiplier = offers <= 5 ? 1 + (offers - 1) * 0.3 : 2.2 + (offers - 5) * 0.3;
-  const typeNarrowness = 1 - selectedTypes / Math.max(1, totalLenderTypeCount);
   const quickloanOnly = lenderTypes.length > 0 && lenderTypes.every((type) => type === 'quickloan');
-  const includesQuickloan = lenderTypes.includes('quickloan');
-  const lenderTypeMultiplier = quickloanOnly ? 0.75 : (1 + typeNarrowness * LENDER_SEARCH_CONFIG.maximumTypeFilterWorkBonus) * (includesQuickloan ? 1 - LENDER_SEARCH_CONFIG.quickloanTypeDiscount / Math.max(1, lenderTypes.length) : 1);
-  const amountRangeMultiplier = 1 + Math.max(0, 1 - (criteria.amountMax - criteria.amountMin) / Math.max(1, LOAN_TERMS.maximumAmount - LOAN_TERMS.minimumAmount));
-  const durationRangeMultiplier = 1 + Math.max(0, 1 - (criteria.durationMaxPeriods - criteria.durationMinPeriods) / Math.max(1, LOAN_TERMS.maximumDurationPeriods - LOAN_TERMS.minimumDurationPeriods));
+  const typeNarrowness = clamp01((regularLenderTypeCount - selectedRegularTypes) / Math.max(1, regularLenderTypeCount - 1));
+  const lenderTypeMultiplier = quickloanOnly ? 1 : 1 + typeNarrowness * LENDER_SEARCH_CONFIG.maximumTypeFilterWorkBonus;
+  const amountRangeMultiplier = 1 + clamp01(1 - (criteria.amountMax - criteria.amountMin) / Math.max(1, LOAN_TERMS.maximumAmount - LOAN_TERMS.minimumAmount));
+  const durationRangeMultiplier = 1 + clamp01(1 - (criteria.durationMaxPeriods - criteria.durationMinPeriods) / Math.max(1, LOAN_TERMS.maximumDurationPeriods - LOAN_TERMS.minimumDurationPeriods));
   const complexity = offerMultiplier * lenderTypeMultiplier * amountRangeMultiplier * durationRangeMultiplier;
-  const cost = quickloanOnly ? 0 : Math.round(LENDER_SEARCH_CONFIG.baseCost * complexity);
-  const workRequiredMs = Math.max(1_000, Math.round((LENDER_SEARCH_CONFIG.baseWorkMs + offers * LENDER_SEARCH_CONFIG.workPerOfferMs) * complexity));
+  const activeParameterCount = Number(typeNarrowness > 0) + Number(amountRangeMultiplier > 1) + Number(durationRangeMultiplier > 1) + Number(offers > 1);
+  const cost = quickloanOnly ? 0 : Math.round(LENDER_SEARCH_CONFIG.baseCost + LENDER_SEARCH_CONFIG.costPerActiveParameter * activeParameterCount * complexity ** LENDER_SEARCH_CONFIG.costSelectivityExponent);
+  const workRequiredMs = Math.max(1_000, Math.round(LENDER_SEARCH_CONFIG.baseWorkMs * complexity * (quickloanOnly ? LENDER_SEARCH_CONFIG.quickloanOnlyWorkMultiplier : 1)));
   return { cost, workRequiredMs, offerMultiplier, lenderTypeMultiplier, amountRangeMultiplier, durationRangeMultiplier };
 }
 export function generateLoanOffers(input: { lenders: readonly Lender[]; limitBreakdown: LoanLimitBreakdown; creditRating: CreditRating; economyPhase: EconomyPhase; criteria: LoanSearchCriteria }): LoanOffer[] {
   const types = input.criteria.lenderTypes.length > 0 ? new Set(input.criteria.lenderTypes) : new Set(input.lenders.map((lender) => lender.type)); const byLender = new Map(input.limitBreakdown.lenderBreakdowns.map((entry) => [entry.lenderId, entry]));
-  return input.lenders.filter((lender) => types.has(lender.type)).map((lender) => { const limit = byLender.get(lender.id); if (!limit) return null; const minimum = Math.max(lender.minLoanAmount, input.criteria.amountMin); const maximum = Math.min(lender.maxLoanAmount, input.criteria.amountMax, limit.availableLimit); const minTerm = Math.max(lender.minDurationPeriods, input.criteria.durationMinPeriods); const maxTerm = Math.min(lender.maxDurationPeriods, input.criteria.durationMaxPeriods); if (minimum > maximum || minTerm > maxTerm) return null; return offerForLender(lender, Math.floor((minimum + maximum) / 2), Math.floor((minTerm + maxTerm) / 2), input.creditRating.score, input.economyPhase, limit); }).filter((offer): offer is LoanOffer => offer !== null).sort((left, right) => (left.isAvailable === right.isAvailable ? left.totalCost - right.totalCost : left.isAvailable ? -1 : 1)).slice(0, Math.max(1, Math.floor(input.criteria.offerCount)));
+  return input.lenders.filter((lender) => types.has(lender.type)).map((lender) => { const limit = byLender.get(lender.id); if (!limit) return null; const minimum = Math.max(lender.minLoanAmount, input.criteria.amountMin); const maximum = Math.min(lender.maxLoanAmount, input.criteria.amountMax, limit.availableLimit); const minTerm = Math.max(lender.minDurationPeriods, input.criteria.durationMinPeriods); const maxTerm = Math.min(lender.maxDurationPeriods, input.criteria.durationMaxPeriods); if (minimum > maximum || minTerm > maxTerm) return null; return offerForLender(lender, Math.floor((minimum + maximum) / 2), Math.floor((minTerm + maxTerm) / 2), input.creditRating.score, input.economyPhase, limit); }).filter((offer): offer is LoanOffer => offer !== null).sort((left, right) => (left.isAvailable === right.isAvailable ? left.totalCost - right.totalCost : left.isAvailable ? -1 : 1)).slice(0, clamp(Math.floor(input.criteria.offerCount), 1, LENDER_OFFER_CONFIG.maximumOfferCount));
+}
+
+/** Rechecks saved quotes after debt changes without replacing the search results. */
+export function refreshLoanOfferAvailability(offers: readonly LoanOffer[], limitBreakdown: LoanLimitBreakdown): LoanOffer[] {
+  const limits = new Map(limitBreakdown.lenderBreakdowns.map((limit) => [limit.lenderId, limit]));
+  return offers.map((offer) => {
+    const limit = limits.get(offer.lenderId);
+    const unavailableReason = !limit ? 'Lender is no longer available.' : !limit.isAvailable ? limit.unavailableReason ?? 'Lender is no longer eligible.' : limit.availableLimit < offer.principal ? 'Requested principal exceeds the lender’s remaining limit.' : null;
+    return { ...offer, isAvailable: unavailableReason === null, unavailableReason };
+  });
 }
 
 export function estimatePrepaymentPenalty(loan: Loan): number { if (loan.status !== 'active') return 0; return Math.floor(clamp(loan.remainingBalance * ADVANCED_LOAN_CONFIG.prepaymentPenaltyRate, ADVANCED_LOAN_CONFIG.prepaymentPenaltyMin, loan.remainingBalance * ADVANCED_LOAN_CONFIG.prepaymentPenaltyMaxRate)); }
+
+/** Scheduled interest still due if the loan continues through its remaining foreground-minute payments. */
+export function estimateRemainingLoanInterest(loan: Loan): number { return loan.status === 'active' ? Math.max(0, loan.paymentAmount * loan.remainingPeriods - loan.remainingBalance) : 0; }

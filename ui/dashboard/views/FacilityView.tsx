@@ -4,7 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button, Card, IconButton, List, ProgressBar, Text, TouchableRipple } from 'react-native-paper';
 import { colors } from '@/theme';
 import type { Finance } from '@/game/finance';
-import type { FacilityCollection, FacilityUpgradeKind } from '@/game/facilities';
+import { Facility, type FacilityCollection, type FacilityUpgradeKind, type FacilityView } from '@/game/facilities';
 import { calculateFacilityEffectiveWork, FACILITY_GROUPS, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_REPAIR_MATERIAL_COST_RATE, getConditionDecayMultiplier, getFacilityDefinition, getFacilityProductionStatus, getFacilityRepairCost, getFacilityUpgradeCost, getOutputUpgradeMultiplier, getRecipeProductionConditionLoss, getSpeedUpgradeWorkSpeedMultiplier } from '@/game/facilities';
 import { calculateAsymmetricalScaler01 } from '@/game/core/math';
 import type { Inventory } from '@/game/inventory';
@@ -76,6 +76,9 @@ export function ProductionView({
       const speedNextEffect = `Next: ${formatPercent(getSpeedUpgradeWorkSpeedMultiplier(speedUpgradeLevel + 1) / speedUpgradeWorkSpeedMultiplier - 1, { decimals: 1 })} speed`;
       const outputNextEffect = `Next: ${formatPercent(getOutputUpgradeMultiplier(outputUpgradeLevel + 1) / outputMultiplier - 1, { decimals: 1 })} output`;
       const conditionNextEffect = `Next: ${formatPercent(1 - getConditionDecayMultiplier(conditionDecayUpgradeLevel + 1) / conditionDecayMultiplier, { decimals: 1 })} less decay`;
+      const projectedSpeedNetGain = activeRecipe ? getProjectedUpgradeNetGainPerMinute(facility, activeRecipe, market, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds), 'speed') : undefined;
+      const projectedOutputNetGain = activeRecipe ? getProjectedUpgradeNetGainPerMinute(facility, activeRecipe, market, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds), 'output') : undefined;
+      const projectedConditionNetGain = activeRecipe ? getProjectedUpgradeNetGainPerMinute(facility, activeRecipe, market, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds), 'condition') : undefined;
       const repairCost = getFacilityRepairCost(definition.constructionMaterialsCost, facilityCondition);
       const missingRepairMaterials = Math.max(0, repairCost - inventory.getAmount(ResourceType.ConstructionMaterials));
       const repairMaterialPrice = market.getLocalPrice(ResourceType.ConstructionMaterials);
@@ -150,9 +153,9 @@ export function ProductionView({
             <View style={styles.facilityUpgradeHeader}><MaterialCommunityIcons color={colors.primary} name={APP_ICONS.upgrade} size={16} /><Text style={styles.constructionYardRecipeLabel}>Upgrades</Text></View>
             <Text style={styles.facilityUpgradeSummary}>Work speed x{formatNumber(speedUpgradeWorkSpeedMultiplier, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })} · Output x{formatNumber(outputMultiplier, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })} · Decay x{formatNumber(conditionDecayMultiplier, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })}</Text>
             <View style={styles.facilityUpgradeControls}>
-              <FacilityUpgradeControl canAfford={finance.canAfford(speedUpgradeCost)} cost={speedUpgradeCost} icon={APP_ICONS.speed} label="Speed" level={speedUpgradeLevel} nextEffect={speedNextEffect} onPress={() => upgradeFacility(facilityId, 'speed')} />
-              <FacilityUpgradeControl canAfford={finance.canAfford(outputUpgradeCost)} cost={outputUpgradeCost} icon={APP_ICONS.output} label="Output" level={outputUpgradeLevel} nextEffect={outputNextEffect} onPress={() => upgradeFacility(facilityId, 'output')} />
-              <FacilityUpgradeControl canAfford={finance.canAfford(conditionDecayUpgradeCost)} cost={conditionDecayUpgradeCost} icon="shield-check-outline" label="Decay" level={conditionDecayUpgradeLevel} nextEffect={conditionNextEffect} onPress={() => upgradeFacility(facilityId, 'condition')} />
+              <FacilityUpgradeControl canAfford={finance.canAfford(speedUpgradeCost)} cost={speedUpgradeCost} icon={APP_ICONS.speed} label="Speed" level={speedUpgradeLevel} nextEffect={speedNextEffect} nextNetGain={projectedSpeedNetGain} onPress={() => upgradeFacility(facilityId, 'speed')} />
+              <FacilityUpgradeControl canAfford={finance.canAfford(outputUpgradeCost)} cost={outputUpgradeCost} icon={APP_ICONS.output} label="Output" level={outputUpgradeLevel} nextEffect={outputNextEffect} nextNetGain={projectedOutputNetGain} onPress={() => upgradeFacility(facilityId, 'output')} />
+              <FacilityUpgradeControl canAfford={finance.canAfford(conditionDecayUpgradeCost)} cost={conditionDecayUpgradeCost} icon="shield-check-outline" label="Decay" level={conditionDecayUpgradeLevel} nextEffect={conditionNextEffect} nextNetGain={projectedConditionNetGain} onPress={() => upgradeFacility(facilityId, 'condition')} />
             </View>
           </View>}
         </>}
@@ -166,15 +169,16 @@ function FacilityMetric({ icon, label }: { icon: string; label: string }) {
   return <View style={styles.facilityMetric}><MaterialCommunityIcons color={colors.primary} name={icon as never} size={13} /><Text style={styles.facilityMetricText}>{label}</Text></View>;
 }
 
-function FacilityUpgradeControl({ canAfford, cost, icon, label, level, nextEffect, onPress }: { canAfford: boolean; cost: number; icon: string; label: string; level: number; nextEffect: string; onPress: () => void }) {
-  return <View style={styles.facilityUpgradeCard}><View style={styles.facilityUpgradeHeader}><MaterialCommunityIcons color={colors.primary} name={icon as never} size={15} /><Text style={styles.facilityUpgradeLabel}>{label}</Text></View><Text style={styles.facilityUpgradeLevel}>L{formatNumber(level)} → L{formatNumber(level + 1)}</Text><Text style={styles.facilityUpgradeEffect}>{nextEffect}</Text><View style={styles.facilityUpgradeAction}><Text style={styles.facilityUpgradeCost}>{formatCurrency(cost)}</Text><IconButton accessibilityLabel={`Upgrade ${label} to level ${level + 1}`} disabled={!canAfford} icon={APP_ICONS.add} mode="contained" onPress={onPress} size={16} /></View></View>;
+function FacilityUpgradeControl({ canAfford, cost, icon, label, level, nextEffect, nextNetGain, onPress }: { canAfford: boolean; cost: number; icon: string; label: string; level: number; nextEffect: string; nextNetGain?: number; onPress: () => void }) {
+  return <View style={styles.facilityUpgradeCard}><View style={styles.facilityUpgradeHeader}><MaterialCommunityIcons color={colors.primary} name={icon as never} size={15} /><Text style={styles.facilityUpgradeLabel}>{label}</Text></View><Text style={styles.facilityUpgradeLevel}>L{formatNumber(level)} → L{formatNumber(level + 1)}</Text><Text style={styles.facilityUpgradeEffect}>{nextEffect}</Text>{nextNetGain !== undefined && <Text style={styles.facilityUpgradeEffect}>Net gain after upgrade: {formatCurrency(nextNetGain)}/min</Text>}<View style={styles.facilityUpgradeAction}><Text style={styles.facilityUpgradeCost}>{formatCurrency(cost)}</Text><IconButton accessibilityLabel={`Upgrade ${label} to level ${level + 1}`} disabled={!canAfford} icon={APP_ICONS.add} mode="contained" onPress={onPress} size={16} /></View></View>;
 }
 
 function RecipeOption({ canResearch, decayCostPerMinute, effectiveWorkPerMinute, freeTutorialResearch, inventory, locked, market, onPress, onResearch, outputMultiplier, recipe, selected }: { canResearch: boolean; decayCostPerMinute: number; effectiveWorkPerMinute: number; freeTutorialResearch: boolean; inventory: Inventory; locked: boolean; market: Market; onPress: () => void; onResearch: () => void; outputMultiplier: number; recipe: Recipe; selected: boolean }) {
   const inputSummary = recipe.inputs.length === 0 ? 'No inputs' : recipe.inputs.map((input) => `${getResourceIcon(input.resourceType)} ${formatNumber(input.amount, { smartDecimals: true })}/${formatNumber(inventory.getAmount(input.resourceType), { smartDecimals: true })}`).join('  ');
   const hasMissingInputs = recipe.inputs.some((input) => !inventory.has(input.resourceType, input.amount));
   const valuePerMinute = getRecipeValuePerMinute(recipe, market, outputMultiplier, effectiveWorkPerMinute);
-  return <View style={[styles.facilityRecipeOption, selected && styles.facilityRecipeOptionActive, hasMissingInputs && styles.facilityRecipeOptionUnavailable, locked && styles.facilityRecipeOptionUnavailable]}><TouchableRipple accessibilityLabel={`Run ${formatRecipeName(recipe)}`} disabled={locked} onPress={onPress}><View><View style={styles.facilityRecipeOptionStats}><MaterialCommunityIcons color={colors.primary} name={RECIPE_ICONS[recipe.name] as never} size={16} /><Text style={styles.facilityRecipeOptionName}>{formatRecipeName(recipe)}</Text></View><Text style={[styles.facilityRecipeOptionDetails, (hasMissingInputs || locked) && styles.facilityRecipeOptionMissing]}>{locked ? 'Research required' : `Inputs: ${inputSummary}`}</Text><View style={styles.facilityRecipeOptionStats}><Text style={styles.facilityRecipeOptionDetails}>Required work: {formatNumber(recipe.requiredWork, { smartDecimals: true })}</Text><Text style={styles.facilityRecipeOptionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text><Text style={styles.facilityRecipeOptionDetails}>Decay cost/min: {formatConditionCost(decayCostPerMinute, market)}</Text></View></View></TouchableRipple>{locked && <Button accessibilityLabel={freeTutorialResearch ? `Research ${formatRecipeName(recipe)} for free with the tutorial grant` : `Research ${formatRecipeName(recipe)}`} compact disabled={!canResearch} icon={APP_ICONS.research} onPress={onResearch}>{freeTutorialResearch ? 'Research recipe for free' : 'Research recipe'}</Button>}</View>;
+  const netGainPerMinute = getNetGainPerMinute(valuePerMinute, decayCostPerMinute, market);
+  return <View style={[styles.facilityRecipeOption, selected && styles.facilityRecipeOptionActive, hasMissingInputs && styles.facilityRecipeOptionUnavailable, locked && styles.facilityRecipeOptionUnavailable]}><TouchableRipple accessibilityLabel={`Run ${formatRecipeName(recipe)}`} disabled={locked} onPress={onPress}><View><View style={styles.facilityRecipeOptionStats}><MaterialCommunityIcons color={colors.primary} name={RECIPE_ICONS[recipe.name] as never} size={16} /><Text style={styles.facilityRecipeOptionName}>{formatRecipeName(recipe)}</Text></View><Text style={[styles.facilityRecipeOptionDetails, (hasMissingInputs || locked) && styles.facilityRecipeOptionMissing]}>{locked ? 'Research required' : `Inputs: ${inputSummary}`}</Text><View style={styles.facilityRecipeOptionStats}><Text style={styles.facilityRecipeOptionDetails}>Required work: {formatNumber(recipe.requiredWork, { smartDecimals: true })}</Text><Text style={styles.facilityRecipeOptionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text><Text style={styles.facilityRecipeOptionDetails}>Net gain/min: {formatCurrency(netGainPerMinute)}</Text><Text style={styles.facilityRecipeOptionDetails}>Decay cost/min: {formatConditionCost(decayCostPerMinute, market)}</Text></View></View></TouchableRipple>{locked && <Button accessibilityLabel={freeTutorialResearch ? `Research ${formatRecipeName(recipe)} for free with the tutorial grant` : `Research ${formatRecipeName(recipe)}`} compact disabled={!canResearch} icon={APP_ICONS.research} onPress={onResearch}>{freeTutorialResearch ? 'Research recipe for free' : 'Research recipe'}</Button>}</View>;
 }
 
 function FacilityResourceSummary({ outputMultiplier, recipe }: { outputMultiplier: number; recipe: Recipe }) {
@@ -189,12 +193,13 @@ function FacilityProductionStatus({ compact = false, decayCostPerMinute, effecti
   if (!recipe) return <Text style={styles.productionError}>Production is not started. Choose a recipe to begin.</Text>;
   const progressPercent = clamp((progress / recipe.requiredWork) * 100, 0, 100);
   const valuePerMinute = getRecipeValuePerMinute(recipe, market, outputMultiplier, effectiveWorkPerMinute);
+  const netGainPerMinute = getNetGainPerMinute(valuePerMinute, decayCostPerMinute, market);
   const workPerMinute = effectiveWorkPerMinute;
   const minutesRemaining = workPerMinute > 0 ? Math.max(0, recipe.requiredWork - progress) / workPerMinute : 0;
   const productionRateLabel = formatProductionRate(recipe, outputMultiplier, effectiveWorkPerMinute, minutesRemaining);
-  if (compact) return <View style={styles.productionProgress}><View style={styles.productionProgressHeader}><View><Text style={styles.productionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text><Text style={styles.productionTimeLeft}>Decay cost/min: {formatConditionCost(decayCostPerMinute, market)}</Text></View><View style={styles.productionProgressMeta}><Text style={styles.productionPercent}>{formatPercent(progressPercent, { decimals: 0, input: 'percent' })}</Text><Text style={styles.productionTimeLeft}>{productionRateLabel}</Text><Text style={styles.productionTimeLeft}>Time left: {formatDuration(minutesRemaining)}</Text></View></View><ProgressBar color={colors.primary} progress={progressPercent / 100} style={styles.productionProgressBar} /></View>;
-  if (status !== 'producing') return <View style={styles.productionProgress}><Text style={styles.productionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text><Text style={styles.productionTimeLeft}>Decay cost/min: {formatConditionCost(decayCostPerMinute, market)}</Text><Text style={styles.productionTimeLeft}>{productionRateLabel}</Text><Text style={styles.productionTimeLeft}>Time left: {formatDuration(minutesRemaining)}</Text></View>;
-  return <View style={styles.productionProgress}><View style={styles.productionProgressHeader}><View><Text style={styles.productionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text><Text style={styles.productionTimeLeft}>Decay cost/min: {formatConditionCost(decayCostPerMinute, market)}</Text></View><View style={styles.productionProgressMeta}><Text style={styles.productionPercent}>{formatPercent(progressPercent, { decimals: 0, input: 'percent' })}</Text><Text style={styles.productionTimeLeft}>{productionRateLabel}</Text><Text style={styles.productionTimeLeft}>Time left: {formatDuration(minutesRemaining)}</Text></View></View><ProgressBar color={colors.primary} progress={progressPercent / 100} style={styles.productionProgressBar} /></View>;
+  if (compact) return <View style={styles.productionProgress}><View style={styles.productionProgressHeader}><View><Text style={styles.productionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text><Text style={styles.productionTimeLeft}>Net gain/min: {formatCurrency(netGainPerMinute)}</Text><Text style={styles.productionTimeLeft}>Decay cost/min: {formatConditionCost(decayCostPerMinute, market)}</Text></View><View style={styles.productionProgressMeta}><Text style={styles.productionPercent}>{formatPercent(progressPercent, { decimals: 0, input: 'percent' })}</Text><Text style={styles.productionTimeLeft}>{productionRateLabel}</Text><Text style={styles.productionTimeLeft}>Time left: {formatDuration(minutesRemaining)}</Text></View></View><ProgressBar color={colors.primary} progress={progressPercent / 100} style={styles.productionProgressBar} /></View>;
+  if (status !== 'producing') return <View style={styles.productionProgress}><Text style={styles.productionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text><Text style={styles.productionTimeLeft}>Net gain/min: {formatCurrency(netGainPerMinute)}</Text><Text style={styles.productionTimeLeft}>Decay cost/min: {formatConditionCost(decayCostPerMinute, market)}</Text><Text style={styles.productionTimeLeft}>{productionRateLabel}</Text><Text style={styles.productionTimeLeft}>Time left: {formatDuration(minutesRemaining)}</Text></View>;
+  return <View style={styles.productionProgress}><View style={styles.productionProgressHeader}><View><Text style={styles.productionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text><Text style={styles.productionTimeLeft}>Net gain/min: {formatCurrency(netGainPerMinute)}</Text><Text style={styles.productionTimeLeft}>Decay cost/min: {formatConditionCost(decayCostPerMinute, market)}</Text></View><View style={styles.productionProgressMeta}><Text style={styles.productionPercent}>{formatPercent(progressPercent, { decimals: 0, input: 'percent' })}</Text><Text style={styles.productionTimeLeft}>{productionRateLabel}</Text><Text style={styles.productionTimeLeft}>Time left: {formatDuration(minutesRemaining)}</Text></View></View><ProgressBar color={colors.primary} progress={progressPercent / 100} style={styles.productionProgressBar} /></View>;
 }
 
 function formatRecipeProgress(progress: number, requiredWork: number, effectiveWorkPerMinute: number): string {
@@ -219,6 +224,30 @@ function getRecipeValuePerMinute(recipe: Recipe, market: Market, outputMultiplie
   const outputValue = recipe.output.amount * outputMultiplier * market.getLocalPrice(recipe.output.resourceType);
   const inputValue = recipe.inputs.reduce((total, input) => total + input.amount * market.getLocalPrice(input.resourceType), 0);
   return (outputValue - inputValue) * cyclesPerMinute;
+}
+
+function getNetGainPerMinute(valuePerMinute: number, decayCostPerMinute: number, market: Market): number {
+  return valuePerMinute - decayCostPerMinute * market.getLocalPrice(ResourceType.ConstructionMaterials);
+}
+
+function getProjectedUpgradeNetGainPerMinute(facility: Facility, recipe: Recipe, market: Market, recipeResearchWorkSpeedMultiplier: number, upgradeKind: FacilityUpgradeKind): number {
+  const projectedFacility = Facility.fromSnapshot(facility.toSnapshot());
+  if (upgradeKind === 'speed') projectedFacility.upgradeSpeed();
+  if (upgradeKind === 'output') projectedFacility.upgradeOutput();
+  if (upgradeKind === 'condition') projectedFacility.upgradeConditionDecay();
+
+  const projectedView = projectedFacility.getView();
+  const definition = getFacilityDefinition(projectedView.facilityType);
+  const projectedEffectiveWork = calculateFacilityEffectiveWork(projectedView, BASE_WORK_PER_MINUTE, recipeResearchWorkSpeedMultiplier);
+  const projectedValuePerMinute = getRecipeValuePerMinute(recipe, market, projectedView.outputMultiplier, projectedEffectiveWork);
+  const projectedDecayCostPerMinute = getFacilityDecayCostPerMinute(
+    definition.constructionMaterialsCost,
+    projectedView.facilityCondition,
+    projectedView.conditionDecayMultiplier * projectedView.overstaffingConditionDecayMultiplier,
+    projectedEffectiveWork,
+    recipe,
+  );
+  return getNetGainPerMinute(projectedValuePerMinute, projectedDecayCostPerMinute, market);
 }
 
 function getFacilityDecayCostPerMinute(constructionMaterialsCost: number, facilityCondition: number, conditionDecayMultiplier: number, effectiveWorkPerMinute: number, recipe: Recipe | null): number {

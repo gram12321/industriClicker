@@ -35,7 +35,7 @@ export const LOAN_TERM_OPTIONS = [
 ] as const;
 
 export const LOAN_TERMS = {
-  minimumAmount: 100, maximumAmount: 250_000, minimumDurationPeriods: 5, maximumDurationPeriods: 1_440,
+  minimumAmount: 50, maximumAmount: 1_000_000, minimumDurationPeriods: 5, maximumDurationPeriods: 1_440,
   baseAnnualRate: 0.06, minAnnualRate: 0.03, maxAnnualRate: 0.24, defaultThresholdMissedPayments: 4,
 } as const;
 
@@ -55,10 +55,10 @@ export const LENDER_TYPE_CONFIG: Readonly<Record<LenderType, {
   marketCapitalizationRange: readonly [number, number]; maxSingleBorrowerExposureRange: readonly [number, number];
   loanLimitAssetFactorBase: number; loanLimitAssetFactorScore: number; loanLimitRatingFactorBase: number; loanLimitRatingFactorScore: number;
 }>> = {
-  bank: { count: 4, baseAnnualRateRange: [0.045, 0.08], riskToleranceRange: [0.45, 0.65], flexibilityRange: [0.3, 0.55], loanAmountRange: [500, 50_000], durationRange: [20, 1_440], originationFeeBaseRange: [0.008, 0.018], marketCapitalizationRange: [80_000, 300_000], maxSingleBorrowerExposureRange: [0.025, 0.055], loanLimitAssetFactorBase: 0.28, loanLimitAssetFactorScore: 0.5, loanLimitRatingFactorBase: 0.32, loanLimitRatingFactorScore: 0.55 },
-  'investment-fund': { count: 3, baseAnnualRateRange: [0.055, 0.1], riskToleranceRange: [0.35, 0.6], flexibilityRange: [0.4, 0.75], loanAmountRange: [1_000, 100_000], durationRange: [16, 1_080], originationFeeBaseRange: [0.01, 0.022], marketCapitalizationRange: [150_000, 700_000], maxSingleBorrowerExposureRange: [0.035, 0.08], loanLimitAssetFactorBase: 0.33, loanLimitAssetFactorScore: 0.58, loanLimitRatingFactorBase: 0.38, loanLimitRatingFactorScore: 0.62 },
-  'private-lender': { count: 4, baseAnnualRateRange: [0.07, 0.14], riskToleranceRange: [0.55, 0.85], flexibilityRange: [0.55, 0.9], loanAmountRange: [250, 25_000], durationRange: [8, 720], originationFeeBaseRange: [0.015, 0.04], marketCapitalizationRange: [20_000, 80_000], maxSingleBorrowerExposureRange: [0.06, 0.14], loanLimitAssetFactorBase: 0.22, loanLimitAssetFactorScore: 0.45, loanLimitRatingFactorBase: 0.24, loanLimitRatingFactorScore: 0.5 },
-  quickloan: { count: 2, baseAnnualRateRange: [0.12, 0.24], riskToleranceRange: [0.08, 0.26], flexibilityRange: [0.75, 0.98], loanAmountRange: [100, 10_000], durationRange: [5, 360], originationFeeBaseRange: [0.025, 0.08], marketCapitalizationRange: [6_000, 22_000], maxSingleBorrowerExposureRange: [0.08, 0.2], loanLimitAssetFactorBase: 0.1, loanLimitAssetFactorScore: 0.24, loanLimitRatingFactorBase: 0.11, loanLimitRatingFactorScore: 0.28 },
+  bank: { count: 4, baseAnnualRateRange: [0.045, 0.08], riskToleranceRange: [0.45, 0.65], flexibilityRange: [0.3, 0.55], loanAmountRange: [500, 1_000_000], durationRange: [20, 1_440], originationFeeBaseRange: [0.008, 0.018], marketCapitalizationRange: [10_000_000, 40_000_000], maxSingleBorrowerExposureRange: [0.03, 0.08], loanLimitAssetFactorBase: 0.28, loanLimitAssetFactorScore: 0.5, loanLimitRatingFactorBase: 0.32, loanLimitRatingFactorScore: 0.55 },
+  'investment-fund': { count: 3, baseAnnualRateRange: [0.055, 0.1], riskToleranceRange: [0.35, 0.6], flexibilityRange: [0.4, 0.75], loanAmountRange: [1_000, 1_000_000], durationRange: [16, 1_080], originationFeeBaseRange: [0.01, 0.022], marketCapitalizationRange: [25_000_000, 80_000_000], maxSingleBorrowerExposureRange: [0.04, 0.12], loanLimitAssetFactorBase: 0.33, loanLimitAssetFactorScore: 0.58, loanLimitRatingFactorBase: 0.38, loanLimitRatingFactorScore: 0.62 },
+  'private-lender': { count: 4, baseAnnualRateRange: [0.07, 0.14], riskToleranceRange: [0.55, 0.85], flexibilityRange: [0.55, 0.9], loanAmountRange: [250, 250_000], durationRange: [8, 720], originationFeeBaseRange: [0.015, 0.04], marketCapitalizationRange: [500_000, 3_000_000], maxSingleBorrowerExposureRange: [0.05, 0.12], loanLimitAssetFactorBase: 0.22, loanLimitAssetFactorScore: 0.45, loanLimitRatingFactorBase: 0.24, loanLimitRatingFactorScore: 0.5 },
+  quickloan: { count: 2, baseAnnualRateRange: [0.12, 0.24], riskToleranceRange: [0.08, 0.26], flexibilityRange: [0.75, 0.98], loanAmountRange: [50, 10_000], durationRange: [5, 360], originationFeeBaseRange: [0.025, 0.08], marketCapitalizationRange: [6_000, 22_000], maxSingleBorrowerExposureRange: [0.08, 0.2], loanLimitAssetFactorBase: 0.1, loanLimitAssetFactorScore: 0.24, loanLimitRatingFactorBase: 0.11, loanLimitRatingFactorScore: 0.28 },
 };
 
 export const LENDER_NAME_POOLS: Readonly<Record<LenderType, readonly string[]>> = {
@@ -69,14 +69,15 @@ export const LENDER_NAME_POOLS: Readonly<Record<LenderType, readonly string[]>> 
 };
 
 export const ADVANCED_LOAN_CONFIG = { minExtraPayment: 25, extraPaymentAdminFeeRate: 0.05, extraPaymentAdminFeeMin: 10, prepaymentPenaltyRate: 0.02, prepaymentPenaltyMin: 15, prepaymentPenaltyMaxRate: 0.08, missedPaymentRateBump: 0.0025 } as const;
-export const LENDER_OFFER_CONFIG = { defaultOfferCount: 3, minCreditGapTolerance: 0.35 } as const;
+export const LENDER_OFFER_CONFIG = { defaultOfferCount: 3, maximumOfferCount: 10, minCreditGapTolerance: 0.35 } as const;
 /** Foreground work required to complete a lender search. Selective searches take longer. */
 export const LENDER_SEARCH_CONFIG = {
   baseCost: 10,
-  baseWorkMs: 12_000,
-  workPerOfferMs: 5_000,
+  costPerActiveParameter: 25,
+  costSelectivityExponent: 1.25,
+  baseWorkMs: 60_000,
   maximumTypeFilterWorkBonus: 0.5,
-  quickloanTypeDiscount: 0.25,
+  quickloanOnlyWorkMultiplier: 0.35,
 } as const;
 export const ECONOMY_PHASES = ['crash', 'recession', 'stable', 'expansion', 'boom'] as const;
 export type EconomyPhase = (typeof ECONOMY_PHASES)[number];

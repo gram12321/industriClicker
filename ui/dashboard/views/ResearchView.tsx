@@ -125,7 +125,9 @@ export function ResearchView({
             <Text style={dashboardStyles.cardKicker}>ACTIVE PROJECT</Text>
             <View style={localStyles.projectNameRow}><MaterialCommunityIcons color={colors.primary} name={getProjectIcon(activeProject) as never} size={20} /><Text style={localStyles.activeTitle} variant="titleLarge">{activeProject.name}</Text></View>
             <View style={localStyles.iconValueRow}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={[dashboardStyles.cardDescription, localStyles.timeLabel]}>{`${formatElapsedTime(active.progressMs)} / ${formatElapsedTime(activeProject.durationMs)}`}</Text></View>
-            <ProgressBar accessible accessibilityLabel={`${activeProject.name} progress ${formatElapsedTime(active.progressMs)} of ${formatElapsedTime(activeProject.durationMs)}`} color={colors.primary} progress={Math.min(1, active.progressMs / activeProject.durationMs)} style={localStyles.progress} />
+            <View style={localStyles.progressTrack}>
+              <ProgressBar accessible accessibilityLabel={`${activeProject.name} progress ${formatElapsedTime(active.progressMs)} of ${formatElapsedTime(activeProject.durationMs)}`} color={colors.primary} progress={Math.min(1, active.progressMs / activeProject.durationMs)} style={localStyles.progress} />
+            </View>
             <View style={[localStyles.iconValueRow, localStyles.paidCost]}><Text style={dashboardStyles.cardDescription}>Cost paid:</Text><CurrencyValue value={active.paidCost} /></View>
             <Button accessibilityLabel={`Cancel ${activeProject.name} and refund ${formatCurrency(active.paidCost)}`} icon="close" mode="outlined" onPress={onCancel} style={localStyles.cancelButton}>Cancel and refund <MaterialCommunityIcons color={colors.primary} name={APP_ICONS.coin} size={15} /> {formatCurrency(active.paidCost).replace(/\s*€/u, '')}</Button>
             <Text style={localStyles.cancelNote}>Cancellation refunds the full cost and resets this project’s progress.</Text>
@@ -234,7 +236,8 @@ const localStyles = StyleSheet.create({
   overviewProgress: { borderRadius: 6, height: 8, marginTop: 12 },
   overviewTitle: { flex: 1 },
   paidCost: { marginTop: 12 },
-  progress: { borderRadius: 6, height: 8, marginTop: 10 },
+  progress: { borderRadius: 6, height: 8 },
+  progressTrack: { height: 8, marginTop: 10 },
   projectCardWrap: { marginBottom: 12 },
   projectHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   projectNameRow: { alignItems: 'center', flexDirection: 'row', gap: 6 },
