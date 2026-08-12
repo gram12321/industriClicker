@@ -16,6 +16,7 @@ export const FINANCE_TRANSACTION_SOURCES = [
   'admin-adjustment', 'market-purchase', 'market-sale', 'facility-construction', 'facility-upgrade', 'facility-repair',
   'research-investment', 'research-refund', 'research-grant', 'contract-sale', 'loan-proceeds', 'loan-payment',
   'loan-origination-fee', 'loan-search-fee', 'loan-extra-payment-fee', 'loan-prepayment-penalty', 'loan-late-fee',
+  'facility-sale', 'forced-asset-liquidation', 'loan-restructure',
 ] as const;
 export type FinanceTransactionSource = (typeof FINANCE_TRANSACTION_SOURCES)[number];
 export type FinanceTransactionKind = 'operating' | 'investing' | 'financing' | 'equity';
@@ -35,8 +36,27 @@ export const LOAN_TERM_OPTIONS = [
 ] as const;
 
 export const LOAN_TERMS = {
-  minimumAmount: 50, maximumAmount: 1_000_000, minimumDurationPeriods: 5, maximumDurationPeriods: 1_440,
-  baseAnnualRate: 0.06, minAnnualRate: 0.03, maxAnnualRate: 0.24, defaultThresholdMissedPayments: 4,
+  minimumAmount: 10, maximumAmount: 1_000_000, minimumDurationPeriods: 5, maximumDurationPeriods: 1_440,
+  baseAnnualRate: 0.06, minAnnualRate: 0.03, maxAnnualRate: 0.24, defaultThresholdMissedPayments: 10,
+} as const;
+
+/** Foreground-minute debt collection stages, modelled after the Winemaker escalation. */
+export const LOAN_COLLECTION = {
+  warningMisses: 1,
+  penaltyMisses: 3,
+  liquidationMisses: 6,
+  defaultMisses: 10,
+  lateFeeRate: 0.05,
+  lateFeeMinimum: 10,
+  penaltyInterestRateIncrease: 0.01,
+  balanceSurchargeRate: 0.05,
+  forcedInventoryRecoveryRate: 0.55,
+  forcedFacilityRecoveryRate: 0.55,
+  maximumAssetSeizureRate: 0.5,
+  voluntaryFacilitySaleRate: 0.7,
+  restructureAnnualRate: 0.24,
+  restructureTermMultiplier: 2,
+  restructureMinimumPeriods: 20,
 } as const;
 
 export const CREDIT_RATING_CONFIG = {
@@ -55,10 +75,10 @@ export const LENDER_TYPE_CONFIG: Readonly<Record<LenderType, {
   marketCapitalizationRange: readonly [number, number]; maxSingleBorrowerExposureRange: readonly [number, number];
   loanLimitAssetFactorBase: number; loanLimitAssetFactorScore: number; loanLimitRatingFactorBase: number; loanLimitRatingFactorScore: number;
 }>> = {
-  bank: { count: 4, baseAnnualRateRange: [0.045, 0.08], riskToleranceRange: [0.45, 0.65], flexibilityRange: [0.3, 0.55], loanAmountRange: [500, 1_000_000], durationRange: [20, 1_440], originationFeeBaseRange: [0.008, 0.018], marketCapitalizationRange: [10_000_000, 40_000_000], maxSingleBorrowerExposureRange: [0.03, 0.08], loanLimitAssetFactorBase: 0.28, loanLimitAssetFactorScore: 0.5, loanLimitRatingFactorBase: 0.32, loanLimitRatingFactorScore: 0.55 },
+  bank: { count: 4, baseAnnualRateRange: [0.045, 0.08], riskToleranceRange: [0.45, 0.65], flexibilityRange: [0.3, 0.55], loanAmountRange: [300, 1_000_000], durationRange: [20, 1_440], originationFeeBaseRange: [0.008, 0.018], marketCapitalizationRange: [10_000_000, 40_000_000], maxSingleBorrowerExposureRange: [0.03, 0.08], loanLimitAssetFactorBase: 0.28, loanLimitAssetFactorScore: 0.5, loanLimitRatingFactorBase: 0.32, loanLimitRatingFactorScore: 0.55 },
   'investment-fund': { count: 3, baseAnnualRateRange: [0.055, 0.1], riskToleranceRange: [0.35, 0.6], flexibilityRange: [0.4, 0.75], loanAmountRange: [1_000, 1_000_000], durationRange: [16, 1_080], originationFeeBaseRange: [0.01, 0.022], marketCapitalizationRange: [25_000_000, 80_000_000], maxSingleBorrowerExposureRange: [0.04, 0.12], loanLimitAssetFactorBase: 0.33, loanLimitAssetFactorScore: 0.58, loanLimitRatingFactorBase: 0.38, loanLimitRatingFactorScore: 0.62 },
-  'private-lender': { count: 4, baseAnnualRateRange: [0.07, 0.14], riskToleranceRange: [0.55, 0.85], flexibilityRange: [0.55, 0.9], loanAmountRange: [250, 250_000], durationRange: [8, 720], originationFeeBaseRange: [0.015, 0.04], marketCapitalizationRange: [500_000, 3_000_000], maxSingleBorrowerExposureRange: [0.05, 0.12], loanLimitAssetFactorBase: 0.22, loanLimitAssetFactorScore: 0.45, loanLimitRatingFactorBase: 0.24, loanLimitRatingFactorScore: 0.5 },
-  quickloan: { count: 2, baseAnnualRateRange: [0.12, 0.24], riskToleranceRange: [0.08, 0.26], flexibilityRange: [0.75, 0.98], loanAmountRange: [50, 10_000], durationRange: [5, 360], originationFeeBaseRange: [0.025, 0.08], marketCapitalizationRange: [6_000, 22_000], maxSingleBorrowerExposureRange: [0.08, 0.2], loanLimitAssetFactorBase: 0.1, loanLimitAssetFactorScore: 0.24, loanLimitRatingFactorBase: 0.11, loanLimitRatingFactorScore: 0.28 },
+  'private-lender': { count: 4, baseAnnualRateRange: [0.07, 0.14], riskToleranceRange: [0.55, 0.85], flexibilityRange: [0.55, 0.9], loanAmountRange: [50, 250_000], durationRange: [8, 720], originationFeeBaseRange: [0.015, 0.04], marketCapitalizationRange: [500_000, 3_000_000], maxSingleBorrowerExposureRange: [0.05, 0.12], loanLimitAssetFactorBase: 0.22, loanLimitAssetFactorScore: 0.45, loanLimitRatingFactorBase: 0.24, loanLimitRatingFactorScore: 0.5 },
+  quickloan: { count: 2, baseAnnualRateRange: [0.12, 0.24], riskToleranceRange: [0.08, 0.26], flexibilityRange: [0.75, 0.98], loanAmountRange: [10, 10_000], durationRange: [5, 360], originationFeeBaseRange: [0.025, 0.08], marketCapitalizationRange: [6_000, 22_000], maxSingleBorrowerExposureRange: [0.08, 0.2], loanLimitAssetFactorBase: 0.1, loanLimitAssetFactorScore: 0.24, loanLimitRatingFactorBase: 0.11, loanLimitRatingFactorScore: 0.28 },
 };
 
 export const LENDER_NAME_POOLS: Readonly<Record<LenderType, readonly string[]>> = {

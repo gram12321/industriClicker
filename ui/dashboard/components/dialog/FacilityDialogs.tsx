@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button, Card, Dialog, List, Portal, SegmentedButtons, Text } from 'react-native-paper';
 import { colors } from '@/theme';
-import type { Finance } from '@/game/finance';
+import { LOAN_COLLECTION, calculateFacilityAssetValue, type Finance } from '@/game/finance';
 import type { FacilityCollection, FacilityType } from '@/game/facilities';
 import { FACILITY_GROUPS, getFacilityDefinition } from '@/game/facilities';
 import type { Inventory } from '@/game/inventory';
@@ -48,7 +48,7 @@ export function FacilityConstructionDialog(props: {
   return <>
     <ConfirmConstrution facilityType={props.pendingConstruction} finance={props.finance} inventory={props.inventory} market={props.market} onBuyMissingConstructionMaterials={props.onBuyMissingConstructionMaterials} onConfirm={props.onConfirmConstruction} onDismiss={props.onDismissConstruction} />
     <BuildFacilityDialog finance={props.finance} inventory={props.inventory} market={props.market} onDismiss={props.onCloseConstructionYard} onSelectFacility={props.onSelectFacility} visible={props.isConstructionYardOpen} />
-    <DestructionDialog facilities={props.facilities} facilityId={props.pendingDestruction} onConfirm={props.onConfirmDestruction} onDismiss={props.onDismissDestruction} />
+    <DestructionDialog facilities={props.facilities} facilityId={props.pendingDestruction} market={props.market} onConfirm={props.onConfirmDestruction} onDismiss={props.onDismissDestruction} />
   </>;
 }
 function BuildFacilityDialog({
@@ -210,11 +210,13 @@ function ConfirmConstrution({
 function DestructionDialog({
   facilities,
   facilityId,
+  market,
   onConfirm,
   onDismiss,
 }: {
   facilities: FacilityCollection;
   facilityId: string | null;
+  market: Market;
   onConfirm: () => void;
   onDismiss: () => void;
 }) {
@@ -222,20 +224,22 @@ function DestructionDialog({
   if (!facility) {
     return null;
   }
+  const bookValue = calculateFacilityAssetValue(facility, market);
+  const proceeds = bookValue * LOAN_COLLECTION.voluntaryFacilitySaleRate;
 
   return (
     <Portal>
       <Dialog dismissable onDismiss={onDismiss} visible>
-        <Dialog.Title>{`Destroy ${facility.getView().displayName}?`}</Dialog.Title>
+        <Dialog.Title>{`Sell ${facility.getView().displayName}?`}</Dialog.Title>
         <Dialog.Content>
           <Text style={styles.dialogDescription}>
-            This permanently removes the facility from your company. Land and construction materials are not refunded.
+            This permanently removes the facility and pays €{formatNumber(proceeds, { smartDecimals: true })}, which is 70% of its current book value (€{formatNumber(bookValue, { smartDecimals: true })}).
           </Text>
         </Dialog.Content>
         <Dialog.Actions>
           <Button onPress={onDismiss}>Cancel</Button>
           <Button buttonColor={colors.error} mode="contained" onPress={onConfirm} textColor={colors.onDark}>
-            Confirm destruction
+            Confirm sale
           </Button>
         </Dialog.Actions>
       </Dialog>

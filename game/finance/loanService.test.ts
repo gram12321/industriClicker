@@ -28,17 +28,25 @@ describe('lender searches', () => {
     const finance = new Finance();
     const accepted = offer('accepted');
     const remaining = offer('remaining');
-    finance.completeLoanSearch([accepted, remaining]);
+    finance.completeLoanSearch([accepted, remaining], 2, 0);
 
     expect(finance.acceptLoan(accepted, 0)?.id).toBe('loan-1');
     expect(finance.getLoanSearchOffers()).toEqual([remaining]);
+  });
+
+  it('retains an explicit completed-search result when no lender can quote', () => {
+    const finance = new Finance();
+
+    finance.completeLoanSearch([], 3, 60_000);
+
+    expect(finance.getLastLoanSearchResult()).toEqual({ requestedOfferCount: 3, foundOfferCount: 0, availableOfferCount: 0, completedAtGameTimeMs: 60_000 });
   });
 
   it('removes only unavailable search results when dismissed', () => {
     const finance = new Finance();
     const unavailable = { ...offer('unavailable'), isAvailable: false, unavailableReason: 'Lender limit reached.' };
     const available = offer('available');
-    finance.completeLoanSearch([unavailable, available]);
+    finance.completeLoanSearch([unavailable, available], 2, 0);
 
     expect(finance.removeUnavailableLoanSearchOffers()).toBe(1);
     expect(finance.getLoanSearchOffers()).toEqual([available]);
@@ -48,7 +56,7 @@ describe('lender searches', () => {
     const finance = new Finance();
     const first = offer('first');
     const second = offer('second');
-    finance.completeLoanSearch([first, second]);
+    finance.completeLoanSearch([first, second], 2, 0);
 
     expect(finance.removeLoanSearchOffer(first.id)).toBe(true);
     expect(finance.getLoanSearchOffers()).toEqual([second]);

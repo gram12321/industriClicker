@@ -9,6 +9,7 @@ export * from './dashboard/components/cards/InventoryControlCard';
 export * from './dashboard/components/dialog/DocumentationDialog';
 export * from './dashboard/components/dialog/FacilityDialogs';
 export * from './dashboard/components/dialog/PrestigeDialog';
+export * from './dashboard/components/dialog/CollectionDialog';
 export * from './dashboard/components/dialog/TutorialDialog';
 export * from './dashboard/views/CompanyView';
 export * from './dashboard/views/FinanceView';

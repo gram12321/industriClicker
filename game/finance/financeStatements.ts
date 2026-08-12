@@ -1,5 +1,5 @@
 import type { AchievementLedger } from '@/game/achievements';
-import type { FacilityCollection } from '@/game/facilities';
+import type { Facility, FacilityCollection } from '@/game/facilities';
 import { getFacilityDefinition } from '@/game/facilities';
 import type { Inventory } from '@/game/inventory';
 import type { Market } from '@/game/market';
@@ -37,7 +37,20 @@ const SOURCE_LABELS: Record<FinanceTransaction['source'], string> = {
   'loan-extra-payment-fee': 'Loan costs',
   'loan-prepayment-penalty': 'Loan costs',
   'loan-late-fee': 'Loan costs',
+  'facility-sale': 'Asset sales',
+  'forced-asset-liquidation': 'Debt collection',
+  'loan-restructure': 'Loan restructuring',
 };
+
+/** Current book value used consistently by the balance sheet and facility sales. */
+export function calculateFacilityAssetValue(facility: Facility, market: Market): number {
+  const view = facility.getView();
+  const definition = getFacilityDefinition(view.facilityType);
+  const replacementCost = definition.landCost
+    + definition.constructionMaterialsCost * market.getLocalPrice(ResourceType.ConstructionMaterials)
+    + definition.upgradeCost * (view.speedUpgradeLevel + view.outputUpgradeLevel + view.conditionDecayUpgradeLevel);
+  return replacementCost * Math.max(0.1, view.facilityCondition);
+}
 
 function periodStart(period: FinanceReportPeriod, currentGameTimeMs: number): number {
   const duration = FINANCE_REPORT_PERIODS.find((candidate) => candidate.id === period)?.durationMs ?? null;
@@ -59,12 +72,7 @@ function toBreakdowns(transactions: FinanceTransaction[]): FinanceBreakdown[] {
 
 export function calculateAssets(input: { finance: Finance; inventory: Inventory; market: Market; facilities: FacilityCollection; research: ResearchLedger }): AssetsStatement {
   const inventory = RESOURCE_TYPES.reduce((total, resourceType) => total + input.inventory.getAmount(resourceType) * input.market.getLocalPrice(resourceType), 0);
-  const facilities = input.facilities.getAll().reduce((total, facility) => {
-    const view = facility.getView();
-    const definition = getFacilityDefinition(view.facilityType);
-    const replacementCost = definition.landCost + definition.constructionMaterialsCost * input.market.getLocalPrice(ResourceType.ConstructionMaterials) + definition.upgradeCost * (view.speedUpgradeLevel + view.outputUpgradeLevel + view.conditionDecayUpgradeLevel);
-    return total + replacementCost * Math.max(0.1, view.facilityCondition);
-  }, 0);
+  const facilities = input.facilities.getAll().reduce((total, facility) => total + calculateFacilityAssetValue(facility, input.market), 0);
   const research = input.research.getCompletedProjects().reduce((total, completed) => total + (getResearchProject(completed.projectId)?.cost ?? 0), 0);
   const cash = input.finance.getBalance();
   return { cash, inventory, facilities, research, currentAssets: cash + inventory, fixedAssets: facilities, intangibleAssets: research, totalAssets: cash + inventory + facilities + research };
