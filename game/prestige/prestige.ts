@@ -1,4 +1,4 @@
-import { PRESTIGE_COMPANY_BALANCE_SOURCE_ID, PRESTIGE_FACILITY_CONDITION_SOURCE_ID, PRESTIGE_EVENT_MIN_AMOUNT, PRESTIGE_EVENT_TYPES, PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS } from './prestigeConstants';
+import { PRESTIGE_COMPANY_ASSETS_SOURCE_ID, PRESTIGE_COMPANY_BALANCE_SOURCE_ID, PRESTIGE_FACILITY_CONDITION_SOURCE_ID, PRESTIGE_EVENT_MIN_AMOUNT, PRESTIGE_EVENT_TYPES, PRESTIGE_FINANCE_PENALTY_HALF_LIFE_FOREGROUND_HOURS, PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS } from './prestigeConstants';
 import { calculateCurrentPrestigeAmount, calculateSalesContractPrestige } from './prestigeCalculator';
 
 export type PrestigeEventType = typeof PRESTIGE_EVENT_TYPES[number];
@@ -94,6 +94,17 @@ export class PrestigeLedger {
     });
   }
 
+  syncCompanyAssets(amountBase: number, createdAtGameTimeMs: number): void {
+    this.upsert({
+      type: 'company_assets',
+      amountBase,
+      createdAtGameTimeMs,
+      decayHalfLifeForegroundHours: null,
+      sourceId: PRESTIGE_COMPANY_ASSETS_SOURCE_ID,
+      description: 'Company assets',
+    });
+  }
+
   syncFacilityCondition(amountBase: number, createdAtGameTimeMs: number): void {
     this.upsert({ type: 'facility_condition', amountBase, createdAtGameTimeMs, decayHalfLifeForegroundHours: null, sourceId: PRESTIGE_FACILITY_CONDITION_SOURCE_ID, description: 'Facility condition' });
   }
@@ -128,6 +139,15 @@ export class PrestigeLedger {
       decayHalfLifeForegroundHours: input.decayHalfLifeForegroundHours,
       sourceId: `achievement:${input.achievementId}`,
       description: `Achievement unlocked: ${input.name}`,
+    });
+  }
+
+  recordFinancePenalty(input: { sourceId: string; amount: number; description: string; createdAtGameTimeMs: number }): void {
+    if (input.amount <= 0) return;
+    this.recordIfAbsent({
+      type: 'finance_penalty', amountBase: -input.amount, createdAtGameTimeMs: input.createdAtGameTimeMs,
+      decayHalfLifeForegroundHours: PRESTIGE_FINANCE_PENALTY_HALF_LIFE_FOREGROUND_HOURS,
+      sourceId: input.sourceId, description: input.description,
     });
   }
 

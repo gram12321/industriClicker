@@ -88,6 +88,7 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
     && Array.isArray(value.finance.lenders)
     && (value.finance.activeLoanSearch === null || isRecord(value.finance.activeLoanSearch))
     && Array.isArray(value.finance.loanSearchOffers)
+    && (value.finance.lastLoanSearchResult === null || isRecord(value.finance.lastLoanSearchResult))
     && typeof value.finance.economyPhase === 'string'
     && typeof value.finance.lastEconomyPhasePeriod === 'number'
     && typeof value.finance.onTimeLoanPayments === 'number'
@@ -97,6 +98,9 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
     && typeof value.finance.consecutiveNegativePeriods === 'number'
     && typeof value.finance.nextTransactionNumber === 'number'
     && typeof value.finance.nextLoanNumber === 'number'
+    && Array.isArray(value.finance.collectionNotices)
+    && (value.finance.pendingRestructureOffer === null || isRecord(value.finance.pendingRestructureOffer))
+    && typeof value.finance.nextCollectionNoticeNumber === 'number'
     && isRecord(value.inventory.entries)
     && isRecord(value.market.local)
     && isRecord(value.market.regional)

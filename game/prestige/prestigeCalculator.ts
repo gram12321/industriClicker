@@ -1,7 +1,7 @@
 import type { PrestigeEvent } from './prestige';
 import { FINANCE_INITIAL_BALANCE } from '@/game/finance';
 import { safeNonNegative } from '@/utils';
-import { PRESTIGE_EVENT_MIN_AMOUNT, PRESTIGE_DECAY_PROJECTION_FOREGROUND_HOURS, PRESTIGE_FOREGROUND_HOUR_MS, PRESTIGE_ROUNDING_FACTOR } from './prestigeConstants';
+import { PRESTIGE_CASH_WEIGHT, PRESTIGE_EVENT_MIN_AMOUNT, PRESTIGE_DECAY_PROJECTION_FOREGROUND_HOURS, PRESTIGE_FOREGROUND_HOUR_MS, PRESTIGE_ROUNDING_FACTOR } from './prestigeConstants';
 
 type CompanyCapitalInput = {
   cashBalance: number;
@@ -16,6 +16,7 @@ export type CurrentPrestigeEvent = PrestigeEvent & {
 export type CompanyPrestigeSummary = {
   totalPrestige: number;
   balancePrestige: number;
+  assetsPrestige: number;
   facilityConditionPrestige: number;
   salesPrestige: number;
   achievementPrestige: number;
@@ -35,11 +36,12 @@ function roundPrestige(value: number): number {
 }
 
 export function calculateCompanyBalancePrestige(input: CompanyCapitalInput): number {
-  const companyCapital = safeNonNegative(input.cashBalance)
-    + safeNonNegative(input.assetBookValue ?? 0)
-    - safeNonNegative(input.liabilities ?? 0);
+  return roundPrestige(PRESTIGE_CASH_WEIGHT * Math.log(1 + safeNonNegative(input.cashBalance) / FINANCE_INITIAL_BALANCE));
+}
 
-  return roundPrestige(Math.log(1 + Math.max(0, companyCapital) / FINANCE_INITIAL_BALANCE));
+export function calculateCompanyAssetsPrestige(input: Pick<CompanyCapitalInput, 'assetBookValue' | 'liabilities'>): number {
+  const netWorth = safeNonNegative(input.assetBookValue ?? 0) - safeNonNegative(input.liabilities ?? 0);
+  return roundPrestige(Math.log(1 + Math.max(0, netWorth) / FINANCE_INITIAL_BALANCE));
 }
 
 export function calculateSalesContractPrestige(reward: number): number {
@@ -110,6 +112,7 @@ export function calculateCompanyPrestigeSummary(
   const balancePrestige = currentEvents
     .filter((event) => event.type === 'company_balance')
     .reduce((sum, event) => sum + event.currentAmount, 0);
+  const assetsPrestige = currentEvents.filter((event) => event.type === 'company_assets').reduce((sum, event) => sum + event.currentAmount, 0);
   const facilityConditionPrestige = currentEvents.filter((event) => event.type === 'facility_condition').reduce((sum, event) => sum + event.currentAmount, 0);
   const salesPrestige = currentEvents
     .filter((event) => event.type === 'sales_contract')
@@ -121,6 +124,7 @@ export function calculateCompanyPrestigeSummary(
   return {
     totalPrestige: roundPrestige(currentEvents.reduce((sum, event) => sum + event.currentAmount, 0)),
     balancePrestige: roundPrestige(balancePrestige),
+    assetsPrestige: roundPrestige(assetsPrestige),
     facilityConditionPrestige: roundPrestige(facilityConditionPrestige),
     salesPrestige: roundPrestige(salesPrestige),
     achievementPrestige: roundPrestige(achievementPrestige),
