@@ -4,27 +4,82 @@ import { resolve } from 'node:path';
 import { FACILITIES } from '@/game/facilities/facilityConstants';
 import { getRecipeDisplayName, RecipeName } from '@/game/recipes';
 import { getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getRecipeResearchProjectId, getResearchProject } from '@/game/research';
+import { getResource, ResourceType } from '@/game/resources';
 import {
   RECIPE_ECONOMY_BREAK_EVEN_HORIZON_MINUTES,
   RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
   RECIPE_ECONOMY_LONG_WINDOW_MINUTES,
   RECIPE_ECONOMY_SHORT_WINDOW_MINUTES,
+  type RecipeEconomyChainScenario,
   simulateRecipeEconomy,
-} from './recipeEconomy';
+  simulateRecipeEconomyChain,
+} from '../support/recipeEconomy';
 
-const UPGRADE_LEVELS = [0, 1, 3, 5, 10] as const;
-const MARKET_RESEARCH_SCENARIOS = [
-  { label: 'Baseline', localDepthLevel: 0, diffusionLevel: 0 },
-  { label: 'Local depth I', localDepthLevel: 1, diffusionLevel: 0 },
-  { label: 'Diffusion I', localDepthLevel: 0, diffusionLevel: 1 },
-  { label: 'Networks III', localDepthLevel: 3, diffusionLevel: 3 },
-  { label: 'Networks V', localDepthLevel: 5, diffusionLevel: 5 },
-  { label: 'Networks X', localDepthLevel: 10, diffusionLevel: 10 },
-] as const;
 const RECIPE_WINDOW_SCENARIOS = [
   { label: 'Baseline', localDepthLevel: 0, diffusionLevel: 0 },
   { label: 'Networks III (3/3)', localDepthLevel: 3, diffusionLevel: 3 },
 ] as const;
+const CHAIN_SCENARIOS: ReadonlyArray<{ label: string; scenario: RecipeEconomyChainScenario }> = [
+  {
+    label: 'Staples: utilities -> Grain',
+    scenario: {
+      facilities: [
+        { recipeName: RecipeName.ProduceWater },
+        { recipeName: RecipeName.ProduceElectricity },
+        { recipeName: RecipeName.GrowGrain },
+      ],
+      durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
+      sellResourceTypes: [ResourceType.Water, ResourceType.Electricity, ResourceType.Grain],
+    },
+  },
+  {
+    label: 'Extraction: utilities -> Iron',
+    scenario: {
+      facilities: [
+        { recipeName: RecipeName.ProduceWater },
+        { recipeName: RecipeName.ProduceElectricity },
+        { recipeName: RecipeName.MineIron },
+      ],
+      durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
+      sellResourceTypes: [ResourceType.Water, ResourceType.Electricity, ResourceType.Iron],
+    },
+  },
+  {
+    label: 'Construction: inputs -> Construction Materials',
+    scenario: {
+      facilities: [
+        { recipeName: RecipeName.ProduceWater },
+        { recipeName: RecipeName.ProduceElectricity },
+        { recipeName: RecipeName.MineCoal },
+        { recipeName: RecipeName.MineIron },
+        { recipeName: RecipeName.QuarryClay },
+        { recipeName: RecipeName.QuarrySand },
+        { recipeName: RecipeName.QuarryStone },
+        { recipeName: RecipeName.ProduceSteel },
+        { recipeName: RecipeName.ProduceBricks },
+        { recipeName: RecipeName.ProduceCement },
+        { recipeName: RecipeName.ProduceReinforcedConcrete },
+        { recipeName: RecipeName.ProduceConstructionMaterials },
+      ],
+      durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
+      sellResourceTypes: [
+        ResourceType.Water,
+        ResourceType.Electricity,
+        ResourceType.Coal,
+        ResourceType.Iron,
+        ResourceType.Clay,
+        ResourceType.Sand,
+        ResourceType.Stone,
+        ResourceType.Steel,
+        ResourceType.Bricks,
+        ResourceType.Cement,
+        ResourceType.ReinforcedConcrete,
+        ResourceType.ConstructionMaterials,
+      ],
+      includeConstructionMaterialsDemand: true,
+    },
+  },
+];
 const PORTFOLIO_NETWORK_SCENARIOS = [
   { label: 'Baseline', localDepthLevel: 0, diffusionLevel: 0 },
   { label: 'Networks I (1/1)', localDepthLevel: 1, diffusionLevel: 1 },
@@ -141,68 +196,34 @@ describe('recipe economy report', () => {
       reportSections.push(`## ${facility}`, '', 'Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.', '', markdownTable(flatRows), '');
     }
 
-    for (const upgradeKind of ['speed', 'output'] as const) {
-      console.log(`\n${upgradeKind[0]!.toUpperCase()}${upgradeKind.slice(1)} upgrade comparison (15 minutes; incremental payback estimate)`);
-      const upgradeRows = grouped(entries, (entry) => {
-        const baseResult = simulateRecipeEconomy({
-          recipeName: entry.recipeName,
-          durationMinutes: RECIPE_ECONOMY_SHORT_WINDOW_MINUTES,
-        });
-        return UPGRADE_LEVELS.map((level) => {
-        const recipeName = entry.recipeName;
-        const result = simulateRecipeEconomy({
-          recipeName,
-          durationMinutes: RECIPE_ECONOMY_SHORT_WINDOW_MINUTES,
-          speedUpgradeLevel: upgradeKind === 'speed' ? level : 0,
-          outputUpgradeLevel: upgradeKind === 'output' ? level : 0,
-        });
-        const incrementalMarginPerMinute = result.netMarginPerMinute - baseResult.netMarginPerMinute;
-        return {
-          recipe: entry.recipe,
-          facilityCost: money(result.facilityInvestmentCost),
-          researchCost: money(getResearchProject(getRecipeResearchProjectId(recipeName))?.cost ?? 0),
-          level,
-          marginPerMinute: money(result.netMarginPerMinute),
-          incrementalMarginPerMinute: money(incrementalMarginPerMinute),
-          upgradeCost: money(result.upgradeInvestmentCost),
-          maintenance: money(result.totalMaintenanceCost),
-          upgradePaybackEstimateMinutes: upgradePaybackEstimate(result.upgradeInvestmentCost, incrementalMarginPerMinute),
-        };
-        });
-      });
-      for (const [facility, rows] of upgradeRows) {
-        const flatRows = rows.flat();
-        console.log(`\n${facility}`);
-        console.table(flatRows);
-        reportSections.push(`## ${upgradeKind[0]!.toUpperCase()}${upgradeKind.slice(1)} upgrade comparison: ${facility}`, '', 'Upgrade payback is the upgrade investment divided by its additional 15-minute net margin.', '', markdownTable(flatRows), '');
-      }
-    }
-
-    for (const [facility, entriesForFacility] of grouped(entries, (entry) => entry)) {
-      const marketScenarioRows = entriesForFacility.flatMap((entry) => MARKET_RESEARCH_SCENARIOS.map((scenario) => {
-        const completedResearchProjectIds = marketResearchProjectIds(scenario.localDepthLevel, scenario.diffusionLevel);
-        const result = simulateRecipeEconomy({
-          recipeName: entry.recipeName,
-          durationMinutes: RECIPE_ECONOMY_LONG_WINDOW_MINUTES,
-          completedResearchProjectIds,
-        });
-        return {
-          recipe: entry.recipe,
-          scenario: scenario.label,
-          localDepth: `${getLocalMarketDepthMultiplier(completedResearchProjectIds).toFixed(1)}x`,
-          localRegionalDiffusion: `${getLocalRegionalDiffusionMultiplier(completedResearchProjectIds).toFixed(2)}x`,
-          cumulativeResearchCost: money(marketResearchCost(completedResearchProjectIds)),
-          margin60m: money(result.netMarginPerMinute),
-          outputPriceDropPercent: result.initialOutputUnitPrice > 0
-            ? `${(((result.initialOutputUnitPrice - result.finalOutputUnitPrice) / result.initialOutputUnitPrice) * 100).toFixed(1)}%`
-            : '0.0%',
-          breakEven: minute(result.breakEvenMinute),
-        };
-      }));
-      console.log(`\nMarket research comparison (60 minutes): ${facility}`);
-      console.table(marketScenarioRows);
-      reportSections.push(`## Market research comparison (60 minutes): ${facility}`, '', 'Local depth expands local supply without changing its starting price. Diffusion increases only local-regional balancing. Research cost is cumulative through the shown tier.', '', markdownTable(marketScenarioRows), '');
-    }
+    const chainRows = CHAIN_SCENARIOS.flatMap(({ label, scenario }) => RECIPE_WINDOW_SCENARIOS.map((marketScenario) => {
+      const completedResearchProjectIds = marketResearchProjectIds(marketScenario.localDepthLevel, marketScenario.diffusionLevel);
+      const result = simulateRecipeEconomyChain({ ...scenario, completedResearchProjectIds });
+      const primarySoldResource = scenario.sellResourceTypes[0]!;
+      return {
+        chain: label,
+        marketScenario: marketScenario.label,
+        surplusSold: scenario.sellResourceTypes.map((resourceType) => getResource(resourceType).name).join(', '),
+        facilityInvestmentCost: money(result.facilityInvestmentCost),
+        recipeResearchCost: money(result.recipeResearchInvestmentCost),
+        constructionMaterialsDemand: money(result.constructionMaterialsDemand),
+        constructionDemandFulfilled: money(result.fulfilledConstructionMaterialsDemand),
+        margin180m: money(result.netMarginPerMinute),
+        finalPrimaryUnitPrice: money(result.finalSoldUnitPrices[primarySoldResource] ?? 0),
+        payback: minute(result.paybackMinute),
+        stalledFacilityMinutes: result.stalledFacilityMinutes,
+      };
+    }));
+    console.log('\nConnected-chain economy (180 minutes)');
+    console.table(chainRows);
+    reportSections.push(
+      '## Connected-chain economy (180 minutes)',
+      '',
+      'Each row runs all listed facilities in one shared market. Upstream production is available to downstream facilities before the listed surplus outputs are sold. Payback includes facility construction and each distinct recipe-unlock research cost. Construction Materials demand consumes the total material requirement for every participating facility evenly through the scenario; it represents external building demand, not a player expense.',
+      '',
+      markdownTable(chainRows),
+      '',
+    );
 
     const portfolioRows = PORTFOLIO_NETWORK_SCENARIOS.map((scenario) => {
       const completedResearchProjectIds = marketResearchProjectIds(scenario.localDepthLevel, scenario.diffusionLevel);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { Market } from './market';
-import { MARKET_AUTOTRADE_DEFAULT_INTERVAL_MS, MARKET_DIFFUSION_INTERVAL_MS } from './marketConstants';
-import { RESOURCE_TYPES, ResourceType } from '../resources';
+import { Market } from '@/game/market';
+import { MARKET_AUTOTRADE_DEFAULT_INTERVAL_MS, MARKET_DIFFUSION_INTERVAL_MS } from '@/game/market/marketConstants';
+import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
 
 describe('Market regional tier', () => {
   it('starts every tier at the same price while retaining the former local supply regionally', () => {

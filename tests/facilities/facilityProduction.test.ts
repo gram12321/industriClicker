@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { Inventory } from '../inventory';
-import { getRecipe, RecipeName } from '../recipes';
-import { ResourceType } from '../resources';
-import { FacilityCollection } from './facilityCollection';
-import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, getRecipeProductionConditionLoss } from './facilityProduction';
-import { FacilityType } from './facilityTypes';
+import { Inventory } from '@/game/inventory';
+import { getRecipe, RecipeName } from '@/game/recipes';
+import { ResourceType } from '@/game/resources';
+import { FacilityCollection } from '@/game/facilities/facilityCollection';
+import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, getRecipeProductionConditionLoss } from '@/game/facilities/facilityProduction';
+import { FacilityType } from '@/game/facilities/facilityTypes';
 
 function createActiveFacility(facilityType: FacilityType, recipeName: RecipeName) {
   const facilities = new FacilityCollection();

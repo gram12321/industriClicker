@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Finance, LENDER_TYPES, LOAN_TERMS, type LoanOffer } from '@/game/finance';
-import { calculateLoanSearchEstimate } from './loanService';
+import { calculateLoanSearchEstimate } from '@/game/finance/loanService';
 
 function offer(id: string): LoanOffer {
   return { id, lenderId: id, lenderName: id, lenderType: 'bank', principal: 100, durationPeriods: 5, annualInterestRate: 0.06, periodicInterestRate: 0.06 / 52, paymentAmount: 21, originationFee: 0, totalRepayment: 105, totalInterest: 5, totalCost: 5, isAvailable: true, unavailableReason: null, paymentIntervalMs: 60_000 };

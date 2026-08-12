@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
 import { SalesContracts } from '@/game/sales';
-import { BASE_MAXIMUM_OPEN_SALES_CONTRACTS, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesContracts, getSalesContractPremiumMultiplier, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes } from './research';
+import { BASE_MAXIMUM_OPEN_SALES_CONTRACTS, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesContracts, getSalesContractPremiumMultiplier, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes } from '@/game/research';
 
 function createProductionTotals(produced: readonly ResourceType[]): Record<ResourceType, number> {
   return RESOURCE_TYPES.reduce((totals, resourceType) => {

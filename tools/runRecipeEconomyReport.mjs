@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 const result = spawnSync(process.execPath, [
   'node_modules/vitest/vitest.mjs',
   'run',
-  'game/facilities/recipeEconomy.report.test.ts',
+  'tests/facilities/recipeEconomy.report.test.ts',
   '--reporter=verbose',
 ], {
   env: {

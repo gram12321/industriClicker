@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RecipeName } from '@/game/recipes';
+import { ResourceType } from '@/game/resources';
 import {
   RECIPE_ECONOMY_BREAK_EVEN_HORIZON_MINUTES,
   RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
@@ -7,7 +8,8 @@ import {
   RECIPE_ECONOMY_REPAIR_THRESHOLD,
   RECIPE_ECONOMY_SHORT_WINDOW_MINUTES,
   simulateRecipeEconomy,
-} from './recipeEconomy';
+  simulateRecipeEconomyChain,
+} from '../support/recipeEconomy';
 
 const RECIPE_NAMES = Object.values(RecipeName);
 const UPGRADE_LEVELS = [0, 1, 3, 5, 10] as const;
@@ -56,6 +58,39 @@ describe('recipe economy simulation', () => {
 
     expect(researched.finalOutputUnitPrice).toBeGreaterThan(baseline.finalOutputUnitPrice);
     expect(researched.netMarginPerMinute).toBeGreaterThan(baseline.netMarginPerMinute);
+  });
+
+  it('uses upstream chain output before buying a downstream recipe input', () => {
+    const result = simulateRecipeEconomyChain({
+      facilities: [
+        { recipeName: RecipeName.ProduceWater },
+        { recipeName: RecipeName.ProduceElectricity },
+        { recipeName: RecipeName.GrowGrain },
+      ],
+      durationMinutes: RECIPE_ECONOMY_LONG_WINDOW_MINUTES,
+      sellResourceTypes: [ResourceType.Grain],
+    });
+
+    expect(result.totalRevenue).toBeGreaterThan(0);
+    expect(result.netMarginPerMinute).toBeGreaterThan(0);
+    expect(result.stalledFacilityMinutes).toBe(0);
+  });
+
+  it('applies participating-facility construction demand in connected construction chains', () => {
+    const result = simulateRecipeEconomyChain({
+      facilities: [
+        { recipeName: RecipeName.ProduceWater },
+        { recipeName: RecipeName.ProduceElectricity },
+        { recipeName: RecipeName.ProduceConstructionMaterials },
+      ],
+      durationMinutes: RECIPE_ECONOMY_LONG_WINDOW_MINUTES,
+      sellResourceTypes: [ResourceType.ConstructionMaterials],
+      includeConstructionMaterialsDemand: true,
+    });
+
+    expect(result.constructionMaterialsDemand).toBeGreaterThan(0);
+    expect(result.fulfilledConstructionMaterialsDemand).toBeGreaterThan(0);
+    expect(result.fulfilledConstructionMaterialsDemand).toBeLessThanOrEqual(result.constructionMaterialsDemand);
   });
 
   it.each(UPGRADE_LEVELS)('reports the grain economy at upgrade level %i', (speedUpgradeLevel) => {

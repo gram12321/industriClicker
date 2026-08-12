@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { getRecipe, RecipeName } from '../recipes';
-import { RESOURCES } from '../resources';
-import { Facility } from './facility';
-import { calculateFacilityEffectiveWork } from './facilityProduction';
-import { FacilityType } from './facilityTypes';
+import { getRecipe, RecipeName } from '@/game/recipes';
+import { RESOURCES } from '@/game/resources';
+import { Facility } from '@/game/facilities/facility';
+import { calculateFacilityEffectiveWork } from '@/game/facilities/facilityProduction';
+import { FacilityType } from '@/game/facilities/facilityTypes';
 
 type RecipeTimingCase = {
   facilityType: FacilityType;
