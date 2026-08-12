@@ -6,70 +6,110 @@ One fully staffed facility, local input purchases, local output sales, normal ma
 
 ## Bakery
 
-| recipe | facilityCost | researchCost | initialMargin | margin15m | margin60m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Bake Bread | 1300.00 | 167.00 | 43.34 | 38.80 | 31.33 | 0.61 | 25.3% | 121.33 | not reached | 38 |
-| Bake Cake | 1300.00 | 212.00 | 83.81 | 58.19 | 34.97 | 4.49 | 64.1% | 131.10 | not reached | 27 |
+Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.
+
+| recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Bake Bread | Baseline | 1300.00 | 167.00 | 0.00 | 43.34 | 38.80 | 31.33 | 22.72 | 0.61 | 25.3% | 121.33 | not reached | 38 |
+| Bake Bread | Networks III (3/3) | 1300.00 | 167.00 | 19150.00 | 43.34 | 40.25 | 34.52 | 25.97 | 0.39 | 16.4% | 121.33 | not reached | 35 |
+| Bake Cake | Baseline | 1300.00 | 212.00 | 0.00 | 83.81 | 58.19 | 34.97 | 21.09 | 4.49 | 64.1% | 131.10 | not reached | 27 |
+| Bake Cake | Networks III (3/3) | 1300.00 | 212.00 | 19150.00 | 83.81 | 66.53 | 45.46 | 28.61 | 3.67 | 52.5% | 131.10 | not reached | 21 |
 
 ## Construction Factory
 
-| recipe | facilityCost | researchCost | initialMargin | margin15m | margin60m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Produce Bricks | 1580.00 | 194.00 | 55.31 | 12.54 | 2.35 | 1.14 | 76.2% | 190.24 | 20 | not reached |
-| Produce Cement | 1580.00 | 216.00 | 50.07 | 24.81 | 5.19 | 3.09 | 68.6% | 222.40 | 29 | not reached |
-| Produce Construction Materials | 1580.00 | 326.00 | 35.60 | 19.99 | 6.32 | 10.55 | 70.3% | 83.18 | 41 | not reached |
-| Produce Reinforced Concrete | 1580.00 | 293.00 | 119.80 | 67.89 | 25.31 | 16.02 | 72.8% | 258.83 | 55 | not reached |
+Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.
+
+| recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Produce Bricks | Baseline | 1580.00 | 194.00 | 0.00 | 55.31 | 12.54 | 2.35 | -0.97 | 1.14 | 76.2% | 190.24 | 20 | not reached |
+| Produce Bricks | Networks III (3/3) | 1580.00 | 194.00 | 19150.00 | 55.31 | 21.27 | 7.89 | 3.03 | 1.07 | 71.1% | 190.24 | 151 | not reached |
+| Produce Cement | Baseline | 1580.00 | 216.00 | 0.00 | 50.07 | 24.81 | 5.19 | -4.38 | 3.09 | 68.6% | 222.40 | 29 | not reached |
+| Produce Cement | Networks III (3/3) | 1580.00 | 216.00 | 19150.00 | 50.07 | 32.89 | 14.89 | 3.19 | 2.59 | 57.5% | 222.40 | 72 | not reached |
+| Produce Construction Materials | Baseline | 1580.00 | 326.00 | 0.00 | 35.60 | 19.99 | 6.32 | -3.87 | 10.55 | 70.3% | 83.18 | 41 | not reached |
+| Produce Construction Materials | Networks III (3/3) | 1580.00 | 326.00 | 19150.00 | 35.60 | 24.26 | 13.01 | 2.63 | 8.49 | 56.6% | 121.95 | 92 | not reached |
+| Produce Reinforced Concrete | Baseline | 1580.00 | 293.00 | 0.00 | 119.80 | 67.89 | 25.31 | -0.15 | 16.02 | 72.8% | 258.83 | 55 | not reached |
+| Produce Reinforced Concrete | Networks III (3/3) | 1580.00 | 293.00 | 19150.00 | 119.80 | 83.29 | 44.72 | 16.12 | 13.42 | 61.0% | 258.83 | 125 | 22 |
 
 ## Farm
 
-| recipe | facilityCost | researchCost | initialMargin | margin15m | margin60m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Grow Grain | 135.00 | 83.00 | 9.05 | 5.62 | 3.79 | 0.13 | 16.4% | 8.30 | not reached | 30 |
-| Grow Sugar | 135.00 | 79.00 | 5.27 | 4.11 | 3.14 | 0.06 | 9.1% | 7.49 | not reached | 41 |
+Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.
+
+| recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Grow Grain | Baseline | 135.00 | 83.00 | 0.00 | 9.05 | 5.62 | 3.79 | 3.10 | 0.13 | 16.4% | 8.30 | not reached | 30 |
+| Grow Grain | Networks III (3/3) | 135.00 | 83.00 | 19150.00 | 9.05 | 6.86 | 5.15 | 4.16 | 0.10 | 12.2% | 8.30 | not reached | 22 |
+| Grow Sugar | Baseline | 135.00 | 79.00 | 0.00 | 5.27 | 4.11 | 3.14 | 2.56 | 0.06 | 9.1% | 7.49 | not reached | 41 |
+| Grow Sugar | Networks III (3/3) | 135.00 | 79.00 | 19150.00 | 5.27 | 4.56 | 3.71 | 2.99 | 0.05 | 6.6% | 7.49 | not reached | 33 |
 
 ## Industrial Processing Factory
 
-| recipe | facilityCost | researchCost | initialMargin | margin15m | margin60m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Produce Electric Circuits | 830.00 | 194.00 | 87.65 | 40.89 | 15.80 | 12.06 | 75.4% | 122.03 | 105 | 33 |
-| Produce Steel | 830.00 | 171.00 | 55.09 | 28.21 | 4.69 | 4.68 | 66.8% | 112.22 | 27 | not reached |
+Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.
+
+| recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Produce Electric Circuits | Baseline | 830.00 | 194.00 | 0.00 | 87.65 | 40.89 | 15.80 | 3.62 | 12.06 | 75.4% | 122.03 | 105 | 33 |
+| Produce Electric Circuits | Networks III (3/3) | 830.00 | 194.00 | 19150.00 | 87.65 | 53.57 | 26.79 | 11.50 | 10.74 | 67.1% | 122.03 | 162 | 16 |
+| Produce Steel | Baseline | 830.00 | 171.00 | 0.00 | 55.09 | 28.21 | 4.69 | -7.65 | 4.68 | 66.8% | 112.22 | 27 | not reached |
+| Produce Steel | Networks III (3/3) | 830.00 | 171.00 | 19150.00 | 55.09 | 37.41 | 16.59 | 2.09 | 3.86 | 55.1% | 112.22 | 69 | 31 |
 
 ## Mine
 
-| recipe | facilityCost | researchCost | initialMargin | margin15m | margin60m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Mine Coal | 105.00 | 89.00 | 35.80 | 17.70 | 7.19 | 1.27 | 70.7% | 10.59 | 140 | 4 |
-| Mine Copper | 105.00 | 110.00 | 24.11 | 15.23 | 8.29 | 2.03 | 40.6% | 11.24 | not reached | 6 |
-| Mine Iron | 105.00 | 69.00 | 28.45 | 17.34 | 8.55 | 2.20 | 49.0% | 10.87 | not reached | 5 |
+Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.
+
+| recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Mine Coal | Baseline | 105.00 | 89.00 | 0.00 | 35.80 | 17.70 | 7.19 | 2.66 | 1.27 | 70.7% | 10.59 | 140 | 4 |
+| Mine Coal | Networks III (3/3) | 105.00 | 89.00 | 19150.00 | 35.80 | 23.23 | 12.16 | 6.14 | 1.11 | 61.9% | 10.59 | not reached | 4 |
+| Mine Copper | Baseline | 105.00 | 110.00 | 0.00 | 24.11 | 15.23 | 8.29 | 4.75 | 2.03 | 40.6% | 11.24 | not reached | 6 |
+| Mine Copper | Networks III (3/3) | 105.00 | 110.00 | 19150.00 | 24.11 | 18.33 | 12.08 | 8.03 | 1.55 | 30.9% | 11.24 | not reached | 6 |
+| Mine Iron | Baseline | 105.00 | 69.00 | 0.00 | 28.45 | 17.34 | 8.55 | 4.10 | 2.20 | 49.0% | 10.87 | not reached | 5 |
+| Mine Iron | Networks III (3/3) | 105.00 | 69.00 | 19150.00 | 28.45 | 21.19 | 13.25 | 8.01 | 1.72 | 38.3% | 10.87 | not reached | 5 |
 
 ## Power Plant
 
-| recipe | facilityCost | researchCost | initialMargin | margin15m | margin60m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Coal Power | 850.00 | 128.00 | 5.91 | 2.47 | 0.82 | 0.09 | 23.4% | 128.49 | 42 | not reached |
-| Solar Power | 850.00 | 100.00 | 1.71 | 1.41 | 1.22 | 0.03 | 8.4% | 102.27 | not reached | not reached |
+Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.
+
+| recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Coal Power | Baseline | 850.00 | 128.00 | 0.00 | 5.91 | 2.47 | 0.82 | -0.26 | 0.09 | 23.4% | 128.49 | 42 | not reached |
+| Coal Power | Networks III (3/3) | 850.00 | 128.00 | 19150.00 | 5.91 | 3.56 | 2.14 | 1.08 | 0.07 | 18.5% | 128.49 | 215 | not reached |
+| Solar Power | Baseline | 850.00 | 100.00 | 0.00 | 1.71 | 1.41 | 1.22 | 0.97 | 0.03 | 8.4% | 102.27 | not reached | not reached |
+| Solar Power | Networks III (3/3) | 850.00 | 100.00 | 19150.00 | 1.71 | 1.49 | 1.30 | 1.08 | 0.02 | 6.2% | 102.27 | not reached | not reached |
 
 ## Quarry
 
-| recipe | facilityCost | researchCost | initialMargin | margin15m | margin60m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Quarry Clay | 625.00 | 104.00 | 8.89 | 6.48 | 4.26 | 0.21 | 26.0% | 62.40 | not reached | 197 |
-| Quarry Sand | 625.00 | 84.00 | 9.38 | 4.72 | 1.25 | 0.19 | 47.9% | 60.97 | 33 | not reached |
-| Quarry Stone | 625.00 | 124.00 | 31.14 | 18.72 | 9.80 | 0.96 | 47.8% | 64.87 | not reached | 68 |
+Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.
+
+| recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Quarry Clay | Baseline | 625.00 | 104.00 | 0.00 | 8.89 | 6.48 | 4.26 | 3.17 | 0.21 | 26.0% | 62.40 | not reached | 197 |
+| Quarry Clay | Networks III (3/3) | 625.00 | 104.00 | 19150.00 | 8.89 | 7.37 | 5.52 | 4.13 | 0.15 | 19.2% | 62.40 | not reached | 142 |
+| Quarry Sand | Baseline | 625.00 | 84.00 | 0.00 | 9.38 | 4.72 | 1.25 | 0.24 | 0.19 | 47.9% | 60.97 | 33 | not reached |
+| Quarry Sand | Networks III (3/3) | 625.00 | 84.00 | 19150.00 | 9.38 | 6.42 | 3.25 | 1.68 | 0.15 | 38.6% | 60.97 | not reached | not reached |
+| Quarry Stone | Baseline | 625.00 | 124.00 | 0.00 | 31.14 | 18.72 | 9.80 | 6.33 | 0.96 | 47.8% | 64.87 | not reached | 68 |
+| Quarry Stone | Networks III (3/3) | 625.00 | 124.00 | 19150.00 | 31.14 | 23.09 | 14.74 | 9.95 | 0.77 | 38.6% | 64.87 | not reached | 35 |
 
 ## Small Utility Works
 
-| recipe | facilityCost | researchCost | initialMargin | margin15m | margin60m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Produce Electricity | 175.00 | 74.00 | 7.87 | 6.68 | 6.00 | 0.07 | 16.7% | 7.25 | not reached | 28 |
-| Produce Water | 175.00 | 53.00 | 2.91 | 2.41 | 1.96 | 0.03 | 31.8% | 6.22 | not reached | 97 |
+Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.
+
+| recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Produce Electricity | Baseline | 175.00 | 74.00 | 0.00 | 7.87 | 6.68 | 6.00 | 5.03 | 0.07 | 16.7% | 7.25 | not reached | 28 |
+| Produce Electricity | Networks III (3/3) | 175.00 | 74.00 | 19150.00 | 7.87 | 7.03 | 6.34 | 5.29 | 0.05 | 12.8% | 7.25 | not reached | 26 |
+| Produce Water | Baseline | 175.00 | 53.00 | 0.00 | 2.91 | 2.41 | 1.96 | 1.61 | 0.03 | 31.8% | 6.22 | not reached | 97 |
+| Produce Water | Networks III (3/3) | 175.00 | 53.00 | 19150.00 | 2.91 | 2.58 | 2.18 | 1.78 | 0.02 | 24.5% | 6.22 | not reached | 85 |
 
 ## Water Well
 
-| recipe | facilityCost | researchCost | initialMargin | margin15m | margin60m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Electric Pumping | 230.00 | 91.00 | 2.51 | 0.61 | -0.35 | 0.05 | 45.7% | 13.85 | 12 | not reached |
-| Manual Pumping | 230.00 | 46.00 | 2.80 | 2.31 | 1.86 | 0.03 | 31.8% | 12.44 | not reached | 145 |
+Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.
+
+| recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Electric Pumping | Baseline | 230.00 | 91.00 | 0.00 | 2.51 | 0.61 | -0.35 | -0.48 | 0.05 | 45.7% | 13.85 | 12 | not reached |
+| Electric Pumping | Networks III (3/3) | 230.00 | 91.00 | 19150.00 | 2.51 | 1.26 | 0.29 | -0.00 | 0.04 | 38.0% | 13.85 | 31 | not reached |
+| Manual Pumping | Baseline | 230.00 | 46.00 | 0.00 | 2.80 | 2.31 | 1.86 | 1.52 | 0.03 | 31.8% | 12.44 | not reached | 145 |
+| Manual Pumping | Networks III (3/3) | 230.00 | 46.00 | 19150.00 | 2.80 | 2.48 | 2.08 | 1.69 | 0.02 | 24.5% | 12.44 | not reached | 126 |
 
 ## Speed upgrade comparison: Bakery
 
@@ -416,4 +456,211 @@ Upgrade payback is the upgrade investment divided by its additional 15-minute ne
 | Manual Pumping | 230.00 | 46.00 | 3 | 4.58 | 2.27 | 285.00 | 3.75 | 126 |
 | Manual Pumping | 230.00 | 46.00 | 5 | 5.90 | 3.59 | 792.00 | 4.16 | 221 |
 | Manual Pumping | 230.00 | 46.00 | 10 | 8.34 | 6.03 | 6803.00 | 5.11 | 1129 |
+
+## Market research comparison (60 minutes): Bakery
+
+Local depth expands local supply without changing its starting price. Diffusion increases only local-regional balancing. Research cost is cumulative through the shown tier.
+
+| recipe | scenario | localDepth | localRegionalDiffusion | cumulativeResearchCost | margin60m | outputPriceDropPercent | breakEven |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Bake Bread | Baseline | 1.0x | 1.00x | 0.00 | 31.33 | 25.3% | not reached |
+| Bake Bread | Local depth I | 1.2x | 1.00x | 750.00 | 32.21 | 23.1% | not reached |
+| Bake Bread | Diffusion I | 1.0x | 1.15x | 600.00 | 31.57 | 24.4% | not reached |
+| Bake Bread | Networks III | 1.9x | 1.50x | 19150.00 | 34.52 | 16.4% | not reached |
+| Bake Bread | Networks V | 3.1x | 2.00x | 179150.00 | 36.18 | 11.3% | not reached |
+| Bake Bread | Networks X | 8.0x | 4.00x | 21164150.00 | 38.09 | 5.0% | not reached |
+| Bake Cake | Baseline | 1.0x | 1.00x | 0.00 | 34.97 | 64.1% | not reached |
+| Bake Cake | Local depth I | 1.2x | 1.00x | 750.00 | 37.56 | 62.0% | not reached |
+| Bake Cake | Diffusion I | 1.0x | 1.15x | 600.00 | 35.54 | 62.9% | not reached |
+| Bake Cake | Networks III | 1.9x | 1.50x | 19150.00 | 45.46 | 52.5% | not reached |
+| Bake Cake | Networks V | 3.1x | 2.00x | 179150.00 | 52.92 | 42.5% | not reached |
+| Bake Cake | Networks X | 8.0x | 4.00x | 21164150.00 | 64.28 | 23.7% | not reached |
+
+## Market research comparison (60 minutes): Construction Factory
+
+Local depth expands local supply without changing its starting price. Diffusion increases only local-regional balancing. Research cost is cumulative through the shown tier.
+
+| recipe | scenario | localDepth | localRegionalDiffusion | cumulativeResearchCost | margin60m | outputPriceDropPercent | breakEven |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Produce Bricks | Baseline | 1.0x | 1.00x | 0.00 | 2.35 | 76.2% | 20 |
+| Produce Bricks | Local depth I | 1.2x | 1.00x | 750.00 | 3.12 | 76.2% | 24 |
+| Produce Bricks | Diffusion I | 1.0x | 1.15x | 600.00 | 3.26 | 74.6% | 27 |
+| Produce Bricks | Networks III | 1.9x | 1.50x | 19150.00 | 7.89 | 71.1% | not reached |
+| Produce Bricks | Networks V | 3.1x | 2.00x | 179150.00 | 12.68 | 66.6% | not reached |
+| Produce Bricks | Networks X | 8.0x | 4.00x | 21164150.00 | 23.82 | 52.6% | not reached |
+| Produce Cement | Baseline | 1.0x | 1.00x | 0.00 | 5.19 | 68.6% | 29 |
+| Produce Cement | Local depth I | 1.2x | 1.00x | 750.00 | 7.49 | 66.5% | 36 |
+| Produce Cement | Diffusion I | 1.0x | 1.15x | 600.00 | 5.88 | 67.4% | 31 |
+| Produce Cement | Networks III | 1.9x | 1.50x | 19150.00 | 14.89 | 57.5% | not reached |
+| Produce Cement | Networks V | 3.1x | 2.00x | 179150.00 | 21.70 | 47.4% | not reached |
+| Produce Cement | Networks X | 8.0x | 4.00x | 21164150.00 | 32.21 | 27.5% | not reached |
+| Produce Construction Materials | Baseline | 1.0x | 1.00x | 0.00 | 6.32 | 70.3% | 41 |
+| Produce Construction Materials | Local depth I | 1.2x | 1.00x | 750.00 | 8.24 | 67.0% | 52 |
+| Produce Construction Materials | Diffusion I | 1.0x | 1.15x | 600.00 | 6.43 | 70.0% | 41 |
+| Produce Construction Materials | Networks III | 1.9x | 1.50x | 19150.00 | 13.01 | 56.6% | not reached |
+| Produce Construction Materials | Networks V | 3.1x | 2.00x | 179150.00 | 17.37 | 44.9% | not reached |
+| Produce Construction Materials | Networks X | 8.0x | 4.00x | 21164150.00 | 23.43 | 24.4% | not reached |
+| Produce Reinforced Concrete | Baseline | 1.0x | 1.00x | 0.00 | 25.31 | 72.8% | 55 |
+| Produce Reinforced Concrete | Local depth I | 1.2x | 1.00x | 750.00 | 30.49 | 70.3% | not reached |
+| Produce Reinforced Concrete | Diffusion I | 1.0x | 1.15x | 600.00 | 25.99 | 72.1% | 58 |
+| Produce Reinforced Concrete | Networks III | 1.9x | 1.50x | 19150.00 | 44.72 | 61.0% | not reached |
+| Produce Reinforced Concrete | Networks V | 3.1x | 2.00x | 179150.00 | 58.31 | 50.3% | not reached |
+| Produce Reinforced Concrete | Networks X | 8.0x | 4.00x | 21164150.00 | 79.22 | 29.2% | not reached |
+
+## Market research comparison (60 minutes): Farm
+
+Local depth expands local supply without changing its starting price. Diffusion increases only local-regional balancing. Research cost is cumulative through the shown tier.
+
+| recipe | scenario | localDepth | localRegionalDiffusion | cumulativeResearchCost | margin60m | outputPriceDropPercent | breakEven |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Grow Grain | Baseline | 1.0x | 1.00x | 0.00 | 3.79 | 16.4% | not reached |
+| Grow Grain | Local depth I | 1.2x | 1.00x | 750.00 | 3.90 | 16.5% | not reached |
+| Grow Grain | Diffusion I | 1.0x | 1.15x | 600.00 | 4.20 | 14.7% | not reached |
+| Grow Grain | Networks III | 1.9x | 1.50x | 19150.00 | 5.15 | 12.2% | not reached |
+| Grow Grain | Networks V | 3.1x | 2.00x | 179150.00 | 5.93 | 9.7% | not reached |
+| Grow Grain | Networks X | 8.0x | 4.00x | 21164150.00 | 7.07 | 5.3% | not reached |
+| Grow Sugar | Baseline | 1.0x | 1.00x | 0.00 | 3.14 | 9.1% | not reached |
+| Grow Sugar | Local depth I | 1.2x | 1.00x | 750.00 | 3.20 | 9.2% | not reached |
+| Grow Sugar | Diffusion I | 1.0x | 1.15x | 600.00 | 3.29 | 8.1% | not reached |
+| Grow Sugar | Networks III | 1.9x | 1.50x | 19150.00 | 3.71 | 6.6% | not reached |
+| Grow Sugar | Networks V | 3.1x | 2.00x | 179150.00 | 4.03 | 5.1% | not reached |
+| Grow Sugar | Networks X | 8.0x | 4.00x | 21164150.00 | 4.46 | 2.7% | not reached |
+
+## Market research comparison (60 minutes): Industrial Processing Factory
+
+Local depth expands local supply without changing its starting price. Diffusion increases only local-regional balancing. Research cost is cumulative through the shown tier.
+
+| recipe | scenario | localDepth | localRegionalDiffusion | cumulativeResearchCost | margin60m | outputPriceDropPercent | breakEven |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Produce Electric Circuits | Baseline | 1.0x | 1.00x | 0.00 | 15.80 | 75.4% | not reached |
+| Produce Electric Circuits | Local depth I | 1.2x | 1.00x | 750.00 | 18.17 | 74.2% | not reached |
+| Produce Electric Circuits | Diffusion I | 1.0x | 1.15x | 600.00 | 16.70 | 74.3% | not reached |
+| Produce Electric Circuits | Networks III | 1.9x | 1.50x | 19150.00 | 26.79 | 67.1% | not reached |
+| Produce Electric Circuits | Networks V | 3.1x | 2.00x | 179150.00 | 35.51 | 59.1% | not reached |
+| Produce Electric Circuits | Networks X | 8.0x | 4.00x | 21164150.00 | 51.62 | 39.7% | not reached |
+| Produce Steel | Baseline | 1.0x | 1.00x | 0.00 | 4.69 | 66.8% | 27 |
+| Produce Steel | Local depth I | 1.2x | 1.00x | 750.00 | 7.60 | 64.6% | 34 |
+| Produce Steel | Diffusion I | 1.0x | 1.15x | 600.00 | 5.55 | 65.8% | 30 |
+| Produce Steel | Networks III | 1.9x | 1.50x | 19150.00 | 16.59 | 55.1% | not reached |
+| Produce Steel | Networks V | 3.1x | 2.00x | 179150.00 | 24.49 | 44.9% | not reached |
+| Produce Steel | Networks X | 8.0x | 4.00x | 21164150.00 | 36.04 | 25.4% | not reached |
+
+## Market research comparison (60 minutes): Mine
+
+Local depth expands local supply without changing its starting price. Diffusion increases only local-regional balancing. Research cost is cumulative through the shown tier.
+
+| recipe | scenario | localDepth | localRegionalDiffusion | cumulativeResearchCost | margin60m | outputPriceDropPercent | breakEven |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Mine Coal | Baseline | 1.0x | 1.00x | 0.00 | 7.19 | 70.7% | not reached |
+| Mine Coal | Local depth I | 1.2x | 1.00x | 750.00 | 8.20 | 69.6% | not reached |
+| Mine Coal | Diffusion I | 1.0x | 1.15x | 600.00 | 7.68 | 69.3% | not reached |
+| Mine Coal | Networks III | 1.9x | 1.50x | 19150.00 | 12.16 | 61.9% | not reached |
+| Mine Coal | Networks V | 3.1x | 2.00x | 179150.00 | 16.01 | 53.4% | not reached |
+| Mine Coal | Networks X | 8.0x | 4.00x | 21164150.00 | 22.83 | 34.0% | not reached |
+| Mine Copper | Baseline | 1.0x | 1.00x | 0.00 | 8.29 | 40.6% | not reached |
+| Mine Copper | Local depth I | 1.2x | 1.00x | 750.00 | 8.95 | 39.3% | not reached |
+| Mine Copper | Diffusion I | 1.0x | 1.15x | 600.00 | 8.92 | 38.6% | not reached |
+| Mine Copper | Networks III | 1.9x | 1.50x | 19150.00 | 12.08 | 30.9% | not reached |
+| Mine Copper | Networks V | 3.1x | 2.00x | 179150.00 | 14.44 | 23.9% | not reached |
+| Mine Copper | Networks X | 8.0x | 4.00x | 21164150.00 | 17.80 | 12.3% | not reached |
+| Mine Iron | Baseline | 1.0x | 1.00x | 0.00 | 8.55 | 49.0% | not reached |
+| Mine Iron | Local depth I | 1.2x | 1.00x | 750.00 | 9.45 | 47.4% | not reached |
+| Mine Iron | Diffusion I | 1.0x | 1.15x | 600.00 | 9.20 | 47.2% | not reached |
+| Mine Iron | Networks III | 1.9x | 1.50x | 19150.00 | 13.25 | 38.3% | not reached |
+| Mine Iron | Networks V | 3.1x | 2.00x | 179150.00 | 16.29 | 30.0% | not reached |
+| Mine Iron | Networks X | 8.0x | 4.00x | 21164150.00 | 20.69 | 15.8% | not reached |
+
+## Market research comparison (60 minutes): Power Plant
+
+Local depth expands local supply without changing its starting price. Diffusion increases only local-regional balancing. Research cost is cumulative through the shown tier.
+
+| recipe | scenario | localDepth | localRegionalDiffusion | cumulativeResearchCost | margin60m | outputPriceDropPercent | breakEven |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Coal Power | Baseline | 1.0x | 1.00x | 0.00 | 0.82 | 23.4% | 42 |
+| Coal Power | Local depth I | 1.2x | 1.00x | 750.00 | 1.02 | 23.6% | not reached |
+| Coal Power | Diffusion I | 1.0x | 1.15x | 600.00 | 1.11 | 21.3% | not reached |
+| Coal Power | Networks III | 1.9x | 1.50x | 19150.00 | 2.14 | 18.5% | not reached |
+| Coal Power | Networks V | 3.1x | 2.00x | 179150.00 | 2.85 | 15.4% | not reached |
+| Coal Power | Networks X | 8.0x | 4.00x | 21164150.00 | 3.88 | 9.5% | not reached |
+| Solar Power | Baseline | 1.0x | 1.00x | 0.00 | 1.22 | 8.4% | not reached |
+| Solar Power | Local depth I | 1.2x | 1.00x | 750.00 | 1.22 | 8.5% | not reached |
+| Solar Power | Diffusion I | 1.0x | 1.15x | 600.00 | 1.24 | 7.5% | not reached |
+| Solar Power | Networks III | 1.9x | 1.50x | 19150.00 | 1.30 | 6.2% | not reached |
+| Solar Power | Networks V | 3.1x | 2.00x | 179150.00 | 1.34 | 4.9% | not reached |
+| Solar Power | Networks X | 8.0x | 4.00x | 21164150.00 | 1.41 | 2.8% | not reached |
+
+## Market research comparison (60 minutes): Quarry
+
+Local depth expands local supply without changing its starting price. Diffusion increases only local-regional balancing. Research cost is cumulative through the shown tier.
+
+| recipe | scenario | localDepth | localRegionalDiffusion | cumulativeResearchCost | margin60m | outputPriceDropPercent | breakEven |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Quarry Clay | Baseline | 1.0x | 1.00x | 0.00 | 4.26 | 26.0% | not reached |
+| Quarry Clay | Local depth I | 1.2x | 1.00x | 750.00 | 4.47 | 25.6% | not reached |
+| Quarry Clay | Diffusion I | 1.0x | 1.15x | 600.00 | 4.51 | 24.0% | not reached |
+| Quarry Clay | Networks III | 1.9x | 1.50x | 19150.00 | 5.52 | 19.2% | not reached |
+| Quarry Clay | Networks V | 3.1x | 2.00x | 179150.00 | 6.25 | 14.7% | not reached |
+| Quarry Clay | Networks X | 8.0x | 4.00x | 21164150.00 | 7.22 | 7.4% | not reached |
+| Quarry Sand | Baseline | 1.0x | 1.00x | 0.00 | 1.25 | 47.9% | 33 |
+| Quarry Sand | Local depth I | 1.2x | 1.00x | 750.00 | 1.60 | 47.1% | 41 |
+| Quarry Sand | Diffusion I | 1.0x | 1.15x | 600.00 | 1.57 | 45.6% | 51 |
+| Quarry Sand | Networks III | 1.9x | 1.50x | 19150.00 | 3.25 | 38.6% | not reached |
+| Quarry Sand | Networks V | 3.1x | 2.00x | 179150.00 | 4.58 | 31.2% | not reached |
+| Quarry Sand | Networks X | 8.0x | 4.00x | 21164150.00 | 6.57 | 17.2% | not reached |
+| Quarry Stone | Baseline | 1.0x | 1.00x | 0.00 | 9.80 | 47.8% | not reached |
+| Quarry Stone | Local depth I | 1.2x | 1.00x | 750.00 | 10.61 | 47.1% | not reached |
+| Quarry Stone | Diffusion I | 1.0x | 1.15x | 600.00 | 10.63 | 45.6% | not reached |
+| Quarry Stone | Networks III | 1.9x | 1.50x | 19150.00 | 14.74 | 38.6% | not reached |
+| Quarry Stone | Networks V | 3.1x | 2.00x | 179150.00 | 18.05 | 31.2% | not reached |
+| Quarry Stone | Networks X | 8.0x | 4.00x | 21164150.00 | 23.13 | 17.2% | not reached |
+
+## Market research comparison (60 minutes): Small Utility Works
+
+Local depth expands local supply without changing its starting price. Diffusion increases only local-regional balancing. Research cost is cumulative through the shown tier.
+
+| recipe | scenario | localDepth | localRegionalDiffusion | cumulativeResearchCost | margin60m | outputPriceDropPercent | breakEven |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Produce Electricity | Baseline | 1.0x | 1.00x | 0.00 | 6.00 | 16.7% | not reached |
+| Produce Electricity | Local depth I | 1.2x | 1.00x | 750.00 | 6.03 | 16.9% | not reached |
+| Produce Electricity | Diffusion I | 1.0x | 1.15x | 600.00 | 6.11 | 15.0% | not reached |
+| Produce Electricity | Networks III | 1.9x | 1.50x | 19150.00 | 6.34 | 12.8% | not reached |
+| Produce Electricity | Networks V | 3.1x | 2.00x | 179150.00 | 6.54 | 10.4% | not reached |
+| Produce Electricity | Networks X | 8.0x | 4.00x | 21164150.00 | 6.86 | 6.2% | not reached |
+| Produce Water | Baseline | 1.0x | 1.00x | 0.00 | 1.96 | 31.8% | not reached |
+| Produce Water | Local depth I | 1.2x | 1.00x | 750.00 | 2.00 | 31.6% | not reached |
+| Produce Water | Diffusion I | 1.0x | 1.15x | 600.00 | 2.00 | 29.5% | not reached |
+| Produce Water | Networks III | 1.9x | 1.50x | 19150.00 | 2.18 | 24.5% | not reached |
+| Produce Water | Networks V | 3.1x | 2.00x | 179150.00 | 2.32 | 19.4% | not reached |
+| Produce Water | Networks X | 8.0x | 4.00x | 21164150.00 | 2.51 | 10.3% | not reached |
+
+## Market research comparison (60 minutes): Water Well
+
+Local depth expands local supply without changing its starting price. Diffusion increases only local-regional balancing. Research cost is cumulative through the shown tier.
+
+| recipe | scenario | localDepth | localRegionalDiffusion | cumulativeResearchCost | margin60m | outputPriceDropPercent | breakEven |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Electric Pumping | Baseline | 1.0x | 1.00x | 0.00 | -0.35 | 45.7% | 12 |
+| Electric Pumping | Local depth I | 1.2x | 1.00x | 750.00 | -0.27 | 45.7% | 14 |
+| Electric Pumping | Diffusion I | 1.0x | 1.15x | 600.00 | -0.22 | 43.2% | 13 |
+| Electric Pumping | Networks III | 1.9x | 1.50x | 19150.00 | 0.29 | 38.0% | 31 |
+| Electric Pumping | Networks V | 3.1x | 2.00x | 179150.00 | 0.74 | 32.0% | not reached |
+| Electric Pumping | Networks X | 8.0x | 4.00x | 21164150.00 | 1.47 | 19.1% | not reached |
+| Manual Pumping | Baseline | 1.0x | 1.00x | 0.00 | 1.86 | 31.8% | not reached |
+| Manual Pumping | Local depth I | 1.2x | 1.00x | 750.00 | 1.90 | 31.6% | not reached |
+| Manual Pumping | Diffusion I | 1.0x | 1.15x | 600.00 | 1.90 | 29.5% | not reached |
+| Manual Pumping | Networks III | 1.9x | 1.50x | 19150.00 | 2.08 | 24.5% | not reached |
+| Manual Pumping | Networks V | 3.1x | 2.00x | 179150.00 | 2.21 | 19.4% | not reached |
+| Manual Pumping | Networks X | 8.0x | 4.00x | 21164150.00 | 2.41 | 10.3% | not reached |
+
+## Market network portfolio payback (180 minutes)
+
+One continuously selling facility per recipe. Results sum the independent recipe simulations, while each network cost is paid once. This isolates company-wide research value; it is not a shared-market multi-facility simulation.
+
+| scenario | localDepth | localRegionalDiffusion | cumulativeResearchCost | portfolioNetProfit180m | incrementalNetProfit180m | incrementalMarginPerMinute | networkPaybackEstimateMinutes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Baseline | 1.0x | 1.00x | 0.00 | 11828.20 | 0.00 | 0.00 | n/a |
+| Networks I (1/1) | 1.2x | 1.15x | 1350.00 | 16404.03 | 4575.83 | 25.42 | 54 |
+| Networks III (3/3) | 1.9x | 1.50x | 19150.00 | 26847.97 | 15019.77 | 83.44 | 230 |
+| Networks V (5/5) | 3.1x | 2.00x | 179150.00 | 38291.09 | 26462.89 | 147.02 | 1219 |
+| Networks X (10/10) | 8.0x | 4.00x | 21164150.00 | 60385.28 | 48557.07 | 269.76 | 78456 |
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { RecipeName } from '@/game/recipes';
 import {
   RECIPE_ECONOMY_BREAK_EVEN_HORIZON_MINUTES,
+  RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
   RECIPE_ECONOMY_LONG_WINDOW_MINUTES,
   RECIPE_ECONOMY_REPAIR_THRESHOLD,
   RECIPE_ECONOMY_SHORT_WINDOW_MINUTES,
@@ -16,10 +17,12 @@ describe('recipe economy simulation', () => {
     const initial = simulateRecipeEconomy({ recipeName, durationMinutes: 1 });
     const shortRun = simulateRecipeEconomy({ recipeName, durationMinutes: RECIPE_ECONOMY_SHORT_WINDOW_MINUTES });
     const longRun = simulateRecipeEconomy({ recipeName, durationMinutes: RECIPE_ECONOMY_LONG_WINDOW_MINUTES });
+    const extendedRun = simulateRecipeEconomy({ recipeName, durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES });
 
     expect(Number.isFinite(initial.initialNetMarginPerMinute)).toBe(true);
     expect(Number.isFinite(shortRun.netMarginPerMinute)).toBe(true);
     expect(Number.isFinite(longRun.netMarginPerMinute)).toBe(true);
+    expect(Number.isFinite(extendedRun.netMarginPerMinute)).toBe(true);
     expect(initial.initialNetMarginPerMinute).toBeGreaterThan(0);
     expect(shortRun.netMarginPerMinute).toBeGreaterThan(0);
     expect(longRun.totalMaintenanceCost).toBeGreaterThanOrEqual(0);
@@ -41,6 +44,18 @@ describe('recipe economy simulation', () => {
     ));
 
     expect(profitableRecipes.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('applies completed local-depth and local-regional-diffusion research to market scenarios', () => {
+    const baseline = simulateRecipeEconomy({ recipeName: RecipeName.GrowGrain, durationMinutes: RECIPE_ECONOMY_LONG_WINDOW_MINUTES });
+    const researched = simulateRecipeEconomy({
+      recipeName: RecipeName.GrowGrain,
+      durationMinutes: RECIPE_ECONOMY_LONG_WINDOW_MINUTES,
+      completedResearchProjectIds: ['local-market-network-10', 'market-diffusion-network-10'],
+    });
+
+    expect(researched.finalOutputUnitPrice).toBeGreaterThan(baseline.finalOutputUnitPrice);
+    expect(researched.netMarginPerMinute).toBeGreaterThan(baseline.netMarginPerMinute);
   });
 
   it.each(UPGRADE_LEVELS)('reports the grain economy at upgrade level %i', (speedUpgradeLevel) => {

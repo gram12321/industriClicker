@@ -1,6 +1,7 @@
 import { Inventory } from '@/game/inventory';
 import { MARKET_DIFFUSION_INTERVAL_MS, Market } from '@/game/market';
 import { getRecipe, type RecipeName } from '@/game/recipes';
+import { getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier } from '@/game/research';
 import { ResourceType } from '@/game/resources';
 import { FACILITIES, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE } from './facilityConstants';
 import { FacilityCollection } from './facilityCollection';
@@ -14,6 +15,7 @@ const WORK_COMPLETION_EPSILON = 1e-9;
 /** Standard windows used by recipe-balance tests and reports. */
 export const RECIPE_ECONOMY_SHORT_WINDOW_MINUTES = 15;
 export const RECIPE_ECONOMY_LONG_WINDOW_MINUTES = 60;
+export const RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES = 180;
 export const RECIPE_ECONOMY_BREAK_EVEN_HORIZON_MINUTES = 4 * 60;
 export const RECIPE_ECONOMY_REPAIR_THRESHOLD = 0.7;
 
@@ -22,6 +24,8 @@ export type RecipeEconomyScenario = {
   durationMinutes: number;
   speedUpgradeLevel?: number;
   outputUpgradeLevel?: number;
+  /** Completed market research applied before the facility begins production. */
+  completedResearchProjectIds?: readonly string[];
 };
 
 export type RecipeEconomyResult = {
@@ -52,7 +56,7 @@ export type RecipeEconomyResult = {
  * Maintenance is charged as realised repair spend plus the outstanding repair
  * liability.
  */
-export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgradeLevel = 0, outputUpgradeLevel = 0 }: RecipeEconomyScenario): RecipeEconomyResult {
+export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgradeLevel = 0, outputUpgradeLevel = 0, completedResearchProjectIds = [] }: RecipeEconomyScenario): RecipeEconomyResult {
   const recipe = getRecipe(recipeName);
   const facilityType = getRecipeFacilityType(recipeName);
   const definition = FACILITIES[facilityType];
@@ -61,6 +65,8 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
   const facility = facilities.getAllByType(facilityType)[0]!;
   const inventory = new Inventory();
   const market = new Market();
+  market.setLocalMarketDepthMultiplier(getLocalMarketDepthMultiplier(completedResearchProjectIds));
+  market.setLocalRegionalDiffusionMultiplier(getLocalRegionalDiffusionMultiplier(completedResearchProjectIds));
   const minutes = Math.max(1, Math.floor(durationMinutes));
   let totalRevenue = 0;
   let totalInputCost = 0;
