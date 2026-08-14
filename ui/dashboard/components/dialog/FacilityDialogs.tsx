@@ -26,7 +26,7 @@ function formatRecipeInputs(recipe: Recipe): string {
 }
 
 function formatRecipeOutput(recipe: Recipe): string {
-  return `${getResourceIcon(recipe.output.resourceType)} ×${formatNumber(recipe.output.amount, { smartDecimals: true })}`;
+  return recipe.outputs.map(({ resourceType, amount }) => `${getResourceIcon(resourceType)} ×${formatNumber(amount, { smartDecimals: true })}`).join(' + ');
 }
 
 export function FacilityConstructionDialog(props: {

@@ -101,4 +101,5 @@ describe('Market regional tier', () => {
     expect(market.getLocalEntry(ResourceType.Grain).supply).toBeCloseTo(supplyBefore * 1.5);
     expect(market.getLocalPrice(ResourceType.Grain)).toBeCloseTo(priceBefore);
   });
+
 });

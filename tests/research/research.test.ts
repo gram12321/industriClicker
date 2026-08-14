@@ -58,7 +58,7 @@ describe('catalogue progression coverage', () => {
   it('gives every facility recipe an unlock project and every produced resource a production achievement series', () => {
     const recipes = Object.values(FACILITIES).flatMap((facility) => facility.recipes);
     const researchProjectIds = new Set(RESEARCH_PROJECTS.map((project) => project.id));
-    const producedResources = new Set(recipes.map((recipe) => recipe.output.resourceType));
+    const producedResources = new Set(recipes.flatMap((recipe) => recipe.outputs).map((output) => output.resourceType));
     const achievementResources = new Set(ACHIEVEMENT_DEFINITIONS
       .filter((definition) => definition.metric === 'resource-produced')
       .map((definition) => definition.resourceType));

@@ -26,7 +26,7 @@ Foreground elapsed time -> advanceGameTime -> registered timed rules
 
 ## Production and Facilities
 
-Recipes consume inputs at cycle start; if inputs are absent, the facility stalls without banking work. A completed cycle grants `baseOutput × outputMultiplier`. Each constructed facility is an independent numbered instance, so multiple facilities of one type can run different recipes and upgrades.
+Recipes consume inputs at cycle start; if inputs are absent, the facility stalls without banking work. A completed cycle grants every configured `baseOutput × outputMultiplier`. Each constructed facility is an independent numbered instance, so multiple facilities of one type can run different recipes and upgrades.
 Players may pause a selected recipe without clearing it; resuming continues its retained cycle progress. A facility also stalls automatically at a cycle boundary when its next recipe inputs are unavailable.
 
 | Recipe | Inputs | Output | Work |
@@ -35,6 +35,10 @@ Players may pause a selected recipe without clearing it; resuming continues its 
 | Bake Bread | 1.5 Grain, 1 Water, 1 Electricity | 4.5 Bread | 0.26 |
 | Produce Water / Electricity | None | 2 utility resources | 0.073 / 0.11 |
 | Grow Sugar | 3 Water, 0.04 Fertilizer | 1.2 Sugar | 0.12 |
+| Grow Fruit | 2 Water, 0.03 Fertilizer | 2 Fruit | 0.16 |
+| Raise Cattle | 12 Grain, 8 Water, 5 Electricity | 2 Meat, 5 Milk, 0.2 Fertilizer | 2.45 |
+| Raise Sheep | 8 Grain, 6 Water, 4 Electricity | 1.5 Meat, 2 Wool, 0.1 Fertilizer | 1.75 |
+| Raise Chicken | 4 Grain, 4 Water, 3 Electricity | 1 Meat, 5 Eggs, 0.05 Fertilizer | 1.4 |
 | Mine Coal | 1 Water, 2 Electricity | 2.5 Coal | 0.2 |
 | Mine Iron | 2 Water, 4 Electricity, 0.1 Chemicals | 1.25 Iron | 0.267 |
 | Mine Copper | 2 Water, 5 Electricity, 0.1 Chemicals | 1.25 Copper | 0.333 |
@@ -55,7 +59,9 @@ Players may pause a selected recipe without clearing it; resuming continues its 
 | Produce Cement | 3 Stone, 1 Clay, 1 Minerals, 1 Water, 5 Electricity | 7 Cement | 1.083 |
 | Produce Reinforced Concrete | 2 Cement, 3 Sand, 2 Stone, 2 Steel, 0.5 Minerals, 0.25 Chemicals, 2 Water, 2 Electricity | 7 Reinforced Concrete | 2.6 |
 | Produce Construction Materials | 2 Bricks, 1 Reinforced Concrete, 1 Steel, 1 Sand, 1 Cement, 0.1 Chemicals, 0.2 Plastic, 2 Electricity | 8 Construction Materials | 5.2 |
-| Bake Cake | 1 Grain, 0.5 Sugar, 2 Electricity, 2 Water | 4 Cake | 0.39 |
+| Bake Cake | 1 Grain, 0.5 Eggs, 2 Electricity, 2 Water | 4 Cake | 0.39 |
+| Bake Premium Cake | 1 Grain, 0.5 Eggs, 1 Fruit, 1 Milk, 2 Electricity, 2 Water | 4 Premium Cake | 0.52 |
+| Bake Meat Pie | 1 Grain, 1 Meat, 1 Water, 2 Electricity | 4 Meat Pie | 0.65 |
 | Manual / Electric Pumping | None / 1 Electricity | 2 / 7 Water | 0.073 / 0.12 |
 | Coal / Solar Power | 0.5 Coal, 1 Water / None | 6 / 3 Electricity | 0.467 / 0.933 |
 

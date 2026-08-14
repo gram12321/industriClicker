@@ -12,8 +12,15 @@ The catalogue in `game/resources/resourceConstants.ts` is the source of truth fo
 | Electricity | Small Utility Works: Produce Electricity; Power Plant: Coal / Solar Power | None / 0.5 Coal, 1 Water / None |
 | Grain | Farm: Grow Grain | 1 Water, 1 Electricity, 0.025 Fertilizer |
 | Sugar | Farm: Grow Sugar | 3 Water, 0.04 Fertilizer |
+| Fruit | Farm: Grow Fruit | 2 Water, 0.03 Fertilizer |
+| Meat | Animal Farm: Raise Cattle / Sheep / Chicken | 12 / 8 / 4 Grain, 8 / 6 / 4 Water, 5 / 4 / 3 Electricity |
+| Milk | Animal Farm: Raise Cattle | 12 Grain, 8 Water, 5 Electricity |
+| Wool | Animal Farm: Raise Sheep | 8 Grain, 6 Water, 4 Electricity |
+| Eggs | Animal Farm: Raise Chicken | 4 Grain, 4 Water, 3 Electricity |
 | Bread | Bakery: Bake Bread | 1.5 Grain, 1 Water, 1 Electricity |
-| Cake | Bakery: Bake Cake | 1 Grain, 0.5 Sugar, 2 Water, 2 Electricity |
+| Cake | Bakery: Bake Cake | 1 Grain, 0.5 Eggs, 2 Water, 2 Electricity |
+| Premium Cake | Bakery: Bake Premium Cake | 1 Grain, 0.5 Eggs, 1 Fruit, 1 Milk, 2 Water, 2 Electricity |
+| Meat Pie | Bakery: Bake Meat Pie | 1 Grain, 1 Meat, 1 Water, 2 Electricity |
 | Coal | Mine: Mine Coal | 1 Water, 2 Electricity |
 | Iron | Mine: Mine Iron | 2 Water, 4 Electricity, 0.1 Chemicals |
 | Copper | Mine: Mine Copper | 2 Water, 5 Electricity, 0.1 Chemicals |
@@ -25,7 +32,7 @@ The catalogue in `game/resources/resourceConstants.ts` is the source of truth fo
 | Steel | Industrial Processing Factory: Produce Steel | 2 Iron, 1 Coal, 2 Water, 6 Electricity |
 | Electric Circuits | Industrial Processing Factory: Produce Electric Circuits | 2 Copper, 1 Silicon, 1 Plastic, 1 Water, 4 Electricity |
 | Chemicals | Chemical Plant: Produce Chemicals | 2 Minerals, 2 Water, 4 Electricity |
-| Fertilizer | Chemical Plant: Synthesize Fertilizer | 1 Chemicals, 1 Minerals, 1 Water, 2 Electricity |
+| Fertilizer | Chemical Plant: Synthesize Fertilizer; Animal Farm: Raise Cattle / Sheep / Chicken | 1 Chemicals, 1 Minerals, 1 Water, 2 Electricity / respective Grain, Water, and Electricity inputs |
 | Plastic | Chemical Plant: Produce Plastic | 2 Chemicals, 1 Water, 3 Electricity |
 | Silicon | Electronics Factory: Produce Silicon | 3 Minerals, 3 Sand, 5 Electricity |
 | Advanced Components | Electronics Factory: Produce Advanced Components | 2 Electric Circuits, 2 Silicon, 0.1 Gold, 1 Water, 4 Electricity |
@@ -55,15 +62,48 @@ flowchart LR
   water --> growSugar([Farm: Grow Sugar])
   fertilizer --> growSugar
   growSugar --> sugar[Sugar]
+  water --> growFruit([Farm: Grow Fruit])
+  fertilizer --> growFruit
+  growFruit --> fruit[Fruit]
+  grain --> raiseCattle([Animal Farm: Raise Cattle])
+  water --> raiseCattle
+  electricity --> raiseCattle
+  raiseCattle --> meat[Meat]
+  raiseCattle --> milk[Milk]
+  raiseCattle --> fertilizer
+  grain --> raiseSheep([Animal Farm: Raise Sheep])
+  water --> raiseSheep
+  electricity --> raiseSheep
+  raiseSheep --> meat
+  raiseSheep --> wool[Wool]
+  raiseSheep --> fertilizer
+  grain --> raiseChicken([Animal Farm: Raise Chicken])
+  water --> raiseChicken
+  electricity --> raiseChicken
+  raiseChicken --> meat
+  raiseChicken --> eggs[Eggs]
+  raiseChicken --> fertilizer
   grain --> bakeBread([Bakery: Bake Bread])
   water --> bakeBread
   electricity --> bakeBread
   bakeBread --> bread[Bread]
   grain --> bakeCake([Bakery: Bake Cake])
-  sugar --> bakeCake
+  eggs --> bakeCake
   water --> bakeCake
   electricity --> bakeCake
   bakeCake --> cake[Cake]
+  grain --> bakePremiumCake([Bakery: Bake Premium Cake])
+  eggs --> bakePremiumCake
+  fruit --> bakePremiumCake
+  milk --> bakePremiumCake
+  water --> bakePremiumCake
+  electricity --> bakePremiumCake
+  bakePremiumCake --> premiumCake[Premium Cake]
+  grain --> bakeMeatPie([Bakery: Bake Meat Pie])
+  meat --> bakeMeatPie
+  water --> bakeMeatPie
+  electricity --> bakeMeatPie
+  bakeMeatPie --> meatPie[Meat Pie]
 
   water --> mineCoal([Mine: Mine Coal])
   electricity --> mineCoal
@@ -201,6 +241,7 @@ flowchart LR
   electricity[Electricity]
   powerPlant([Power Plant])
   farm([Farm])
+  animalFarm([Animal Farm])
   bakery([Bakery])
   mine([Mine])
   quarry([Quarry])
@@ -223,12 +264,26 @@ flowchart LR
   fertilizer --> farm
   farm --> grain[Grain]
   farm --> sugar[Sugar]
+  farm --> fruit[Fruit]
+  grain --> animalFarm
+  water --> animalFarm
+  electricity --> animalFarm
+  animalFarm --> meat[Meat]
+  animalFarm --> milk[Milk]
+  animalFarm --> wool[Wool]
+  animalFarm --> eggs[Eggs]
+  animalFarm --> fertilizer[Fertilizer]
   grain --> bakery
   sugar --> bakery
+  fruit --> bakery
+  eggs --> bakery
+  meat --> bakery
   water --> bakery
   electricity --> bakery
   bakery --> bread[Bread]
   bakery --> cake[Cake]
+  bakery --> premiumCake[Premium Cake]
+  bakery --> meatPie[Meat Pie]
 
   water --> mine
   electricity --> mine
@@ -332,7 +387,7 @@ Derived values include facility efficiency, production work/output, contract rew
 | `startLoanSearch`, `makeExtraLoanPayment`, `repayLoanInFull` | Selected criteria or active loan, lender policy caps, balance | Search activity/fee or finance transactions, loans, payment history, and derived credit rating |
 | `buildFacility`, `destroyFacility`, `repairFacility`, `setFacilityRecipe`, `setFacilityWorkers`, `upgradeFacility` | Facility definition; balance and Construction Materials where applicable | Facilities; Finance; Inventory where applicable |
 | `advanceRealtime`, `advanceGameTime`, `fastForwardOneMinute` | Time anchors and all timed state | Game time, pipeline, facility condition, inventory, sales contracts, local/regional/global market, active research, active lender searches, due loan payments |
-| Completed production output | Facility output and output multiplier | Production statistics; production achievements |
+| Completed production outputs | Recipe outputs and facility output multiplier | Inventory; production statistics; production achievements |
 | `fulfillSalesContract`, `rejectSalesContract` | Contract; inventory and finance where applicable | Sales contracts; inventory and finance where applicable |
 | Achievement evaluation | Post-command domain state | Achievement unlocks; idempotent achievement prestige events |
 | `getResearchAvailability`, `startResearch`, `cancelResearch` | Code catalogue, pure gate context, finance, research ledger, progression grants | Research; grant use; finance/prestige and relevant achievements |

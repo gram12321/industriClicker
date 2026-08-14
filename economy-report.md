@@ -4,6 +4,19 @@ One fully staffed facility, local input purchases, local output sales, normal ma
 
 ## Recipe windows
 
+## Animal Farm
+
+Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.
+
+| recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Raise Cattle | Baseline | 505.00 | 140.00 | 0.00 | 15.96 | 12.51 | 9.77 | 7.08 | 2.42 | 24.2% | 51.81 | not reached | 48 |
+| Raise Cattle | Networks III (3/3) | 505.00 | 140.00 | 19150.00 | 15.96 | 13.19 | 11.26 | 8.67 | 1.59 | 15.9% | 51.81 | not reached | 42 |
+| Raise Chicken | Baseline | 505.00 | 175.00 | 0.00 | 24.92 | 20.43 | 16.08 | 11.42 | 2.25 | 22.5% | 43.55 | not reached | 26 |
+| Raise Chicken | Networks III (3/3) | 505.00 | 175.00 | 19150.00 | 24.92 | 21.50 | 18.28 | 13.42 | 1.46 | 14.6% | 43.55 | not reached | 24 |
+| Raise Sheep | Baseline | 505.00 | 157.00 | 0.00 | 24.25 | 19.85 | 16.76 | 12.78 | 2.56 | 25.6% | 48.07 | not reached | 27 |
+| Raise Sheep | Networks III (3/3) | 505.00 | 157.00 | 19150.00 | 24.25 | 20.64 | 18.58 | 14.60 | 1.69 | 16.9% | 48.07 | not reached | 25 |
+
 ## Assembly Plant
 
 Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.
@@ -21,8 +34,12 @@ Networks III (3/3) applies Local Market Network III and Market Diffusion Network
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Bake Bread | Baseline | 1460.00 | 167.00 | 0.00 | 43.06 | 38.52 | 31.06 | 22.48 | 0.61 | 25.3% | 137.50 | not reached | 44 |
 | Bake Bread | Networks III (3/3) | 1460.00 | 167.00 | 19150.00 | 43.06 | 39.97 | 34.25 | 25.73 | 0.39 | 16.4% | 137.50 | not reached | 41 |
-| Bake Cake | Baseline | 1460.00 | 212.00 | 0.00 | 83.50 | 57.88 | 34.68 | 20.82 | 4.49 | 64.1% | 148.58 | not reached | 33 |
-| Bake Cake | Networks III (3/3) | 1460.00 | 212.00 | 19150.00 | 83.50 | 66.23 | 45.17 | 28.35 | 3.67 | 52.5% | 148.58 | not reached | 25 |
+| Bake Cake | Baseline | 1460.00 | 212.00 | 0.00 | 78.15 | 52.35 | 28.91 | 15.22 | 4.50 | 64.2% | 141.12 | not reached | 42 |
+| Bake Cake | Networks III (3/3) | 1460.00 | 212.00 | 19150.00 | 78.15 | 60.83 | 39.92 | 23.16 | 3.68 | 52.6% | 141.12 | not reached | 28 |
+| Bake Meat Pie | Baseline | 1460.00 | 254.00 | 0.00 | 37.87 | 21.13 | 2.44 | -6.01 | 4.48 | 56.0% | 151.67 | 26 | not reached |
+| Bake Meat Pie | Networks III (3/3) | 1460.00 | 254.00 | 19150.00 | 37.87 | 27.19 | 12.80 | 2.35 | 3.53 | 44.1% | 151.67 | 62 | not reached |
+| Bake Premium Cake | Baseline | 1460.00 | 283.00 | 0.00 | 95.63 | 67.34 | 37.37 | 19.04 | 6.86 | 57.2% | 146.27 | not reached | 26 |
+| Bake Premium Cake | Networks III (3/3) | 1460.00 | 283.00 | 19150.00 | 95.63 | 76.87 | 52.13 | 30.73 | 5.41 | 45.1% | 146.27 | not reached | 20 |
 
 ## Chemical Plant
 
@@ -69,6 +86,8 @@ Networks III (3/3) applies Local Market Network III and Market Diffusion Network
 
 | recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Grow Fruit | Baseline | 145.00 | 124.00 | 0.00 | 9.61 | 8.21 | 6.75 | 5.49 | 0.15 | 16.1% | 8.15 | not reached | 19 |
+| Grow Fruit | Networks III (3/3) | 145.00 | 124.00 | 19150.00 | 9.61 | 8.70 | 7.46 | 6.07 | 0.11 | 11.7% | 8.15 | not reached | 17 |
 | Grow Grain | Baseline | 145.00 | 108.00 | 0.00 | 4.03 | 0.56 | -1.28 | -1.54 | 0.13 | 16.4% | 9.41 | 9 | not reached |
 | Grow Grain | Networks III (3/3) | 145.00 | 108.00 | 19150.00 | 4.03 | 1.87 | 0.32 | -0.18 | 0.10 | 12.2% | 9.41 | 26 | not reached |
 | Grow Sugar | Baseline | 145.00 | 104.00 | 0.00 | 1.25 | 0.07 | -0.89 | -1.00 | 0.06 | 9.1% | 8.48 | 9 | not reached |
@@ -160,6 +179,8 @@ Each row runs all listed facilities in one shared market. Upstream production is
 | Extraction: utilities -> Iron | Networks III (3/3) | Water, Electricity, Iron | 485.00 | 221.00 | 0.00 | 0.00 | 18.25 | 0.08 | 22 | 0 |
 | Fertilizer bridge: inputs -> Grain and Sugar | Baseline | Water, Electricity, Minerals, Chemicals, Fertilizer, Grain, Sugar | 5645.00 | 920.00 | 0.00 | 0.00 | 39.46 | 0.11 | 144 | 0 |
 | Fertilizer bridge: inputs -> Grain and Sugar | Networks III (3/3) | Water, Electricity, Minerals, Chemicals, Fertilizer, Grain, Sugar | 5645.00 | 920.00 | 0.00 | 0.00 | 55.02 | 0.10 | 93 | 0 |
+| Animal farm and bakery: inputs -> Cake, Premium Cake, and Meat Pie | Baseline | Water, Electricity, Minerals, Chemicals, Fertilizer, Grain, Fruit, Meat, Milk, Wool, Eggs, Cake, Premium Cake, Meat Pie | 11540.00 | 2161.00 | 0.00 | 0.00 | 56.87 | 0.13 | 55 | 0 |
+| Animal farm and bakery: inputs -> Cake, Premium Cake, and Meat Pie | Networks III (3/3) | Water, Electricity, Minerals, Chemicals, Fertilizer, Grain, Fruit, Meat, Milk, Wool, Eggs, Cake, Premium Cake, Meat Pie | 11540.00 | 2161.00 | 0.00 | 0.00 | 129.53 | 0.12 | 43 | 0 |
 | Construction: inputs -> Construction Materials | Baseline | Water, Electricity, Coal, Iron, Clay, Sand, Stone, Steel, Bricks, Cement, Reinforced Concrete, Construction Materials | 10765.00 | 1947.00 | 590.00 | 590.00 | 37.20 | 0.14 | 85 | 0 |
 | Construction: inputs -> Construction Materials | Networks III (3/3) | Water, Electricity, Coal, Iron, Clay, Sand, Stone, Steel, Bricks, Cement, Reinforced Concrete, Construction Materials | 10765.00 | 1947.00 | 590.00 | 590.00 | 156.88 | 0.13 | 48 | 0 |
 | Industrial Machines: inputs -> Industrial Machines | Baseline | Water, Electricity, Sand, Minerals, Chemicals, Coal, Iron, Copper, Gold, Plastic, Silicon, Steel, Electric Circuits, Advanced Components, Industrial Machines | 17210.00 | 2443.00 | 0.00 | 0.00 | 288.03 | 0.14 | 31 | 0 |
@@ -171,9 +192,9 @@ One continuously selling facility per recipe. Results sum the independent recipe
 
 | scenario | localDepth | localRegionalDiffusion | cumulativeResearchCost | portfolioNetProfit180m | incrementalNetProfit180m | incrementalMarginPerMinute | networkPaybackEstimateMinutes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Baseline | 1.0x | 1.00x | 0.00 | 13244.72 | 0.00 | 0.00 | n/a |
-| Networks I (1/1) | 1.2x | 1.15x | 1350.00 | 23770.86 | 10526.15 | 58.48 | 24 |
-| Networks III (3/3) | 1.9x | 1.50x | 19150.00 | 45083.47 | 31838.75 | 176.88 | 109 |
-| Networks V (5/5) | 3.1x | 2.00x | 179150.00 | 68648.53 | 55403.81 | 307.80 | 583 |
-| Networks X (10/10) | 8.0x | 4.00x | 21164150.00 | 108548.69 | 95303.98 | 529.47 | 39973 |
+| Baseline | 1.0x | 1.00x | 0.00 | 21198.66 | 0.00 | 0.00 | n/a |
+| Networks I (1/1) | 1.2x | 1.15x | 1350.00 | 33224.50 | 12025.84 | 66.81 | 21 |
+| Networks III (3/3) | 1.9x | 1.50x | 19150.00 | 57798.85 | 36600.19 | 203.33 | 95 |
+| Networks V (5/5) | 3.1x | 2.00x | 179150.00 | 84668.24 | 63469.59 | 352.61 | 509 |
+| Networks X (10/10) | 8.0x | 4.00x | 21164150.00 | 130000.56 | 108801.90 | 604.46 | 35014 |
 

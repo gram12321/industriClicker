@@ -27,16 +27,23 @@ export const RESOURCE_TYPES = [
   ResourceType.AdvancedComponents,
   ResourceType.IndustrialMachines,
   ResourceType.Cake,
+  ResourceType.PremiumCake,
+  ResourceType.Eggs,
+  ResourceType.Fruit,
+  ResourceType.Meat,
+  ResourceType.MeatPie,
+  ResourceType.Milk,
+  ResourceType.Wool,
 ] as const;
 
 export type ResourceGroup = 'food' | 'raw-resources' | 'construction' | 'manufacturing' | 'utilities';
 
 /** Player-facing resource groupings shared by Pedia and other catalogues; each group is alphabetized by display name. */
 export const RESOURCE_GROUPS: ReadonlyArray<{ id: ResourceGroup; label: string; resources: readonly ResourceType[] }> = [
-  { id: 'food', label: 'Food', resources: [ResourceType.Bread, ResourceType.Cake, ResourceType.Grain, ResourceType.Sugar] },
+  { id: 'food', label: 'Food', resources: [ResourceType.Bread, ResourceType.Cake, ResourceType.Eggs, ResourceType.Fruit, ResourceType.Grain, ResourceType.Meat, ResourceType.MeatPie, ResourceType.Milk, ResourceType.PremiumCake, ResourceType.Sugar] },
   { id: 'raw-resources', label: 'Raw Resources', resources: [ResourceType.Clay, ResourceType.Coal, ResourceType.Copper, ResourceType.Gold, ResourceType.Iron, ResourceType.Minerals, ResourceType.Sand, ResourceType.Stone] },
   { id: 'construction', label: 'Construction', resources: [ResourceType.Bricks, ResourceType.Cement, ResourceType.ConstructionMaterials, ResourceType.ReinforcedConcrete] },
-  { id: 'manufacturing', label: 'Manufacturing', resources: [ResourceType.AdvancedComponents, ResourceType.Chemicals, ResourceType.ElectricCircuits, ResourceType.Fertilizer, ResourceType.IndustrialMachines, ResourceType.Plastic, ResourceType.Silicon, ResourceType.Steel] },
+  { id: 'manufacturing', label: 'Manufacturing', resources: [ResourceType.AdvancedComponents, ResourceType.Chemicals, ResourceType.ElectricCircuits, ResourceType.Fertilizer, ResourceType.IndustrialMachines, ResourceType.Plastic, ResourceType.Silicon, ResourceType.Steel, ResourceType.Wool] },
   { id: 'utilities', label: 'Utilities', resources: [ResourceType.Electricity, ResourceType.Water] },
 ];
 
@@ -145,6 +152,34 @@ export const RESOURCES: Readonly<Record<ResourceType, { name: string; icon: stri
   [ResourceType.Cake]: {
     name: 'Cake', icon: '🍰',
     market: { localBenchmarkSupply: 1_750, localInitialSupply: 250, regionalBenchmarkSupply: 35_000, regionalInitialSupply: 5_000, globalBenchmarkSupply: 350_000, globalInitialSupply: 50_000, logisticsMultiplier: 0.4, valueDensityMultiplier: 1.15 },
+  },
+  [ResourceType.PremiumCake]: {
+    name: 'Premium Cake', icon: '🧁',
+    market: { localBenchmarkSupply: 3_000, localInitialSupply: 250, regionalBenchmarkSupply: 60_000, regionalInitialSupply: 5_000, globalBenchmarkSupply: 600_000, globalInitialSupply: 50_000, logisticsMultiplier: 0.4, valueDensityMultiplier: 1.3 },
+  },
+  [ResourceType.Eggs]: {
+    name: 'Eggs', icon: '🥚',
+    market: { localBenchmarkSupply: 1_000, localInitialSupply: 250, regionalBenchmarkSupply: 20_000, regionalInitialSupply: 5_000, globalBenchmarkSupply: 200_000, globalInitialSupply: 50_000, logisticsMultiplier: 0.6, valueDensityMultiplier: 1 },
+  },
+  [ResourceType.Fruit]: {
+    name: 'Fruit', icon: '🍎',
+    market: { localBenchmarkSupply: 900, localInitialSupply: 1_000, regionalBenchmarkSupply: 90_000, regionalInitialSupply: 100_000, globalBenchmarkSupply: 900_000, globalInitialSupply: 1_000_000, logisticsMultiplier: 0.65, valueDensityMultiplier: 0.9 },
+  },
+  [ResourceType.Meat]: {
+    name: 'Meat', icon: '🥩',
+    market: { localBenchmarkSupply: 1_200, localInitialSupply: 120, regionalBenchmarkSupply: 24_000, regionalInitialSupply: 2_400, globalBenchmarkSupply: 240_000, globalInitialSupply: 24_000, logisticsMultiplier: 0.55, valueDensityMultiplier: 1.2 },
+  },
+  [ResourceType.MeatPie]: {
+    name: 'Meat Pie', icon: '🥧',
+    market: { localBenchmarkSupply: 1_600, localInitialSupply: 200, regionalBenchmarkSupply: 32_000, regionalInitialSupply: 4_000, globalBenchmarkSupply: 320_000, globalInitialSupply: 40_000, logisticsMultiplier: 0.5, valueDensityMultiplier: 1.15 },
+  },
+  [ResourceType.Milk]: {
+    name: 'Milk', icon: '🥛',
+    market: { localBenchmarkSupply: 800, localInitialSupply: 200, regionalBenchmarkSupply: 16_000, regionalInitialSupply: 4_000, globalBenchmarkSupply: 160_000, globalInitialSupply: 40_000, logisticsMultiplier: 0.5, valueDensityMultiplier: 0.9 },
+  },
+  [ResourceType.Wool]: {
+    name: 'Wool', icon: '🧶',
+    market: { localBenchmarkSupply: 1_800, localInitialSupply: 150, regionalBenchmarkSupply: 36_000, regionalInitialSupply: 3_000, globalBenchmarkSupply: 360_000, globalInitialSupply: 30_000, logisticsMultiplier: 0.7, valueDensityMultiplier: 1.1 },
   },
 };
 

@@ -108,9 +108,11 @@ function advanceFacilityProduction(
     progress += appliedWork;
     remainingEffectiveWork -= appliedWork;
     if (progress + WORK_COMPLETION_EPSILON >= recipe.requiredWork) {
-      const amount = recipe.output.amount * facilityView.outputMultiplier;
-      inventory.add(recipe.output.resourceType, amount);
-      outputs.push({ facilityType: facilityView.facilityType, recipeName: recipe.name, resourceType: recipe.output.resourceType, amount });
+      for (const output of recipe.outputs) {
+        const amount = output.amount * facilityView.outputMultiplier;
+        inventory.add(output.resourceType, amount);
+        outputs.push({ facilityType: facilityView.facilityType, recipeName: recipe.name, resourceType: output.resourceType, amount });
+      }
       facility.applyConditionLoss(getRecipeProductionConditionLoss(recipe));
       progress = 0;
     }
@@ -148,7 +150,7 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
   let repairCount = 0;
   let breakEvenMinute: number | null = null;
   let stalledMinutes = 0;
-  const initialOutputUnitPrice = market.getLocalPrice(recipe.output.resourceType);
+  const initialOutputUnitPrice = market.getLocalPrice(recipe.outputs[0].resourceType);
   let outstandingMaintenanceCost = 0;
   const facilityInvestmentCost = definition.landCost + definition.constructionMaterialsCost * market.getLocalPrice(ResourceType.ConstructionMaterials);
   const upgradeInvestmentCost = getUpgradeInvestmentCost(definition.upgradeCost, speedUpgradeLevel)
@@ -163,7 +165,8 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
   facility.setAssignedWorkers(facility.getView().requiredWorkers);
   const initialView = facility.getView();
   const initialCyclesPerMinute = calculateFacilityEffectiveWork(initialView, BASE_WORK_PER_MINUTE) / recipe.requiredWork;
-  const initialRevenuePerMinute = initialCyclesPerMinute * recipe.output.amount * initialView.outputMultiplier * initialOutputUnitPrice;
+  const initialRevenuePerMinute = initialCyclesPerMinute * recipe.outputs
+    .reduce((total, output) => total + output.amount * initialView.outputMultiplier * market.getLocalPrice(output.resourceType), 0);
   const initialInputCostPerMinute = initialCyclesPerMinute * recipe.inputs
     .reduce((total, input) => total + input.amount * market.getLocalPrice(input.resourceType), 0);
   const initialMaintenancePerMinute = (
@@ -254,7 +257,7 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
     upgradeInvestmentCost,
     paybackMinute,
     initialOutputUnitPrice,
-    finalOutputUnitPrice: market.getLocalPrice(recipe.output.resourceType),
+    finalOutputUnitPrice: market.getLocalPrice(recipe.outputs[0].resourceType),
     averageCondition: totalCondition / minutes,
     repairCount,
     breakEvenMinute,

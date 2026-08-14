@@ -69,6 +69,43 @@ const CHAIN_SCENARIOS: ReadonlyArray<{ label: string; scenario: RecipeEconomyCha
     },
   },
   {
+    label: 'Animal farm and bakery: inputs -> Cake, Premium Cake, and Meat Pie',
+    scenario: {
+      facilities: [
+        { recipeName: RecipeName.ProduceWater },
+        { recipeName: RecipeName.ProduceElectricity },
+        { recipeName: RecipeName.QuarryMinerals },
+        { recipeName: RecipeName.ProduceChemicals },
+        { recipeName: RecipeName.SynthesizeFertilizer },
+        { recipeName: RecipeName.GrowGrain },
+        { recipeName: RecipeName.GrowFruit },
+        { recipeName: RecipeName.RaiseCattle },
+        { recipeName: RecipeName.RaiseSheep },
+        { recipeName: RecipeName.RaiseChicken },
+        { recipeName: RecipeName.BakeCake },
+        { recipeName: RecipeName.BakePremiumCake },
+        { recipeName: RecipeName.BakeMeatPie },
+      ],
+      durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
+      sellResourceTypes: [
+        ResourceType.Water,
+        ResourceType.Electricity,
+        ResourceType.Minerals,
+        ResourceType.Chemicals,
+        ResourceType.Fertilizer,
+        ResourceType.Grain,
+        ResourceType.Fruit,
+        ResourceType.Meat,
+        ResourceType.Milk,
+        ResourceType.Wool,
+        ResourceType.Eggs,
+        ResourceType.Cake,
+        ResourceType.PremiumCake,
+        ResourceType.MeatPie,
+      ],
+    },
+  },
+  {
     label: 'Construction: inputs -> Construction Materials',
     scenario: {
       facilities: [

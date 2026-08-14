@@ -15,6 +15,8 @@ export function formatRecipeName(recipe: Recipe): string {
 }
 
 export function formatRecipeOutput(recipe: Recipe, options: { includeNames?: boolean } = {}): string {
-  return `${getResourceIcon(recipe.output.resourceType)}${options.includeNames === false ? '' : ` ${getResource(recipe.output.resourceType).name}`} ×${formatNumber(recipe.output.amount, { smartDecimals: true })}`;
+  return recipe.outputs
+    .map(({ resourceType, amount }) => `${getResourceIcon(resourceType)}${options.includeNames === false ? '' : ` ${getResource(resourceType).name}`} ×${formatNumber(amount, { smartDecimals: true })}`)
+    .join(' + ');
 }
 
