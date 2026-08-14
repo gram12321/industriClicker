@@ -26,7 +26,15 @@ const CHAIN_DETAILS: Record<ResearchChainId, { eyebrow: string; icon: string; ti
   'recipe-unlocks': { eyebrow: 'RECIPES', icon: 'flask-outline', title: 'Recipe research', subtitle: 'Unlock production recipes for your facilities.' },
 };
 
-const RESEARCH_CHAIN_IDS: readonly ResearchChainId[] = ['capital-grants', 'sales-capacity', 'sales-targeting', 'contract-value', 'local-market-network', 'market-diffusion-network', 'research-capacity', 'recipe-unlocks'];
+type ResearchGroupId = 'capital-grants' | 'sales' | 'research-capacity' | 'recipe-unlocks';
+type ResearchGroup = { eyebrow: string; icon: string; id: ResearchGroupId; title: string; subtitle: string; chainIds: readonly ResearchChainId[] };
+
+const RESEARCH_GROUPS: readonly ResearchGroup[] = [
+  { id: 'capital-grants', chainIds: ['capital-grants'], eyebrow: 'CAPITAL', icon: 'bank-outline', title: 'Capital grants', subtitle: 'Fund staged company investment with one-time research grants.' },
+  { id: 'sales', chainIds: ['sales-capacity', 'sales-targeting', 'contract-value', 'market-diffusion-network', 'local-market-network'], eyebrow: 'SALES', icon: 'handshake-outline', title: 'Sales research', subtitle: 'Grow your customer pipeline, target better offers, increase contract value, and improve market reach.' },
+  { id: 'research-capacity', chainIds: ['research-capacity'], eyebrow: 'RESEARCH', icon: 'flask-plus-outline', title: 'Research capacity', subtitle: 'Unlock additional research slots so projects can run simultaneously.' },
+  { id: 'recipe-unlocks', chainIds: ['recipe-unlocks'], eyebrow: 'RECIPES', icon: 'flask-outline', title: 'Recipe research', subtitle: 'Unlock production recipes for your facilities.' },
+];
 
 type ResearchSeries = { completedCount: number; project: ResearchProjectDefinition; projects: readonly ResearchProjectDefinition[] };
 
@@ -93,7 +101,7 @@ export function ResearchView({
   onStart: (projectId: ResearchProjectId) => boolean;
   research: ResearchLedger;
 }) {
-  const [selectedChain, setSelectedChain] = useState<ResearchChainId | 'all'>('all');
+  const [selectedGroup, setSelectedGroup] = useState<ResearchGroupId | 'all'>('all');
   const [showOnlyConstructedRecipes, setShowOnlyConstructedRecipes] = useState(true);
   const [expandedProjectIds, setExpandedProjectIds] = useState<Record<string, boolean>>({});
   const active = research.getActiveProject();
@@ -101,7 +109,7 @@ export function ResearchView({
   const activeProject = active ? RESEARCH_PROJECTS.find((project) => project.id === active.projectId) ?? null : null;
   const completedCount = completedIds.length;
   const completion = RESEARCH_PROJECTS.length === 0 ? 0 : completedCount / RESEARCH_PROJECTS.length;
-  const visibleChains = selectedChain === 'all' ? RESEARCH_CHAIN_IDS : [selectedChain];
+  const visibleGroups = selectedGroup === 'all' ? RESEARCH_GROUPS : RESEARCH_GROUPS.filter((group) => group.id === selectedGroup);
   const visibleSeriesCount = getResearchSeries(RESEARCH_PROJECTS, completedIds).length;
 
   return (
@@ -138,26 +146,24 @@ export function ResearchView({
         </View>
       )}
       <View style={[localStyles.researchCard, localStyles.filters]}>
-        <Button compact icon="view-grid-outline" mode={selectedChain === 'all' ? 'contained' : 'outlined'} onPress={() => setSelectedChain('all')}>{`All (${visibleSeriesCount})`}</Button>
-        {RESEARCH_CHAIN_IDS.map((chainId) => {
-          const chain = CHAIN_DETAILS[chainId];
-          const seriesCount = getResearchSeries(RESEARCH_PROJECTS.filter((project) => project.chainId === chainId), completedIds).length;
-          return <Button compact icon={chain.icon} key={chainId} mode={selectedChain === chainId ? 'contained' : 'outlined'} onPress={() => setSelectedChain(chainId)}>{`${chain.title} (${seriesCount})`}</Button>;
+        <Button compact icon="view-grid-outline" mode={selectedGroup === 'all' ? 'contained' : 'outlined'} onPress={() => setSelectedGroup('all')}>{`All (${visibleSeriesCount})`}</Button>
+        {RESEARCH_GROUPS.map((group) => {
+          const seriesCount = getResearchSeries(RESEARCH_PROJECTS.filter((project) => group.chainIds.includes(project.chainId)), completedIds).length;
+          return <Button compact icon={group.icon} key={group.id} mode={selectedGroup === group.id ? 'contained' : 'outlined'} onPress={() => setSelectedGroup(group.id)}>{`${group.title} (${seriesCount})`}</Button>;
         })}
       </View>
-      {visibleChains.map((chainId) => {
-        const chain = CHAIN_DETAILS[chainId];
-        const chainProjects = RESEARCH_PROJECTS.filter((project) => project.chainId === chainId && (chainId !== 'recipe-unlocks' || !showOnlyConstructedRecipes || isRecipeProjectForConstructedFacility(project, facilities)));
+      {visibleGroups.map((group) => {
+        const chainProjects = RESEARCH_PROJECTS.filter((project) => group.chainIds.includes(project.chainId) && (project.chainId !== 'recipe-unlocks' || !showOnlyConstructedRecipes || isRecipeProjectForConstructedFacility(project, facilities)));
         const displayedSeries = getResearchSeries(chainProjects, completedIds)
           .sort((left, right) => Number(right.project.id === active?.projectId) - Number(left.project.id === active?.projectId)
             || Number(getAvailability(right.project.id).startable) - Number(getAvailability(left.project.id).startable)
             || left.project.name.localeCompare(right.project.name));
         return (
-          <View key={chainId} style={localStyles.chain}>
+          <View key={group.id} style={localStyles.chain}>
             <View style={localStyles.chainHeading}>
-              <SectionHeading eyebrow={chain.eyebrow} title={chain.title} subtitle={chain.subtitle} />
+              <SectionHeading eyebrow={group.eyebrow} title={group.title} subtitle={group.subtitle} />
             </View>
-            {chainId === 'recipe-unlocks' && <Button compact mode={showOnlyConstructedRecipes ? 'contained' : 'outlined'} onPress={() => setShowOnlyConstructedRecipes((current) => !current)}>{showOnlyConstructedRecipes ? 'Constructed facilities only' : 'All facility recipes'}</Button>}
+            {group.id === 'recipe-unlocks' && <Button compact mode={showOnlyConstructedRecipes ? 'contained' : 'outlined'} onPress={() => setShowOnlyConstructedRecipes((current) => !current)}>{showOnlyConstructedRecipes ? 'Constructed facilities only' : 'All facility recipes'}</Button>}
             {displayedSeries.map((series) => (
               <View key={series.project.id} style={localStyles.projectCardWrap}>
                 <ResearchProjectCard

@@ -8,6 +8,14 @@ export function getFacilityUpgradeCost(constructionCost: number, currentLevel: n
   return Math.ceil(scaleExponential(constructionCost, currentLevel, FACILITY_UPGRADE_COST_GROWTH));
 }
 
+/** Total paid cost for all completed levels in one facility upgrade track. */
+export function getFacilityUpgradeInvestmentCost(constructionCost: number, completedLevels: number): number {
+  return Array.from(
+    { length: Math.max(0, Math.floor(completedLevels)) },
+    (_, currentLevel) => getFacilityUpgradeCost(constructionCost, currentLevel),
+  ).reduce((total, cost) => total + cost, 0);
+}
+
 export function getSpeedUpgradeWorkSpeedMultiplier(level: number): number {
   return 1 + calculateDiminishingBonus(level, FACILITY_SPEED_MAXIMUM_BONUS, FACILITY_SPEED_BONUS_RATE);
 }

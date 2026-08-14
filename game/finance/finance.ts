@@ -90,7 +90,7 @@ export class Finance {
     if (!Number.isFinite(estimate.cost) || estimate.cost < 0 || !Number.isFinite(estimate.workRequiredMs) || estimate.workRequiredMs <= 0) return { success: false, reason: 'Invalid search estimate.' };
     if (!this.canAfford(estimate.cost)) return { success: false, reason: `Insufficient funds for the €${estimate.cost.toFixed(0)} search cost.` };
     const details = [`Lender types: ${criteria.lenderTypes.length === 0 ? 'All' : criteria.lenderTypes.join(', ')}`, `Amount range: €${criteria.amountMin.toFixed(0)}–€${criteria.amountMax.toFixed(0)}`, `Term range: ${criteria.durationMinPeriods}–${criteria.durationMaxPeriods} payments`, `Offer target: ${criteria.offerCount}`, `Search work: ${(estimate.workRequiredMs / 1_000).toFixed(0)} seconds`];
-    if (estimate.cost > 0 && !this.applyTransaction({ amount: -estimate.cost, description: 'Lender search cost', detailLines: details, kind: 'operating', source: 'loan-search-fee', occurredAtGameTimeMs })) return { success: false, reason: 'Search cost could not be recorded.' };
+    if (estimate.cost > 0 && !this.applyTransaction({ amount: -estimate.cost, description: 'Lender search cost', detailLines: details, kind: 'financing', source: 'loan-search-fee', occurredAtGameTimeMs })) return { success: false, reason: 'Search cost could not be recorded.' };
     this.loanSearchOffers = [];
     this.lastLoanSearchResult = null;
     this.activeLoanSearch = { criteria: criteriaClone(criteria), cost: estimate.cost, workRequiredMs: estimate.workRequiredMs, workCompletedMs: 0, startedAtGameTimeMs: occurredAtGameTimeMs };

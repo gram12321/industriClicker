@@ -557,12 +557,13 @@ export const useGameStore = create<GameState>((set, get) => {
         if (!automation.autoBuyEnabled || completedIntervals <= 0 || targetDeficit <= 0 || !canAutoBuyMarketResource(resourceType)) continue;
         const unitPrice = automationMarket.getLocalPrice(resourceType);
         const availableFinance = marketFinance ?? get().finance;
-        if (unitPrice > automation.autoBuyMaxUnitPrice || !availableFinance.canAfford(unitPrice * targetDeficit)) continue;
+        const purchaseAmount = Math.min(targetDeficit, automationMarket.getMaximumLocalPurchaseAmountAtUnitPrice(resourceType, automation.autoBuyMaxUnitPrice));
+        if (unitPrice > automation.autoBuyMaxUnitPrice || purchaseAmount <= 0 || !availableFinance.canAfford(unitPrice * purchaseAmount)) continue;
         const buyingMarket: Market = market ?? automationMarket.clone();
         market = buyingMarket;
         marketFinance ??= get().finance.clone();
         if (inventory === get().inventory) inventory = inventory.clone();
-        const trade = buyingMarket.buyFromLocal(resourceType, targetDeficit);
+        const trade = buyingMarket.buyFromLocal(resourceType, purchaseAmount);
         if (trade.success && inventory.add(resourceType, trade.amount, trade.quality)) {
           marketFinance.applyTransaction({ amount: -trade.unitPrice * trade.amount, description: `Autobought ${formatNumber(trade.amount, { smartDecimals: true })} ${resourceType}`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: stepEndGameTimeMs });
         }
@@ -577,7 +578,10 @@ export const useGameStore = create<GameState>((set, get) => {
             const completedIntervals = Math.floor(stepEndGameTimeMs / automation.autoTradeIntervalMs) - Math.floor(stepStartGameTimeMs / automation.autoTradeIntervalMs);
             const unitPrice = market.getLocalPrice(input.resourceType);
             const targetDeficit = automation.autoBuyTargetInventory - inventory.getAmount(input.resourceType);
-            const purchaseAmount = Math.max(input.amount, targetDeficit);
+            const purchaseAmount = Math.min(
+              Math.max(input.amount, targetDeficit),
+              market.getMaximumLocalPurchaseAmountAtUnitPrice(input.resourceType, automation.autoBuyMaxUnitPrice),
+            );
             if (!automation.autoBuyEnabled || completedIntervals <= 0 || !canAutoBuyMarketResource(input.resourceType)
               || unitPrice > automation.autoBuyMaxUnitPrice || !marketFinance.canAfford(unitPrice * purchaseAmount)) continue;
             const trade = market.buyFromLocal(input.resourceType, purchaseAmount);

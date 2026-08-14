@@ -77,6 +77,16 @@ export class Market {
     return calculateMarketPrice(definition.localBenchmarkSupply * this.localMarketDepthMultiplier, this.local[resourceType]);
   }
 
+  /** Returns the largest local purchase that keeps the resulting unit price within the cap. */
+  getMaximumLocalPurchaseAmountAtUnitPrice(resourceType: ResourceType, maxUnitPrice: number): number {
+    if (!isPositiveFinite(maxUnitPrice)) return 0;
+    const entry = this.local[resourceType];
+    const benchmarkSupply = RESOURCES[resourceType].market.localBenchmarkSupply * this.localMarketDepthMultiplier;
+    const minimumSupply = benchmarkSupply * entry.quality / maxUnitPrice;
+    if (minimumSupply <= 1) return entry.supply;
+    return Math.max(0, Math.min(entry.supply, entry.supply - minimumSupply));
+  }
+
   /** Expands every local pool proportionally, retaining current local prices. */
   setLocalMarketDepthMultiplier(multiplier: number): boolean {
     if (!isPositiveFinite(multiplier)) return false;
