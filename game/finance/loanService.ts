@@ -1,4 +1,4 @@
-import { ADVANCED_LOAN_CONFIG, COMPANY_STABILITY_CONFIG, CREDIT_GRADE_THRESHOLDS, CREDIT_RATING_CONFIG, ECONOMY_INTEREST_MULTIPLIERS, LENDER_NAME_POOLS, LENDER_OFFER_CONFIG, LENDER_SEARCH_CONFIG, LENDER_TYPE_CONFIG, LOAN_PAYMENT_INTERVAL_MS, LOAN_TERMS, type EconomyPhase, type LenderType } from './financeConstants';
+import { ADVANCED_LOAN_CONFIG, COMPANY_STABILITY_CONFIG, CREDIT_GRADE_THRESHOLDS, CREDIT_RATING_CONFIG, ECONOMY_INTEREST_MULTIPLIERS, LENDER_NAME_POOLS, LENDER_OFFER_CONFIG, LENDER_SEARCH_CONFIG, LENDER_TYPE_CONFIG, LOAN_COST_COMPARISON_CYCLES, LOAN_PAYMENT_INTERVAL_MS, LOAN_TERMS, type EconomyPhase, type LenderType } from './financeConstants';
 import type { FinanceTransaction, Loan, LoanOffer } from './finance';
 
 export type Lender = {
@@ -103,6 +103,23 @@ export function calculateLoanLimitBreakdown(lenders: readonly Lender[], totalAss
 }
 
 function payment(principal: number, periodicRate: number, periods: number): number { if (periodicRate <= 0) return principal / periods; const numerator = principal * periodicRate * (1 + periodicRate) ** periods; return numerator / ((1 + periodicRate) ** periods - 1); }
+
+/** Fee-inclusive loan cost normalized to the game's standard 52 payment cycles. */
+export function calculate52CycleLoanCostRate(principal: number, paymentAmount: number, periods: number, originationFee: number): number {
+  if (!Number.isFinite(principal) || !Number.isFinite(paymentAmount) || !Number.isFinite(periods) || !Number.isFinite(originationFee) || principal <= 0 || paymentAmount <= 0 || periods < 1) return 0;
+  const netProceeds = Math.max(0.01, principal - Math.max(0, originationFee));
+  const presentValue = (rate: number) => rate === 0 ? paymentAmount * periods : paymentAmount * (1 - (1 + rate) ** -periods) / rate;
+  if (presentValue(0) <= netProceeds) return 0;
+  let upperRate = 0.01;
+  while (presentValue(upperRate) > netProceeds && upperRate < 1_000_000) upperRate *= 2;
+  let lowerRate = 0;
+  for (let iteration = 0; iteration < 80; iteration += 1) {
+    const rate = (lowerRate + upperRate) / 2;
+    if (presentValue(rate) > netProceeds) lowerRate = rate;
+    else upperRate = rate;
+  }
+  return (1 + (lowerRate + upperRate) / 2) ** LOAN_COST_COMPARISON_CYCLES - 1;
+}
 function offerForLender(lender: Lender, amount: number, periods: number, creditScore: number, economyPhase: EconomyPhase, limit: LenderLoanLimitBreakdown): LoanOffer {
   const principal = clamp(Math.floor(amount), lender.minLoanAmount, Math.min(lender.maxLoanAmount, limit.availableLimit)); const durationPeriods = clamp(Math.floor(periods), lender.minDurationPeriods, lender.maxDurationPeriods);
   const annualInterestRate = clamp((lender.baseAnnualRate + Math.max(0, lender.riskTolerance + LENDER_OFFER_CONFIG.minCreditGapTolerance - creditScore) * 0.08 - lender.flexibility * 0.015) * ECONOMY_INTEREST_MULTIPLIERS[economyPhase], LOAN_TERMS.minAnnualRate, LOAN_TERMS.maxAnnualRate);

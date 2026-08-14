@@ -1,12 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { Finance, LENDER_TYPES, LOAN_TERMS, type LoanOffer } from '@/game/finance';
-import { calculateLoanSearchEstimate } from '@/game/finance/loanService';
+import { calculate52CycleLoanCostRate, calculateLoanSearchEstimate } from '@/game/finance/loanService';
 
 function offer(id: string): LoanOffer {
   return { id, lenderId: id, lenderName: id, lenderType: 'bank', principal: 100, durationPeriods: 5, annualInterestRate: 0.06, periodicInterestRate: 0.06 / 52, paymentAmount: 21, originationFee: 0, totalRepayment: 105, totalInterest: 5, totalCost: 5, isAvailable: true, unavailableReason: null, paymentIntervalMs: 60_000 };
 }
 
 describe('lender searches', () => {
+  it('normalizes fee-inclusive loan costs to 52 payment cycles', () => {
+    const periodicRate = 0.06 / 52;
+    const paymentAmount = 100 * periodicRate * (1 + periodicRate) ** 52 / ((1 + periodicRate) ** 52 - 1);
+
+    expect(calculate52CycleLoanCostRate(100, paymentAmount, 52, 0)).toBeCloseTo((1 + periodicRate) ** 52 - 1, 8);
+    expect(calculate52CycleLoanCostRate(100, paymentAmount, 52, 5)).toBeGreaterThan((1 + periodicRate) ** 52 - 1);
+  });
+
   it('multiplies each narrowed non-quickloan criterion while leaving a quickloan-only search free', () => {
     const broad = calculateLoanSearchEstimate({ lenderTypes: [], amountMin: LOAN_TERMS.minimumAmount, amountMax: LOAN_TERMS.maximumAmount, durationMinPeriods: LOAN_TERMS.minimumDurationPeriods, durationMaxPeriods: LOAN_TERMS.maximumDurationPeriods, offerCount: 1 }, LENDER_TYPES.length);
     const narrow = calculateLoanSearchEstimate({ lenderTypes: ['bank'], amountMin: 50, amountMax: 50, durationMinPeriods: 5, durationMaxPeriods: 5, offerCount: 10 }, LENDER_TYPES.length);

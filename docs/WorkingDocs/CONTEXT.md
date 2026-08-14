@@ -26,6 +26,8 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Finance transaction | A signed cash movement with an accounting kind, source, nested detail lines, and logical foreground-game timestamp. |
 | Finance report period | A rolling foreground-time window: last 1 minute, 15 minutes, 1 hour, 10 hours, 24 hours, or all time. |
 | Asset value | A derived euro value of cash, inventory at current local-market prices, condition-scaled facilities, or completed research. |
+| Finance payment cycle | One foreground minute used for loan repayment and financing comparisons. |
+| 52-cycle loan cost | The fee-inclusive loan cost rate normalized over 52 finance payment cycles; it is a comparison metric, not an annual rate. |
 | Loan offer / loan | A lender's deterministic financing proposal / an accepted loan with foreground-minute repayment attempts. |
 | Credit rating | A derived score and grade based on asset strength, liquidity, company age, and loan-payment history. |
 | Lender availability | A per-lender eligibility and borrowing-cap calculation derived from the company's assets, credit score, outstanding debt, lender market exposure, and lender contract cap. |

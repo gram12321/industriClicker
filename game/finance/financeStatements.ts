@@ -14,7 +14,7 @@ export type IncomeStatement = { income: number; expenses: number; netIncome: num
 export type FinanceBreakdown = { label: string; amount: number };
 export type AssetsStatement = { cash: number; inventory: number; facilities: number; research: number; currentAssets: number; fixedAssets: number; intangibleAssets: number; totalAssets: number };
 export type LiabilitiesEquityStatement = { loans: Loan[]; totalLiabilities: number; contributedCapital: number; retainedEarnings: number; assetRevaluation: number; totalEquity: number };
-export type CashFlowDetail = { id: string; description: string; detailLines: string[]; count: number };
+export type CashFlowDetail = { id: string; description: string; detailLines: string[]; count: number; totalQuantity?: number; totalAbsoluteAmount?: number };
 export type CashFlowDetailGroup = { id: string; label: string; amount: number; details: CashFlowDetail[] };
 export type CashFlowRow = { id: string; atGameTimeMs: number; type: string; description: string; detailGroups: CashFlowDetailGroup[]; amount: number; balance: number };
 export type FinanceStatementData = { incomeStatement: IncomeStatement; assets: AssetsStatement; liabilitiesEquity: LiabilitiesEquityStatement; creditRating: CreditRating; loanLimitBreakdown: LoanLimitBreakdown; economyPhase: ReturnType<Finance['getEconomyPhase']>; cashFlowRows: CashFlowRow[] };
@@ -115,6 +115,13 @@ function cashFlowHeading(kind: FinanceTransaction['kind'], amount: number): stri
   return `Equity ${direction}`;
 }
 
+function parseMarketTransaction(description: string): { description: string; quantity: number } | null {
+  const match = /^(Autobought|Autosold|Bought|Sold) ([\d.,]+) (.+?)( for production| from local market| to local market)$/.exec(description);
+  if (!match) return null;
+  const quantity = Number(match[2].replace(',', '.'));
+  return Number.isFinite(quantity) && quantity > 0 ? { description: `${match[1]} ${match[3]}${match[4]}`, quantity } : null;
+}
+
 function buildCashFlowRows(transactions: FinanceTransaction[], groupDurationMs = 60_000, bucketOriginGameTimeMs = 0): CashFlowRow[] {
   const groups = new Map<string, CashFlowRow>();
   const duration = Math.max(1, groupDurationMs);
@@ -136,9 +143,17 @@ function buildCashFlowRows(transactions: FinanceTransaction[], groupDurationMs =
       row.detailGroups.push(detailGroup);
     }
     detailGroup.amount += transaction.amount;
-    const matchingDetail = detailGroup.details.find((candidate) => candidate.description === transaction.description && candidate.detailLines.join('\n') === transaction.detailLines.join('\n'));
-    if (matchingDetail) matchingDetail.count += 1;
-    else detailGroup.details.push({ id: `${detailGroup.id}-${detailGroup.details.length}`, description: transaction.description, detailLines: transaction.detailLines, count: 1 });
+    const marketTransaction = parseMarketTransaction(transaction.description);
+    const matchingDetail = detailGroup.details.find((candidate) => marketTransaction
+      ? candidate.description === marketTransaction.description
+      : candidate.description === transaction.description && candidate.detailLines.join('\n') === transaction.detailLines.join('\n'));
+    if (matchingDetail) {
+      matchingDetail.count += 1;
+      if (marketTransaction) {
+        matchingDetail.totalQuantity = (matchingDetail.totalQuantity ?? 0) + marketTransaction.quantity;
+        matchingDetail.totalAbsoluteAmount = (matchingDetail.totalAbsoluteAmount ?? 0) + Math.abs(transaction.amount);
+      }
+    } else detailGroup.details.push({ id: `${detailGroup.id}-${detailGroup.details.length}`, description: marketTransaction?.description ?? transaction.description, detailLines: transaction.detailLines, count: 1, ...(marketTransaction ? { totalQuantity: marketTransaction.quantity, totalAbsoluteAmount: Math.abs(transaction.amount) } : {}) });
   }
   return Array.from(groups.values()).sort((left, right) => right.atGameTimeMs - left.atGameTimeMs);
 }

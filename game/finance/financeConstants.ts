@@ -27,8 +27,10 @@ export const LENDER_TYPE_LABELS: Readonly<Record<LenderType, string>> = {
   bank: 'Bank', 'investment-fund': 'Investment fund', 'private-lender': 'Private lender', quickloan: 'Quickloan',
 };
 
-/** One foreground minute is the finance equivalent of SkiClicker's billing week. */
+/** One foreground minute is one finance payment cycle. */
 export const LOAN_PAYMENT_INTERVAL_MS = 60_000;
+/** Standard comparison span for fee-inclusive loan costs; it is not a calendar year. */
+export const LOAN_COST_COMPARISON_CYCLES = 52;
 export const LOAN_TERM_OPTIONS = [
   { durationMs: 5 * 60_000, label: '5 min' }, { durationMs: 15 * 60_000, label: '15 min' },
   { durationMs: 60 * 60_000, label: '1 hour' }, { durationMs: 10 * 60 * 60_000, label: '10 hours' },

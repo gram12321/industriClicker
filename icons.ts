@@ -104,7 +104,7 @@ export const RESOURCE_ICONS: Readonly<Record<ResourceType, string>> = {
   [ResourceType.Steel]: '🔩',
   [ResourceType.ElectricCircuits]: '🔌',
   [ResourceType.Bricks]: '🧱',
-  [ResourceType.Cement]: '🏗️',
+  [ResourceType.Cement]: '🪣',
   [ResourceType.ReinforcedConcrete]: '🏢',
   [ResourceType.ConstructionMaterials]: '🏗️',
   [ResourceType.Sand]: '🏜️',
