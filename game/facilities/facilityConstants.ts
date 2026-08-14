@@ -1,14 +1,14 @@
 import { ALL_RECIPES, RecipeName, type Recipe } from '@/game/recipes';
 import { FacilityType } from './facilityTypes';
 
-export const FACILITY_TYPES = [FacilityType.Farm, FacilityType.Bakery, FacilityType.SmallUtilityWorks, FacilityType.Mine, FacilityType.Quarry, FacilityType.IndustrialProcessingFactory, FacilityType.ConstructionFactory, FacilityType.WaterWell, FacilityType.PowerPlant] as const;
+export const FACILITY_TYPES = [FacilityType.Farm, FacilityType.Bakery, FacilityType.SmallUtilityWorks, FacilityType.Mine, FacilityType.Quarry, FacilityType.IndustrialProcessingFactory, FacilityType.ChemicalPlant, FacilityType.ElectronicsFactory, FacilityType.AssemblyPlant, FacilityType.ConstructionFactory, FacilityType.WaterWell, FacilityType.PowerPlant] as const;
 export type FacilityGroup = 'agriculture' | 'extraction' | 'manufacturing' | 'utilities';
 
 /** Player-facing facility groupings shared by Pedia and other catalogues; each group is alphabetized by display name. */
 export const FACILITY_GROUPS: ReadonlyArray<{ id: FacilityGroup; label: string; facilities: readonly FacilityType[] }> = [
   { id: 'agriculture', label: 'Agriculture', facilities: [FacilityType.Bakery, FacilityType.Farm] },
   { id: 'extraction', label: 'Extraction', facilities: [FacilityType.Mine, FacilityType.Quarry] },
-  { id: 'manufacturing', label: 'Manufacturing', facilities: [FacilityType.ConstructionFactory, FacilityType.IndustrialProcessingFactory] },
+  { id: 'manufacturing', label: 'Manufacturing', facilities: [FacilityType.AssemblyPlant, FacilityType.ChemicalPlant, FacilityType.ConstructionFactory, FacilityType.ElectronicsFactory, FacilityType.IndustrialProcessingFactory] },
   { id: 'utilities', label: 'Utilities', facilities: [FacilityType.PowerPlant, FacilityType.SmallUtilityWorks, FacilityType.WaterWell] },
 ];
 export const FACILITY_UPGRADE_COST_GROWTH = 1.5;
@@ -44,6 +44,9 @@ export const FACILITY_PRODUCTION_ORDER = [
   FacilityType.Mine,
   FacilityType.Quarry,
   FacilityType.IndustrialProcessingFactory,
+  FacilityType.ChemicalPlant,
+  FacilityType.ElectronicsFactory,
+  FacilityType.AssemblyPlant,
   FacilityType.ConstructionFactory,
   FacilityType.WaterWell,
   FacilityType.PowerPlant,
@@ -103,7 +106,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     constructionMaterialsCost: 5,
     upgradeCost: 80,
     baseWorkers: 10,
-    recipes: [ALL_RECIPES[RecipeName.MineIron], ALL_RECIPES[RecipeName.MineCoal], ALL_RECIPES[RecipeName.MineCopper]],
+    recipes: [ALL_RECIPES[RecipeName.MineIron], ALL_RECIPES[RecipeName.MineCoal], ALL_RECIPES[RecipeName.MineCopper], ALL_RECIPES[RecipeName.MineGold]],
   },
   [FacilityType.Quarry]: {
     type: FacilityType.Quarry,
@@ -113,7 +116,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     constructionMaterialsCost: 40,
     upgradeCost: 70,
     baseWorkers: 6,
-    recipes: [ALL_RECIPES[RecipeName.QuarrySand], ALL_RECIPES[RecipeName.QuarryClay], ALL_RECIPES[RecipeName.QuarryStone]],
+    recipes: [ALL_RECIPES[RecipeName.QuarrySand], ALL_RECIPES[RecipeName.QuarryClay], ALL_RECIPES[RecipeName.QuarryStone], ALL_RECIPES[RecipeName.QuarryMinerals]],
   },
   [FacilityType.IndustrialProcessingFactory]: {
     type: FacilityType.IndustrialProcessingFactory,
@@ -124,6 +127,36 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     upgradeCost: 200,
     baseWorkers: 12,
     recipes: [ALL_RECIPES[RecipeName.ProduceSteel], ALL_RECIPES[RecipeName.ProduceElectricCircuits]],
+  },
+  [FacilityType.ChemicalPlant]: {
+    type: FacilityType.ChemicalPlant,
+    name: 'Chemical Plant',
+    icon: 'flask-outline',
+    landCost: 100,
+    constructionMaterialsCost: 120,
+    upgradeCost: 350,
+    baseWorkers: 15,
+    recipes: [ALL_RECIPES[RecipeName.ProduceChemicals], ALL_RECIPES[RecipeName.ProducePlastic]],
+  },
+  [FacilityType.ElectronicsFactory]: {
+    type: FacilityType.ElectronicsFactory,
+    name: 'Electronics Factory',
+    icon: 'chip',
+    landCost: 100,
+    constructionMaterialsCost: 150,
+    upgradeCost: 400,
+    baseWorkers: 12,
+    recipes: [ALL_RECIPES[RecipeName.ProduceSilicon], ALL_RECIPES[RecipeName.ProduceAdvancedComponents]],
+  },
+  [FacilityType.AssemblyPlant]: {
+    type: FacilityType.AssemblyPlant,
+    name: 'Assembly Plant',
+    icon: 'factory',
+    landCost: 130,
+    constructionMaterialsCost: 200,
+    upgradeCost: 600,
+    baseWorkers: 24,
+    recipes: [ALL_RECIPES[RecipeName.AssembleIndustrialMachines]],
   },
   [FacilityType.ConstructionFactory]: {
     type: FacilityType.ConstructionFactory,

@@ -36,17 +36,24 @@ Players may pause a selected recipe without clearing it; resuming continues its 
 | Produce Water / Electricity | None | 2 utility resources | 0.073 / 0.11 |
 | Grow Sugar | 3 Water | 1.2 Sugar | 0.12 |
 | Mine Coal | 1 Water, 2 Electricity | 2.5 Coal | 0.2 |
-| Mine Iron | 2 Water, 4 Electricity | 1.25 Iron | 0.267 |
-| Mine Copper | 2 Water, 5 Electricity | 1.25 Copper | 0.333 |
+| Mine Iron | 2 Water, 4 Electricity, 0.1 Chemicals | 1.25 Iron | 0.267 |
+| Mine Copper | 2 Water, 5 Electricity, 0.1 Chemicals | 1.25 Copper | 0.333 |
+| Mine Gold | 3 Water, 8 Electricity | 0.2 Gold | 0.667 |
 | Quarry Sand | 1 Water, 1 Electricity | 3 Sand | 0.107 |
 | Quarry Clay | 2 Water, 1 Electricity | 2 Clay | 0.16 |
 | Quarry Stone | 1 Water, 4 Electricity | 3 Stone | 0.213 |
+| Quarry Minerals | 1 Water, 2 Electricity | 3 Minerals | 0.16 |
 | Produce Steel | 2 Iron, 1 Coal, 2 Water, 6 Electricity | 6 Steel | 1.1 |
-| Produce Electric Circuits | 2 Sand, 2 Copper, 1 Water, 4 Electricity | 5 Electric Circuits | 1.65 |
+| Produce Electric Circuits | 2 Copper, 1 Silicon, 1 Plastic, 1 Water, 4 Electricity | 5 Electric Circuits | 1.65 |
+| Produce Chemicals | 2 Minerals, 2 Water, 4 Electricity | 4 Chemicals | 2.5 |
+| Produce Plastic | 2 Chemicals, 1 Water, 3 Electricity | 4 Plastic | 1.667 |
+| Produce Silicon | 3 Minerals, 3 Sand, 5 Electricity | 2 Silicon | 2.017 |
+| Produce Advanced Components | 2 Electric Circuits, 2 Silicon, 0.1 Gold, 1 Water, 4 Electricity | 3 Advanced Components | 3.025 |
+| Assemble Industrial Machines | 6 Steel, 3 Electric Circuits, 2 Advanced Components, 2 Water, 6 Electricity | 4 Industrial Machines | 5.95 |
 | Produce Bricks | 2 Clay, 1 Sand, 1 Water, 3 Electricity | 12 Bricks | 0.65 |
-| Produce Cement | 3 Stone, 1 Clay, 1 Water, 5 Electricity | 7 Cement | 1.083 |
-| Produce Reinforced Concrete | 2 Cement, 3 Sand, 2 Stone, 2 Steel, 2 Water, 2 Electricity | 7 Reinforced Concrete | 2.6 |
-| Produce Construction Materials | 2 Bricks, 1 Reinforced Concrete, 1 Steel, 1 Sand, 1 Cement, 2 Electricity | 8 Construction Materials | 5.2 |
+| Produce Cement | 3 Stone, 1 Clay, 1 Minerals, 1 Water, 5 Electricity | 7 Cement | 1.083 |
+| Produce Reinforced Concrete | 2 Cement, 3 Sand, 2 Stone, 2 Steel, 0.5 Minerals, 0.25 Chemicals, 2 Water, 2 Electricity | 7 Reinforced Concrete | 2.6 |
+| Produce Construction Materials | 2 Bricks, 1 Reinforced Concrete, 1 Steel, 1 Sand, 1 Cement, 0.1 Chemicals, 0.2 Plastic, 2 Electricity | 8 Construction Materials | 5.2 |
 | Bake Cake | 1 Grain, 0.5 Sugar, 2 Electricity, 2 Water | 4 Cake | 0.39 |
 | Manual / Electric Pumping | None / 1 Electricity | 2 / 7 Water | 0.073 / 0.12 |
 | Coal / Solar Power | 0.5 Coal, 1 Water / None | 6 / 3 Electricity | 0.467 / 0.933 |

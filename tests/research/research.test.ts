@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { ACHIEVEMENT_DEFINITIONS } from '@/game/achievements';
+import { FACILITIES } from '@/game/facilities';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
 import { SalesContracts } from '@/game/sales';
-import { BASE_MAXIMUM_OPEN_SALES_CONTRACTS, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesContracts, getSalesContractPremiumMultiplier, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes } from '@/game/research';
+import { BASE_MAXIMUM_OPEN_SALES_CONTRACTS, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesContracts, getRecipeResearchProjectId, getSalesContractPremiumMultiplier, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, RESEARCH_PROJECTS } from '@/game/research';
 
 function createProductionTotals(produced: readonly ResourceType[]): Record<ResourceType, number> {
   return RESOURCE_TYPES.reduce((totals, resourceType) => {
@@ -49,5 +51,23 @@ describe('sales research effects', () => {
   it('caps the market diffusion network at a fourfold local-regional rate', () => {
     expect(getLocalRegionalDiffusionMultiplier([])).toBe(1);
     expect(getLocalRegionalDiffusionMultiplier(['market-diffusion-network-1', 'market-diffusion-network-10'])).toBe(4);
+  });
+});
+
+describe('catalogue progression coverage', () => {
+  it('gives every facility recipe an unlock project and every produced resource a production achievement series', () => {
+    const recipes = Object.values(FACILITIES).flatMap((facility) => facility.recipes);
+    const researchProjectIds = new Set(RESEARCH_PROJECTS.map((project) => project.id));
+    const producedResources = new Set(recipes.map((recipe) => recipe.output.resourceType));
+    const achievementResources = new Set(ACHIEVEMENT_DEFINITIONS
+      .filter((definition) => definition.metric === 'resource-produced')
+      .map((definition) => definition.resourceType));
+
+    for (const recipe of recipes) {
+      expect(researchProjectIds).toContain(getRecipeResearchProjectId(recipe.name));
+    }
+    for (const resourceType of producedResources) {
+      expect(achievementResources).toContain(resourceType);
+    }
   });
 });

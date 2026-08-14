@@ -21,11 +21,18 @@ const RECIPE_TIMING_CASES: readonly RecipeTimingCase[] = [
   { facilityType: FacilityType.Mine, recipeName: RecipeName.MineCoal, expectedSeconds: 6 },
   { facilityType: FacilityType.Mine, recipeName: RecipeName.MineIron, expectedSeconds: 8 },
   { facilityType: FacilityType.Mine, recipeName: RecipeName.MineCopper, expectedSeconds: 10 },
+  { facilityType: FacilityType.Mine, recipeName: RecipeName.MineGold, expectedSeconds: 20 },
   { facilityType: FacilityType.Quarry, recipeName: RecipeName.QuarrySand, expectedSeconds: 4 },
   { facilityType: FacilityType.Quarry, recipeName: RecipeName.QuarryClay, expectedSeconds: 6 },
   { facilityType: FacilityType.Quarry, recipeName: RecipeName.QuarryStone, expectedSeconds: 8 },
+  { facilityType: FacilityType.Quarry, recipeName: RecipeName.QuarryMinerals, expectedSeconds: 6 },
   { facilityType: FacilityType.IndustrialProcessingFactory, recipeName: RecipeName.ProduceSteel, expectedSeconds: 30 },
   { facilityType: FacilityType.IndustrialProcessingFactory, recipeName: RecipeName.ProduceElectricCircuits, expectedSeconds: 45 },
+  { facilityType: FacilityType.ChemicalPlant, recipeName: RecipeName.ProduceChemicals, expectedSeconds: 60 },
+  { facilityType: FacilityType.ChemicalPlant, recipeName: RecipeName.ProducePlastic, expectedSeconds: 40 },
+  { facilityType: FacilityType.ElectronicsFactory, recipeName: RecipeName.ProduceSilicon, expectedSeconds: 55 },
+  { facilityType: FacilityType.ElectronicsFactory, recipeName: RecipeName.ProduceAdvancedComponents, expectedSeconds: 82.5 },
+  { facilityType: FacilityType.AssemblyPlant, recipeName: RecipeName.AssembleIndustrialMachines, expectedSeconds: 105 },
   { facilityType: FacilityType.ConstructionFactory, recipeName: RecipeName.ProduceBricks, expectedSeconds: 15 },
   { facilityType: FacilityType.ConstructionFactory, recipeName: RecipeName.ProduceCement, expectedSeconds: 25 },
   { facilityType: FacilityType.ConstructionFactory, recipeName: RecipeName.ProduceReinforcedConcrete, expectedSeconds: 60 },
@@ -74,12 +81,19 @@ describe('recipe balance', () => {
       RecipeName.QuarrySand,
       RecipeName.QuarryClay,
       RecipeName.QuarryStone,
+      RecipeName.QuarryMinerals,
     ]);
     const advancedRecipeNames = new Set([
       RecipeName.ProduceSteel,
       RecipeName.ProduceElectricCircuits,
       RecipeName.ProduceReinforcedConcrete,
       RecipeName.ProduceConstructionMaterials,
+      RecipeName.ProduceChemicals,
+      RecipeName.ProducePlastic,
+      RecipeName.ProduceSilicon,
+      RecipeName.ProduceAdvancedComponents,
+      RecipeName.AssembleIndustrialMachines,
+      RecipeName.MineGold,
     ]);
     const basicMargins = RECIPE_TIMING_CASES
       .filter(({ recipeName }) => basicRecipeNames.has(recipeName))

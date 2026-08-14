@@ -15,17 +15,24 @@ The catalogue in `game/resources/resourceConstants.ts` is the source of truth fo
 | Bread | Bakery: Bake Bread | 1.5 Grain, 1 Water, 1 Electricity |
 | Cake | Bakery: Bake Cake | 1 Grain, 0.5 Sugar, 2 Water, 2 Electricity |
 | Coal | Mine: Mine Coal | 1 Water, 2 Electricity |
-| Iron | Mine: Mine Iron | 2 Water, 4 Electricity |
-| Copper | Mine: Mine Copper | 2 Water, 5 Electricity |
+| Iron | Mine: Mine Iron | 2 Water, 4 Electricity, 0.1 Chemicals |
+| Copper | Mine: Mine Copper | 2 Water, 5 Electricity, 0.1 Chemicals |
+| Gold | Mine: Mine Gold | 3 Water, 8 Electricity |
 | Sand | Quarry: Quarry Sand | 1 Water, 1 Electricity |
 | Clay | Quarry: Quarry Clay | 2 Water, 1 Electricity |
 | Stone | Quarry: Quarry Stone | 1 Water, 4 Electricity |
+| Minerals | Quarry: Quarry Minerals | 1 Water, 2 Electricity |
 | Steel | Industrial Processing Factory: Produce Steel | 2 Iron, 1 Coal, 2 Water, 6 Electricity |
-| Electric Circuits | Industrial Processing Factory: Produce Electric Circuits | 2 Sand, 2 Copper, 1 Water, 4 Electricity |
+| Electric Circuits | Industrial Processing Factory: Produce Electric Circuits | 2 Copper, 1 Silicon, 1 Plastic, 1 Water, 4 Electricity |
+| Chemicals | Chemical Plant: Produce Chemicals | 2 Minerals, 2 Water, 4 Electricity |
+| Plastic | Chemical Plant: Produce Plastic | 2 Chemicals, 1 Water, 3 Electricity |
+| Silicon | Electronics Factory: Produce Silicon | 3 Minerals, 3 Sand, 5 Electricity |
+| Advanced Components | Electronics Factory: Produce Advanced Components | 2 Electric Circuits, 2 Silicon, 0.1 Gold, 1 Water, 4 Electricity |
+| Industrial Machines | Assembly Plant: Assemble Industrial Machines | 6 Steel, 3 Electric Circuits, 2 Advanced Components, 2 Water, 6 Electricity |
 | Bricks | Construction Factory: Produce Bricks | 2 Clay, 1 Sand, 1 Water, 3 Electricity |
-| Cement | Construction Factory: Produce Cement | 3 Stone, 1 Clay, 1 Water, 5 Electricity |
-| Reinforced Concrete | Construction Factory: Produce Reinforced Concrete | 2 Cement, 3 Sand, 2 Stone, 2 Steel, 2 Water, 2 Electricity |
-| Construction Materials | Construction Factory: Produce Construction Materials | 2 Bricks, 1 Reinforced Concrete, 1 Steel, 1 Sand, 1 Cement, 2 Electricity |
+| Cement | Construction Factory: Produce Cement | 3 Stone, 1 Clay, 1 Minerals, 1 Water, 5 Electricity |
+| Reinforced Concrete | Construction Factory: Produce Reinforced Concrete | 2 Cement, 3 Sand, 2 Stone, 2 Steel, 0.5 Minerals, 0.25 Chemicals, 2 Water, 2 Electricity |
+| Construction Materials | Construction Factory: Produce Construction Materials | 2 Bricks, 1 Reinforced Concrete, 1 Steel, 1 Sand, 1 Cement, 0.1 Chemicals, 0.2 Plastic, 2 Electricity |
 
 ```mermaid
 flowchart LR
@@ -60,10 +67,15 @@ flowchart LR
   mineCoal --> coal[Coal]
   water --> mineIron([Mine: Mine Iron])
   electricity --> mineIron
+  chemicals --> mineIron
   mineIron --> iron[Iron]
   water --> mineCopper([Mine: Mine Copper])
   electricity --> mineCopper
+  chemicals --> mineCopper
   mineCopper --> copper[Copper]
+  water --> mineGold([Mine: Mine Gold])
+  electricity --> mineGold
+  mineGold --> gold[Gold]
 
   water --> quarrySand([Quarry: Quarry Sand])
   electricity --> quarrySand
@@ -74,17 +86,46 @@ flowchart LR
   water --> quarryStone([Quarry: Quarry Stone])
   electricity --> quarryStone
   quarryStone --> stone[Stone]
+  water --> quarryMinerals([Quarry: Quarry Minerals])
+  electricity --> quarryMinerals
+  quarryMinerals --> minerals[Minerals]
 
   iron --> produceSteel([Industrial Processing Factory: Produce Steel])
   coal --> produceSteel
   water --> produceSteel
   electricity --> produceSteel
   produceSteel --> steel[Steel]
-  sand --> produceCircuits([Industrial Processing Factory: Produce Electric Circuits])
   copper --> produceCircuits
+  silicon --> produceCircuits
+  plastic --> produceCircuits
   water --> produceCircuits
   electricity --> produceCircuits
   produceCircuits --> circuits[Electric Circuits]
+
+  minerals --> produceChemicals([Chemical Plant: Produce Chemicals])
+  water --> produceChemicals
+  electricity --> produceChemicals
+  produceChemicals --> chemicals[Chemicals]
+  chemicals --> producePlastic([Chemical Plant: Produce Plastic])
+  water --> producePlastic
+  electricity --> producePlastic
+  producePlastic --> plastic[Plastic]
+  minerals --> produceSilicon([Electronics Factory: Produce Silicon])
+  sand --> produceSilicon
+  electricity --> produceSilicon
+  produceSilicon --> silicon[Silicon]
+  circuits --> produceComponents([Electronics Factory: Produce Advanced Components])
+  silicon --> produceComponents
+  gold --> produceComponents
+  water --> produceComponents
+  electricity --> produceComponents
+  produceComponents --> advancedComponents[Advanced Components]
+  steel --> assembleMachines([Assembly Plant: Assemble Industrial Machines])
+  circuits --> assembleMachines
+  advancedComponents --> assembleMachines
+  water --> assembleMachines
+  electricity --> assembleMachines
+  assembleMachines --> industrialMachines[Industrial Machines]
 
   clay --> produceBricks([Construction Factory: Produce Bricks])
   sand --> produceBricks
@@ -93,6 +134,7 @@ flowchart LR
   produceBricks --> bricks[Bricks]
   stone --> produceCement([Construction Factory: Produce Cement])
   clay --> produceCement
+  minerals --> produceCement
   water --> produceCement
   electricity --> produceCement
   produceCement --> cement[Cement]
@@ -100,6 +142,8 @@ flowchart LR
   sand --> produceConcrete
   stone --> produceConcrete
   steel --> produceConcrete
+  minerals --> produceConcrete
+  chemicals --> produceConcrete
   water --> produceConcrete
   electricity --> produceConcrete
   produceConcrete --> reinforcedConcrete[Reinforced Concrete]
@@ -108,6 +152,8 @@ flowchart LR
   steel --> produceMaterials
   sand --> produceMaterials
   cement --> produceMaterials
+  chemicals --> produceMaterials
+  plastic --> produceMaterials
   electricity --> produceMaterials
   produceMaterials --> constructionMaterials[Construction Materials]
 ```
@@ -126,6 +172,8 @@ flowchart LR
   iron[Iron]
   stone[Stone]
   clay[Clay]
+  gold[Gold]
+  minerals[Minerals]
 
   utilityAlignment[ ]:::hidden
   utilityAlignment --> utilityWorks
@@ -138,6 +186,8 @@ flowchart LR
   rawAlignment --> iron
   rawAlignment --> stone
   rawAlignment --> clay
+  rawAlignment --> gold
+  rawAlignment --> minerals
 
   water[Water]
   electricity[Electricity]
@@ -147,6 +197,9 @@ flowchart LR
   mine([Mine])
   quarry([Quarry])
   industrial([Industrial Processing Factory])
+  chemical([Chemical Plant])
+  electronics([Electronics Factory])
+  assembly([Assembly Plant])
   construction([Construction Factory])
 
   utilityWorks --> water
@@ -170,29 +223,59 @@ flowchart LR
 
   water --> mine
   electricity --> mine
+  chemicals --> mine
   mine --> coal
   mine --> iron
   mine --> copper
+  mine --> gold
 
   water --> quarry
   electricity --> quarry
   quarry --> sand
   quarry --> clay
   quarry --> stone
+  quarry --> minerals
 
   iron --> industrial
   coal --> industrial
-  sand --> industrial
   copper --> industrial
+  silicon --> industrial
+  plastic --> industrial
   water --> industrial
   electricity --> industrial
   industrial --> steel[Steel]
   industrial --> circuits[Electric Circuits]
 
+  minerals --> chemical
+  water --> chemical
+  electricity --> chemical
+  chemical --> chemicals[Chemicals]
+  chemicals --> chemical
+  chemical --> plastic[Plastic]
+
+  minerals --> electronics
+  sand --> electronics
+  circuits --> electronics
+  gold --> electronics
+  water --> electronics
+  electricity --> electronics
+  electronics --> silicon[Silicon]
+  electronics --> advancedComponents[Advanced Components]
+
+  steel --> assembly
+  circuits --> assembly
+  advancedComponents --> assembly
+  water --> assembly
+  electricity --> assembly
+  assembly --> industrialMachines[Industrial Machines]
+
   clay --> construction
   sand --> construction
   stone --> construction
   steel --> construction
+  minerals --> construction
+  chemicals --> construction
+  plastic --> construction
   water --> construction
   electricity --> construction
   construction --> bricks[Bricks]
@@ -203,7 +286,7 @@ flowchart LR
   reinforcedConcrete --> construction
   construction --> constructionMaterials[Construction Materials]
 
-  linkStyle 0,1,2,3,4,5,6,7 opacity:0;
+  linkStyle 0,1,2,3,4,5,6,7,8,9 opacity:0;
   classDef hidden fill:none,stroke:none,color:transparent;
 ```
 

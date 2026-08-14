@@ -22,6 +22,13 @@ export enum ResourceType {
   Sand = 'sand',
   Clay = 'clay',
   Stone = 'stone',
+  Minerals = 'minerals',
+  Chemicals = 'chemicals',
+  Plastic = 'plastic',
+  Silicon = 'silicon',
+  Gold = 'gold',
+  AdvancedComponents = 'advanced-components',
+  IndustrialMachines = 'industrial-machines',
   Cake = 'cake',
 }
 
