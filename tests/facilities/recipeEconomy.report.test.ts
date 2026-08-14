@@ -45,6 +45,30 @@ const CHAIN_SCENARIOS: ReadonlyArray<{ label: string; scenario: RecipeEconomyCha
     },
   },
   {
+    label: 'Fertilizer bridge: inputs -> Grain and Sugar',
+    scenario: {
+      facilities: [
+        { recipeName: RecipeName.ProduceWater },
+        { recipeName: RecipeName.ProduceElectricity },
+        { recipeName: RecipeName.QuarryMinerals },
+        { recipeName: RecipeName.ProduceChemicals },
+        { recipeName: RecipeName.SynthesizeFertilizer },
+        { recipeName: RecipeName.GrowGrain },
+        { recipeName: RecipeName.GrowSugar },
+      ],
+      durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
+      sellResourceTypes: [
+        ResourceType.Water,
+        ResourceType.Electricity,
+        ResourceType.Minerals,
+        ResourceType.Chemicals,
+        ResourceType.Fertilizer,
+        ResourceType.Grain,
+        ResourceType.Sugar,
+      ],
+    },
+  },
+  {
     label: 'Construction: inputs -> Construction Materials',
     scenario: {
       facilities: [

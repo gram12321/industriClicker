@@ -1,6 +1,8 @@
 import { RESOURCE_TYPES, type ResourceType } from '@/game/resources';
 import { INVENTORY_DEFAULT_RESOURCE_QUALITY } from './inventoryConstants';
 
+const INVENTORY_QUANTITY_TOLERANCE = 1e-9;
+
 /** Quantity and quality are owned together for one player-held resource. */
 export type InventoryEntry = {
   quantity: number;
@@ -53,7 +55,7 @@ export class Inventory {
   }
 
   has(resourceType: ResourceType, amount: number): boolean {
-    return isValidQuantity(amount) && this.getAmount(resourceType) >= amount;
+    return isValidQuantity(amount) && this.getAmount(resourceType) + INVENTORY_QUANTITY_TOLERANCE >= amount;
   }
 
   add(resourceType: ResourceType, amount: number, quality = INVENTORY_DEFAULT_RESOURCE_QUALITY): boolean {
@@ -76,7 +78,7 @@ export class Inventory {
       return false;
     }
 
-    this.entries[resourceType].quantity -= amount;
+    this.entries[resourceType].quantity = Math.max(0, this.entries[resourceType].quantity - amount);
     return true;
   }
 

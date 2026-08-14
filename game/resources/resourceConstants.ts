@@ -20,6 +20,7 @@ export const RESOURCE_TYPES = [
   ResourceType.Stone,
   ResourceType.Minerals,
   ResourceType.Chemicals,
+  ResourceType.Fertilizer,
   ResourceType.Plastic,
   ResourceType.Silicon,
   ResourceType.Gold,
@@ -35,7 +36,7 @@ export const RESOURCE_GROUPS: ReadonlyArray<{ id: ResourceGroup; label: string; 
   { id: 'food', label: 'Food', resources: [ResourceType.Bread, ResourceType.Cake, ResourceType.Grain, ResourceType.Sugar] },
   { id: 'raw-resources', label: 'Raw Resources', resources: [ResourceType.Clay, ResourceType.Coal, ResourceType.Copper, ResourceType.Gold, ResourceType.Iron, ResourceType.Minerals, ResourceType.Sand, ResourceType.Stone] },
   { id: 'construction', label: 'Construction', resources: [ResourceType.Bricks, ResourceType.Cement, ResourceType.ConstructionMaterials, ResourceType.ReinforcedConcrete] },
-  { id: 'manufacturing', label: 'Manufacturing', resources: [ResourceType.AdvancedComponents, ResourceType.Chemicals, ResourceType.ElectricCircuits, ResourceType.IndustrialMachines, ResourceType.Plastic, ResourceType.Silicon, ResourceType.Steel] },
+  { id: 'manufacturing', label: 'Manufacturing', resources: [ResourceType.AdvancedComponents, ResourceType.Chemicals, ResourceType.ElectricCircuits, ResourceType.Fertilizer, ResourceType.IndustrialMachines, ResourceType.Plastic, ResourceType.Silicon, ResourceType.Steel] },
   { id: 'utilities', label: 'Utilities', resources: [ResourceType.Electricity, ResourceType.Water] },
 ];
 
@@ -116,6 +117,10 @@ export const RESOURCES: Readonly<Record<ResourceType, { name: string; icon: stri
   [ResourceType.Chemicals]: {
     name: 'Chemicals', icon: '🧪',
     market: { localBenchmarkSupply: 1_250, localInitialSupply: 125, regionalBenchmarkSupply: 25_000, regionalInitialSupply: 2_500, globalBenchmarkSupply: 250_000, globalInitialSupply: 25_000, logisticsMultiplier: 0.6, valueDensityMultiplier: 1 },
+  },
+  [ResourceType.Fertilizer]: {
+    name: 'Fertilizer', icon: '🌿',
+    market: { localBenchmarkSupply: 1_000, localInitialSupply: 100, regionalBenchmarkSupply: 20_000, regionalInitialSupply: 2_000, globalBenchmarkSupply: 200_000, globalInitialSupply: 20_000, logisticsMultiplier: 0.65, valueDensityMultiplier: 0.9 },
   },
   [ResourceType.Plastic]: {
     name: 'Plastic', icon: '♻️',

@@ -7,6 +7,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     inputs: [
       { resourceType: ResourceType.Water, amount: 1 },
       { resourceType: ResourceType.Electricity, amount: 1 },
+      { resourceType: ResourceType.Fertilizer, amount: 0.025 },
     ],
     output: { resourceType: ResourceType.Grain, amount: 1.2 },
     requiredWork: 0.06,
@@ -41,6 +42,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     name: RecipeName.GrowSugar,
     inputs: [
       { resourceType: ResourceType.Water, amount: 3 },
+      { resourceType: ResourceType.Fertilizer, amount: 0.04 },
     ],
     output: { resourceType: ResourceType.Sugar, amount: 1.2 },
     requiredWork: 0.12,
@@ -163,6 +165,18 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     output: { resourceType: ResourceType.Chemicals, amount: 4 },
     requiredWork: 2.5,
     conditionWearMultiplier: 1.4,
+  },
+  [RecipeName.SynthesizeFertilizer]: {
+    name: RecipeName.SynthesizeFertilizer,
+    inputs: [
+      { resourceType: ResourceType.Chemicals, amount: 1 },
+      { resourceType: ResourceType.Minerals, amount: 1 },
+      { resourceType: ResourceType.Water, amount: 1 },
+      { resourceType: ResourceType.Electricity, amount: 2 },
+    ],
+    output: { resourceType: ResourceType.Fertilizer, amount: 4 },
+    requiredWork: 1.667,
+    conditionWearMultiplier: 1.3,
   },
   [RecipeName.ProducePlastic]: {
     name: RecipeName.ProducePlastic,
@@ -331,6 +345,7 @@ export const RECIPE_DISPLAY_NAMES: Readonly<Record<RecipeName, string>> = {
   [RecipeName.ProduceSteel]: 'Produce Steel',
   [RecipeName.ProduceElectricCircuits]: 'Produce Electric Circuits',
   [RecipeName.ProduceChemicals]: 'Produce Chemicals',
+  [RecipeName.SynthesizeFertilizer]: 'Synthesize Fertilizer',
   [RecipeName.ProducePlastic]: 'Produce Plastic',
   [RecipeName.ProduceSilicon]: 'Produce Silicon',
   [RecipeName.ProduceAdvancedComponents]: 'Produce Advanced Components',

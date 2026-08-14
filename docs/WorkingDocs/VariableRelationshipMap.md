@@ -10,8 +10,8 @@ The catalogue in `game/resources/resourceConstants.ts` is the source of truth fo
 |---|---|---|
 | Water | Small Utility Works: Produce Water; Water Well: Manual / Electric Pumping | None / None / 1 Electricity |
 | Electricity | Small Utility Works: Produce Electricity; Power Plant: Coal / Solar Power | None / 0.5 Coal, 1 Water / None |
-| Grain | Farm: Grow Grain | 1 Water, 1 Electricity |
-| Sugar | Farm: Grow Sugar | 3 Water |
+| Grain | Farm: Grow Grain | 1 Water, 1 Electricity, 0.025 Fertilizer |
+| Sugar | Farm: Grow Sugar | 3 Water, 0.04 Fertilizer |
 | Bread | Bakery: Bake Bread | 1.5 Grain, 1 Water, 1 Electricity |
 | Cake | Bakery: Bake Cake | 1 Grain, 0.5 Sugar, 2 Water, 2 Electricity |
 | Coal | Mine: Mine Coal | 1 Water, 2 Electricity |
@@ -25,6 +25,7 @@ The catalogue in `game/resources/resourceConstants.ts` is the source of truth fo
 | Steel | Industrial Processing Factory: Produce Steel | 2 Iron, 1 Coal, 2 Water, 6 Electricity |
 | Electric Circuits | Industrial Processing Factory: Produce Electric Circuits | 2 Copper, 1 Silicon, 1 Plastic, 1 Water, 4 Electricity |
 | Chemicals | Chemical Plant: Produce Chemicals | 2 Minerals, 2 Water, 4 Electricity |
+| Fertilizer | Chemical Plant: Synthesize Fertilizer | 1 Chemicals, 1 Minerals, 1 Water, 2 Electricity |
 | Plastic | Chemical Plant: Produce Plastic | 2 Chemicals, 1 Water, 3 Electricity |
 | Silicon | Electronics Factory: Produce Silicon | 3 Minerals, 3 Sand, 5 Electricity |
 | Advanced Components | Electronics Factory: Produce Advanced Components | 2 Electric Circuits, 2 Silicon, 0.1 Gold, 1 Water, 4 Electricity |
@@ -49,8 +50,10 @@ flowchart LR
 
   water --> growGrain([Farm: Grow Grain])
   electricity --> growGrain
+  fertilizer --> growGrain
   growGrain --> grain[Grain]
   water --> growSugar([Farm: Grow Sugar])
+  fertilizer --> growSugar
   growSugar --> sugar[Sugar]
   grain --> bakeBread([Bakery: Bake Bread])
   water --> bakeBread
@@ -106,6 +109,11 @@ flowchart LR
   water --> produceChemicals
   electricity --> produceChemicals
   produceChemicals --> chemicals[Chemicals]
+  chemicals --> synthesizeFertilizer([Chemical Plant: Synthesize Fertilizer])
+  minerals --> synthesizeFertilizer
+  water --> synthesizeFertilizer
+  electricity --> synthesizeFertilizer
+  synthesizeFertilizer --> fertilizer[Fertilizer]
   chemicals --> producePlastic([Chemical Plant: Produce Plastic])
   water --> producePlastic
   electricity --> producePlastic
@@ -212,6 +220,7 @@ flowchart LR
 
   water --> farm
   electricity --> farm
+  fertilizer --> farm
   farm --> grain[Grain]
   farm --> sugar[Sugar]
   grain --> bakery
@@ -251,6 +260,7 @@ flowchart LR
   electricity --> chemical
   chemical --> chemicals[Chemicals]
   chemicals --> chemical
+  chemical --> fertilizer[Fertilizer]
   chemical --> plastic[Plastic]
 
   minerals --> electronics

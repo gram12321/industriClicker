@@ -136,7 +136,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     constructionMaterialsCost: 120,
     upgradeCost: 350,
     baseWorkers: 15,
-    recipes: [ALL_RECIPES[RecipeName.ProduceChemicals], ALL_RECIPES[RecipeName.ProducePlastic]],
+    recipes: [ALL_RECIPES[RecipeName.ProduceChemicals], ALL_RECIPES[RecipeName.SynthesizeFertilizer], ALL_RECIPES[RecipeName.ProducePlastic]],
   },
   [FacilityType.ElectronicsFactory]: {
     type: FacilityType.ElectronicsFactory,

@@ -31,10 +31,10 @@ Players may pause a selected recipe without clearing it; resuming continues its 
 
 | Recipe | Inputs | Output | Work |
 |---|---|---:|---:|
-| Grow Grain | 1 Water, 1 Electricity | 1.2 Grain | 0.06 |
+| Grow Grain | 1 Water, 1 Electricity, 0.025 Fertilizer | 1.2 Grain | 0.06 |
 | Bake Bread | 1.5 Grain, 1 Water, 1 Electricity | 4.5 Bread | 0.26 |
 | Produce Water / Electricity | None | 2 utility resources | 0.073 / 0.11 |
-| Grow Sugar | 3 Water | 1.2 Sugar | 0.12 |
+| Grow Sugar | 3 Water, 0.04 Fertilizer | 1.2 Sugar | 0.12 |
 | Mine Coal | 1 Water, 2 Electricity | 2.5 Coal | 0.2 |
 | Mine Iron | 2 Water, 4 Electricity, 0.1 Chemicals | 1.25 Iron | 0.267 |
 | Mine Copper | 2 Water, 5 Electricity, 0.1 Chemicals | 1.25 Copper | 0.333 |
@@ -46,6 +46,7 @@ Players may pause a selected recipe without clearing it; resuming continues its 
 | Produce Steel | 2 Iron, 1 Coal, 2 Water, 6 Electricity | 6 Steel | 1.1 |
 | Produce Electric Circuits | 2 Copper, 1 Silicon, 1 Plastic, 1 Water, 4 Electricity | 5 Electric Circuits | 1.65 |
 | Produce Chemicals | 2 Minerals, 2 Water, 4 Electricity | 4 Chemicals | 2.5 |
+| Synthesize Fertilizer | 1 Chemicals, 1 Minerals, 1 Water, 2 Electricity | 4 Fertilizer | 1.667 |
 | Produce Plastic | 2 Chemicals, 1 Water, 3 Electricity | 4 Plastic | 1.667 |
 | Produce Silicon | 3 Minerals, 3 Sand, 5 Electricity | 2 Silicon | 2.017 |
 | Produce Advanced Components | 2 Electric Circuits, 2 Silicon, 0.1 Gold, 1 Water, 4 Electricity | 3 Advanced Components | 3.025 |

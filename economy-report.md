@@ -32,8 +32,10 @@ Networks III (3/3) applies Local Market Network III and Market Diffusion Network
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Produce Chemicals | Baseline | 2140.00 | 198.00 | 0.00 | 29.21 | 21.09 | 12.63 | 6.69 | 4.86 | 48.6% | 356.06 | 205 | not reached |
 | Produce Chemicals | Networks III (3/3) | 2140.00 | 198.00 | 19150.00 | 29.21 | 23.49 | 16.22 | 10.44 | 3.69 | 36.9% | 356.06 | not reached | 239 |
-| Produce Plastic | Baseline | 2140.00 | 214.00 | 0.00 | 51.78 | 20.40 | -8.42 | -22.99 | 9.03 | 60.2% | 327.28 | 17 | not reached |
-| Produce Plastic | Networks III (3/3) | 2140.00 | 214.00 | 19150.00 | 51.78 | 31.00 | 8.12 | -8.68 | 7.46 | 49.8% | 327.28 | 36 | not reached |
+| Produce Plastic | Baseline | 2140.00 | 234.00 | 0.00 | 51.78 | 20.40 | -8.42 | -22.99 | 9.03 | 60.2% | 327.28 | 17 | not reached |
+| Produce Plastic | Networks III (3/3) | 2140.00 | 234.00 | 19150.00 | 51.78 | 31.00 | 8.12 | -8.68 | 7.46 | 49.8% | 327.28 | 36 | not reached |
+| Synthesize Fertilizer | Baseline | 2140.00 | 239.00 | 0.00 | 35.49 | 16.90 | 1.80 | -7.31 | 6.25 | 62.5% | 343.21 | 24 | not reached |
+| Synthesize Fertilizer | Networks III (3/3) | 2140.00 | 239.00 | 19150.00 | 35.49 | 22.76 | 9.66 | -0.10 | 5.15 | 51.5% | 343.21 | 61 | not reached |
 
 ## Construction Factory
 
@@ -67,10 +69,10 @@ Networks III (3/3) applies Local Market Network III and Market Diffusion Network
 
 | recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Grow Grain | Baseline | 145.00 | 83.00 | 0.00 | 9.03 | 5.60 | 3.78 | 3.09 | 0.13 | 16.4% | 9.41 | not reached | 33 |
-| Grow Grain | Networks III (3/3) | 145.00 | 83.00 | 19150.00 | 9.03 | 6.84 | 5.13 | 4.14 | 0.10 | 12.2% | 9.41 | not reached | 24 |
-| Grow Sugar | Baseline | 145.00 | 79.00 | 0.00 | 5.25 | 4.10 | 3.12 | 2.55 | 0.06 | 9.1% | 8.48 | not reached | 45 |
-| Grow Sugar | Networks III (3/3) | 145.00 | 79.00 | 19150.00 | 5.25 | 4.54 | 3.69 | 2.98 | 0.05 | 6.6% | 8.48 | not reached | 37 |
+| Grow Grain | Baseline | 145.00 | 108.00 | 0.00 | 4.03 | 0.56 | -1.28 | -1.54 | 0.13 | 16.4% | 9.41 | 9 | not reached |
+| Grow Grain | Networks III (3/3) | 145.00 | 108.00 | 19150.00 | 4.03 | 1.87 | 0.32 | -0.18 | 0.10 | 12.2% | 9.41 | 26 | not reached |
+| Grow Sugar | Baseline | 145.00 | 104.00 | 0.00 | 1.25 | 0.07 | -0.89 | -1.00 | 0.06 | 9.1% | 8.48 | 9 | not reached |
+| Grow Sugar | Networks III (3/3) | 145.00 | 104.00 | 19150.00 | 1.25 | 0.56 | -0.16 | -0.38 | 0.05 | 6.6% | 8.48 | 18 | not reached |
 
 ## Industrial Processing Factory
 
@@ -152,14 +154,16 @@ Each row runs all listed facilities in one shared market. Upstream production is
 
 | chain | marketScenario | surplusSold | facilityInvestmentCost | recipeResearchCost | constructionMaterialsDemand | constructionDemandFulfilled | margin180m | finalPrimaryUnitPrice | payback | stalledFacilityMinutes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Staples: utilities -> Grain | Baseline | Water, Electricity, Grain | 515.00 | 210.00 | 0.00 | 0.00 | 18.79 | 0.07 | 31 | 0 |
-| Staples: utilities -> Grain | Networks III (3/3) | Water, Electricity, Grain | 515.00 | 210.00 | 0.00 | 0.00 | 19.83 | 0.08 | 29 | 0 |
+| Staples: utilities -> Grain | Baseline | Water, Electricity, Grain | 515.00 | 235.00 | 0.00 | 0.00 | 14.17 | 0.07 | 41 | 0 |
+| Staples: utilities -> Grain | Networks III (3/3) | Water, Electricity, Grain | 515.00 | 235.00 | 0.00 | 0.00 | 15.52 | 0.08 | 38 | 0 |
 | Extraction: utilities -> Iron | Baseline | Water, Electricity, Iron | 485.00 | 221.00 | 0.00 | 0.00 | 14.22 | 0.07 | 26 | 0 |
 | Extraction: utilities -> Iron | Networks III (3/3) | Water, Electricity, Iron | 485.00 | 221.00 | 0.00 | 0.00 | 18.25 | 0.08 | 22 | 0 |
+| Fertilizer bridge: inputs -> Grain and Sugar | Baseline | Water, Electricity, Minerals, Chemicals, Fertilizer, Grain, Sugar | 5645.00 | 920.00 | 0.00 | 0.00 | 39.46 | 0.11 | 144 | 0 |
+| Fertilizer bridge: inputs -> Grain and Sugar | Networks III (3/3) | Water, Electricity, Minerals, Chemicals, Fertilizer, Grain, Sugar | 5645.00 | 920.00 | 0.00 | 0.00 | 55.02 | 0.10 | 93 | 0 |
 | Construction: inputs -> Construction Materials | Baseline | Water, Electricity, Coal, Iron, Clay, Sand, Stone, Steel, Bricks, Cement, Reinforced Concrete, Construction Materials | 10765.00 | 1947.00 | 590.00 | 590.00 | 37.20 | 0.14 | 85 | 0 |
 | Construction: inputs -> Construction Materials | Networks III (3/3) | Water, Electricity, Coal, Iron, Clay, Sand, Stone, Steel, Bricks, Cement, Reinforced Concrete, Construction Materials | 10765.00 | 1947.00 | 590.00 | 590.00 | 156.88 | 0.13 | 48 | 0 |
-| Industrial Machines: inputs -> Industrial Machines | Baseline | Water, Electricity, Sand, Minerals, Chemicals, Coal, Iron, Copper, Gold, Plastic, Silicon, Steel, Electric Circuits, Advanced Components, Industrial Machines | 17210.00 | 2423.00 | 0.00 | 0.00 | 288.10 | 0.14 | 31 | 0 |
-| Industrial Machines: inputs -> Industrial Machines | Networks III (3/3) | Water, Electricity, Sand, Minerals, Chemicals, Coal, Iron, Copper, Gold, Plastic, Silicon, Steel, Electric Circuits, Advanced Components, Industrial Machines | 17210.00 | 2423.00 | 0.00 | 0.00 | 395.32 | 0.13 | 26 | 0 |
+| Industrial Machines: inputs -> Industrial Machines | Baseline | Water, Electricity, Sand, Minerals, Chemicals, Coal, Iron, Copper, Gold, Plastic, Silicon, Steel, Electric Circuits, Advanced Components, Industrial Machines | 17210.00 | 2443.00 | 0.00 | 0.00 | 288.03 | 0.14 | 31 | 0 |
+| Industrial Machines: inputs -> Industrial Machines | Networks III (3/3) | Water, Electricity, Sand, Minerals, Chemicals, Coal, Iron, Copper, Gold, Plastic, Silicon, Steel, Electric Circuits, Advanced Components, Industrial Machines | 17210.00 | 2443.00 | 0.00 | 0.00 | 395.23 | 0.13 | 26 | 0 |
 
 ## Market network portfolio payback (180 minutes)
 
@@ -167,9 +171,9 @@ One continuously selling facility per recipe. Results sum the independent recipe
 
 | scenario | localDepth | localRegionalDiffusion | cumulativeResearchCost | portfolioNetProfit180m | incrementalNetProfit180m | incrementalMarginPerMinute | networkPaybackEstimateMinutes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Baseline | 1.0x | 1.00x | 0.00 | 16031.31 | 0.00 | 0.00 | n/a |
-| Networks I (1/1) | 1.2x | 1.15x | 1350.00 | 26120.42 | 10089.12 | 56.05 | 25 |
-| Networks III (3/3) | 1.9x | 1.50x | 19150.00 | 46481.95 | 30450.65 | 169.17 | 114 |
-| Networks V (5/5) | 3.1x | 2.00x | 179150.00 | 69070.96 | 53039.65 | 294.66 | 608 |
-| Networks X (10/10) | 8.0x | 4.00x | 21164150.00 | 107258.53 | 91227.22 | 506.82 | 41759 |
+| Baseline | 1.0x | 1.00x | 0.00 | 13244.72 | 0.00 | 0.00 | n/a |
+| Networks I (1/1) | 1.2x | 1.15x | 1350.00 | 23770.86 | 10526.15 | 58.48 | 24 |
+| Networks III (3/3) | 1.9x | 1.50x | 19150.00 | 45083.47 | 31838.75 | 176.88 | 109 |
+| Networks V (5/5) | 3.1x | 2.00x | 179150.00 | 68648.53 | 55403.81 | 307.80 | 583 |
+| Networks X (10/10) | 8.0x | 4.00x | 21164150.00 | 108548.69 | 95303.98 | 529.47 | 39973 |
 

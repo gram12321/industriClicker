@@ -8,7 +8,7 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 |---|---|
 | Industrial clicker | The game genre and setting direction. |
 | Resource | A typed item the player can gain, spend, transform, and hold in inventory. |
-| Grain, Bread, Water, Electricity, Sugar, Coal, Iron, Copper, Gold, Minerals, Steel, Electric Circuits, Chemicals, Plastic, Silicon, Advanced Components, Industrial Machines, Bricks, Cement, Reinforced Concrete, Construction Materials, Sand, Clay, Stone, Cake | Current resource names. |
+| Grain, Bread, Water, Electricity, Sugar, Coal, Iron, Copper, Gold, Minerals, Steel, Electric Circuits, Chemicals, Fertilizer, Plastic, Silicon, Advanced Components, Industrial Machines, Bricks, Cement, Reinforced Concrete, Construction Materials, Sand, Clay, Stone, Cake | Current resource names. |
 | Inventory | Player-owned resource quantities and their associated quality. |
 | Resource quality | A property of an inventory entry; its gameplay rule is not yet designed. |
 | Logistics multiplier | A resource catalogue value for physical shipping, storage, and market-network constraints on adjacent-market diffusion. |

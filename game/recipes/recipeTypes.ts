@@ -17,6 +17,7 @@ export enum RecipeName {
   ProduceSteel = 'produce-steel',
   ProduceElectricCircuits = 'produce-electric-circuits',
   ProduceChemicals = 'produce-chemicals',
+  SynthesizeFertilizer = 'synthesize-fertilizer',
   ProducePlastic = 'produce-plastic',
   ProduceSilicon = 'produce-silicon',
   ProduceAdvancedComponents = 'produce-advanced-components',

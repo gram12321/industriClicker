@@ -349,7 +349,8 @@ function getResourceSummary(resourceType: (typeof RESOURCE_TYPES)[number]): Reac
     case 'clay': return 'Quarried material for future construction recipes.';
     case 'stone': return 'Quarried material for future construction recipes.';
     case 'minerals': return <Text>Quarried raw material used to produce <ResourceMention resourceType="chemicals" /> and <ResourceMention resourceType="silicon" />.</Text>;
-    case 'chemicals': return <Text>Industrial process material made from <ResourceMention resourceType="minerals" /> and used to produce <ResourceMention resourceType="plastic" />.</Text>;
+    case 'chemicals': return <Text>Industrial process material made from <ResourceMention resourceType="minerals" /> and used to produce <ResourceMention resourceType="fertilizer" /> and <ResourceMention resourceType="plastic" />.</Text>;
+    case 'fertilizer': return <Text>Chemical Plant product made from <ResourceMention resourceType="chemicals" /> and <ResourceMention resourceType="minerals" />, used to grow <ResourceMention resourceType="grain" /> and <ResourceMention resourceType="sugar" />.</Text>;
     case 'plastic': return <Text>Manufactured polymer made from <ResourceMention resourceType="chemicals" /> and used in <ResourceMention resourceType="electric-circuits" /> and <ResourceMention resourceType="construction-materials" />.</Text>;
     case 'silicon': return <Text>Refined <ResourceMention resourceType="minerals" /> and <ResourceMention resourceType="sand" /> used with <ResourceMention resourceType="electric-circuits" /> and <ResourceMention resourceType="gold" /> to produce <ResourceMention resourceType="advanced-components" />.</Text>;
     case 'gold': return <Text>Rare mined metal used to produce <ResourceMention resourceType="advanced-components" />.</Text>;

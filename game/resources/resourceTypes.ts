@@ -24,6 +24,7 @@ export enum ResourceType {
   Stone = 'stone',
   Minerals = 'minerals',
   Chemicals = 'chemicals',
+  Fertilizer = 'fertilizer',
   Plastic = 'plastic',
   Silicon = 'silicon',
   Gold = 'gold',
