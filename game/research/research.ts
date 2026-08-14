@@ -5,9 +5,17 @@ import { calculateDiminishingBonus } from '@/game/core/math/scaling';
 
 export type CompletedResearchProject = { projectId: ResearchProjectId; completedAtGameTimeMs: number };
 export type ActiveResearchProject = { projectId: ResearchProjectId; progressMs: number; paidCost: number };
-export type ResearchLedgerSnapshot = { completed: CompletedResearchProject[]; active: ActiveResearchProject | null };
+export type ResearchLedgerSnapshot = { completed: CompletedResearchProject[]; active: ActiveResearchProject[] };
 
 export const BASE_MAXIMUM_OPEN_SALES_CONTRACTS = 2;
+export const BASE_SIMULTANEOUS_RESEARCH_PROJECTS = 1;
+
+export function getMaximumSimultaneousResearchProjects(completedProjectIds: readonly string[]): number {
+  return completedProjectIds.reduce((maximum, projectId) => {
+    const effect = getResearchProject(projectId)?.effect;
+    return effect?.kind === 'research-capacity' ? maximum + effect.additionalSlots : maximum;
+  }, BASE_SIMULTANEOUS_RESEARCH_PROJECTS);
+}
 
 export function getMaximumOpenSalesContracts(completedProjectIds: readonly string[]): number {
   return completedProjectIds.reduce((maximum, projectId) => {
@@ -77,45 +85,57 @@ function isActiveProject(value: unknown): value is ActiveResearchProject {
 export function isResearchLedgerSnapshot(value: unknown): value is ResearchLedgerSnapshot {
   if (typeof value !== 'object' || value === null) return false;
   const ledger = value as Record<string, unknown>;
+  const completed = Array.isArray(ledger.completed) ? ledger.completed : [];
+  const active = Array.isArray(ledger.active) ? ledger.active : [];
   return Array.isArray(ledger.completed)
-    && ledger.completed.every(isCompletedProject)
-    && new Set(ledger.completed.map((project: CompletedResearchProject) => project.projectId)).size === ledger.completed.length
-    && (ledger.active === null || isActiveProject(ledger.active));
+    && completed.every(isCompletedProject)
+    && new Set(completed.map((project) => (project as CompletedResearchProject).projectId)).size === completed.length
+    && Array.isArray(ledger.active)
+    && active.every(isActiveProject)
+    && new Set(active.map((project) => (project as ActiveResearchProject).projectId)).size === active.length
+    && active.every((project) => !completed.some((completedProject) => (completedProject as CompletedResearchProject).projectId === (project as ActiveResearchProject).projectId));
 }
 
 /** Player-owned research progress, kept independent from store and UI concerns. */
 export class ResearchLedger {
   private completed: CompletedResearchProject[] = [];
-  private active: ActiveResearchProject | null = null;
+  private active: ActiveResearchProject[] = [];
 
   constructor(snapshot?: ResearchLedgerSnapshot) {
     if (snapshot) {
       this.completed = snapshot.completed.map((project) => ({ ...project }));
-      this.active = snapshot.active ? { ...snapshot.active } : null;
+      this.active = snapshot.active.map((project) => ({ ...project }));
     }
   }
 
   getCompletedProjects(): CompletedResearchProject[] { return this.completed.map((project) => ({ ...project })); }
   getCompletedProjectIds(): ResearchProjectId[] { return this.completed.map((project) => project.projectId); }
-  getActiveProject(): ActiveResearchProject | null { return this.active ? { ...this.active } : null; }
+  getActiveProjects(): ActiveResearchProject[] { return this.active.map((project) => ({ ...project })); }
+  getActiveProject(): ActiveResearchProject | null { return this.active[0] ? { ...this.active[0] } : null; }
   hasCompleted(projectId: string): boolean { return this.completed.some((project) => project.projectId === projectId); }
 
   start(projectId: ResearchProjectId, paidCost: number): boolean {
-    if (this.active || this.hasCompleted(projectId) || !Number.isFinite(paidCost) || paidCost < 0) return false;
-    this.active = { projectId, progressMs: 0, paidCost };
+    if (this.hasCompleted(projectId) || this.active.some((project) => project.projectId === projectId) || !Number.isFinite(paidCost) || paidCost < 0) return false;
+    this.active.push({ projectId, progressMs: 0, paidCost });
     return true;
   }
 
   advance(elapsedMs: number): ResearchProjectId | null {
-    if (!this.active || !Number.isFinite(elapsedMs) || elapsedMs <= 0) return null;
-    const definition = getResearchProject(this.active.projectId);
-    if (!definition) return null;
-    this.active.progressMs = Math.min(definition.durationMs, this.active.progressMs + Math.floor(elapsedMs));
-    if (this.active.progressMs < definition.durationMs) return null;
-    const projectId = this.active.projectId;
-    this.completed.push({ projectId, completedAtGameTimeMs: 0 });
-    this.active = null;
-    return projectId;
+    return this.advanceAll(elapsedMs)[0] ?? null;
+  }
+
+  advanceAll(elapsedMs: number): ResearchProjectId[] {
+    if (this.active.length === 0 || !Number.isFinite(elapsedMs) || elapsedMs <= 0) return [];
+    const completedProjects = this.active.filter((project) => {
+      const definition = getResearchProject(project.projectId);
+      if (!definition) return false;
+      project.progressMs = Math.min(definition.durationMs, project.progressMs + Math.floor(elapsedMs));
+      return project.progressMs >= definition.durationMs;
+    });
+    if (completedProjects.length === 0) return [];
+    this.active = this.active.filter((project) => !completedProjects.includes(project));
+    this.completed.push(...completedProjects.map((project) => ({ projectId: project.projectId, completedAtGameTimeMs: 0 })));
+    return completedProjects.map((project) => project.projectId);
   }
 
   complete(projectId: ResearchProjectId, completedAtGameTimeMs: number): boolean {
@@ -127,11 +147,11 @@ export class ResearchLedger {
 
   cancel(): ActiveResearchProject | null {
     const active = this.getActiveProject();
-    this.active = null;
+    this.active = this.active.filter((project) => project.projectId !== active?.projectId);
     return active;
   }
 
   clone(): ResearchLedger { return ResearchLedger.fromSnapshot(this.toSnapshot()); }
-  toSnapshot(): ResearchLedgerSnapshot { return { completed: this.getCompletedProjects(), active: this.getActiveProject() }; }
+  toSnapshot(): ResearchLedgerSnapshot { return { completed: this.getCompletedProjects(), active: this.getActiveProjects() }; }
   static fromSnapshot(snapshot: ResearchLedgerSnapshot): ResearchLedger { return new ResearchLedger(snapshot); }
 }

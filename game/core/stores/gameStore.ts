@@ -10,7 +10,7 @@ import { SalesContracts, calculateSalesContractOfferChance } from '@/game/sales'
 import { AchievementLedger, ProductionStatistics, createAchievementEvaluationContext, evaluateAchievementUnlocks, type AchievementCategory } from '@/game/achievements';
 import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyAssetsPrestige, calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary, calculateFacilityConditionPrestige } from '@/game/prestige';
 import { evaluateGateRequirements, type GateContext, type GateEvaluation } from '@/game/gates';
-import { ResearchLedger, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesContracts, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, getSalesContractPremiumMultiplier, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, type ResearchProjectId } from '@/game/research';
+import { ResearchLedger, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesContracts, getMaximumSimultaneousResearchProjects, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, getSalesContractPremiumMultiplier, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, type ResearchProjectId } from '@/game/research';
 import { FIRST_FACILITY_RECIPE_RESEARCH_GRANT_ID, GrantLedger } from '@/game/grants';
 import type { StartingConditionId } from '@/game/company/companyTypes';
 import { STANDARD_START_CONSTRUCTION_MATERIALS } from '@/game/company/companyConstants';
@@ -145,7 +145,7 @@ function getResearchAvailabilityForState(input: {
   const project = getResearchProject(input.projectId);
   if (!project) return { allowed: false, startable: false, unmetReasons: ['Unknown research project.'], cost: 0, usesFreeGrant: false };
   if (input.research.hasCompleted(project.id)) return { allowed: false, startable: false, unmetReasons: ['Research already completed.'], cost: project.cost, usesFreeGrant: false };
-  if (input.research.getActiveProject()) return { allowed: false, startable: false, unmetReasons: ['Research in progress.'], cost: project.cost, usesFreeGrant: false };
+  if (input.research.getActiveProjects().length >= getMaximumSimultaneousResearchProjects(input.research.getCompletedProjectIds())) return { allowed: false, startable: false, unmetReasons: ['All research slots are occupied.'], cost: project.cost, usesFreeGrant: false };
   const evaluation = evaluateGateRequirements(project.requirements, createResearchGateContext(input));
   const unmetReasons = [...evaluation.unmetReasons];
   const grantTarget = getRecipeResearchGrantTarget(project);
@@ -718,10 +718,11 @@ export const useGameStore = create<GameState>((set, get) => {
       syncFacilityConditionPrestige(prestige, facilities, nextGameTimeMs);
     }
 
-    if (research.getActiveProject()) {
+    if (research.getActiveProjects().length > 0) {
       research = research.clone();
-      completedResearchProjectId = research.advance(elapsedMs);
-      if (completedResearchProjectId) {
+      const completedResearchProjectIds = research.advanceAll(elapsedMs);
+      completedResearchProjectId = completedResearchProjectIds[0] ?? null;
+      for (const completedResearchProjectId of completedResearchProjectIds) {
         research.complete(completedResearchProjectId, nextGameTimeMs);
         const completedProject = getResearchProject(completedResearchProjectId);
         if (completedProject?.effect.kind === 'local-market-depth') {

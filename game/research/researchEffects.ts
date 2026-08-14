@@ -8,6 +8,7 @@ export type ResearchEffect =
   | { kind: 'sales-offer-produced-only' }
   | { kind: 'local-market-depth'; multiplier: number }
   | { kind: 'local-regional-diffusion'; multiplier: number }
+  | { kind: 'research-capacity'; additionalSlots: number }
   | { kind: 'recipe-unlock'; recipeName: RecipeName }
   | { kind: 'recipe-work-speed-bonus'; recipeName: RecipeName; level: number };
 
@@ -20,6 +21,7 @@ export function describeResearchEffect(effect: ResearchEffect): string {
     case 'sales-offer-produced-only': return 'Sales offers only request resources your company has produced';
     case 'local-market-depth': return `Local market depth: ${effect.multiplier.toFixed(1)}×`;
     case 'local-regional-diffusion': return `Local-regional diffusion rate: ${effect.multiplier.toFixed(2)}×`;
+    case 'research-capacity': return `Additional simultaneous research projects: ${effect.additionalSlots}`;
     case 'recipe-unlock': return `Unlock recipe: ${getRecipeDisplayName(effect.recipeName)}`;
     case 'recipe-work-speed-bonus': return `Recipe work speed bonus: ${getRecipeDisplayName(effect.recipeName)} level ${effect.level}`;
   }
