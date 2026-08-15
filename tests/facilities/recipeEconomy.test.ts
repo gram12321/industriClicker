@@ -224,4 +224,12 @@ describe('recipe economy simulation', () => {
 
     expect(result.breakEvenMinute === null || result.breakEvenMinute <= RECIPE_ECONOMY_BREAK_EVEN_HORIZON_MINUTES).toBe(true);
   });
+
+  it('can cap test-only electricity purchases at 1.5 times their initial local price', () => {
+    const uncapped = simulateRecipeEconomy({ recipeName: RecipeName.ProduceConstructionMaterials, durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES });
+    const capped = simulateRecipeEconomy({ recipeName: RecipeName.ProduceConstructionMaterials, durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES, electricityPriceCapMultiplier: 1.5 });
+
+    expect(capped.totalInputCost).toBeLessThanOrEqual(uncapped.totalInputCost);
+    expect(capped.netMarginPerMinute).toBeGreaterThanOrEqual(uncapped.netMarginPerMinute);
+  });
 });

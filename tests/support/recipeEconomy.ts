@@ -25,6 +25,8 @@ export type RecipeEconomyScenario = {
   durationMinutes: number;
   speedUpgradeLevel?: number;
   outputUpgradeLevel?: number;
+  /** Test-only cap, relative to the initial local electricity price. */
+  electricityPriceCapMultiplier?: number;
   /** Completed market research applied before the facility begins production. */
   completedResearchProjectIds?: readonly string[];
 };
@@ -59,6 +61,8 @@ export type RecipeEconomyChainScenario = {
   durationMinutes: number;
   /** Primary goods whose chain economics the scenario is intended to assess. */
   primaryOutputResourceTypes: readonly ResourceType[];
+  /** Test-only cap, relative to the initial local electricity price. */
+  electricityPriceCapMultiplier?: number;
   completedResearchProjectIds?: readonly string[];
   /**
    * Consumes the construction inputs needed to build all participating
@@ -127,6 +131,23 @@ function advanceFacilityProduction(
 }
 
 /**
+ * Test-only electricity-access assumption. Once the local price exceeds the
+ * configured cap, an external source fulfils the input at the capped price
+ * without changing the runtime market pool.
+ */
+function buyRecipeInput(
+  market: Market,
+  resourceType: ResourceType,
+  amount: number,
+  electricityPriceCap: number | undefined,
+): ReturnType<Market['buyFromLocal']> {
+  if (resourceType === ResourceType.Electricity && electricityPriceCap !== undefined && market.getLocalPrice(resourceType) > electricityPriceCap) {
+    return { success: true, amount, unitPrice: electricityPriceCap, quality: market.getLocalEntry(resourceType).quality };
+  }
+  return market.buyFromLocal(resourceType, amount);
+}
+
+/**
  * Simulates one fully staffed facility buying recipe inputs and selling its
  * output on the local market once per foreground minute while applying normal
  * five-second market diffusion. Initial margin uses
@@ -135,7 +156,7 @@ function advanceFacilityProduction(
  * Maintenance is charged as realised repair spend plus the outstanding repair
  * liability.
  */
-export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgradeLevel = 0, outputUpgradeLevel = 0, completedResearchProjectIds = [] }: RecipeEconomyScenario): RecipeEconomyResult {
+export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgradeLevel = 0, outputUpgradeLevel = 0, electricityPriceCapMultiplier, completedResearchProjectIds = [] }: RecipeEconomyScenario): RecipeEconomyResult {
   const recipe = getRecipe(recipeName);
   const facilityType = getRecipeFacilityType(recipeName);
   const definition = FACILITIES[facilityType];
@@ -146,6 +167,7 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
   const market = new Market();
   market.setLocalMarketDepthMultiplier(getLocalMarketDepthMultiplier(completedResearchProjectIds));
   market.setLocalRegionalDiffusionMultiplier(getLocalRegionalDiffusionMultiplier(completedResearchProjectIds));
+  const electricityPriceCap = electricityPriceCapMultiplier === undefined ? undefined : market.getLocalPrice(ResourceType.Electricity) * electricityPriceCapMultiplier;
   const minutes = Math.max(1, Math.floor(durationMinutes));
   let totalRevenue = 0;
   let totalInputCost = 0;
@@ -206,7 +228,7 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
     for (const input of recipe.inputs) {
       const amount = Math.max(0, input.amount * cyclesToStart - inventory.getAmount(input.resourceType));
       if (amount <= 0) continue;
-      const trade = market.buyFromLocal(input.resourceType, amount);
+      const trade = buyRecipeInput(market, input.resourceType, amount, electricityPriceCap);
       if (!trade.success) {
         canProduce = false;
         break;
@@ -295,6 +317,7 @@ export function simulateRecipeEconomyChain({
   facilities: chainFacilities,
   durationMinutes,
   primaryOutputResourceTypes: _primaryOutputResourceTypes,
+  electricityPriceCapMultiplier,
   completedResearchProjectIds = [],
   includeConstructionInputsDemand = false,
 }: RecipeEconomyChainScenario): RecipeEconomyChainResult {
@@ -304,6 +327,7 @@ export function simulateRecipeEconomyChain({
   const market = new Market();
   market.setLocalMarketDepthMultiplier(getLocalMarketDepthMultiplier(completedResearchProjectIds));
   market.setLocalRegionalDiffusionMultiplier(getLocalRegionalDiffusionMultiplier(completedResearchProjectIds));
+  const electricityPriceCap = electricityPriceCapMultiplier === undefined ? undefined : market.getLocalPrice(ResourceType.Electricity) * electricityPriceCapMultiplier;
   const activeFacilities: Facility[] = [];
   const producedResourceTypes = new Set<ResourceType>();
   let facilityInvestmentCost = 0;
@@ -372,7 +396,7 @@ export function simulateRecipeEconomyChain({
         for (const input of recipe.inputs) {
           const amount = Math.max(0, input.amount * cyclesToStart - inventory.getAmount(input.resourceType));
           if (amount <= 0) continue;
-          const trade = market.buyFromLocal(input.resourceType, amount);
+          const trade = buyRecipeInput(market, input.resourceType, amount, electricityPriceCap);
           if (!trade.success) {
             canProduce = false;
             break;

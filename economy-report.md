@@ -4,7 +4,7 @@ One fully staffed facility, local input purchases, local output sales, normal ma
 
 ## Recipe windows
 
-Each recipe is assessed in a base market and a Network III market with Local Market Network III and Market Diffusion Network III already owned. The Network III scenario measures recipe resilience; its research is pre-owned and is not charged to facility payback. The 15/60/180-minute margins are cumulative averages; window till unprofitable is the first completed output cycle with a non-positive margin, so a later recovery remains possible.
+Each recipe is assessed in a base market and a Network III market with Local Market Network III and Market Diffusion Network III already owned. The Network III scenario measures recipe resilience; its research is pre-owned and is not charged to facility payback. When electricity max 1.5x changes a margin, its value is shown on a second line in the same margin column; electricity bought above 1.5 times its initial local price is supplied externally at that cap, without changing runtime market rules. The 15/60/180-minute margins are cumulative averages; window till unprofitable is the first completed output cycle with a non-positive margin, so a later recovery remains possible.
 
 ## Animal Farm
 
@@ -171,22 +171,22 @@ Network III applies pre-owned Local Market Network III and Market Diffusion Netw
 
 ## Connected-chain economy (180 minutes)
 
-Each row runs all listed facilities in one shared base market. Upstream production is available to downstream facilities before each minute ends; the chain retains the following minute's required inputs and sells every other produced good. The 15/60/180-minute margins are cumulative averages; window till unprofitable is the first output minute with a non-positive margin, so a later recovery remains possible. Setup cost includes land, Construction Materials, Industrial Machines, and each distinct recipe-unlock research cost. Construction demand consumes the participating facilities' total Construction Materials and Industrial Machines requirement evenly through the 180-minute scenario; it is external demand, not a player expense. A scenario that stalls a facility is treated as an invalid report scenario.
+Each row runs all listed facilities in one shared base market. Upstream production is available to downstream facilities before each minute ends; the chain retains the following minute's required inputs and sells every other produced good. When electricity max 1.5x changes a margin, its value is shown on a second line in the same margin column; electricity bought above 1.5 times its initial local price is supplied externally at that cap, without changing runtime market rules. The 15/60/180-minute margins are cumulative averages; window till unprofitable is the first output minute with a non-positive margin, so a later recovery remains possible. Setup cost includes land, Construction Materials, Industrial Machines, and each distinct recipe-unlock research cost. Construction demand consumes the participating facilities' total Construction Materials and Industrial Machines requirement evenly through the 180-minute scenario; it is external demand, not a player expense. A scenario that stalls a facility is treated as an invalid report scenario.
 
 | chain | primary output | facilities | setup cost (EUR) | market input cost (EUR) | margin 15m/60m/180m | window till unprofitable | facility payback |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Staples: utilities -> Farm | Grain, Sugar | Small Utility Works x2, Farm x2 | 2199.00 | 2052.67 | 14.62/10.73/8.13 | not reached | not reached |
-| Extraction: utilities -> Mine | Coal, Iron, Copper | Small Utility Works x2, Mine x3 | 3860.00 | 8226.56 | 40.86/13.66/-1.54 | 46 | not reached |
+| Extraction: utilities -> Mine | Coal, Iron, Copper | Small Utility Works x2, Mine x3 | 3860.00 | 8226.56 | 40.86/13.66/-1.54<br>Electricity max 1.5x: 41.63/14.72/0.47 | 46 | not reached |
 | Fertilizer bridge: quarry -> Grain and Sugar | Grain, Sugar | Small Utility Works x2, Quarry x1, Chemical Plant x2, Farm x2 | 12565.00 | 2497.43 | 54.15/3.60/-81.88 | 45 | not reached |
 | Fertilizer bridge: market inputs -> Grain and Sugar | Grain, Sugar | Small Utility Works x2, Chemical Plant x1, Farm x2 | 6678.00 | 3889.72 | 10.17/-3.53/0.26 | 62 | not reached |
 | Fertilizer: quarry -> Fertilizer | Fertilizer | Small Utility Works x2, Quarry x1, Chemical Plant x2 | 11763.00 | 375.04 | 48.79/-10.61/-73.42 | 41 | not reached |
 | Plastic: quarry -> Plastic | Plastic | Small Utility Works x2, Quarry x1, Chemical Plant x2 | 11758.00 | 466.93 | 57.32/-3.26/-67.41 | 41 | not reached |
-| Steel: mines -> Steel | Steel | Small Utility Works x2, Mine x2, Industrial Processing Factory x1 | 5311.00 | 4764.07 | 62.95/32.42/14.35 | 123 | not reached |
+| Steel: mines -> Steel | Steel | Small Utility Works x2, Mine x2, Industrial Processing Factory x1 | 5311.00 | 4764.07 | 62.95/32.42/14.35<br>Electricity max 1.5x: 62.95/32.42/14.73 | 123 | not reached |
 | Poultry -> Cake | Cake | Small Utility Works x2, Quarry x1, Chemical Plant x2, Farm x1, Animal Farm x1, Bakery x1 | 16313.00 | 2865.27 | 123.39/67.09/-265.32 | 41 | not reached |
 | Cattle -> Meat Pie | Meat Pie | Small Utility Works x2, Quarry x1, Chemical Plant x2, Farm x1, Animal Farm x1, Bakery x1 | 16316.00 | 4027.45 | 85.47/38.78/-293.31 | 35 | not reached |
-| Animal farm and bakery: inputs -> Cake, Premium Cake, and Meat Pie | Cake, Premium Cake, Meat Pie | Small Utility Works x2, Quarry x1, Chemical Plant x2, Farm x2, Animal Farm x3, Bakery x3 | 25080.00 | 5159.75 | 248.05/162.56/-119.06 | 31 | not reached |
-| Construction: inputs -> Construction Materials | Construction Materials | Water Well x1, Power Plant x1, Mine x2, Quarry x3, Industrial Processing Factory x1, Construction Factory x4 | 25334.00 | 16314.11 | 247.79/236.24/134.37 | 1 | not reached |
-| Industrial Machines: inputs -> Industrial Machines | Industrial Machines | Water Well x1, Power Plant x1, Quarry x2, Chemical Plant x2, Mine x4, Electronics Factory x2, Industrial Processing Factory x2, Assembly Plant x1 | 42175.00 | 26550.42 | 622.74/385.39/-82.97 | 1 | not reached |
+| Animal farm and bakery: inputs -> Cake, Premium Cake, and Meat Pie | Cake, Premium Cake, Meat Pie | Small Utility Works x2, Quarry x1, Chemical Plant x2, Farm x2, Animal Farm x3, Bakery x3 | 25080.00 | 5159.75 | 248.05/162.56/-119.06<br>Electricity max 1.5x: 248.58/163.32/-118.42 | 31 | not reached |
+| Construction: inputs -> Construction Materials | Construction Materials | Water Well x1, Power Plant x1, Mine x2, Quarry x3, Industrial Processing Factory x1, Construction Factory x4 | 25334.00 | 16314.11 | 247.79/236.24/134.37<br>Electricity max 1.5x: 264.92/255.37/155.12 | 1 | not reached |
+| Industrial Machines: inputs -> Industrial Machines | Industrial Machines | Water Well x1, Power Plant x1, Quarry x2, Chemical Plant x2, Mine x4, Electronics Factory x2, Industrial Processing Factory x2, Assembly Plant x1 | 42175.00 | 26550.42 | 622.74/385.39/-82.97<br>Electricity max 1.5x: 660.90/424.94/-39.15 | 1 | not reached |
 | Construction Materials: market inputs -> Construction Materials | Construction Materials | Water Well x1, Power Plant x1, Construction Factory x1 | 6575.00 | 4559.16 | 219.02/24.29/-0.62 | 1 | not reached |
 | Industrial Machines: market inputs -> Industrial Machines | Industrial Machines | Water Well x1, Power Plant x1, Assembly Plant x1 | 11269.00 | 21738.16 | 98.36/-565.37/19.35 | 1 | 192 |
 
