@@ -32,6 +32,15 @@ describe('sales customer catalogue', () => {
     }
   });
 
+  it('makes large market shares rare for private customers', () => {
+    const catalogue = getSalesCustomerCatalogue();
+    const privateCustomers = catalogue.filter((customer) => customer.customerType === 'private-customer');
+    const largerBuyers = catalogue.filter((customer) => customer.customerType !== 'private-customer');
+
+    expect(Math.max(...privateCustomers.map((customer) => customer.marketShare))).toBeLessThan(0.25);
+    expect(largerBuyers.some((customer) => customer.marketShare > 0.1)).toBe(true);
+  });
+
   it('keeps purchasing power broad and independently distributed from bid profile', () => {
     const catalogue = getSalesCustomerCatalogue();
     expect(Math.max(...catalogue.map((customer) => customer.purchasingPower))).toBeGreaterThan(1.5);
