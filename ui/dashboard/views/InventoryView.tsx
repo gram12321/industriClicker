@@ -6,6 +6,7 @@ import type { Finance } from '@/game/finance';
 import { INVENTORY_FLOW_PERIODS, type Inventory, type ResourceFlowLedger } from '@/game/inventory';
 import type { FacilityCollection } from '@/game/facilities/facilityCollection';
 import { getRecipe } from '@/game/recipes';
+import { getSalesResourceProfile } from '@/game/sales';
 import { MARKET_AUTOTRADE_DEFAULT_INTERVAL_MS, MARKET_AUTOTRADE_INTERVAL_OPTIONS, type Market, type MarketAutomation, type MarketTradeMultiplier } from '@/game/market';
 import { RESOURCE_GROUPS, RESOURCE_TYPES, getResource, getResourceIcon } from '@/game/resources';
 import { APP_ICONS } from '@/icons';
@@ -61,7 +62,7 @@ export function InventoryView({ buyMarketResource, currentGameTimeMs, facilities
   const flowPeriod = INVENTORY_FLOW_PERIODS.find((period) => period.id === flowPeriodId) ?? INVENTORY_FLOW_PERIODS[1];
   const openSettings = (resourceType: (typeof RESOURCE_TYPES)[number]) => {
     const automation = market.getAutomation(resourceType);
-    setSettingsDraft({ minKeep: String(automation.autoSellMinKeep), maxSell: String(automation.autoSellMaxPerMinute), maxBuyPrice: String(automation.autoBuyMaxUnitPrice), minSellPrice: String(automation.autoSellMinUnitPrice), buyTarget: String(automation.autoBuyTargetInventory), tradeIntervalMs: automation.autoTradeIntervalMs });
+    setSettingsDraft({ minKeep: String(getSalesResourceProfile(resourceType).standardOrderLot), maxSell: String(automation.autoSellMaxPerMinute), maxBuyPrice: String(automation.autoBuyMaxUnitPrice), minSellPrice: String(automation.autoSellMinUnitPrice), buyTarget: String(automation.autoBuyTargetInventory), tradeIntervalMs: automation.autoTradeIntervalMs });
     setSettingsResource(resourceType);
   };
   const saveSettings = () => {
@@ -114,6 +115,7 @@ export function InventoryView({ buyMarketResource, currentGameTimeMs, facilities
         <Dialog.Title>{settingsResource ? `${getResource(settingsResource).name} automation` : 'Automation settings'}</Dialog.Title>
         <Dialog.Content>
           <TextInput dense keyboardType="decimal-pad" label="Minimum inventory to keep" mode="outlined" onChangeText={(value) => setSettingsDraft((draft) => ({ ...draft, minKeep: value }))} style={styles.marketAutomationInput} value={settingsDraft.minKeep} />
+          <Button compact onPress={() => { if (settingsResource) setSettingsDraft((draft) => ({ ...draft, minKeep: String(getSalesResourceProfile(settingsResource).standardOrderLot) })); }}>Use standard order lot</Button>
           <TextInput dense keyboardType="decimal-pad" label="Maximum autosell per minute" mode="outlined" onChangeText={(value) => setSettingsDraft((draft) => ({ ...draft, maxSell: value }))} style={styles.marketAutomationInput} value={settingsDraft.maxSell} />
           <TextInput dense keyboardType="decimal-pad" label="Autobuy target inventory" mode="outlined" onChangeText={(value) => setSettingsDraft((draft) => ({ ...draft, buyTarget: value }))} style={styles.marketAutomationInput} value={settingsDraft.buyTarget} />
           <Text variant="labelLarge">Autotrade interval</Text>

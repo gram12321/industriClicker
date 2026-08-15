@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getResource, ResourceType, RESOURCE_TYPES } from '@/game/resources';
-import { SALES_ORDER_DURATION_MS, SalesOrders, calculateSalesOrderAcquisitionChance, calculateSalesOrderAcquisitionDetails, calculateSalesOrderBundleLineCount, calculateSalesOrderMarketVolumeMultiplier, calculateSalesOrderSelectionWeight, calculateSalesOrderTargetValue, getEligibleSalesOrderResourceTypes } from '@/game/sales';
+import { SALES_CUSTOMER_DOMAIN_PROFILES, SALES_ORDER_DURATION_MS, SalesOrders, calculateSalesCustomerAccessibility, calculateSalesOrderAcquisitionChance, calculateSalesOrderAcquisitionDetails, calculateSalesOrderBundleLineCount, calculateSalesOrderCustomerTypeMaturity, calculateSalesOrderMarketVolumeMultiplier, calculateSalesOrderSelectionWeight, calculateSalesOrderTargetValue, getEligibleSalesOrderResourceTypes } from '@/game/sales';
 
 function quantities(resourceType: ResourceType, amount: number): Record<ResourceType, number> {
   return RESOURCE_TYPES.reduce((result, candidate) => { result[candidate] = candidate === resourceType ? amount : 0; return result; }, {} as Record<ResourceType, number>);
@@ -9,6 +9,15 @@ function prices(value: number): Record<ResourceType, number> { return RESOURCE_T
 function benchmarkSupplies(): Record<ResourceType, number> { return RESOURCE_TYPES.reduce((result, resourceType) => { result[resourceType] = getResource(resourceType).market.globalBenchmarkSupply; return result; }, {} as Record<ResourceType, number>); }
 
 describe('sales orders', () => {
+  it('uses broad base target ranges for every customer domain', () => {
+    expect(SALES_CUSTOMER_DOMAIN_PROFILES.food.targetOrderValue).toEqual([20, 240]);
+    expect(SALES_CUSTOMER_DOMAIN_PROFILES['raw-materials'].targetOrderValue).toEqual([30, 360]);
+    expect(SALES_CUSTOMER_DOMAIN_PROFILES['industrial-inputs'].targetOrderValue).toEqual([50, 650]);
+    expect(SALES_CUSTOMER_DOMAIN_PROFILES['construction-materials'].targetOrderValue).toEqual([60, 800]);
+    expect(SALES_CUSTOMER_DOMAIN_PROFILES.electronics.targetOrderValue).toEqual([75, 1_000]);
+    expect(SALES_CUSTOMER_DOMAIN_PROFILES.utilities.targetOrderValue).toEqual([25, 450]);
+  });
+
   it('returns defensive customer-catalogue views while retaining its generated catalogue', () => {
     const orders = new SalesOrders();
     const firstRead = orders.getCustomerCatalogue();
@@ -109,6 +118,23 @@ describe('sales orders', () => {
     expect(strongerRelationship).toBeGreaterThan(baseline);
   });
 
+  it('makes large customer types possible but exceptionally unlikely before prestige', () => {
+    const earlyGovernmentAccess = calculateSalesCustomerAccessibility('government-procurement', 0);
+    const earlyPrivateAccess = calculateSalesCustomerAccessibility('private-customer', 0);
+    const lateGovernmentAccess = calculateSalesCustomerAccessibility('government-procurement', 1_000);
+
+    expect(earlyGovernmentAccess).toBeGreaterThan(0);
+    expect(earlyGovernmentAccess).toBeLessThan(earlyPrivateAccess * 0.01);
+    expect(lateGovernmentAccess).toBeGreaterThan(earlyGovernmentAccess * 20);
+  });
+
+  it('calibrates major customer access to the project prestige scale', () => {
+    expect(calculateSalesCustomerAccessibility('government-procurement', 20)).toBeCloseTo(0.0028, 4);
+    expect(calculateSalesCustomerAccessibility('government-procurement', 100)).toBeCloseTo(0.0644, 4);
+    expect(calculateSalesCustomerAccessibility('government-procurement', 300)).toBeCloseTo(0.3178, 4);
+    expect(calculateSalesCustomerAccessibility('government-procurement', 1_000)).toBeCloseTo(0.6836, 4);
+  });
+
   it('keeps a generated order at or below the company-value cap after lot rounding', () => {
     const orders = new SalesOrders();
     const result = orders.advanceTime({ currentGameTimeMs: 60_000, maximumOpenOrders: 2, maximumOrderValue: 500, companyPrestige: 500, economyPhase: 'boom', inventoryByResource: quantities(ResourceType.Grain, 1_000), globalPrices: prices(1), globalSupplies: benchmarkSupplies(), candidateResourceTypes: [ResourceType.Grain], getResourceWeight: () => 1, bidResearchMultiplier: 1 });
@@ -125,7 +151,20 @@ describe('sales orders', () => {
 
     expect(startingCompanyValue).toBe(baseTargetValue);
     expect(establishedCompanyValue).toBeGreaterThan(startingCompanyValue);
+    expect(establishedCompanyValue).toBeCloseTo(300);
     expect(loyalCustomerValue).toBeCloseTo(establishedCompanyValue * 1.2);
+  });
+
+  it('matures large customer order multipliers with company prestige', () => {
+    const earlyMaturity = calculateSalesOrderCustomerTypeMaturity('government-procurement', 0);
+    const lateMaturity = calculateSalesOrderCustomerTypeMaturity('government-procurement', 1_000);
+    const earlyValue = calculateSalesOrderTargetValue({ baseTargetValue: 100, companyPrestige: 0, relationship: 0, customerType: 'government-procurement', customerTypeMultiplier: 4 });
+    const lateValue = calculateSalesOrderTargetValue({ baseTargetValue: 100, companyPrestige: 1_000, relationship: 0, customerType: 'government-procurement', customerTypeMultiplier: 4 });
+
+    expect(earlyMaturity).toBeLessThan(0.02);
+    expect(lateMaturity).toBeGreaterThan(0.5);
+    expect(earlyValue).toBeLessThan(130);
+    expect(lateValue).toBeGreaterThan(250);
   });
 
   it('keeps global supply pressure bounded while allowing both shortage and oversupply to request more lots', () => {

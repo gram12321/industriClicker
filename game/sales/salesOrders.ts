@@ -2,7 +2,7 @@ import { calculateAsymmetricalScaler01, normalizeWithControlPoints01 } from '@/g
 import type { EconomyPhase } from '@/game/finance';
 import { getResource, type ResourceType } from '@/game/resources';
 import { SALES_CUSTOMER_DOMAIN_PROFILES, SALES_CUSTOMER_TYPE_PROFILES, SALES_ECONOMY_MULTIPLIERS, SALES_ORDER_BASE_ACQUISITION_CHANCE_PER_MINUTE, SALES_ORDER_BUNDLE_PRESTIGE_CONTROL_POINTS, SALES_ORDER_DURATION_MS, SALES_ORDER_MARKET_VOLUME_SCALING, SALES_ORDER_MAXIMUM_QUANTITY, SALES_ORDER_MAXIMUM_GLOBAL_PREMIUM, SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP, SALES_ORDER_MINIMUM_GLOBAL_PREMIUM, SALES_ORDER_MINIMUM_QUANTITY, SALES_ORDER_PENDING_PENALTY_PER_OPEN_ORDER, SALES_ORDER_PRESTIGE_DISCOVERY_BASE, SALES_ORDER_PRESTIGE_DISCOVERY_SCALE, SALES_ORDER_PRESSURE_OFFER_CHANCE, SALES_ORDER_SELECTION_MAX_RELATIONSHIP_MULTIPLIER, SALES_ORDER_SELECTION_STOCK_COVERAGE_CAP, SALES_ORDER_VOLUME_SCALING } from './salesConstants';
-import { SALES_CUSTOMER_CATALOGUE_VERSION, SALES_CUSTOMER_RELATIONSHIP, SALES_CUSTOMER_WORLD_SEED, advanceSalesCustomerRelationship, calculateSalesCustomerRelationshipBaseline, calculateSalesCustomerRelationshipChange, createSalesCustomerState, getSalesCustomerCatalogue, getSalesResourceProfile, type SalesCustomerDefinition, type SalesCustomerState } from './salesCustomers';
+import { SALES_CUSTOMER_CATALOGUE_VERSION, SALES_CUSTOMER_RELATIONSHIP, SALES_CUSTOMER_WORLD_SEED, advanceSalesCustomerRelationship, calculateSalesCustomerRelationshipBaseline, calculateSalesCustomerRelationshipChange, createSalesCustomerState, getSalesCustomerCatalogue, getSalesResourceProfile, type SalesCustomerDefinition, type SalesCustomerState, type SalesCustomerType } from './salesCustomers';
 import { getDeterministicUnitInterval, pickDeterministicWeighted } from './salesRandom';
 
 export type SalesOrderStatus = 'offered' | 'fulfilled' | 'rejected' | 'expired';
@@ -20,6 +20,7 @@ export type SalesOrderSelectionWeightInput = {
   customerMarketShare: number;
   domainFrequency: number;
   customerTypeFrequency: number;
+  customerAccessibility?: number;
   relationship: number;
 };
 
@@ -61,16 +62,31 @@ export function calculateSalesOrderSelectionWeight(input: SalesOrderSelectionWei
     * (SALES_ORDER_SELECTION_MAX_RELATIONSHIP_MULTIPLIER - 1);
   return Math.max(0, input.productionWeight)
     * stockCoverageWeight
-    * Math.max(0, input.customerMarketShare)
+    * Math.sqrt(Math.max(0, input.customerMarketShare))
+    * Math.max(0, input.customerAccessibility ?? 1)
     * Math.max(0, input.domainFrequency)
     * Math.max(0, input.customerTypeFrequency)
     * relationshipMultiplier;
 }
-export function calculateSalesOrderTargetValue(input: { baseTargetValue: number; companyPrestige: number; relationship: number }): number {
-  const prestige = Math.max(0, input.companyPrestige); const prestigeProgress = prestige / (prestige + SALES_ORDER_VOLUME_SCALING.prestigeScale);
+export function calculateSalesCustomerAccessibility(customerType: SalesCustomerType, companyPrestige: number): number {
+  const profile = SALES_CUSTOMER_TYPE_PROFILES[customerType];
+  const prestige = Math.max(0, companyPrestige);
+  const progress = prestige / (prestige + profile.prestigeScale);
+  return profile.accessibilityFloor + (1 - profile.accessibilityFloor) * progress ** profile.prestigeExponent;
+}
+export function calculateSalesOrderCustomerTypeMaturity(customerType: SalesCustomerType, companyPrestige: number): number {
+  const profile = SALES_CUSTOMER_TYPE_PROFILES[customerType];
+  const prestige = Math.max(0, companyPrestige);
+  return prestige / (prestige + profile.prestigeScale);
+}
+export function calculateSalesOrderTargetValue(input: { baseTargetValue: number; companyPrestige: number; relationship: number; customerType?: SalesCustomerType; customerTypeMultiplier?: number }): number {
+  const prestige = Math.max(0, input.companyPrestige);
+  const prestigeProgress = prestige / (prestige + SALES_ORDER_VOLUME_SCALING.prestigeScale);
   const prestigeMultiplier = 1 + (SALES_ORDER_VOLUME_SCALING.maximumPrestigeMultiplier - 1) * prestigeProgress;
+  const customerTypeMaturity = input.customerType ? calculateSalesOrderCustomerTypeMaturity(input.customerType, prestige) : 1;
+  const customerTypeMultiplier = input.customerTypeMultiplier === undefined ? 1 : 1 + (Math.max(1, input.customerTypeMultiplier) - 1) * customerTypeMaturity;
   const relationshipMultiplier = 1 + clamp(input.relationship, 0, 1) * (SALES_ORDER_VOLUME_SCALING.maximumRelationshipMultiplier - 1);
-  return Math.max(0, input.baseTargetValue) * prestigeMultiplier * relationshipMultiplier;
+  return Math.max(0, input.baseTargetValue) * prestigeMultiplier * customerTypeMultiplier * relationshipMultiplier;
 }
 export function calculateSalesOrderMarketVolumeMultiplier(input: { resourceType: ResourceType; globalSupply: number }): number {
   const benchmarkSupply = getResource(input.resourceType).market.globalBenchmarkSupply;
@@ -159,6 +175,7 @@ export class SalesOrders {
               standardOrderLot: resourceProfile.standardOrderLot,
               productionWeight: input.getResourceWeight(resourceType),
               customerMarketShare: customer.marketShare,
+              customerAccessibility: calculateSalesCustomerAccessibility(customer.customerType, input.companyPrestige),
               domainFrequency: SALES_CUSTOMER_DOMAIN_PROFILES[customer.domain].frequency,
               customerTypeFrequency: SALES_CUSTOMER_TYPE_PROFILES[customer.customerType].frequencyMultiplier,
               relationship: state.relationship,
@@ -184,8 +201,13 @@ export class SalesOrders {
       selectedResources.push(next);
       remaining.splice(remaining.indexOf(next), 1);
     }
-    const domain = SALES_CUSTOMER_DOMAIN_PROFILES[customer.domain]; const type = SALES_CUSTOMER_TYPE_PROFILES[customer.customerType]; const baseTargetValue = (domain.targetOrderValue[0] + (domain.targetOrderValue[1] - domain.targetOrderValue[0]) * getDeterministicUnitInterval(`value:${this.nextOrderNumber}`)) * (type.targetValueMultiplier[0] + (type.targetValueMultiplier[1] - type.targetValueMultiplier[0]) * getDeterministicUnitInterval(`type-value:${this.nextOrderNumber}`));
-    const targetValue = Math.min(maximumOrderValue, calculateSalesOrderTargetValue({ baseTargetValue, companyPrestige: input.companyPrestige, relationship: state.relationship })); const lines: SalesOrderLine[] = []; let remainingOrderValue = maximumOrderValue;
+    const domain = SALES_CUSTOMER_DOMAIN_PROFILES[customer.domain];
+    const type = SALES_CUSTOMER_TYPE_PROFILES[customer.customerType];
+    const baseTargetValue = domain.targetOrderValue[0] + (domain.targetOrderValue[1] - domain.targetOrderValue[0]) * getDeterministicUnitInterval(`value:${this.nextOrderNumber}`);
+    const customerTypeMultiplier = type.targetValueMultiplier[0] + (type.targetValueMultiplier[1] - type.targetValueMultiplier[0]) * getDeterministicUnitInterval(`type-value:${this.nextOrderNumber}`);
+    const targetValue = Math.min(maximumOrderValue, calculateSalesOrderTargetValue({ baseTargetValue, companyPrestige: input.companyPrestige, customerType: customer.customerType, customerTypeMultiplier, relationship: state.relationship }));
+    const lines: SalesOrderLine[] = [];
+    let remainingOrderValue = maximumOrderValue;
     for (const resourceType of selectedResources) {
       const line = createOrderLine({ resourceType, targetValue: targetValue / selectedResources.length, globalReferenceUnitPrice: input.globalPrices[resourceType], globalSupply: input.globalSupplies[resourceType], customer, relationship: state.relationship, companyPrestige: input.companyPrestige, economyPhase: input.economyPhase, bidResearchMultiplier: input.bidResearchMultiplier, pressureOfferChanceMultiplier, minimumPremiumBonus, seed: `line:${this.nextOrderNumber}:${resourceType}`, maximumReward: remainingOrderValue });
       if (!line) continue;
