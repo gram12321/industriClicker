@@ -3,7 +3,6 @@ import type { FacilityCollection } from '@/game/facilities';
 import type { Inventory } from '@/game/inventory';
 import type { Market } from '@/game/market';
 import { calculateCompanyPrestigeSummary, type PrestigeLedger } from '@/game/prestige';
-import type { ProductionStatistics } from '@/game/achievements';
 import {
   getMaximumOpenSalesOrders,
   getSalesOfferProducedResourceWeight,
@@ -25,12 +24,16 @@ export type SalesOrderAcquisitionStatus = SalesOrderAcquisitionDetails & {
   maximumOrderValue: number;
 };
 
+type ProductionStatisticsLike = {
+  toSnapshot: () => { producedByResource: Readonly<Record<ResourceType, number>> };
+};
+
 export type SalesOrderAcquisitionStatusInput = {
   facilities: FacilityCollection;
   finance: Finance;
   inventory: Inventory;
   market: Market;
-  productionStatistics: ProductionStatistics;
+  productionStatistics: ProductionStatisticsLike;
   prestige: PrestigeLedger;
   research: ResearchLedger;
   salesOrders: SalesOrders;
@@ -87,7 +90,7 @@ export function getSalesOrderAcquisitionStatus(
 export function getSalesOrderResourceWeight(
   resourceType: ResourceType,
   research: ResearchLedger,
-  productionStatistics: ProductionStatistics,
+  productionStatistics: ProductionStatisticsLike,
 ): number {
   return productionStatistics.toSnapshot().producedByResource[resourceType] > 0
     ? getSalesOfferProducedResourceWeight(research.getCompletedProjectIds())
