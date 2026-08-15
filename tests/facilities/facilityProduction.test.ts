@@ -104,6 +104,30 @@ describe('advanceAllFacilityProduction', () => {
     ]);
   });
 
+  it('grants and output-upgrades every configured recipe output', () => {
+    const recipe = getRecipe(RecipeName.GrowGrain);
+    const originalOutputs = recipe.outputs;
+    recipe.outputs = [
+      originalOutputs[0],
+      { resourceType: ResourceType.Water, amount: 0.25 },
+    ];
+
+    try {
+      const { facilities, facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+      facility.upgradeOutput();
+      const inventory = new Inventory();
+      addRecipeInputs(inventory, RecipeName.GrowGrain, 1);
+
+      const outputs = advanceAllFacilityProduction(facilities, inventory, () => recipe.requiredWork);
+
+      expect(outputs).toHaveLength(2);
+      expect(inventory.getAmount(ResourceType.Grain)).toBeCloseTo(originalOutputs[0].amount * facility.getView().outputMultiplier);
+      expect(inventory.getAmount(ResourceType.Water)).toBeCloseTo(0.25 * facility.getView().outputMultiplier);
+    } finally {
+      recipe.outputs = originalOutputs;
+    }
+  });
+
   it('completes the expected number of fully staffed Grain cycles in one minute', () => {
     const { facilities } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
     const inventory = new Inventory();
@@ -116,7 +140,7 @@ describe('advanceAllFacilityProduction', () => {
     );
 
     expect(outputs).toHaveLength(20);
-    expect(inventory.getAmount(ResourceType.Grain)).toBeCloseTo(getRecipe(RecipeName.GrowGrain).output.amount * 20);
+    expect(inventory.getAmount(ResourceType.Grain)).toBeCloseTo(getRecipe(RecipeName.GrowGrain).outputs[0].amount * 20);
     expect(inventory.getAmount(ResourceType.Water)).toBe(0);
     expect(inventory.getAmount(ResourceType.Electricity)).toBe(0);
   });
@@ -135,7 +159,7 @@ describe('advanceAllFacilityProduction', () => {
     const outputs = advanceAllFacilityProduction(facilities, inventory, () => 0.03);
 
     expect(outputs).toHaveLength(1);
-    expect(inventory.getAmount(ResourceType.Grain)).toBe(getRecipe(RecipeName.GrowGrain).output.amount);
+    expect(inventory.getAmount(ResourceType.Grain)).toBe(getRecipe(RecipeName.GrowGrain).outputs[0].amount);
   });
 
   it('applies the output upgrade when a cycle completes', () => {
@@ -152,7 +176,8 @@ describe('advanceAllFacilityProduction', () => {
     );
 
     expect(outputs).toHaveLength(1);
-    expect(outputs[0]!.amount).toBeCloseTo(getRecipe(RecipeName.GrowGrain).output.amount * facility.getView().outputMultiplier);
-    expect(inventory.getAmount(ResourceType.Grain)).toBeCloseTo(getRecipe(RecipeName.GrowGrain).output.amount * facility.getView().outputMultiplier);
+    expect(outputs[0]!.amount).toBeCloseTo(getRecipe(RecipeName.GrowGrain).outputs[0].amount * facility.getView().outputMultiplier);
+    expect(inventory.getAmount(ResourceType.Grain)).toBeCloseTo(getRecipe(RecipeName.GrowGrain).outputs[0].amount * facility.getView().outputMultiplier);
   });
+
 });

@@ -1,6 +1,3 @@
-/** Player-facing opening funds for a new company. */
-export const FINANCE_INITIAL_BALANCE = 100;
-
 /** Rolling foreground-time windows available in finance reports. */
 export const FINANCE_REPORT_PERIODS = [
   { id: 'minute', label: '1 min', durationMs: 60_000 },

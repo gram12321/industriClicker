@@ -1,4 +1,5 @@
 import type { AchievementLedger } from '@/game/achievements';
+import { FINANCE_INITIAL_BALANCE } from '@/game/company/companyConstants';
 import type { Facility, FacilityCollection } from '@/game/facilities';
 import { getFacilityDefinition, getFacilityUpgradeInvestmentCost } from '@/game/facilities';
 import type { Inventory } from '@/game/inventory';
@@ -6,7 +7,7 @@ import type { Market } from '@/game/market';
 import type { ResearchLedger } from '@/game/research';
 import { getResearchProject } from '@/game/research';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
-import { FINANCE_INITIAL_BALANCE, FINANCE_REPORT_PERIODS, type FinanceReportPeriod } from './financeConstants';
+import { FINANCE_REPORT_PERIODS, type FinanceReportPeriod } from './financeConstants';
 import type { Finance, FinanceTransaction, Loan } from './finance';
 import { calculateCreditRating, calculateLoanLimitBreakdown, type CreditRating, type LoanLimitBreakdown } from './loanService';
 
@@ -48,6 +49,7 @@ export function calculateFacilityAssetValue(facility: Facility, market: Market):
   const definition = getFacilityDefinition(view.facilityType);
   const replacementCost = definition.landCost
     + definition.constructionMaterialsCost * market.getLocalPrice(ResourceType.ConstructionMaterials)
+    + definition.industrialMachinesCost * market.getLocalPrice(ResourceType.IndustrialMachines)
     + getFacilityUpgradeInvestmentCost(definition.upgradeCost, view.speedUpgradeLevel)
     + getFacilityUpgradeInvestmentCost(definition.upgradeCost, view.outputUpgradeLevel)
     + getFacilityUpgradeInvestmentCost(definition.upgradeCost, view.conditionDecayUpgradeLevel);

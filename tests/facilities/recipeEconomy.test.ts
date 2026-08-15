@@ -76,7 +76,7 @@ describe('recipe economy simulation', () => {
     expect(result.stalledFacilityMinutes).toBe(0);
   });
 
-  it('applies participating-facility construction demand in connected construction chains', () => {
+  it('applies participating-facility construction-input demand in connected construction chains', () => {
     const result = simulateRecipeEconomyChain({
       facilities: [
         { recipeName: RecipeName.ProduceWater },
@@ -85,12 +85,15 @@ describe('recipe economy simulation', () => {
       ],
       durationMinutes: RECIPE_ECONOMY_LONG_WINDOW_MINUTES,
       sellResourceTypes: [ResourceType.ConstructionMaterials],
-      includeConstructionMaterialsDemand: true,
+      includeConstructionInputsDemand: true,
     });
 
     expect(result.constructionMaterialsDemand).toBeGreaterThan(0);
     expect(result.fulfilledConstructionMaterialsDemand).toBeGreaterThan(0);
     expect(result.fulfilledConstructionMaterialsDemand).toBeLessThanOrEqual(result.constructionMaterialsDemand);
+    expect(result.industrialMachinesDemand).toBeGreaterThan(0);
+    expect(result.fulfilledIndustrialMachinesDemand).toBeGreaterThan(0);
+    expect(result.fulfilledIndustrialMachinesDemand).toBeLessThanOrEqual(result.industrialMachinesDemand);
   });
 
   it.each(UPGRADE_LEVELS)('reports the grain economy at upgrade level %i', (speedUpgradeLevel) => {

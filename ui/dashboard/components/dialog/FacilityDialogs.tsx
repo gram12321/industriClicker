@@ -26,7 +26,7 @@ function formatRecipeInputs(recipe: Recipe): string {
 }
 
 function formatRecipeOutput(recipe: Recipe): string {
-  return `${getResourceIcon(recipe.output.resourceType)} ×${formatNumber(recipe.output.amount, { smartDecimals: true })}`;
+  return recipe.outputs.map(({ resourceType, amount }) => `${getResourceIcon(resourceType)} ×${formatNumber(amount, { smartDecimals: true })}`).join(' + ');
 }
 
 export function FacilityConstructionDialog(props: {
@@ -40,13 +40,13 @@ export function FacilityConstructionDialog(props: {
   onCloseConstructionYard: () => void;
   onSelectFacility: (facilityType: FacilityType) => void;
   onConfirmConstruction: () => void;
-  onBuyMissingConstructionMaterials: () => void;
+  onBuyMissingConstructionInputs: () => void;
   onConfirmDestruction: () => void;
   onDismissConstruction: () => void;
   onDismissDestruction: () => void;
 }) {
   return <>
-    <ConfirmConstrution facilityType={props.pendingConstruction} finance={props.finance} inventory={props.inventory} market={props.market} onBuyMissingConstructionMaterials={props.onBuyMissingConstructionMaterials} onConfirm={props.onConfirmConstruction} onDismiss={props.onDismissConstruction} />
+    <ConfirmConstrution facilityType={props.pendingConstruction} finance={props.finance} inventory={props.inventory} market={props.market} onBuyMissingConstructionInputs={props.onBuyMissingConstructionInputs} onConfirm={props.onConfirmConstruction} onDismiss={props.onDismissConstruction} />
     <BuildFacilityDialog finance={props.finance} inventory={props.inventory} market={props.market} onDismiss={props.onCloseConstructionYard} onSelectFacility={props.onSelectFacility} visible={props.isConstructionYardOpen} />
     <DestructionDialog facilities={props.facilities} facilityId={props.pendingDestruction} market={props.market} onConfirm={props.onConfirmDestruction} onDismiss={props.onDismissDestruction} />
   </>;
@@ -72,8 +72,10 @@ function BuildFacilityDialog({
   const facilities = FACILITY_GROUPS.flatMap((group) => group.facilities.map((facilityType) => {
     const definition = getFacilityDefinition(facilityType);
     const missingMaterials = Math.max(0, definition.constructionMaterialsCost - inventory.getAmount(ResourceType.ConstructionMaterials));
+    const missingIndustrialMachines = Math.max(0, definition.industrialMachinesCost - inventory.getAmount(ResourceType.IndustrialMachines));
     const canAffordConstruction = market.getLocalEntry(ResourceType.ConstructionMaterials).supply >= missingMaterials
-      && finance.canAfford(definition.landCost + missingMaterials * market.getLocalPrice(ResourceType.ConstructionMaterials));
+      && market.getLocalEntry(ResourceType.IndustrialMachines).supply >= missingIndustrialMachines
+      && finance.canAfford(definition.landCost + missingMaterials * market.getLocalPrice(ResourceType.ConstructionMaterials) + missingIndustrialMachines * market.getLocalPrice(ResourceType.IndustrialMachines));
     return { canAffordConstruction, definition, facilityType, groupLabel: group.label };
   }));
   const filteredFacilities = facilities.filter(({ canAffordConstruction }) => facilityFilter === 'all'
@@ -102,7 +104,8 @@ function BuildFacilityDialog({
           >
             {filteredFacilities.map(({ canAffordConstruction, definition, facilityType, groupLabel }, index) => {
               const constructionMaterialsPrice = market.getLocalPrice(ResourceType.ConstructionMaterials);
-              const totalConstructionCost = definition.landCost + definition.constructionMaterialsCost * constructionMaterialsPrice;
+              const industrialMachinesPrice = market.getLocalPrice(ResourceType.IndustrialMachines);
+              const totalConstructionCost = definition.landCost + definition.constructionMaterialsCost * constructionMaterialsPrice + definition.industrialMachinesCost * industrialMachinesPrice;
               const showGroup = index === 0 || filteredFacilities[index - 1].groupLabel !== groupLabel;
               return (
                 <View key={facilityType}>
@@ -116,14 +119,14 @@ function BuildFacilityDialog({
                 >
                   <Card.Content>
                     <List.Item
-                      description={<View style={styles.currencyDescription}><Text>Land:</Text><CurrencyValue value={definition.landCost} /><Text>· Materials: {getResourceIcon(ResourceType.ConstructionMaterials)} {formatNumber(definition.constructionMaterialsCost)}</Text></View>}
+                      description={<View style={styles.currencyDescription}><Text>Land:</Text><CurrencyValue value={definition.landCost} /><Text>{` · Materials: ${getResourceIcon(ResourceType.ConstructionMaterials)} ${formatNumber(definition.constructionMaterialsCost)} · Machines: ${getResourceIcon(ResourceType.IndustrialMachines)} ${formatNumber(definition.industrialMachinesCost)}`}</Text></View>}
                       left={(props) => <List.Icon {...props} icon={definition.icon} />}
                       title={definition.name}
                       titleStyle={styles.facilityTitle}
                     />
                     <View style={styles.facilityCostDetails}>
-                      <View style={styles.currencyDescription}><Text>Material price:</Text><CurrencyValue value={constructionMaterialsPrice} /></View>
-                      <View style={styles.currencyDescription}><Text>Total cost:</Text><CurrencyValue value={totalConstructionCost} /></View>
+                      <View style={styles.currencyDescription}><Text>Material price:</Text><CurrencyValue value={constructionMaterialsPrice} /><Text> · Machine price:</Text><CurrencyValue value={industrialMachinesPrice} /></View>
+                      <View style={styles.currencyDescription}><Text>Market replacement cost:</Text><CurrencyValue value={totalConstructionCost} /></View>
                     </View>
                   </Card.Content>
                 </Card>
@@ -145,7 +148,7 @@ function ConfirmConstrution({
   finance,
   inventory,
   market,
-  onBuyMissingConstructionMaterials,
+  onBuyMissingConstructionInputs,
   onConfirm,
   onDismiss,
 }: {
@@ -153,7 +156,7 @@ function ConfirmConstrution({
   finance: Finance;
   inventory: Inventory;
   market: Market;
-  onBuyMissingConstructionMaterials: () => void;
+  onBuyMissingConstructionInputs: () => void;
   onConfirm: () => void;
   onDismiss: () => void;
 }) {
@@ -163,15 +166,20 @@ function ConfirmConstrution({
 
   const definition = getFacilityDefinition(facilityType);
   const canConstruct = finance.canAfford(definition.landCost)
-    && inventory.has(ResourceType.ConstructionMaterials, definition.constructionMaterialsCost);
+    && inventory.has(ResourceType.ConstructionMaterials, definition.constructionMaterialsCost)
+    && inventory.has(ResourceType.IndustrialMachines, definition.industrialMachinesCost);
   const balanceAfterConstruction = finance.getBalance() - definition.landCost;
   const materialsAfterConstruction = inventory.getAmount(ResourceType.ConstructionMaterials) - definition.constructionMaterialsCost;
+  const industrialMachinesAfterConstruction = inventory.getAmount(ResourceType.IndustrialMachines) - definition.industrialMachinesCost;
   const missingMaterials = Math.max(0, -materialsAfterConstruction);
+  const missingIndustrialMachines = Math.max(0, -industrialMachinesAfterConstruction);
   const materialUnitPrice = market.getLocalPrice(ResourceType.ConstructionMaterials);
-  const materialPurchaseCost = missingMaterials * materialUnitPrice;
-  const canAutoBuyMaterials = missingMaterials > 0
+  const industrialMachinesUnitPrice = market.getLocalPrice(ResourceType.IndustrialMachines);
+  const missingInputsPurchaseCost = missingMaterials * materialUnitPrice + missingIndustrialMachines * industrialMachinesUnitPrice;
+  const canAutoBuyInputs = (missingMaterials > 0 || missingIndustrialMachines > 0)
     && market.getLocalEntry(ResourceType.ConstructionMaterials).supply >= missingMaterials
-    && finance.canAfford(definition.landCost + materialPurchaseCost);
+    && market.getLocalEntry(ResourceType.IndustrialMachines).supply >= missingIndustrialMachines
+    && finance.canAfford(definition.landCost + missingInputsPurchaseCost);
 
   return (
     <Portal>
@@ -179,12 +187,12 @@ function ConfirmConstrution({
         <Dialog.Title>{`Construct ${definition.name}?`}</Dialog.Title>
         <Dialog.Content>
           <Text style={styles.dialogDescription}>
-            Purchase the land and supply the construction materials before the facility is added to your company.
+            Purchase the land, supply the construction materials, and install the industrial machines before the facility is added to your company.
           </Text>
           <Card mode="contained" style={styles.dialogSummaryCard}>
             <Card.Content style={styles.dialogSummaryContent}>
-              <View style={styles.dialogSummaryRow}><Text>Construction cost</Text><View style={styles.currencyDescription}><CurrencyValue value={definition.landCost} /><Text style={styles.detailValue}>· {getResourceIcon(ResourceType.ConstructionMaterials)} {formatNumber(definition.constructionMaterialsCost)}</Text></View></View>
-              <View style={styles.dialogSummaryRow}><Text>Resources after purchase</Text><View style={styles.currencyDescription}><CurrencyValue value={balanceAfterConstruction} /><Text style={styles.detailValue}>· {getResourceIcon(ResourceType.ConstructionMaterials)} {formatNumber(materialsAfterConstruction)}</Text></View></View>
+              <View style={styles.dialogSummaryRow}><Text>Construction cost</Text><View style={styles.currencyDescription}><CurrencyValue value={definition.landCost} /><Text style={styles.detailValue}>{` · ${getResourceIcon(ResourceType.ConstructionMaterials)} ${formatNumber(definition.constructionMaterialsCost)} · ${getResourceIcon(ResourceType.IndustrialMachines)} ${formatNumber(definition.industrialMachinesCost)}`}</Text></View></View>
+              <View style={styles.dialogSummaryRow}><Text>Resources after purchase</Text><View style={styles.currencyDescription}><CurrencyValue value={balanceAfterConstruction} /><Text style={styles.detailValue}>{` · ${getResourceIcon(ResourceType.ConstructionMaterials)} ${formatNumber(materialsAfterConstruction)} · ${getResourceIcon(ResourceType.IndustrialMachines)} ${formatNumber(industrialMachinesAfterConstruction)}`}</Text></View></View>
             </Card.Content>
           </Card>
           <Text variant="titleMedium" style={styles.dialogSectionHeading}>Available recipes</Text>
@@ -199,7 +207,7 @@ function ConfirmConstrution({
         </Dialog.Content>
         <Dialog.Actions>
           <Button mode="outlined" onPress={onDismiss}>Cancel</Button>
-          {missingMaterials > 0 && <Button disabled={!canAutoBuyMaterials} mode="outlined" onPress={onBuyMissingConstructionMaterials}><Text>Buy {formatNumber(missingMaterials)} {getResourceIcon(ResourceType.ConstructionMaterials)} · </Text><MaterialCommunityIcons name={APP_ICONS.coin} size={16} color={styles.detailValue.color} /><Text> {formatCurrency(materialPurchaseCost).replace(/\s*€/u, '')}</Text></Button>}
+          {(missingMaterials > 0 || missingIndustrialMachines > 0) && <Button disabled={!canAutoBuyInputs} mode="outlined" onPress={onBuyMissingConstructionInputs}><Text>Buy missing inputs · </Text><MaterialCommunityIcons name={APP_ICONS.coin} size={16} color={styles.detailValue.color} /><Text> {formatCurrency(missingInputsPurchaseCost).replace(/\s*€/u, '')}</Text></Button>}
           <Button disabled={!canConstruct} mode="contained" onPress={onConfirm}>Confirm build</Button>
         </Dialog.Actions>
       </Dialog>

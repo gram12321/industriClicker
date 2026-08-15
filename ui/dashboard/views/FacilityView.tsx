@@ -202,7 +202,7 @@ function FacilityResourceSummary({ outputMultiplier, recipe }: { outputMultiplie
   return <View style={styles.facilityResourceSummary}>
     <View style={styles.facilityResourceGroup}><Text style={styles.facilityResourceLabel}>Input</Text><View style={styles.facilityResourceItems}>{recipe.inputs.length === 0 ? <Text style={styles.facilityResourceEmpty}>—</Text> : recipe.inputs.map((input) => <Text key={input.resourceType} accessibilityLabel={`${getResource(input.resourceType).name} ${formatNumber(input.amount, { smartDecimals: true })}`} style={styles.facilityResourceValue}>{getResourceIcon(input.resourceType)} {formatNumber(input.amount, { smartDecimals: true })}</Text>)}</View></View>
     <Text style={styles.facilityResourceArrow}>→</Text>
-    <View style={styles.facilityResourceGroup}><Text style={styles.facilityResourceLabel}>Output</Text><Text accessibilityLabel={`${getResource(recipe.output.resourceType).name} ${formatNumber(recipe.output.amount * outputMultiplier, { smartDecimals: true })}`} style={[styles.facilityResourceValue, styles.facilityResourceOutput]}>{getResourceIcon(recipe.output.resourceType)} {formatNumber(recipe.output.amount * outputMultiplier, { smartDecimals: true })}</Text></View>
+    <View style={styles.facilityResourceGroup}><Text style={styles.facilityResourceLabel}>Output</Text><View style={styles.facilityResourceItems}>{recipe.outputs.map((output) => <Text key={output.resourceType} accessibilityLabel={`${getResource(output.resourceType).name} ${formatNumber(output.amount * outputMultiplier, { smartDecimals: true })}`} style={[styles.facilityResourceValue, styles.facilityResourceOutput]}>{getResourceIcon(output.resourceType)} {formatNumber(output.amount * outputMultiplier, { smartDecimals: true })}</Text>)}</View></View>
   </View>;
 }
 
@@ -214,9 +214,9 @@ function FacilityProductionStatus({ compact = false, decayCostPerMinute, effecti
   const workPerMinute = effectiveWorkPerMinute;
   const minutesRemaining = workPerMinute > 0 ? Math.max(0, recipe.requiredWork - progress) / workPerMinute : 0;
   const productionRateLabel = formatProductionRate(recipe, outputMultiplier, effectiveWorkPerMinute, minutesRemaining);
-  if (compact) return <View style={styles.productionProgress}><View style={styles.productionProgressHeader}><View><Text style={styles.productionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text><Text style={styles.productionTimeLeft}>Net gain/min: {formatCurrency(netGainPerMinute)}</Text><Text style={styles.productionTimeLeft}>Decay cost/min: {formatConditionCost(decayCostPerMinute, market)}</Text></View><View style={styles.productionProgressMeta}><Text style={styles.productionPercent}>{formatPercent(progressPercent, { decimals: 0, input: 'percent' })}</Text><Text style={styles.productionTimeLeft}>{productionRateLabel}</Text><Text style={styles.productionTimeLeft}>Time left: {formatDuration(minutesRemaining)}</Text></View></View><ProgressBar color={colors.primary} progress={progressPercent / 100} style={styles.productionProgressBar} /></View>;
+  if (compact) return <View style={styles.productionProgress}><View style={styles.productionProgressHeader}><View style={styles.productionProgressValues}><Text style={styles.productionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text><Text style={styles.productionTimeLeft}>Net gain/min: {formatCurrency(netGainPerMinute)}</Text><Text style={styles.productionTimeLeft}>Decay cost/min: {formatConditionCost(decayCostPerMinute, market)}</Text></View><View style={styles.productionProgressMeta}><Text style={styles.productionPercent}>{formatPercent(progressPercent, { decimals: 0, input: 'percent' })}</Text></View></View><Text style={styles.productionTimeLeft}>{productionRateLabel}</Text><Text style={styles.productionTimeLeft}>Time left: {formatDuration(minutesRemaining)}</Text><ProgressBar color={colors.primary} progress={progressPercent / 100} style={styles.productionProgressBar} /></View>;
   if (status !== 'producing') return <View style={styles.productionProgress}><Text style={styles.productionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text><Text style={styles.productionTimeLeft}>Net gain/min: {formatCurrency(netGainPerMinute)}</Text><Text style={styles.productionTimeLeft}>Decay cost/min: {formatConditionCost(decayCostPerMinute, market)}</Text><Text style={styles.productionTimeLeft}>{productionRateLabel}</Text><Text style={styles.productionTimeLeft}>Time left: {formatDuration(minutesRemaining)}</Text></View>;
-  return <View style={styles.productionProgress}><View style={styles.productionProgressHeader}><View><Text style={styles.productionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text><Text style={styles.productionTimeLeft}>Net gain/min: {formatCurrency(netGainPerMinute)}</Text><Text style={styles.productionTimeLeft}>Decay cost/min: {formatConditionCost(decayCostPerMinute, market)}</Text></View><View style={styles.productionProgressMeta}><Text style={styles.productionPercent}>{formatPercent(progressPercent, { decimals: 0, input: 'percent' })}</Text><Text style={styles.productionTimeLeft}>{productionRateLabel}</Text><Text style={styles.productionTimeLeft}>Time left: {formatDuration(minutesRemaining)}</Text></View></View><ProgressBar color={colors.primary} progress={progressPercent / 100} style={styles.productionProgressBar} /></View>;
+  return <View style={styles.productionProgress}><View style={styles.productionProgressHeader}><View style={styles.productionProgressValues}><Text style={styles.productionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text><Text style={styles.productionTimeLeft}>Net gain/min: {formatCurrency(netGainPerMinute)}</Text><Text style={styles.productionTimeLeft}>Decay cost/min: {formatConditionCost(decayCostPerMinute, market)}</Text></View><View style={styles.productionProgressMeta}><Text style={styles.productionPercent}>{formatPercent(progressPercent, { decimals: 0, input: 'percent' })}</Text></View></View><Text style={styles.productionTimeLeft}>{productionRateLabel}</Text><Text style={styles.productionTimeLeft}>Time left: {formatDuration(minutesRemaining)}</Text><ProgressBar color={colors.primary} progress={progressPercent / 100} style={styles.productionProgressBar} /></View>;
 }
 
 function formatRecipeProgress(progress: number, requiredWork: number, effectiveWorkPerMinute: number): string {
@@ -228,17 +228,20 @@ function formatRecipeProgress(progress: number, requiredWork: number, effectiveW
 function formatProductionRate(recipe: Recipe, outputMultiplier: number, effectiveWorkPerMinute: number, minutesRemaining: number): string {
   if (recipe.requiredWork <= 0) return 'Production/min: 0';
 
-  const outputPerMinute = recipe.output.amount * outputMultiplier * effectiveWorkPerMinute / recipe.requiredWork;
+  const outputsPerMinute = recipe.outputs.map((output) => ({
+    resourceType: output.resourceType,
+    amount: output.amount * outputMultiplier * effectiveWorkPerMinute / recipe.requiredWork,
+  }));
   const useSeconds = minutesRemaining < 1;
-  const outputRate = useSeconds ? outputPerMinute / 60 : outputPerMinute;
   const unit = useSeconds ? 'sec' : 'min';
-  return `Production/${unit}: ${getResourceIcon(recipe.output.resourceType)} ${formatNumber(outputRate, { smartDecimals: true })}`;
+  return `Production/${unit}: ${outputsPerMinute.map(({ resourceType, amount }) => `${getResourceIcon(resourceType)} ${formatNumber(useSeconds ? amount / 60 : amount, { smartDecimals: true })}`).join(' + ')}`;
 }
 
 function getRecipeValuePerMinute(recipe: Recipe, market: Market, outputMultiplier: number, workPerMinute: number): number {
   if (recipe.requiredWork <= 0) return 0;
   const cyclesPerMinute = workPerMinute / recipe.requiredWork;
-  const outputValue = recipe.output.amount * outputMultiplier * market.getLocalPrice(recipe.output.resourceType);
+  const outputValue = recipe.outputs
+    .reduce((total, output) => total + output.amount * outputMultiplier * market.getLocalPrice(output.resourceType), 0);
   const inputValue = recipe.inputs.reduce((total, input) => total + input.amount * market.getLocalPrice(input.resourceType), 0);
   return (outputValue - inputValue) * cyclesPerMinute;
 }

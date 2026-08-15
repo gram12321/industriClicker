@@ -58,7 +58,7 @@ describe('catalogue progression coverage', () => {
   it('gives every facility recipe an unlock project and every produced resource a production achievement series', () => {
     const recipes = Object.values(FACILITIES).flatMap((facility) => facility.recipes);
     const researchProjectIds = new Set(RESEARCH_PROJECTS.map((project) => project.id));
-    const producedResources = new Set(recipes.map((recipe) => recipe.output.resourceType));
+    const producedResources = new Set(recipes.flatMap((recipe) => recipe.outputs).map((output) => output.resourceType));
     const achievementResources = new Set(ACHIEVEMENT_DEFINITIONS
       .filter((definition) => definition.metric === 'resource-produced')
       .map((definition) => definition.resourceType));
@@ -69,5 +69,12 @@ describe('catalogue progression coverage', () => {
     for (const resourceType of producedResources) {
       expect(achievementResources).toContain(resourceType);
     }
+  });
+
+  it('applies the threefold duration multiplier to every recipe research project', () => {
+    const recipeProjects = RESEARCH_PROJECTS.filter((project) => project.effect.kind === 'recipe-unlock' || project.effect.kind === 'recipe-work-speed-bonus');
+
+    expect(recipeProjects).not.toHaveLength(0);
+    expect(recipeProjects.every((project) => project.durationMs >= 45_000)).toBe(true);
   });
 });

@@ -105,9 +105,11 @@ export function advanceAllFacilityProduction(
         remainingStepFraction = Math.max(0, remainingStepFraction - appliedWork / effectiveWork);
 
         if (progress + WORK_COMPLETION_EPSILON >= recipe.requiredWork) {
-          const amount = recipe.output.amount * facilityView.outputMultiplier;
-          inventory.add(recipe.output.resourceType, amount);
-          outputs.push({ facilityType: facilityView.facilityType, recipeName: recipe.name, resourceType: recipe.output.resourceType, amount });
+          for (const output of recipe.outputs) {
+            const amount = output.amount * facilityView.outputMultiplier;
+            inventory.add(output.resourceType, amount);
+            outputs.push({ facilityType: facilityView.facilityType, recipeName: recipe.name, resourceType: output.resourceType, amount });
+          }
           facility.applyConditionLoss(getRecipeProductionConditionLoss(recipe));
           progress = 0;
           if (!facility.advanceProductionCycle()) break;

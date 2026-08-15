@@ -78,8 +78,8 @@ function getActiveProcesses({ customerPipelineProgress, facilities, finance, inv
   const researchProcess = activeResearch ? (() => {
     const project = getResearchProject(activeResearch.projectId);
     if (!project) return [];
-    const progress = clamp(activeResearch.progressMs / project.durationMs, 0, 1);
-    return [{ id: `research-${project.id}`, icon: APP_ICONS.research, label: 'Research', progress, timing: `${formatElapsedTime(Math.max(0, project.durationMs - activeResearch.progressMs))} left`, title: project.name }];
+    const progress = clamp(activeResearch.progressMs / activeResearch.durationMs, 0, 1);
+    return [{ id: `research-${project.id}`, icon: APP_ICONS.research, label: 'Research', progress, timing: `${formatElapsedTime(Math.max(0, activeResearch.durationMs - activeResearch.progressMs))} left`, title: project.name }];
   })() : [];
 
   const activeLoanSearch = finance.getActiveLoanSearch();
@@ -117,7 +117,7 @@ function getRemainingProcessMilliseconds(process: ActiveProcess, facilities: Fac
   if (process.id.startsWith('research-')) {
     const activeResearch = research.getActiveProject();
     const project = activeResearch ? getResearchProject(activeResearch.projectId) : null;
-    return project ? Math.max(1, project.durationMs - activeResearch!.progressMs) : 1;
+    return project ? Math.max(1, activeResearch!.durationMs - activeResearch!.progressMs) : 1;
   }
 
   const facility = facilities.get(process.id);

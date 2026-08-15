@@ -25,6 +25,7 @@ describe('calculateFacilityAssetValue', () => {
       + getFacilityUpgradeInvestmentCost(definition.upgradeCost, 3);
     const expectedValue = definition.landCost
       + definition.constructionMaterialsCost * market.getLocalPrice(ResourceType.ConstructionMaterials)
+      + definition.industrialMachinesCost * market.getLocalPrice(ResourceType.IndustrialMachines)
       + expectedUpgradeInvestment;
 
     expect(calculateFacilityAssetValue(facility, market)).toBe(expectedValue);

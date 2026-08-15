@@ -1,5 +1,5 @@
 import type { PrestigeEvent } from './prestige';
-import { FINANCE_INITIAL_BALANCE } from '@/game/finance';
+import { FINANCE_INITIAL_BALANCE } from '@/game/company/companyConstants';
 import { safeNonNegative } from '@/utils';
 import { PRESTIGE_CASH_WEIGHT, PRESTIGE_EVENT_MIN_AMOUNT, PRESTIGE_DECAY_PROJECTION_FOREGROUND_HOURS, PRESTIGE_FOREGROUND_HOUR_MS, PRESTIGE_ROUNDING_FACTOR } from './prestigeConstants';
 

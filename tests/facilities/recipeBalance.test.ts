@@ -14,8 +14,14 @@ type RecipeTimingCase = {
 const RECIPE_TIMING_CASES: readonly RecipeTimingCase[] = [
   { facilityType: FacilityType.Farm, recipeName: RecipeName.GrowGrain, expectedSeconds: 3 },
   { facilityType: FacilityType.Farm, recipeName: RecipeName.GrowSugar, expectedSeconds: 6 },
+  { facilityType: FacilityType.Farm, recipeName: RecipeName.GrowFruit, expectedSeconds: 8 },
+  { facilityType: FacilityType.AnimalFarm, recipeName: RecipeName.RaiseCattle, expectedSeconds: 105 },
+  { facilityType: FacilityType.AnimalFarm, recipeName: RecipeName.RaiseSheep, expectedSeconds: 75 },
+  { facilityType: FacilityType.AnimalFarm, recipeName: RecipeName.RaiseChicken, expectedSeconds: 60 },
   { facilityType: FacilityType.Bakery, recipeName: RecipeName.BakeBread, expectedSeconds: 12 },
   { facilityType: FacilityType.Bakery, recipeName: RecipeName.BakeCake, expectedSeconds: 18 },
+  { facilityType: FacilityType.Bakery, recipeName: RecipeName.BakePremiumCake, expectedSeconds: 24 },
+  { facilityType: FacilityType.Bakery, recipeName: RecipeName.BakeMeatPie, expectedSeconds: 30 },
   { facilityType: FacilityType.SmallUtilityWorks, recipeName: RecipeName.ProduceWater, expectedSeconds: 4 },
   { facilityType: FacilityType.SmallUtilityWorks, recipeName: RecipeName.ProduceElectricity, expectedSeconds: 6 },
   { facilityType: FacilityType.Mine, recipeName: RecipeName.MineCoal, expectedSeconds: 6 },
@@ -56,7 +62,8 @@ function getInitialLocalPrice(resourceType: keyof typeof RESOURCES): number {
 
 function getNetMarginPerMinute(timingCase: RecipeTimingCase): number {
   const recipe = getRecipe(timingCase.recipeName);
-  const outputValue = getInitialLocalPrice(recipe.output.resourceType) * recipe.output.amount;
+  const outputValue = recipe.outputs
+    .reduce((total, output) => total + getInitialLocalPrice(output.resourceType) * output.amount, 0);
   const inputValue = recipe.inputs.reduce(
     (total, input) => total + getInitialLocalPrice(input.resourceType) * input.amount,
     0,

@@ -4,7 +4,7 @@ import { RESOURCE_TYPES, type ResourceType } from '@/game/resources';
 import { calculateDiminishingBonus } from '@/game/core/math/scaling';
 
 export type CompletedResearchProject = { projectId: ResearchProjectId; completedAtGameTimeMs: number };
-export type ActiveResearchProject = { projectId: ResearchProjectId; progressMs: number; paidCost: number };
+export type ActiveResearchProject = { projectId: ResearchProjectId; progressMs: number; durationMs: number; paidCost: number };
 export type ResearchLedgerSnapshot = { completed: CompletedResearchProject[]; active: ActiveResearchProject[] };
 
 export const BASE_MAXIMUM_OPEN_SALES_CONTRACTS = 2;
@@ -76,9 +76,9 @@ function isCompletedProject(value: unknown): value is CompletedResearchProject {
 function isActiveProject(value: unknown): value is ActiveResearchProject {
   if (typeof value !== 'object' || value === null) return false;
   const project = value as Record<string, unknown>;
-  const definition = isProjectId(project.projectId) ? getResearchProject(project.projectId) : null;
-  return definition !== null
-    && typeof project.progressMs === 'number' && Number.isFinite(project.progressMs) && project.progressMs >= 0 && project.progressMs < definition.durationMs
+  return isProjectId(project.projectId)
+    && typeof project.durationMs === 'number' && Number.isFinite(project.durationMs) && project.durationMs > 0
+    && typeof project.progressMs === 'number' && Number.isFinite(project.progressMs) && project.progressMs >= 0 && project.progressMs < project.durationMs
     && typeof project.paidCost === 'number' && Number.isFinite(project.paidCost) && project.paidCost >= 0;
 }
 
@@ -114,9 +114,9 @@ export class ResearchLedger {
   getActiveProject(): ActiveResearchProject | null { return this.active[0] ? { ...this.active[0] } : null; }
   hasCompleted(projectId: string): boolean { return this.completed.some((project) => project.projectId === projectId); }
 
-  start(projectId: ResearchProjectId, paidCost: number): boolean {
-    if (this.hasCompleted(projectId) || this.active.some((project) => project.projectId === projectId) || !Number.isFinite(paidCost) || paidCost < 0) return false;
-    this.active.push({ projectId, progressMs: 0, paidCost });
+  start(projectId: ResearchProjectId, paidCost: number, durationMs: number): boolean {
+    if (this.hasCompleted(projectId) || this.active.some((project) => project.projectId === projectId) || !Number.isFinite(paidCost) || paidCost < 0 || !Number.isFinite(durationMs) || durationMs <= 0) return false;
+    this.active.push({ projectId, progressMs: 0, durationMs: Math.floor(durationMs), paidCost });
     return true;
   }
 
@@ -127,10 +127,8 @@ export class ResearchLedger {
   advanceAll(elapsedMs: number): ResearchProjectId[] {
     if (this.active.length === 0 || !Number.isFinite(elapsedMs) || elapsedMs <= 0) return [];
     const completedProjects = this.active.filter((project) => {
-      const definition = getResearchProject(project.projectId);
-      if (!definition) return false;
-      project.progressMs = Math.min(definition.durationMs, project.progressMs + Math.floor(elapsedMs));
-      return project.progressMs >= definition.durationMs;
+      project.progressMs = Math.min(project.durationMs, project.progressMs + Math.floor(elapsedMs));
+      return project.progressMs >= project.durationMs;
     });
     if (completedProjects.length === 0) return [];
     this.active = this.active.filter((project) => !completedProjects.includes(project));

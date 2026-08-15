@@ -31,6 +31,13 @@ export enum ResourceType {
   AdvancedComponents = 'advanced-components',
   IndustrialMachines = 'industrial-machines',
   Cake = 'cake',
+  PremiumCake = 'premium-cake',
+  Eggs = 'eggs',
+  Fruit = 'fruit',
+  Meat = 'meat',
+  MeatPie = 'meat-pie',
+  Milk = 'milk',
+  Wool = 'wool',
 }
 
 /** Market seed values owned by each resource's code catalogue entry. */

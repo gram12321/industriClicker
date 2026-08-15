@@ -6,6 +6,10 @@ export enum RecipeName {
   ProduceWater = 'produce-water',
   ProduceElectricity = 'produce-electricity',
   GrowSugar = 'grow-sugar',
+  GrowFruit = 'grow-fruit',
+  RaiseCattle = 'raise-cattle',
+  RaiseSheep = 'raise-sheep',
+  RaiseChicken = 'raise-chicken',
   MineIron = 'mine-iron',
   MineCoal = 'mine-coal',
   MineCopper = 'mine-copper',
@@ -27,6 +31,8 @@ export enum RecipeName {
   ProduceReinforcedConcrete = 'produce-reinforced-concrete',
   ProduceConstructionMaterials = 'produce-construction-materials',
   BakeCake = 'bake-cake',
+  BakePremiumCake = 'bake-premium-cake',
+  BakeMeatPie = 'bake-meat-pie',
   ManualPumping = 'manual-pumping',
   ElectricPumping = 'electric-pumping',
   CoalPower = 'coal-power',
@@ -46,7 +52,8 @@ export type RecipeOutput = {
 export type Recipe = {
   name: RecipeName;
   inputs: readonly RecipeInput[];
-  output: RecipeOutput;
+  /** Every resource produced by one completed cycle. */
+  outputs: readonly [RecipeOutput, ...RecipeOutput[]];
   /** Deterministic work units required for one production cycle. */
   requiredWork: number;
   /** Static balance multiplier for production wear; it never follows live market prices. */

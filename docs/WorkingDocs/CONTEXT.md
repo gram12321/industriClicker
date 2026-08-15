@@ -8,7 +8,7 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 |---|---|
 | Industrial clicker | The game genre and setting direction. |
 | Resource | A typed item the player can gain, spend, transform, and hold in inventory. |
-| Grain, Bread, Water, Electricity, Sugar, Coal, Iron, Copper, Gold, Minerals, Steel, Electric Circuits, Chemicals, Fertilizer, Plastic, Silicon, Advanced Components, Industrial Machines, Bricks, Cement, Reinforced Concrete, Construction Materials, Sand, Clay, Stone, Cake | Current resource names. |
+| Grain, Bread, Water, Electricity, Sugar, Fruit, Eggs, Meat, Milk, Wool, Cake, Premium Cake, Meat Pie, Coal, Iron, Copper, Gold, Minerals, Steel, Electric Circuits, Chemicals, Fertilizer, Plastic, Silicon, Advanced Components, Industrial Machines, Bricks, Cement, Reinforced Concrete, Construction Materials, Sand, Clay, Stone | Current resource names. |
 | Inventory | Player-owned resource quantities and their associated quality. |
 | Resource quality | A property of an inventory entry; its gameplay rule is not yet designed. |
 | Logistics multiplier | A resource catalogue value for physical shipping, storage, and market-network constraints on adjacent-market diffusion. |
@@ -19,9 +19,9 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Regional market | The device-local market reservoir between the player-facing local market and the global reservoir; its initial supply is the rate base for both adjacent-market diffusion pairs. |
 | Autotrade interval | The per-resource foreground cadence for both enabled autobuy and autosell; it defaults to five seconds. |
 | Market-flow diagnostics | Read-only price, balance-target, rate, and multiplier details for one resource's local/regional and regional/global diffusion, shown in IndustriPedia. |
-| Recipe | A named production transformation with inputs, output, and required work. |
+| Recipe | A named production transformation with inputs, one or more outputs, and required work. |
 | Production cycle | An ordered, repeatable per-facility sequence of researched recipes. It may contain the same recipe more than once. |
-| Facility | A player-owned production unit. Several of the same type may be constructed; each is numbered by type, such as Mine #1 and Mine #2. Current types are Farm, Bakery, Small Utility Works, Mine, Quarry, Industrial Processing Factory, Chemical Plant, Electronics Factory, Assembly Plant, Construction Factory, Water Well, and Power Plant. |
+| Facility | A player-owned production unit. Several of the same type may be constructed; each is numbered by type, such as Mine #1 and Mine #2. Construction always consumes a land-payment in euros, Construction Materials for the site shell and infrastructure, and Industrial Machines for the operating equipment. Current types are Farm, Animal Farm, Bakery, Small Utility Works, Mine, Quarry, Industrial Processing Factory, Chemical Plant, Electronics Factory, Assembly Plant, Construction Factory, Water Well, and Power Plant. |
 | Euro (€) | The company currency. |
 | Finance | Company balance, classified append-only ledger, debt, credit history, and derived financial statements. |
 | Finance transaction | A signed cash movement with an accounting kind, source, nested detail lines, and logical foreground-game timestamp. |
@@ -50,12 +50,12 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Achievement unlock | The persisted achievement ID and logical foreground time at which its condition was first met. |
 | Production statistics | Lifetime facility output totals by resource, recorded only when a recipe completes output. |
 | Progression gate | A pure all-of requirement check over achievements, current prestige, completed research, and a starting condition. |
-| Research project | A code-defined, one-time company project with an up-front cost, foreground duration, requirements, and completion effect. |
-| Active research | The one paid research project currently accumulating foreground milliseconds for its company. |
+| Research project | A code-defined, one-time company project with an up-front cost, foreground duration, requirements, and completion effect. Recipe research durations are three times their base duration. |
+| Active research | The one paid research project currently accumulating foreground milliseconds for its company, with its effective duration retained when it starts. |
 | Sales capacity | The derived maximum number of open customer contracts. It starts at two and is raised by completed Sales Capacity research. |
 | Sales targeting | Research that first favors, then exclusively selects, resources with recorded company production when creating customer offers. |
 | Contract value | Research that increases the premium paid by customer contracts; it does not change ordinary market-sale prices. |
-| Progression grant | A durable, one-use entitlement that makes one specific player action free. |
+| Progression grant | A durable, one-use entitlement that can make one specific player action free or faster. The first-facility recipe grant makes that facility's first recipe research free and ten times faster. |
 
 ## Time, State, and Persistence
 

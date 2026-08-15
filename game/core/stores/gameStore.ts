@@ -11,9 +11,9 @@ import { AchievementLedger, ProductionStatistics, createAchievementEvaluationCon
 import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyAssetsPrestige, calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary, calculateFacilityConditionPrestige } from '@/game/prestige';
 import { evaluateGateRequirements, type GateContext, type GateEvaluation } from '@/game/gates';
 import { ResearchLedger, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesContracts, getMaximumSimultaneousResearchProjects, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, getSalesContractPremiumMultiplier, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, type ResearchProjectId } from '@/game/research';
-import { FIRST_FACILITY_RECIPE_RESEARCH_GRANT_ID, GrantLedger } from '@/game/grants';
+import { FIRST_FACILITY_RECIPE_RESEARCH_GRANT_ID, FIRST_FACILITY_RECIPE_RESEARCH_WORK_SPEED_MULTIPLIER, GrantLedger } from '@/game/grants';
 import type { StartingConditionId } from '@/game/company/companyTypes';
-import { STANDARD_START_CONSTRUCTION_MATERIALS } from '@/game/company/companyConstants';
+import { STANDARD_START_CONSTRUCTION_MATERIALS, STANDARD_START_INDUSTRIAL_MACHINES } from '@/game/company/companyConstants';
 import { create } from 'zustand';
 import { formatNumber } from '@/utils';
 
@@ -21,6 +21,7 @@ export type ResearchAvailability = GateEvaluation & {
   startable: boolean;
   unmetReasons: string[];
   cost: number;
+  durationMs: number;
   usesFreeGrant: boolean;
 };
 
@@ -52,7 +53,7 @@ type GameState = {
   buyMarketResource: (resourceType: ResourceType, amount: number) => boolean;
   sellMarketResource: (resourceType: ResourceType, amount: number) => boolean;
   setMarketAutomation: (resourceType: ResourceType, updates: Partial<MarketAutomation>) => boolean;
-  buyMissingConstructionMaterials: (facilityType: FacilityType) => boolean;
+  buyMissingConstructionInputs: (facilityType: FacilityType) => boolean;
   buildFacility: (facilityType: FacilityType) => boolean;
   sellFacility: (facilityId: string) => boolean;
   setFacilityRecipe: (facilityId: string, recipeName: RecipeName | null) => boolean;
@@ -133,6 +134,12 @@ function getRecipeResearchGrantTarget(project: ReturnType<typeof getResearchProj
   return Object.values(FACILITIES).find((facility) => facility.recipes.some((recipe) => recipe.name === recipeName))?.type ?? null;
 }
 
+function getResearchDurationMs(project: NonNullable<ReturnType<typeof getResearchProject>>, usesFreeGrant: boolean): number {
+  return usesFreeGrant
+    ? Math.ceil(project.durationMs / FIRST_FACILITY_RECIPE_RESEARCH_WORK_SPEED_MULTIPLIER)
+    : project.durationMs;
+}
+
 function getResearchAvailabilityForState(input: {
   projectId: ResearchProjectId;
   achievements: AchievementLedger;
@@ -144,16 +151,16 @@ function getResearchAvailabilityForState(input: {
   startingConditionId: StartingConditionId | null;
 }): ResearchAvailability {
   const project = getResearchProject(input.projectId);
-  if (!project) return { allowed: false, startable: false, unmetReasons: ['Unknown research project.'], cost: 0, usesFreeGrant: false };
-  if (input.research.hasCompleted(project.id)) return { allowed: false, startable: false, unmetReasons: ['Research already completed.'], cost: project.cost, usesFreeGrant: false };
-  if (input.research.getActiveProjects().length >= getMaximumSimultaneousResearchProjects(input.research.getCompletedProjectIds())) return { allowed: false, startable: false, unmetReasons: ['All research slots are occupied.'], cost: project.cost, usesFreeGrant: false };
+  if (!project) return { allowed: false, startable: false, unmetReasons: ['Unknown research project.'], cost: 0, durationMs: 0, usesFreeGrant: false };
+  if (input.research.hasCompleted(project.id)) return { allowed: false, startable: false, unmetReasons: ['Research already completed.'], cost: project.cost, durationMs: project.durationMs, usesFreeGrant: false };
+  if (input.research.getActiveProjects().length >= getMaximumSimultaneousResearchProjects(input.research.getCompletedProjectIds())) return { allowed: false, startable: false, unmetReasons: ['All research slots are occupied.'], cost: project.cost, durationMs: project.durationMs, usesFreeGrant: false };
   const evaluation = evaluateGateRequirements(project.requirements, createResearchGateContext(input));
   const unmetReasons = [...evaluation.unmetReasons];
   const grantTarget = getRecipeResearchGrantTarget(project);
   const usesFreeGrant = grantTarget !== null && input.grants.hasAvailableFreeActionForTargets('start-research', [grantTarget, project.id]);
-  if (usesFreeGrant) return { allowed: evaluation.allowed, startable: unmetReasons.length === 0, unmetReasons, cost: 0, usesFreeGrant: true };
+  if (usesFreeGrant) return { allowed: evaluation.allowed, startable: unmetReasons.length === 0, unmetReasons, cost: 0, durationMs: getResearchDurationMs(project, true), usesFreeGrant: true };
   if (!input.finance.canAfford(project.cost)) unmetReasons.push(`Requires €${project.cost.toLocaleString()} available.`);
-  return { allowed: evaluation.allowed, startable: unmetReasons.length === 0, unmetReasons, cost: project.cost, usesFreeGrant: false };
+  return { allowed: evaluation.allowed, startable: unmetReasons.length === 0, unmetReasons, cost: project.cost, durationMs: getResearchDurationMs(project, false), usesFreeGrant: false };
 }
 
 /** Produces a fresh, current-version company snapshot without touching runtime state. */
@@ -161,6 +168,7 @@ export function createStartingGameSnapshot(nowMs = Date.now()): GameSnapshot {
   const finance = new Finance();
   const inventory = new Inventory();
   inventory.setAmount(ResourceType.ConstructionMaterials, STANDARD_START_CONSTRUCTION_MATERIALS);
+  inventory.setAmount(ResourceType.IndustrialMachines, STANDARD_START_INDUSTRIAL_MACHINES);
   return {
     finance: finance.toSnapshot(),
     inventory: inventory.toSnapshot(),
@@ -306,24 +314,28 @@ export const useGameStore = create<GameState>((set, get) => {
     set({ market });
     return true;
   },
-  buyMissingConstructionMaterials: (facilityType) => {
+  buyMissingConstructionInputs: (facilityType) => {
     get().advanceRealtime(Date.now());
     const definition = getFacilityDefinition(facilityType);
     const facilities = get().facilities;
     const inventory = get().inventory.clone();
     const market = get().market.clone();
     const finance = get().finance.clone();
-    const missingAmount = Math.max(
-      0,
-      definition.constructionMaterialsCost - inventory.getAmount(ResourceType.ConstructionMaterials),
-    );
-    const trade = market.buyFromLocal(ResourceType.ConstructionMaterials, missingAmount);
-    const materialsTotal = trade.unitPrice * trade.amount;
+    const missingConstructionMaterials = Math.max(0, definition.constructionMaterialsCost - inventory.getAmount(ResourceType.ConstructionMaterials));
+    const missingIndustrialMachines = Math.max(0, definition.industrialMachinesCost - inventory.getAmount(ResourceType.IndustrialMachines));
+    const missingInputs = [
+      { resourceType: ResourceType.ConstructionMaterials, amount: missingConstructionMaterials },
+      { resourceType: ResourceType.IndustrialMachines, amount: missingIndustrialMachines },
+    ].filter((input) => input.amount > 0);
+    if (missingInputs.length === 0) return false;
 
-    if (missingAmount === 0 || !trade.success
-      || !finance.canAfford(definition.landCost + materialsTotal)
-      || !inventory.add(ResourceType.ConstructionMaterials, trade.amount, trade.quality)
-      || !finance.applyTransaction({ amount: -materialsTotal, description: `Bought ${trade.amount} Construction Materials for ${definition.name}`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: get().lastProcessedAtMs })) return false;
+    const trades = missingInputs.map((input) => ({ ...input, trade: market.buyFromLocal(input.resourceType, input.amount) }));
+    const purchaseCost = trades.reduce((total, { trade }) => total + trade.unitPrice * trade.amount, 0);
+
+    if (trades.some(({ trade }) => !trade.success)
+      || !finance.canAfford(definition.landCost + purchaseCost)
+      || trades.some(({ resourceType, trade }) => !inventory.add(resourceType, trade.amount, trade.quality))
+      || !finance.applyTransaction({ amount: -purchaseCost, description: `Bought missing construction inputs for ${definition.name}`, detailLines: trades.map(({ resourceType, trade }) => `${trade.amount} ${resourceType} at €${trade.unitPrice.toFixed(2)} each`), kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: get().lastProcessedAtMs })) return false;
 
     set({ market, inventory, finance });
     return true;
@@ -338,11 +350,12 @@ export const useGameStore = create<GameState>((set, get) => {
 
     if (!finance.canAfford(definition.landCost)
       || !inventory.has(ResourceType.ConstructionMaterials, definition.constructionMaterialsCost)
+      || !inventory.has(ResourceType.IndustrialMachines, definition.industrialMachinesCost)
       || !facilities.build(facilityType)) {
       return false;
     }
 
-    if (!finance.applyTransaction({ amount: -definition.landCost, description: `Purchased land for ${facilities.getAllByType(facilityType).at(-1)?.getView().displayName ?? definition.name}`, detailLines: [`Construction materials committed: ${definition.constructionMaterialsCost}`], kind: 'investing', source: 'facility-construction', occurredAtGameTimeMs: get().lastProcessedAtMs }) || !inventory.remove(ResourceType.ConstructionMaterials, definition.constructionMaterialsCost)) {
+    if (!finance.applyTransaction({ amount: -definition.landCost, description: `Purchased land for ${facilities.getAllByType(facilityType).at(-1)?.getView().displayName ?? definition.name}`, detailLines: [`Construction materials committed: ${definition.constructionMaterialsCost}`, `Industrial machines installed: ${definition.industrialMachinesCost}`], kind: 'investing', source: 'facility-construction', occurredAtGameTimeMs: get().lastProcessedAtMs }) || !inventory.remove(ResourceType.ConstructionMaterials, definition.constructionMaterialsCost) || !inventory.remove(ResourceType.IndustrialMachines, definition.industrialMachinesCost)) {
       return false;
     }
 
@@ -937,7 +950,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const finance = state.finance.clone();
     const grantTarget = getRecipeResearchGrantTarget(project);
     if ((availability.usesFreeGrant && (!grantTarget || !grants.useFreeActionForTargets('start-research', [grantTarget, project.id], state.lastProcessedAtMs)))
-      || !research.start(projectId, availability.cost)
+      || !research.start(projectId, availability.cost, availability.durationMs)
       || !finance.applyTransaction({ amount: -availability.cost, description: `Research started: ${project.name}`, detailLines: [`Capitalized cost: €${availability.cost.toFixed(2)}`], kind: 'investing', source: 'research-investment', occurredAtGameTimeMs: state.lastProcessedAtMs })) return false;
 
     const prestige = state.prestige.clone();

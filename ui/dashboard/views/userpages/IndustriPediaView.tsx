@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Card, List, Text } from 'react-native-paper';
 import { FACILITY_GROUPS, getFacilityDefinition } from '@/game/facilities';
-import { FINANCE_INITIAL_BALANCE } from '@/game/finance';
+import { FINANCE_INITIAL_BALANCE } from '@/game/company/companyConstants';
 import { PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS } from '@/game/prestige';
 import type { Market, MarketDiffusionDetails } from '@/game/market';
 import { getResource, getResourceIcon, RESOURCE_GROUPS, RESOURCE_TYPES, ResourceType } from '@/game/resources';
@@ -331,11 +331,16 @@ function AchievementsSection() {
 
 function getResourceSummary(resourceType: (typeof RESOURCE_TYPES)[number]): ReactNode {
   switch (resourceType) {
-    case 'grain': return <Text>Raw crop used to bake <ResourceMention resourceType="bread" /> and <ResourceMention resourceType="cake" />.</Text>;
+    case 'grain': return <Text>Raw crop used to bake <ResourceMention resourceType="bread" />, <ResourceMention resourceType="cake" />, and <ResourceMention resourceType="meat-pie" />.</Text>;
     case 'bread': return <Text>Baked product made from <ResourceMention resourceType="grain" />, <ResourceMention resourceType="water" />, and <ResourceMention resourceType="electricity" />.</Text>;
     case 'water': return 'Utility resource used across the production chain.';
     case 'electricity': return 'Utility resource used to power production recipes.';
-    case 'sugar': return <Text>Farm-grown ingredient used to bake <ResourceMention resourceType="cake" />.</Text>;
+    case 'sugar': return 'Farm-grown food resource that can be sold directly.';
+    case 'fruit': return <Text>Farm-grown ingredient used to bake <ResourceMention resourceType="premium-cake" />.</Text>;
+    case 'eggs': return <Text>Animal Farm output used to bake <ResourceMention resourceType="cake" />.</Text>;
+    case 'meat': return <Text>Animal Farm output used to bake <ResourceMention resourceType="meat-pie" />.</Text>;
+    case 'milk': return <Text>Animal Farm dairy output used to bake <ResourceMention resourceType="premium-cake" />.</Text>;
+    case 'wool': return 'Animal Farm fibre output reserved for future textile production.';
     case 'coal': return 'Mined fuel used by the Coal Power recipe.';
     case 'iron': return <Text>Chemical-assisted mined metal used to produce <ResourceMention resourceType="steel" />.</Text>;
     case 'copper': return <Text>Chemical-assisted mined conductor used to produce <ResourceMention resourceType="electric-circuits" />.</Text>;
@@ -350,13 +355,15 @@ function getResourceSummary(resourceType: (typeof RESOURCE_TYPES)[number]): Reac
     case 'stone': return 'Quarried material for future construction recipes.';
     case 'minerals': return <Text>Quarried raw material used to produce <ResourceMention resourceType="chemicals" /> and <ResourceMention resourceType="silicon" />.</Text>;
     case 'chemicals': return <Text>Industrial process material made from <ResourceMention resourceType="minerals" /> and used to produce <ResourceMention resourceType="fertilizer" /> and <ResourceMention resourceType="plastic" />.</Text>;
-    case 'fertilizer': return <Text>Chemical Plant product made from <ResourceMention resourceType="chemicals" /> and <ResourceMention resourceType="minerals" />, used to grow <ResourceMention resourceType="grain" /> and <ResourceMention resourceType="sugar" />.</Text>;
+    case 'fertilizer': return <Text>Produced by the Chemical Plant and in small Animal Farm quantities; it is used to grow <ResourceMention resourceType="grain" />, <ResourceMention resourceType="sugar" />, and <ResourceMention resourceType="fruit" />.</Text>;
     case 'plastic': return <Text>Manufactured polymer made from <ResourceMention resourceType="chemicals" /> and used in <ResourceMention resourceType="electric-circuits" /> and <ResourceMention resourceType="construction-materials" />.</Text>;
     case 'silicon': return <Text>Refined <ResourceMention resourceType="minerals" /> and <ResourceMention resourceType="sand" /> used with <ResourceMention resourceType="electric-circuits" /> and <ResourceMention resourceType="gold" /> to produce <ResourceMention resourceType="advanced-components" />.</Text>;
     case 'gold': return <Text>Rare mined metal used to produce <ResourceMention resourceType="advanced-components" />.</Text>;
     case 'advanced-components': return <Text>High-value electronic components assembled into <ResourceMention resourceType="industrial-machines" />.</Text>;
     case 'industrial-machines': return <Text>Complex equipment assembled from <ResourceMention resourceType="steel" />, <ResourceMention resourceType="electric-circuits" />, and <ResourceMention resourceType="advanced-components" />.</Text>;
-    case 'cake': return <Text>Baked product made from <ResourceMention resourceType="grain" />, <ResourceMention resourceType="sugar" />, <ResourceMention resourceType="water" />, and <ResourceMention resourceType="electricity" />.</Text>;
+    case 'cake': return <Text>Bakery product made from <ResourceMention resourceType="grain" />, <ResourceMention resourceType="eggs" />, <ResourceMention resourceType="water" />, and <ResourceMention resourceType="electricity" />.</Text>;
+    case 'premium-cake': return <Text>Premium baked product made from <ResourceMention resourceType="cake" /> ingredients plus <ResourceMention resourceType="fruit" /> and <ResourceMention resourceType="milk" />.</Text>;
+    case 'meat-pie': return <Text>Baked savoury product made from <ResourceMention resourceType="grain" />, <ResourceMention resourceType="meat" />, <ResourceMention resourceType="water" />, and <ResourceMention resourceType="electricity" />.</Text>;
     default: return 'Tracked in your company inventory.';
   }
 }

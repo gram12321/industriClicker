@@ -1,12 +1,12 @@
 import { ALL_RECIPES, RecipeName, type Recipe } from '@/game/recipes';
 import { FacilityType } from './facilityTypes';
 
-export const FACILITY_TYPES = [FacilityType.Farm, FacilityType.Bakery, FacilityType.SmallUtilityWorks, FacilityType.Mine, FacilityType.Quarry, FacilityType.IndustrialProcessingFactory, FacilityType.ChemicalPlant, FacilityType.ElectronicsFactory, FacilityType.AssemblyPlant, FacilityType.ConstructionFactory, FacilityType.WaterWell, FacilityType.PowerPlant] as const;
+export const FACILITY_TYPES = [FacilityType.Farm, FacilityType.AnimalFarm, FacilityType.Bakery, FacilityType.SmallUtilityWorks, FacilityType.Mine, FacilityType.Quarry, FacilityType.IndustrialProcessingFactory, FacilityType.ChemicalPlant, FacilityType.ElectronicsFactory, FacilityType.AssemblyPlant, FacilityType.ConstructionFactory, FacilityType.WaterWell, FacilityType.PowerPlant] as const;
 export type FacilityGroup = 'agriculture' | 'extraction' | 'manufacturing' | 'utilities';
 
 /** Player-facing facility groupings shared by Pedia and other catalogues; each group is alphabetized by display name. */
 export const FACILITY_GROUPS: ReadonlyArray<{ id: FacilityGroup; label: string; facilities: readonly FacilityType[] }> = [
-  { id: 'agriculture', label: 'Agriculture', facilities: [FacilityType.Bakery, FacilityType.Farm] },
+  { id: 'agriculture', label: 'Agriculture', facilities: [FacilityType.AnimalFarm, FacilityType.Bakery, FacilityType.Farm] },
   { id: 'extraction', label: 'Extraction', facilities: [FacilityType.Mine, FacilityType.Quarry] },
   { id: 'manufacturing', label: 'Manufacturing', facilities: [FacilityType.AssemblyPlant, FacilityType.ChemicalPlant, FacilityType.ConstructionFactory, FacilityType.ElectronicsFactory, FacilityType.IndustrialProcessingFactory] },
   { id: 'utilities', label: 'Utilities', facilities: [FacilityType.PowerPlant, FacilityType.SmallUtilityWorks, FacilityType.WaterWell] },
@@ -40,6 +40,7 @@ export const FACILITY_REPAIR_MATERIAL_COST_RATE = 0.9;
 export const FACILITY_PRODUCTION_ORDER = [
   FacilityType.SmallUtilityWorks,
   FacilityType.Farm,
+  FacilityType.AnimalFarm,
   FacilityType.Bakery,
   FacilityType.Mine,
   FacilityType.Quarry,
@@ -60,6 +61,8 @@ export type FacilityDefinition = {
   landCost: number;
   /** Construction Materials consumed when the facility is built. */
   constructionMaterialsCost: number;
+  /** Industrial Machines installed to equip the facility for production. */
+  industrialMachinesCost: number;
   /** Euro base used only to scale the facility's separate upgrades. */
   upgradeCost: number;
   baseWorkers: number;
@@ -74,9 +77,21 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     icon: 'tractor',
     landCost: 60,
     constructionMaterialsCost: 5,
+    industrialMachinesCost: 1,
     upgradeCost: 40,
     baseWorkers: 2,
-    recipes: [ALL_RECIPES[RecipeName.GrowGrain], ALL_RECIPES[RecipeName.GrowSugar]],
+    recipes: [ALL_RECIPES[RecipeName.GrowGrain], ALL_RECIPES[RecipeName.GrowSugar], ALL_RECIPES[RecipeName.GrowFruit]],
+  },
+  [FacilityType.AnimalFarm]: {
+    type: FacilityType.AnimalFarm,
+    name: 'Animal Farm',
+    icon: 'cow',
+    landCost: 80,
+    constructionMaterialsCost: 25,
+    industrialMachinesCost: 4,
+    upgradeCost: 100,
+    baseWorkers: 4,
+    recipes: [ALL_RECIPES[RecipeName.RaiseCattle], ALL_RECIPES[RecipeName.RaiseSheep], ALL_RECIPES[RecipeName.RaiseChicken]],
   },
   [FacilityType.Bakery]: {
     type: FacilityType.Bakery,
@@ -84,9 +99,10 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     icon: 'bread-slice-outline',
     landCost: 100,
     constructionMaterialsCost: 80,
+    industrialMachinesCost: 8,
     upgradeCost: 150,
     baseWorkers: 3,
-    recipes: [ALL_RECIPES[RecipeName.BakeBread], ALL_RECIPES[RecipeName.BakeCake]],
+    recipes: [ALL_RECIPES[RecipeName.BakeBread], ALL_RECIPES[RecipeName.BakeCake], ALL_RECIPES[RecipeName.BakePremiumCake], ALL_RECIPES[RecipeName.BakeMeatPie]],
   },
   [FacilityType.SmallUtilityWorks]: {
     type: FacilityType.SmallUtilityWorks,
@@ -94,6 +110,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     icon: 'flash-outline',
     landCost: 100,
     constructionMaterialsCost: 5,
+    industrialMachinesCost: 3,
     upgradeCost: 200,
     baseWorkers: 1,
     recipes: [ALL_RECIPES[RecipeName.ProduceWater], ALL_RECIPES[RecipeName.ProduceElectricity]],
@@ -104,6 +121,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     icon: 'pickaxe',
     landCost: 30,
     constructionMaterialsCost: 5,
+    industrialMachinesCost: 4,
     upgradeCost: 80,
     baseWorkers: 10,
     recipes: [ALL_RECIPES[RecipeName.MineIron], ALL_RECIPES[RecipeName.MineCoal], ALL_RECIPES[RecipeName.MineCopper], ALL_RECIPES[RecipeName.MineGold]],
@@ -114,6 +132,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     icon: 'terrain',
     landCost: 25,
     constructionMaterialsCost: 40,
+    industrialMachinesCost: 4,
     upgradeCost: 70,
     baseWorkers: 6,
     recipes: [ALL_RECIPES[RecipeName.QuarrySand], ALL_RECIPES[RecipeName.QuarryClay], ALL_RECIPES[RecipeName.QuarryStone], ALL_RECIPES[RecipeName.QuarryMinerals]],
@@ -124,6 +143,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     icon: 'factory',
     landCost: 80,
     constructionMaterialsCost: 50,
+    industrialMachinesCost: 8,
     upgradeCost: 200,
     baseWorkers: 12,
     recipes: [ALL_RECIPES[RecipeName.ProduceSteel], ALL_RECIPES[RecipeName.ProduceElectricCircuits]],
@@ -134,6 +154,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     icon: 'flask-outline',
     landCost: 100,
     constructionMaterialsCost: 120,
+    industrialMachinesCost: 14,
     upgradeCost: 350,
     baseWorkers: 15,
     recipes: [ALL_RECIPES[RecipeName.ProduceChemicals], ALL_RECIPES[RecipeName.SynthesizeFertilizer], ALL_RECIPES[RecipeName.ProducePlastic]],
@@ -144,6 +165,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     icon: 'chip',
     landCost: 100,
     constructionMaterialsCost: 150,
+    industrialMachinesCost: 18,
     upgradeCost: 400,
     baseWorkers: 12,
     recipes: [ALL_RECIPES[RecipeName.ProduceSilicon], ALL_RECIPES[RecipeName.ProduceAdvancedComponents]],
@@ -154,6 +176,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     icon: 'factory',
     landCost: 130,
     constructionMaterialsCost: 200,
+    industrialMachinesCost: 30,
     upgradeCost: 600,
     baseWorkers: 24,
     recipes: [ALL_RECIPES[RecipeName.AssembleIndustrialMachines]],
@@ -164,6 +187,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     icon: 'crane',
     landCost: 80,
     constructionMaterialsCost: 100,
+    industrialMachinesCost: 10,
     upgradeCost: 300,
     baseWorkers: 16,
     recipes: [ALL_RECIPES[RecipeName.ProduceBricks], ALL_RECIPES[RecipeName.ProduceCement], ALL_RECIPES[RecipeName.ProduceReinforcedConcrete], ALL_RECIPES[RecipeName.ProduceConstructionMaterials]],
@@ -174,6 +198,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     icon: 'water-well',
     landCost: 80,
     constructionMaterialsCost: 10,
+    industrialMachinesCost: 2,
     upgradeCost: 60,
     baseWorkers: 1,
     recipes: [ALL_RECIPES[RecipeName.ManualPumping], ALL_RECIPES[RecipeName.ElectricPumping]],
@@ -184,6 +209,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     icon: 'factory',
     landCost: 100,
     constructionMaterialsCost: 50,
+    industrialMachinesCost: 20,
     upgradeCost: 250,
     baseWorkers: 18,
     recipes: [ALL_RECIPES[RecipeName.CoalPower], ALL_RECIPES[RecipeName.SolarPower]],
