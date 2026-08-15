@@ -18,9 +18,11 @@ describe('sales customer catalogue', () => {
     expect(catalogue.every((customer) => customer.bidMultiplier > 0)).toBe(true);
   });
 
-  it('places water and electricity in the utilities domain with meaningful delivery lots', () => {
+  it('uses commercial delivery lots that vary by resource scale', () => {
     expect(getSalesResourceProfile(ResourceType.Water)).toEqual({ domain: 'utilities', standardOrderLot: 500 });
     expect(getSalesResourceProfile(ResourceType.Electricity)).toEqual({ domain: 'utilities', standardOrderLot: 250 });
+    expect(getSalesResourceProfile(ResourceType.Sand).standardOrderLot).toBeGreaterThan(getSalesResourceProfile(ResourceType.Grain).standardOrderLot);
+    expect(getSalesResourceProfile(ResourceType.IndustrialMachines).standardOrderLot).toBe(1);
   });
 
   it('gives customers an independent type and deterministic operating-domain scope', () => {

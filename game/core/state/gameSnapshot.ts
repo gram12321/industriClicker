@@ -122,8 +122,10 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
       && facility.facilityCondition <= 1)
     && Array.isArray(value.salesOrders.offered)
     && Array.isArray(value.salesOrders.completed)
-    && value.salesOrders.offered.every((order) => isRecord(order) && Array.isArray(order.lines))
-    && value.salesOrders.completed.every((order) => isRecord(order) && Array.isArray(order.lines))
+    && value.salesOrders.offered.every((order) => isRecord(order) && Array.isArray(order.lines)
+      && order.lines.every((line) => isRecord(line) && typeof line.marketVolumeMultiplier === 'number' && Number.isFinite(line.marketVolumeMultiplier)))
+    && value.salesOrders.completed.every((order) => isRecord(order) && Array.isArray(order.lines)
+      && order.lines.every((line) => isRecord(line) && typeof line.marketVolumeMultiplier === 'number' && Number.isFinite(line.marketVolumeMultiplier)))
     && Array.isArray(value.salesOrders.customerStates)
     && value.salesOrders.customerStates.every((state) => isRecord(state)
       && typeof state.customerId === 'string'

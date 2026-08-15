@@ -715,6 +715,7 @@ export const useGameStore = create<GameState>((set, get) => {
             economyPhase: (marketFinance ?? get().finance).getEconomyPhase(),
             inventoryByResource: Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, inventory.getAmount(resourceType)])) as Record<ResourceType, number>,
             globalPrices: Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, activeMarket.getGlobalPrice(resourceType)])) as Record<ResourceType, number>,
+            globalSupplies: Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, activeMarket.getGlobalEntry(resourceType).supply])) as Record<ResourceType, number>,
             candidateResourceTypes: getSalesOfferResourceTypes(research.getCompletedProjectIds(), productionStatistics.toSnapshot().producedByResource),
             getResourceWeight: (resourceType) => productionStatistics.toSnapshot().producedByResource[resourceType] > 0 ? getSalesOfferProducedResourceWeight(research.getCompletedProjectIds()) : 1,
             bidResearchMultiplier: getSalesOrderBidMultiplier(research.getCompletedProjectIds(), MARKET_SALES_ORDER_BID_MULTIPLIER),

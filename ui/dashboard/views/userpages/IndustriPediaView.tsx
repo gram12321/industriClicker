@@ -63,6 +63,7 @@ const INDUSTRIPEDIA_SECTIONS: ReadonlyArray<{ id: IndustriPediaSection; label: s
 const CUSTOMER_DOMAIN_METRIC_ICONS = {
   bidRange: APP_ICONS.bid,
   frequency: APP_ICONS.elapsedTime,
+  marketPressure: APP_ICONS.globalMarket,
   relationshipGain: APP_ICONS.relationship,
   resources: APP_ICONS.package,
   shareScale: APP_ICONS.marketShare,
@@ -79,6 +80,7 @@ function CustomerDomainsSection() {
       <TypeProfileKey icon={CUSTOMER_DOMAIN_METRIC_ICONS.frequency} text="Frequency: how often the domain contributes to new-offer rolls." />
       <TypeProfileKey icon={CUSTOMER_DOMAIN_METRIC_ICONS.shareScale} text="Share scale: how large this domain's generated customers tend to be." />
       <TypeProfileKey icon={CUSTOMER_DOMAIN_METRIC_ICONS.relationshipGain} text="Relationship gain: multiplier applied to fulfilled-order relationship growth." />
+      <TypeProfileKey icon={CUSTOMER_DOMAIN_METRIC_ICONS.marketPressure} text="Global supply pressure: shortages modestly raise requested volume; oversupply can create larger volume offers. The company-value cap still applies." />
       <TypeProfileKey icon={CUSTOMER_DOMAIN_METRIC_ICONS.resources} text="Resource icons: resources sold through this domain; each number is its standard sales lot." />
     </Card.Content></Card>
     {SALES_CUSTOMER_DOMAINS.map((domain) => {
