@@ -12,7 +12,7 @@ function createProductionTotals(produced: readonly ResourceType[]): Record<Resou
 }
 
 describe('sales research effects', () => {
-  it('starts with two open contract slots and raises the first researched capacity to three', () => {
+  it('starts with two open order slots and raises the first researched capacity to three', () => {
     expect(BASE_MAXIMUM_OPEN_SALES_ORDERS).toBe(2);
     expect(getMaximumOpenSalesOrders(['sales-capacity-1'])).toBe(3);
   });

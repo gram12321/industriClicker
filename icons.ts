@@ -19,7 +19,7 @@ export const APP_ICONS = {
   building: 'factory',
   collapse: 'chevron-up',
   coin: 'circle-multiple-outline',
-  contracts: 'handshake-outline',
+  salesOrders: 'handshake-outline',
   relationship: 'handshake-outline',
   openOrders: 'format-list-numbered',
   currency: 'cash-multiple',

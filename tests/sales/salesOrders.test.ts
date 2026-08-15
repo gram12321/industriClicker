@@ -9,6 +9,18 @@ function prices(value: number): Record<ResourceType, number> { return RESOURCE_T
 function benchmarkSupplies(): Record<ResourceType, number> { return RESOURCE_TYPES.reduce((result, resourceType) => { result[resourceType] = getResource(resourceType).market.globalBenchmarkSupply; return result; }, {} as Record<ResourceType, number>); }
 
 describe('sales orders', () => {
+  it('returns defensive customer-catalogue views while retaining its generated catalogue', () => {
+    const orders = new SalesOrders();
+    const firstRead = orders.getCustomerCatalogue();
+    const originalName = firstRead[0].name;
+    firstRead[0].name = 'Changed by caller';
+
+    const secondRead = orders.getCustomerCatalogue();
+
+    expect(secondRead[0].name).toBe(originalName);
+    expect(secondRead[0].operatingDomains).not.toBe(firstRead[0].operatingDomains);
+  });
+
   it('requires a meaningful utility lot and locks bid, reference price, and premium', () => {
     const orders = new SalesOrders();
     const result = orders.advanceTime({ currentGameTimeMs: 60_000, maximumOpenOrders: 2, maximumOrderValue: 10_000, companyPrestige: 500, economyPhase: 'boom', inventoryByResource: quantities(ResourceType.Water, 1_000), globalPrices: prices(1), globalSupplies: benchmarkSupplies(), candidateResourceTypes: [ResourceType.Water], getResourceWeight: () => 1, bidResearchMultiplier: 1 });

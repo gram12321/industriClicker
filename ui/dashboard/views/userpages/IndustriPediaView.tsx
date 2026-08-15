@@ -14,7 +14,7 @@ import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS, RECIPE_ICONS, SALES_CUSTOMER_DOMAIN_ICONS, SALES_CUSTOMER_TYPE_ICONS } from '@/icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '@/theme';
-import { SALES_CUSTOMER_BID_MULTIPLIER_RANGE, SALES_CUSTOMER_DOMAIN_PROFILES, SALES_CUSTOMER_DOMAINS, SALES_CUSTOMER_PURCHASING_POWER_RANGE, SALES_CUSTOMER_TYPE_PROFILES, SALES_CUSTOMER_TYPES, calculateSalesCustomerRelationshipDetails, getSalesCustomerRelationshipLabel, getSalesCustomerCatalogue, getSalesResourceProfile, type SalesCustomerDomain, type SalesCustomerType, type SalesOrders } from '@/game/sales';
+import { SALES_CUSTOMER_BID_MULTIPLIER_RANGE, SALES_CUSTOMER_DOMAIN_PROFILES, SALES_CUSTOMER_DOMAINS, SALES_CUSTOMER_PURCHASING_POWER_RANGE, SALES_CUSTOMER_TYPE_PROFILES, SALES_CUSTOMER_TYPES, calculateSalesCustomerRelationshipDetails, getSalesCustomerRelationshipLabel, getSalesResourceProfile, type SalesCustomerDefinition, type SalesCustomerDomain, type SalesCustomerType, type SalesOrders } from '@/game/sales';
 
 export function IndustriPediaView({ companyPrestige, currentGameTimeMs, initialSection = 'resources', market, salesOrders }: { companyPrestige: number; currentGameTimeMs: number; initialSection?: IndustriPediaSection; market: Market; salesOrders: SalesOrders }) {
   const [activeSection, setActiveSection] = useState<IndustriPediaSection>(initialSection);
@@ -161,7 +161,7 @@ function CustomersSection({ companyPrestige, currentGameTimeMs, salesOrders }: {
   const customerStates = new Map(salesOrders.getCustomerStates().map((state) => [state.customerId, state]));
   const rejectedCounts = new Map<string, number>();
   for (const order of salesOrders.getCompletedOrders()) if (order.status === 'rejected') rejectedCounts.set(order.customerId, (rejectedCounts.get(order.customerId) ?? 0) + 1);
-  const catalogue = getSalesCustomerCatalogue();
+  const catalogue = salesOrders.getCustomerCatalogue();
   const customers = catalogue
     .filter((customer) => (selectedDomain === 'all' || customer.domain === selectedDomain) && (selectedType === 'all' || customer.customerType === selectedType) && (!knownOnly || customerStates.has(customer.id)))
     .map((customer) => ({ customer, state: customerStates.get(customer.id), rejected: rejectedCounts.get(customer.id) ?? 0, relationship: salesOrders.getCustomerState(customer.id, currentGameTimeMs, companyPrestige).relationship }))
@@ -189,7 +189,7 @@ const CUSTOMER_SORT_OPTIONS: ReadonlyArray<{ key: CustomerSortKey; label: string
   { key: 'expired', label: 'Expired', icon: APP_ICONS.expired },
 ];
 
-function CustomerStats({ customer, isExpanded, relationship, rejected, state }: { customer: ReturnType<typeof getSalesCustomerCatalogue>[number]; isExpanded: boolean; relationship: number; rejected: number; state: ReturnType<SalesOrders['getCustomerStates']>[number] | undefined }) {
+function CustomerStats({ customer, isExpanded, relationship, rejected, state }: { customer: SalesCustomerDefinition; isExpanded: boolean; relationship: number; rejected: number; state: ReturnType<SalesOrders['getCustomerStates']>[number] | undefined }) {
   const relationshipColor = getColorClass(relationship);
   const purchasingPowerColor = getColorClass(normalizeToUnitInterval(customer.purchasingPower, ...SALES_CUSTOMER_PURCHASING_POWER_RANGE));
   const bidColor = getColorClass(normalizeToUnitInterval(customer.bidMultiplier, ...SALES_CUSTOMER_BID_MULTIPLIER_RANGE));
@@ -210,7 +210,7 @@ function RelationshipExplanation({ details, relationship }: { details: ReturnTyp
   </View>;
 }
 
-function getCustomerSortValue(view: { customer: ReturnType<typeof getSalesCustomerCatalogue>[number]; state: ReturnType<SalesOrders['getCustomerStates']>[number] | undefined; rejected: number; relationship: number }, key: CustomerSortKey): number {
+function getCustomerSortValue(view: { customer: SalesCustomerDefinition; state: ReturnType<SalesOrders['getCustomerStates']>[number] | undefined; rejected: number; relationship: number }, key: CustomerSortKey): number {
   switch (key) {
     case 'marketShare': return view.customer.marketShare;
     case 'purchasingPower': return view.customer.purchasingPower;
@@ -456,7 +456,7 @@ function FinanceSection() {
       <Text style={styles.cardKicker}>STARTING CAPITAL</Text><CurrencyValue value={FINANCE_INITIAL_BALANCE} style={styles.balanceValue} />
       <Text style={styles.cardDescription}>A facility needs both its land purchase and Construction Materials. You can sell one for 70% of its current condition-adjusted book value.</Text>
     </Card.Content></Card>
-    <Card mode="contained" style={styles.featureCard}><Card.Content><List.Item description="A customer locks a bid price, premium, and quantity. The full requested quantity must be available before fulfilment." left={(props) => <List.Icon {...props} icon={APP_ICONS.contracts} />} title="Customer orders" /><List.Item description="Each facility has separate Speed and Output upgrades. Every level costs euros, Construction Materials, and Industrial Machines." left={(props) => <List.Icon {...props} icon={APP_ICONS.speed} />} title="Facility upgrades" /><List.Item description="Every accepted cost and income is recorded in the Finance activity list." left={(props) => <List.Icon {...props} icon={APP_ICONS.financeHistory} />} title="Transaction history" /></Card.Content></Card>
+    <Card mode="contained" style={styles.featureCard}><Card.Content><List.Item description="A customer locks a bid price, premium, and quantity. The full requested quantity must be available before fulfilment." left={(props) => <List.Icon {...props} icon={APP_ICONS.salesOrders} />} title="Customer orders" /><List.Item description="Each facility has separate Speed and Output upgrades. Every level costs euros, Construction Materials, and Industrial Machines." left={(props) => <List.Icon {...props} icon={APP_ICONS.speed} />} title="Facility upgrades" /><List.Item description="Every accepted cost and income is recorded in the Finance activity list." left={(props) => <List.Icon {...props} icon={APP_ICONS.financeHistory} />} title="Transaction history" /></Card.Content></Card>
   </>;
 }
 
@@ -493,7 +493,7 @@ function PrestigeSection() {
   return <>
     <SectionHeading eyebrow="PRESTIGE" title="Company standing" subtitle="How company standing is recorded and fades over time." />
     <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text style={styles.cardKicker}>WHAT IT IS</Text><Text style={styles.cardDescription}>Prestige improves customer discovery, bid quality, relationship baseline, and target order value. It does not change production or ordinary market prices.</Text></Card.Content></Card>
-    <Card mode="contained" style={styles.featureCard}><Card.Content><List.Item description="A permanent, recalculated source based on current company cash." left={(props) => <List.Icon {...props} icon={APP_ICONS.bank} />} title="Company balance" /><List.Item description="A permanent source based on average facility condition. 50% condition is neutral; higher condition grants prestige and lower condition applies a penalty. Facilities currently have equal weight; future asset-value metrics can make larger facilities count more." left={(props) => <List.Icon {...props} icon="factory" />} title="Facility condition" /><List.Item description={`Each fulfilled customer order creates a fading event. Its half-life is ${formatNumber(PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS, { smartDecimals: true })} active hours.`} left={(props) => <List.Icon {...props} icon={APP_ICONS.contracts} />} title="Customer orders" /></Card.Content></Card>
+    <Card mode="contained" style={styles.featureCard}><Card.Content><List.Item description="A permanent, recalculated source based on current company cash." left={(props) => <List.Icon {...props} icon={APP_ICONS.bank} />} title="Company balance" /><List.Item description="A permanent source based on average facility condition. 50% condition is neutral; higher condition grants prestige and lower condition applies a penalty. Facilities currently have equal weight; future asset-value metrics can make larger facilities count more." left={(props) => <List.Icon {...props} icon="factory" />} title="Facility condition" /><List.Item description={`Each fulfilled customer order creates a fading event. Its half-life is ${formatNumber(PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS, { smartDecimals: true })} active hours.`} left={(props) => <List.Icon {...props} icon={APP_ICONS.salesOrders} />} title="Customer orders" /></Card.Content></Card>
     <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text style={styles.cardKicker}>DECAY</Text><Text style={styles.cardDescription}>Prestige decay uses active game time. Background time does not decay prestige; Fast-forward does.</Text><Text style={styles.cardDescription}>For a fading event: current = original × 0.5^(active hours ÷ half-life). Select an event in the Prestige dialog to see its original value, current value, hourly decay, and projections.</Text></Card.Content></Card>
   </>;
 }

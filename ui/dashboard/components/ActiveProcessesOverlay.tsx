@@ -15,19 +15,19 @@ import { formatRecipeName } from '@/ui/dashboard/helpers/recipeFormatters';
 
 type ActiveProcess = { id: string; icon: string; label: string; progress: number; timing: string; title: string };
 
-export function ActiveProcessesOverlay({ customerPipelineProgress, facilities, finance, inventory, maximumOpenContracts, onCompleteProcess, research, salesOrders, showInstantCompletion }: {
+export function ActiveProcessesOverlay({ customerPipelineProgress, facilities, finance, inventory, maximumOpenOrders, onCompleteProcess, research, salesOrders, showInstantCompletion }: {
   customerPipelineProgress: number;
   facilities: FacilityCollection;
   finance: Finance;
   inventory: Inventory;
-  maximumOpenContracts: number;
+  maximumOpenOrders: number;
   onCompleteProcess?: (processId: string, remainingMs: number) => void;
   research: ResearchLedger;
   salesOrders: SalesOrders;
   showInstantCompletion?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const processes = getActiveProcesses({ customerPipelineProgress, facilities, finance, inventory, maximumOpenContracts, research, salesOrders });
+  const processes = getActiveProcesses({ customerPipelineProgress, facilities, finance, inventory, maximumOpenOrders, research, salesOrders });
   const processCountLabel = processes.length === 1 ? '1 active process' : `${processes.length} active processes`;
 
   return <View pointerEvents="box-none" style={localStyles.container}>
@@ -59,7 +59,7 @@ export function ActiveProcessesOverlay({ customerPipelineProgress, facilities, f
   </View>;
 }
 
-function getActiveProcesses({ customerPipelineProgress, facilities, finance, inventory, maximumOpenContracts, research, salesOrders }: Parameters<typeof ActiveProcessesOverlay>[0]): ActiveProcess[] {
+function getActiveProcesses({ customerPipelineProgress, facilities, finance, inventory, maximumOpenOrders, research, salesOrders }: Parameters<typeof ActiveProcessesOverlay>[0]): ActiveProcess[] {
   const production = facilities.getAll().flatMap((facility) => {
     const facilityView = facility.getView();
     if (getFacilityProductionStatus(facilityView, inventory) !== 'producing') return [];
@@ -94,10 +94,10 @@ function getActiveProcesses({ customerPipelineProgress, facilities, finance, inv
 
   const openOrders = salesOrders.getOfferedOrders().length;
   const pipelineProgress = Math.max(0, customerPipelineProgress);
-  const pipelineProcess = openOrders < maximumOpenContracts ? [{
+  const pipelineProcess = openOrders < maximumOpenOrders ? [{
     id: 'customer-pipeline',
-    icon: APP_ICONS.contracts,
-    label: `${formatNumber(openOrders)} of ${formatNumber(maximumOpenContracts)} order slots filled`,
+    icon: APP_ICONS.salesOrders,
+    label: `${formatNumber(openOrders)} of ${formatNumber(maximumOpenOrders)} order slots filled`,
     progress: clamp(pipelineProgress, 0, 1),
     timing: pipelineProgress >= 1 ? 'New customer expected' : `${formatNumber(pipelineProgress * 100, { decimals: 0 })}% toward next check`,
     title: 'Customer acquisition',

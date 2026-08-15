@@ -1072,7 +1072,7 @@ export const useGameStore = create<GameState>((set, get) => {
 
     const prestige = get().prestige.clone();
     syncCompanyBalancePrestige(prestige, finance, currentGameTimeMs);
-    syncCompanyAssetsPrestige(prestige, { finance, inventory: get().inventory, market: get().market, facilities: get().facilities, research: get().research }, currentGameTimeMs);
+    syncCompanyAssetsPrestige(prestige, { finance, inventory, market, facilities: get().facilities, research: get().research }, currentGameTimeMs);
     prestige.recordSalesOrder(order.id, order.reward, order.premiumPercent, currentGameTimeMs);
 
     const achievementResult = applyAchievementUnlocks({
