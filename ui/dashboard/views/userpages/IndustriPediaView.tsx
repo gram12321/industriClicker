@@ -6,7 +6,7 @@ import { FINANCE_INITIAL_BALANCE } from '@/game/company/companyConstants';
 import { PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS } from '@/game/prestige';
 import type { Market, MarketDiffusionDetails } from '@/game/market';
 import { getResource, getResourceIcon, RESOURCE_GROUPS, RESOURCE_TYPES, ResourceType } from '@/game/resources';
-import { formatCurrency, formatNumber, formatSigned, getColorClass, getNormalizedScoreLabel, normalizeToUnitInterval } from '@/utils';
+import { formatCurrency, formatNumber, formatSigned, getColorClass, normalizeToUnitInterval } from '@/utils';
 import { SectionHeading, WorkMetric } from '@/ui/dashboard/components/DashboardPrimitives';
 import { formatRecipeInputs, formatRecipeName, formatRecipeOutput } from '@/ui/dashboard/helpers/recipeFormatters';
 import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
@@ -55,19 +55,91 @@ const INDUSTRIPEDIA_SECTIONS: ReadonlyArray<{ id: IndustriPediaSection; label: s
   { id: 'customers', label: 'Customers' },
 ];
 
+const CUSTOMER_DOMAIN_METRIC_ICONS = {
+  bidRange: APP_ICONS.bid,
+  frequency: APP_ICONS.elapsedTime,
+  relationshipGain: APP_ICONS.relationship,
+  resources: APP_ICONS.package,
+  shareScale: APP_ICONS.marketShare,
+  targetValue: APP_ICONS.currency,
+} as const;
+
 function CustomerDomainsSection() {
   return <>
     <SectionHeading eyebrow="CUSTOMER DOMAINS" title="Who buys your goods" subtitle="Domains replace Winemaker countries. Customer types separately control buying behaviour, scope, and bundle appetite." />
-    {SALES_CUSTOMER_DOMAINS.map((domain) => { const profile = SALES_CUSTOMER_DOMAIN_PROFILES[domain]; const resources = RESOURCE_TYPES.filter((resourceType) => getSalesResourceProfile(resourceType).domain === domain); return <Card key={domain} mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text variant="titleMedium">{profile.label}</Text><Text style={styles.cardDescription}>{`Bid range: ${formatNumber(profile.bidRange[0] * 100, { decimals: 0 })}%–${formatNumber(profile.bidRange[1] * 100, { decimals: 0 })}% of reference before buyer, relationship, prestige, and economy effects.`}</Text><Text style={styles.salesAvailability}>{`Base target value: ${formatCurrency(profile.targetOrderValue[0])}–${formatCurrency(profile.targetOrderValue[1])} · Frequency: ${formatNumber(profile.frequency, { smartDecimals: true })}×`}</Text><Text style={styles.salesAvailability}>Target value then scales up to 4× with prestige and up to 1.2× with relationship.</Text><Text style={styles.salesAvailability}>{`Share scale: ${formatNumber(profile.marketShareMultiplier, { smartDecimals: true })}× · Relationship gain: ${formatNumber(profile.relationshipGainMultiplier, { smartDecimals: true })}×`}</Text><Text style={styles.cardDescription}>{`Resources: ${resources.map((resourceType) => `${getResourceIcon(resourceType)} ${getResource(resourceType).name} (lot ${formatNumber(getSalesResourceProfile(resourceType).standardOrderLot)})`).join(', ')}`}</Text></Card.Content></Card>; })}
+    <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
+      <Text style={styles.cardKicker}>DOMAIN PROFILE KEY</Text>
+      <TypeProfileKey icon={CUSTOMER_DOMAIN_METRIC_ICONS.bidRange} text="Bid range: the domain's starting range against the global reference price, before buyer and company effects." />
+      <TypeProfileKey icon={CUSTOMER_DOMAIN_METRIC_ICONS.targetValue} text="Base target value: the starting intended order value before prestige and relationship scaling." />
+      <TypeProfileKey icon={CUSTOMER_DOMAIN_METRIC_ICONS.frequency} text="Frequency: how often the domain contributes to new-offer rolls." />
+      <TypeProfileKey icon={CUSTOMER_DOMAIN_METRIC_ICONS.shareScale} text="Share scale: how large this domain's generated customers tend to be." />
+      <TypeProfileKey icon={CUSTOMER_DOMAIN_METRIC_ICONS.relationshipGain} text="Relationship gain: multiplier applied to fulfilled-order relationship growth." />
+      <TypeProfileKey icon={CUSTOMER_DOMAIN_METRIC_ICONS.resources} text="Resource icons: resources sold through this domain; each number is its standard sales lot." />
+    </Card.Content></Card>
+    {SALES_CUSTOMER_DOMAINS.map((domain) => {
+      const profile = SALES_CUSTOMER_DOMAIN_PROFILES[domain];
+      const resources = RESOURCE_TYPES.filter((resourceType) => getSalesResourceProfile(resourceType).domain === domain);
+      return <Card key={domain} mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
+        <View style={localStyles.customerTypeHeading}><MaterialCommunityIcons color={colors.primary} name={SALES_CUSTOMER_DOMAIN_ICONS[domain] as never} size={20} /><Text variant="titleMedium">{profile.label}</Text></View>
+        <View style={localStyles.customerDomainResources}>{resources.map((resourceType) => <Text accessibilityLabel={getResource(resourceType).name + ', standard lot ' + formatNumber(getSalesResourceProfile(resourceType).standardOrderLot)} key={resourceType} style={localStyles.customerDomainResource}>{getResourceIcon(resourceType)} {formatNumber(getSalesResourceProfile(resourceType).standardOrderLot)}</Text>)}</View>
+        <View style={localStyles.customerTypeMetrics}>
+          <CustomerTypeMetric icon={CUSTOMER_DOMAIN_METRIC_ICONS.bidRange} label="Bid range" value={formatNumber(profile.bidRange[0] * 100, { decimals: 0 }) + '%–' + formatNumber(profile.bidRange[1] * 100, { decimals: 0 }) + '%'} />
+          <CustomerTypeMetric icon={CUSTOMER_DOMAIN_METRIC_ICONS.targetValue} label="Base target value" value={formatCurrency(profile.targetOrderValue[0]) + '–' + formatCurrency(profile.targetOrderValue[1])} />
+          <CustomerTypeMetric icon={CUSTOMER_DOMAIN_METRIC_ICONS.frequency} label="Frequency" value={formatNumber(profile.frequency, { smartDecimals: true }) + '×'} />
+          <CustomerTypeMetric icon={CUSTOMER_DOMAIN_METRIC_ICONS.shareScale} label="Share scale" value={formatNumber(profile.marketShareMultiplier, { smartDecimals: true }) + '×'} />
+          <CustomerTypeMetric icon={CUSTOMER_DOMAIN_METRIC_ICONS.relationshipGain} label="Relationship gain" value={formatNumber(profile.relationshipGainMultiplier, { smartDecimals: true }) + '×'} />
+        </View>
+      </Card.Content></Card>;
+    })}
   </>;
 }
+
+
+const CUSTOMER_TYPE_METRIC_ICONS = {
+  bundleAppetite: APP_ICONS.package,
+  crossDomain: 'source-branch',
+  globalPremium: APP_ICONS.globalMarket,
+  marketShare: APP_ICONS.marketShare,
+  targetValue: APP_ICONS.currency,
+} as const;
 
 function CustomerTypesSection() {
   return <>
     <SectionHeading eyebrow="CUSTOMER TYPES" title="How customers buy" subtitle="Types control buyer behaviour and operating-domain scope; they are not a progression ladder." />
-    {SALES_CUSTOMER_TYPES.map((customerType) => { const profile = SALES_CUSTOMER_TYPE_PROFILES[customerType]; return <Card key={customerType} mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><View style={localStyles.customerTypeHeading}><MaterialCommunityIcons color={colors.primary} name={SALES_CUSTOMER_TYPE_ICONS[customerType]} size={20} /><Text variant="titleMedium">{profile.label}</Text></View><Text style={styles.cardDescription}>{profile.description}</Text><Text style={styles.salesAvailability}>{`Operating domains: ${profile.allowedOperatingDomains.map((domain) => SALES_CUSTOMER_DOMAIN_PROFILES[domain].label).join(', ')}`}</Text><Text style={styles.salesAvailability}>{`Market-share tendency: ${formatNumber(profile.marketShareScale, { smartDecimals: true })}× · smaller values create more, smaller buyers`}</Text><Text style={styles.salesAvailability}>{`Cross-domain tendency: ${formatNumber(profile.crossDomainChance * 100, { decimals: 0 })}% · Bundle appetite: ${formatNumber(profile.bundleAppetite * 100, { decimals: 0 })}%`}</Text><Text style={styles.salesAvailability}>{`Target value tendency: ${formatNumber(profile.targetValueMultiplier[0], { smartDecimals: true })}×–${formatNumber(profile.targetValueMultiplier[1], { smartDecimals: true })}× · Baseline global premium: +${formatNumber(profile.globalPremiumBaseline * 100, { smartDecimals: true })}%`}</Text></Card.Content></Card>; })}
+    <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
+      <Text style={styles.cardKicker}>TYPE PROFILE KEY</Text>
+      <TypeProfileKey icon={CUSTOMER_TYPE_METRIC_ICONS.marketShare} text="Market share tendency: lower values create more, smaller buyers; higher values allow larger buyers." />
+      <TypeProfileKey icon={CUSTOMER_TYPE_METRIC_ICONS.crossDomain} text="Cross-domain tendency: chance that this buyer also orders from another compatible domain." />
+      <TypeProfileKey icon={CUSTOMER_TYPE_METRIC_ICONS.bundleAppetite} text="Bundle appetite: tendency to request several resources in one order." />
+      <TypeProfileKey icon={CUSTOMER_TYPE_METRIC_ICONS.targetValue} text="Target value tendency: how much the type raises or lowers an order's intended value." />
+      <TypeProfileKey icon={CUSTOMER_TYPE_METRIC_ICONS.globalPremium} text="Baseline global premium: the type's starting bid adjustment against the global reference price." />
+    </Card.Content></Card>
+    {SALES_CUSTOMER_TYPES.map((customerType) => {
+      const profile = SALES_CUSTOMER_TYPE_PROFILES[customerType];
+      const operatingDomainLabels = profile.allowedOperatingDomains.map((domain) => SALES_CUSTOMER_DOMAIN_PROFILES[domain].label).join(', ');
+      return <Card key={customerType} mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
+        <View style={localStyles.customerTypeHeading}><MaterialCommunityIcons color={colors.primary} name={SALES_CUSTOMER_TYPE_ICONS[customerType]} size={20} /><Text variant="titleMedium">{profile.label}</Text></View>
+        <Text style={styles.cardDescription}>{profile.description}</Text>
+        <View accessibilityLabel={'Operating domains: ' + operatingDomainLabels} style={localStyles.customerTypeDomains}>{profile.allowedOperatingDomains.map((domain) => <MaterialCommunityIcons accessibilityLabel={SALES_CUSTOMER_DOMAIN_PROFILES[domain].label} color={colors.muted} key={domain} name={SALES_CUSTOMER_DOMAIN_ICONS[domain] as never} size={16} />)}</View>
+        <View style={localStyles.customerTypeMetrics}>
+          <CustomerTypeMetric icon={CUSTOMER_TYPE_METRIC_ICONS.marketShare} label="Market share tendency" value={formatNumber(profile.marketShareScale, { smartDecimals: true }) + '×'} />
+          <CustomerTypeMetric icon={CUSTOMER_TYPE_METRIC_ICONS.crossDomain} label="Cross-domain tendency" value={formatNumber(profile.crossDomainChance * 100, { decimals: 0 }) + '%'} />
+          <CustomerTypeMetric icon={CUSTOMER_TYPE_METRIC_ICONS.bundleAppetite} label="Bundle appetite" value={formatNumber(profile.bundleAppetite * 100, { decimals: 0 }) + '%'} />
+          <CustomerTypeMetric icon={CUSTOMER_TYPE_METRIC_ICONS.targetValue} label="Target value tendency" value={formatNumber(profile.targetValueMultiplier[0], { smartDecimals: true }) + '×–' + formatNumber(profile.targetValueMultiplier[1], { smartDecimals: true }) + '×'} />
+          <CustomerTypeMetric icon={CUSTOMER_TYPE_METRIC_ICONS.globalPremium} label="Baseline global premium" value={'+' + formatNumber(profile.globalPremiumBaseline * 100, { smartDecimals: true }) + '%'} />
+        </View>
+      </Card.Content></Card>;
+    })}
     <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text style={styles.cardKicker}>BUNDLE RULE</Text><Text style={styles.cardDescription}>Every line must already be available in meaningful inventory lots. Prestige, relationship, market share, and type appetite create a skewed breadth: one line is common, wide bundles are rare, and only the extreme late-game tail reaches all compatible resources.</Text></Card.Content></Card>
   </>;
+}
+
+function TypeProfileKey({ icon, text }: { icon: string; text: string }) {
+  return <View style={localStyles.typeProfileKey}><MaterialCommunityIcons color={colors.primary} name={icon as never} size={15} /><Text style={styles.salesAvailability}>{text}</Text></View>;
+}
+
+function CustomerTypeMetric({ icon, label, value }: { icon: string; label: string; value: string }) {
+  return <View accessibilityLabel={label + ': ' + value} style={localStyles.customerTypeMetric}><MaterialCommunityIcons color={colors.muted} name={icon as never} size={15} /><Text style={styles.salesAvailability}>{value}</Text></View>;
 }
 
 function CustomersSection({ companyPrestige, currentGameTimeMs, salesOrders }: { companyPrestige: number; currentGameTimeMs: number; salesOrders: SalesOrders }) {
@@ -95,7 +167,7 @@ function CustomersSection({ companyPrestige, currentGameTimeMs, salesOrders }: {
     <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text style={styles.cardKicker}>CUSTOMER DIRECTORY</Text><Text variant="titleMedium">{`${formatNumber(customers.length)} of ${formatNumber(catalogue.length)} buyers`}</Text><Text style={styles.cardDescription}>A list of available customers. Tap a customer to see its buying profile, relationship, and order history.</Text><View style={localStyles.directoryHint}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.purchasingPower} size={15} /><Text style={styles.salesAvailability}>Purchasing power = typical spending capacity. Bid profile = how far this customer's offer tends to move from the global reference price. Red-to-green shows each value within its own range.</Text></View></Card.Content></Card>
     <View style={localStyles.controlGroup}><Text style={styles.cardKicker}>FILTERS</Text><Text style={localStyles.controlLabel}>CUSTOMER TYPE</Text><View style={localStyles.directoryControls}><Menu visible={typeMenuVisible} onDismiss={() => setTypeMenuVisible(false)} anchor={<Button compact mode={selectedType === 'all' ? 'outlined' : 'contained'} icon={() => <MaterialCommunityIcons color={selectedType === 'all' ? colors.primary : colors.surface} name={selectedType === 'all' ? 'account-group-outline' : SALES_CUSTOMER_TYPE_ICONS[selectedType]} size={15} />} onPress={() => setTypeMenuVisible(true)}>{selectedType === 'all' ? 'All customer types' : SALES_CUSTOMER_TYPE_PROFILES[selectedType].label}</Button>}>{<Menu.Item leadingIcon="account-group-outline" title="All customer types" onPress={() => { setSelectedType('all'); setTypeMenuVisible(false); }} />}{SALES_CUSTOMER_TYPES.map((customerType) => <Menu.Item key={customerType} leadingIcon={SALES_CUSTOMER_TYPE_ICONS[customerType] as never} title={SALES_CUSTOMER_TYPE_PROFILES[customerType].label} onPress={() => { setSelectedType(customerType); setTypeMenuVisible(false); }} />)}</Menu><Button compact mode={knownOnly ? 'contained' : 'outlined'} onPress={() => setKnownOnly((value) => !value)}>{knownOnly ? 'Known only' : 'Show known'}</Button></View><Text style={localStyles.controlLabel}>DOMAIN</Text><View style={localStyles.sectionTabs}><Button compact mode={selectedDomain === 'all' ? 'contained' : 'outlined'} onPress={() => setSelectedDomain('all')}>All domains</Button>{SALES_CUSTOMER_DOMAINS.map((domain) => <Button compact key={domain} mode={selectedDomain === domain ? 'contained' : 'outlined'} icon={() => <MaterialCommunityIcons color={selectedDomain === domain ? colors.surface : colors.primary} name={SALES_CUSTOMER_DOMAIN_ICONS[domain] as never} size={15} />} onPress={() => setSelectedDomain(domain)}>{SALES_CUSTOMER_DOMAIN_PROFILES[domain].label}</Button>)}</View></View>
     <View style={localStyles.controlGroup}><Text style={styles.cardKicker}>SORTING</Text><View style={localStyles.directoryControls}><Menu visible={sortMenuVisible} onDismiss={() => setSortMenuVisible(false)} anchor={<Button compact mode="outlined" icon="sort" onPress={() => setSortMenuVisible(true)}>{`Sort: ${sortLabel}`}</Button>}>{CUSTOMER_SORT_OPTIONS.map((option) => <Menu.Item key={option.key} leadingIcon={option.icon as never} title={option.label} onPress={() => { setSortKey(option.key); setSortMenuVisible(false); }} />)}</Menu><Button compact mode="outlined" icon={sortDescending ? 'sort-ascending' : 'sort-descending'} onPress={() => setSortDescending((value) => !value)}>{sortDescending ? 'High first' : 'Low first'}</Button></View></View>
-    {customers.map(({ customer, state, rejected, relationship }) => { const isExpanded = expandedCustomerId === customer.id; const relationshipDetails = calculateSalesCustomerRelationshipDetails(customer, companyPrestige); return <Card key={customer.id} mode="contained" style={styles.featureCard}><Pressable accessibilityLabel={`${isExpanded ? 'Hide' : 'Show'} details for ${customer.name}`} accessibilityRole="button" accessibilityState={{ expanded: isExpanded }} onPress={() => setExpandedCustomerId((current) => current === customer.id ? null : customer.id)}><Card.Content style={styles.cardContent}><View style={localStyles.customerHeader}><View style={localStyles.customerTitle}><View style={localStyles.customerTypeHeading}><MaterialCommunityIcons color={colors.primary} name={SALES_CUSTOMER_TYPE_ICONS[customer.customerType] as never} size={18} /><Text variant="titleMedium">{customer.name}</Text></View><View style={localStyles.customerSubheader}><MaterialCommunityIcons color={colors.muted} name={SALES_CUSTOMER_DOMAIN_ICONS[customer.domain] as never} size={14} /><Text style={styles.cardDescription}>{SALES_CUSTOMER_DOMAIN_PROFILES[customer.domain].label}</Text><MaterialCommunityIcons color={colors.muted} name={SALES_CUSTOMER_TYPE_ICONS[customer.customerType] as never} size={14} /><Text style={styles.cardDescription}>{SALES_CUSTOMER_TYPE_PROFILES[customer.customerType].label}</Text></View></View><MaterialCommunityIcons color={colors.muted} name={isExpanded ? 'chevron-up' : 'chevron-down'} size={22} /></View><CustomerStats customer={customer} isExpanded={isExpanded} relationship={relationship} rejected={rejected} state={state} />{isExpanded && <View style={localStyles.customerDetails}><Text style={styles.cardKicker}>RELATIONSHIP</Text><Text style={styles.salesAvailability}>{`Baseline: ${formatNumber(relationshipDetails.prestigeBonus * 100, { smartDecimals: true })} prestige − ${formatNumber(relationshipDetails.marketSharePenalty * 100, { smartDecimals: true })} share = ${formatNumber(relationshipDetails.baseline * 100, { smartDecimals: true })}`}</Text><Text style={styles.salesAvailability}>{`Current: ${formatNumber(relationship * 100, { smartDecimals: true })} → ${formatNumber(relationshipDetails.baseline * 100, { smartDecimals: true })} baseline · halfway there every ${formatNumber(relationshipDetails.decayHalfLifeHours, { smartDecimals: true })} hours`}</Text><Text style={styles.salesAvailability}>{`Completed orders: value-based gain, slower at high relationship · Reject: −${formatNumber(relationshipDetails.minimumFailureLoss * 100, { smartDecimals: true })} to −${formatNumber(relationshipDetails.maximumRejectionLoss * 100, { smartDecimals: true })} · Expire: −${formatNumber(relationshipDetails.minimumFailureLoss * 100, { smartDecimals: true })} to −${formatNumber(relationshipDetails.maximumExpiryLoss * 100, { smartDecimals: true })}`}</Text></View>}</Card.Content></Pressable></Card>; })}
+    {customers.map(({ customer, state, rejected, relationship }) => { const isExpanded = expandedCustomerId === customer.id; const relationshipDetails = calculateSalesCustomerRelationshipDetails(customer, companyPrestige); return <Card key={customer.id} mode="contained" style={styles.featureCard}><Pressable accessibilityLabel={`${isExpanded ? 'Hide' : 'Show'} details for ${customer.name}`} accessibilityRole="button" accessibilityState={{ expanded: isExpanded }} onPress={() => setExpandedCustomerId((current) => current === customer.id ? null : customer.id)}><Card.Content style={styles.cardContent}><View style={localStyles.customerHeader}><View style={localStyles.customerTitle}><View style={localStyles.customerTypeHeading}><MaterialCommunityIcons color={colors.primary} name={SALES_CUSTOMER_TYPE_ICONS[customer.customerType] as never} size={18} /><Text variant="titleMedium">{customer.name}</Text></View><View style={localStyles.customerSubheader}><MaterialCommunityIcons color={colors.muted} name={SALES_CUSTOMER_DOMAIN_ICONS[customer.domain] as never} size={14} /><Text style={styles.cardDescription}>{SALES_CUSTOMER_DOMAIN_PROFILES[customer.domain].label}</Text><MaterialCommunityIcons color={colors.muted} name={SALES_CUSTOMER_TYPE_ICONS[customer.customerType] as never} size={14} /><Text style={styles.cardDescription}>{SALES_CUSTOMER_TYPE_PROFILES[customer.customerType].label}</Text></View></View><MaterialCommunityIcons color={colors.muted} name={isExpanded ? 'chevron-up' : 'chevron-down'} size={22} /></View><CustomerStats customer={customer} isExpanded={isExpanded} relationship={relationship} rejected={rejected} state={state} />{isExpanded && <RelationshipExplanation details={relationshipDetails} relationship={relationship} />}</Card.Content></Pressable></Card>; })}
   </>;
 }
 
@@ -116,8 +188,19 @@ function CustomerStats({ customer, isExpanded, relationship, rejected, state }: 
   const bidColor = getColorClass(normalizeToUnitInterval(customer.bidMultiplier, ...SALES_CUSTOMER_BID_MULTIPLIER_RANGE));
   return <>
     <View style={localStyles.metricRow}><Metric color={getColorClass(customer.marketShare)} icon={APP_ICONS.marketShare} label="Share" value={`${formatNumber(customer.marketShare * 100, { smartDecimals: true })}%`} /><Metric color={relationshipColor} icon={APP_ICONS.relationship} label="Relationship" suffix={getSalesCustomerRelationshipLabel(relationship)} value={`${formatNumber(relationship * 100, { smartDecimals: true })}`} /></View>
-    {isExpanded && <><View style={localStyles.metricRow}><Metric color={purchasingPowerColor} icon={APP_ICONS.purchasingPower} label="PP" suffix={getNormalizedScoreLabel(normalizeToUnitInterval(customer.purchasingPower, ...SALES_CUSTOMER_PURCHASING_POWER_RANGE))} value={`${formatNumber(customer.purchasingPower * 100, { decimals: 0 })}%`} /><Metric color={bidColor} icon={APP_ICONS.bid} label="Bid" suffix={getNormalizedScoreLabel(normalizeToUnitInterval(customer.bidMultiplier, ...SALES_CUSTOMER_BID_MULTIPLIER_RANGE))} value={`${formatNumber(customer.bidMultiplier * 100, { decimals: 0 })}%`} /></View><View style={localStyles.metricRow}><Metric icon={APP_ICONS.fulfilled} label="Fulfilled" value={formatNumber(state?.fulfilledOrderCount ?? 0)} /><Metric icon={APP_ICONS.rejected} label="Rejected" value={formatNumber(rejected)} /><Metric icon={APP_ICONS.expired} label="Expired" value={formatNumber(state?.expiredOrderCount ?? 0)} /></View></>}
+    {isExpanded && <><View style={localStyles.metricRow}><Metric color={purchasingPowerColor} icon={APP_ICONS.purchasingPower} label="PP" value={`${formatNumber(customer.purchasingPower * 100, { decimals: 0 })}%`} /><Metric color={bidColor} icon={APP_ICONS.bid} label="Bid" value={`${formatNumber(customer.bidMultiplier * 100, { decimals: 0 })}%`} /></View><View style={localStyles.metricRow}><Metric icon={APP_ICONS.fulfilled} label="Fulfilled" value={formatNumber(state?.fulfilledOrderCount ?? 0)} /><Metric icon={APP_ICONS.rejected} label="Rejected" value={formatNumber(rejected)} /><Metric icon={APP_ICONS.expired} label="Expired" value={formatNumber(state?.expiredOrderCount ?? 0)} /></View></>}
   </>;
+}
+
+function RelationshipExplanation({ details, relationship }: { details: ReturnType<typeof calculateSalesCustomerRelationshipDetails>; relationship: number }) {
+  const orderHistory = relationship - details.baseline;
+  return <View style={localStyles.customerDetails}>
+    <Text style={styles.cardKicker}>RELATIONSHIP</Text>
+    <Text style={styles.salesAvailability}>{`Reputation baseline: ${formatNumber(details.prestigeBonus * 100, { smartDecimals: true })} prestige recognition − ${formatNumber(details.marketSharePenalty * 100, { smartDecimals: true })} larger-account adjustment = ${formatNumber(details.baseline * 100, { smartDecimals: true })}`}</Text>
+    <Text style={styles.salesAvailability}>{`Order history: ${formatSigned(orderHistory * 100, { smartDecimals: true })}. Completed orders build it; rejected and expired orders reduce it.`}</Text>
+    <Text style={styles.salesAvailability}>{`Current relationship: ${formatNumber(relationship * 100, { smartDecimals: true })} = ${formatNumber(details.baseline * 100, { smartDecimals: true })} reputation ${formatSigned(orderHistory * 100, { smartDecimals: true })} order history.`}</Text>
+    <Text style={styles.salesAvailability}>{`Order history fades toward the reputation baseline, halfway every ${formatNumber(details.decayHalfLifeHours, { smartDecimals: true })} hours. Rejection: −${formatNumber(details.minimumFailureLoss * 100, { smartDecimals: true })} to −${formatNumber(details.maximumRejectionLoss * 100, { smartDecimals: true })} · Expiry: −${formatNumber(details.minimumFailureLoss * 100, { smartDecimals: true })} to −${formatNumber(details.maximumExpiryLoss * 100, { smartDecimals: true })}.`}</Text>
+  </View>;
 }
 
 function getCustomerSortValue(view: { customer: ReturnType<typeof getSalesCustomerCatalogue>[number]; state: ReturnType<SalesOrders['getCustomerStates']>[number] | undefined; rejected: number; relationship: number }, key: CustomerSortKey): number {
@@ -481,6 +564,7 @@ const localStyles = StyleSheet.create({
   marketPoolSupply: { color: colors.charcoal, fontSize: 20, fontWeight: '800' },
   priceGapText: { color: colors.muted, fontSize: 12, textAlign: 'center' },
   resourceTabs: { gap: 8, paddingBottom: 4 },
+  typeProfileKey: { alignItems: 'flex-start', flexDirection: 'row', gap: 6 },
   resourceGroupTabs: { gap: 4, width: '100%' },
   resourceGroupButtons: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   sectionTabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingBottom: 4 },
@@ -499,8 +583,13 @@ const localStyles = StyleSheet.create({
   conditionTableHeader: { color: colors.muted, fontSize: 9, fontWeight: '700' },
   customerDetails: { borderTopColor: '#E2E8E5', borderTopWidth: 1, gap: 6, marginTop: 4, paddingTop: 10 },
   customerHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  customerDomainResource: { color: colors.charcoal, fontSize: 12 },
+  customerDomainResources: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  customerTypeDomains: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
   customerTitle: { flex: 1, gap: 2, paddingRight: 8 },
   customerTypeHeading: { alignItems: 'center', flexDirection: 'row', gap: 6 },
+  customerTypeMetric: { alignItems: 'center', flexDirection: 'row', gap: 3 },
+  customerTypeMetrics: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
   customerSubheader: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
   controlGroup: { gap: 4, paddingBottom: 6 },
   controlLabel: { color: colors.muted, fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
