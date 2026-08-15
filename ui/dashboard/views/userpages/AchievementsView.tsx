@@ -6,7 +6,7 @@ import { ACHIEVEMENT_CATEGORIES, createAchievementEvaluationContext, filterAchie
 import type { FacilityCollection } from '@/game/facilities';
 import type { Finance } from '@/game/finance';
 import type { PrestigeLedger } from '@/game/prestige';
-import type { SalesContracts } from '@/game/sales';
+import type { SalesOrders } from '@/game/sales';
 import { colors } from '@/theme';
 import { formatNumber, getAchievementMasteryName } from '@/utils';
 import { SectionHeading } from '@/ui/dashboard/components/DashboardPrimitives';
@@ -38,7 +38,7 @@ export function AchievementsView({
   finance,
   prestige,
   productionStatistics,
-  salesContracts,
+  salesOrders,
 }: {
   achievements: AchievementLedger;
   companyStartedAtGameTimeMs: number;
@@ -47,14 +47,14 @@ export function AchievementsView({
   finance: Finance;
   prestige: PrestigeLedger;
   productionStatistics: ProductionStatistics;
-  salesContracts: SalesContracts;
+  salesOrders: SalesOrders;
 }) {
   const [selectedCategory, setSelectedCategory] = useState<AchievementCategory | 'all'>('all');
   const [showCompletedTiers, setShowCompletedTiers] = useState(false);
   const context = createAchievementEvaluationContext({
     facilities,
     finance,
-    salesContracts,
+    salesOrders,
     prestige,
     productionStatistics,
     companyStartedAtGameTimeMs,

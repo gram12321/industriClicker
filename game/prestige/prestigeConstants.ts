@@ -13,7 +13,7 @@ export const PRESTIGE_EVENT_TYPES = [
   'company_balance',
   'company_assets',
   'facility_condition',
-  'sales_contract',
+  'sales_order',
   'achievement',
   'finance_penalty',
 ] as const;

@@ -3,14 +3,14 @@ import { Inventory } from '@/game/inventory';
 import { FACILITIES, FacilityCollection, advanceAllFacilityProduction, calculateFacilityEffectiveWork, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
 import type { RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
-import { MARKET_DIFFUSION_INTERVAL_MS, MARKET_SALES_CONTRACT_PREMIUM, Market, canAutoBuyMarketResource, canBuyMarketResource, canSellMarketResource, type MarketAutomation } from '@/game/market';
+import { MARKET_DIFFUSION_INTERVAL_MS, MARKET_SALES_ORDER_BID_MULTIPLIER, Market, canAutoBuyMarketResource, canBuyMarketResource, canSellMarketResource, type MarketAutomation } from '@/game/market';
 import type { GameSnapshot } from '@/game/core/state';
 import { BASE_WORK_PER_MINUTE, FOREGROUND_SIMULATION_STEP_MS, REALTIME_WORK_MINUTE_MS, calculateRealtimeAdvance } from '@/game/core/time';
-import { SalesContracts, calculateSalesContractOfferChance } from '@/game/sales';
+import { SalesOrders, calculateSalesOrderAcquisitionChance, getSalesResourceProfile } from '@/game/sales';
 import { AchievementLedger, ProductionStatistics, createAchievementEvaluationContext, evaluateAchievementUnlocks, type AchievementCategory } from '@/game/achievements';
 import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyAssetsPrestige, calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary, calculateFacilityConditionPrestige } from '@/game/prestige';
 import { evaluateGateRequirements, type GateContext, type GateEvaluation } from '@/game/gates';
-import { ResearchLedger, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesContracts, getMaximumSimultaneousResearchProjects, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, getSalesContractPremiumMultiplier, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, type ResearchProjectId } from '@/game/research';
+import { ResearchLedger, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesOrders, getMaximumSimultaneousResearchProjects, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, getSalesOrderBidMultiplier, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, type ResearchProjectId } from '@/game/research';
 import { FIRST_FACILITY_RECIPE_RESEARCH_GRANT_ID, FIRST_FACILITY_RECIPE_RESEARCH_WORK_SPEED_MULTIPLIER, GrantLedger } from '@/game/grants';
 import type { StartingConditionId } from '@/game/company/companyTypes';
 import { STANDARD_START_CONSTRUCTION_MATERIALS, STANDARD_START_INDUSTRIAL_MACHINES } from '@/game/company/companyConstants';
@@ -30,7 +30,7 @@ type GameState = {
   inventory: Inventory;
   market: Market;
   facilities: FacilityCollection;
-  salesContracts: SalesContracts;
+  salesOrders: SalesOrders;
   achievements: AchievementLedger;
   productionStatistics: ProductionStatistics;
   prestige: PrestigeLedger;
@@ -65,9 +65,9 @@ type GameState = {
   advanceGameTime: (elapsedMilliseconds: number) => number;
   advanceRealtime: (nowMs: number) => number;
   fastForwardOneMinute: () => boolean;
-  createSalesContractRequest: (resourceType: ResourceType, quantity: number) => boolean;
-  fulfillSalesContract: (contractId: string) => boolean;
-  rejectSalesContract: (contractId: string) => boolean;
+  createSalesOrderRequest: (resourceType: ResourceType, quantity: number) => boolean;
+  fulfillSalesOrder: (orderId: string) => boolean;
+  rejectSalesOrder: (orderId: string) => boolean;
   setStartingConditionId: (startingConditionId: StartingConditionId | null) => void;
   getResearchAvailability: (projectId: ResearchProjectId) => ResearchAvailability;
   startResearch: (projectId: ResearchProjectId) => boolean;
@@ -174,7 +174,7 @@ export function createStartingGameSnapshot(nowMs = Date.now()): GameSnapshot {
     inventory: inventory.toSnapshot(),
     market: new Market().toSnapshot(),
     facilities: new FacilityCollection().toSnapshot(),
-    salesContracts: new SalesContracts().toSnapshot(),
+    salesOrders: new SalesOrders().toSnapshot(),
     achievements: new AchievementLedger().toSnapshot(),
     productionStatistics: new ProductionStatistics().toSnapshot(),
     prestige: createStartingPrestige(finance, nowMs).toSnapshot(),
@@ -194,7 +194,7 @@ function applyAchievementUnlocks(input: {
   productionStatistics: ProductionStatistics;
   facilities: FacilityCollection;
   finance: Finance;
-  salesContracts: SalesContracts;
+  salesOrders: SalesOrders;
   prestige: PrestigeLedger;
   companyStartedAtGameTimeMs: number;
   currentGameTimeMs: number;
@@ -204,7 +204,7 @@ function applyAchievementUnlocks(input: {
   const context = createAchievementEvaluationContext({
     facilities: input.facilities,
     finance: input.finance,
-    salesContracts: input.salesContracts,
+    salesOrders: input.salesOrders,
     prestige: input.prestige,
     productionStatistics: input.productionStatistics,
     companyStartedAtGameTimeMs: input.companyStartedAtGameTimeMs,
@@ -246,7 +246,7 @@ export const useGameStore = create<GameState>((set, get) => {
   inventory: new Inventory(),
   market: new Market(),
   facilities: new FacilityCollection(),
-  salesContracts: new SalesContracts(),
+  salesOrders: new SalesOrders(),
   achievements: new AchievementLedger(),
   productionStatistics: new ProductionStatistics(),
   prestige: createStartingPrestige(initialFinance, initialGameTimeMs),
@@ -368,7 +368,7 @@ export const useGameStore = create<GameState>((set, get) => {
       productionStatistics: get().productionStatistics,
       facilities,
       finance,
-      salesContracts: get().salesContracts,
+      salesOrders: get().salesOrders,
       prestige,
       companyStartedAtGameTimeMs: get().companyStartedAtGameTimeMs,
       currentGameTimeMs: get().lastProcessedAtMs,
@@ -494,7 +494,7 @@ export const useGameStore = create<GameState>((set, get) => {
     syncCompanyBalancePrestige(prestige, finance, get().lastProcessedAtMs);
     syncCompanyAssetsPrestige(prestige, { finance, inventory, market, facilities, research: get().research }, get().lastProcessedAtMs);
     syncFacilityConditionPrestige(prestige, facilities, get().lastProcessedAtMs);
-    const achievementResult = applyAchievementUnlocks({ achievements: get().achievements, productionStatistics, facilities, finance, salesContracts: get().salesContracts, prestige, companyStartedAtGameTimeMs: get().companyStartedAtGameTimeMs, currentGameTimeMs: get().lastProcessedAtMs, categories: ['facilities', 'finance'], inventory });
+    const achievementResult = applyAchievementUnlocks({ achievements: get().achievements, productionStatistics, facilities, finance, salesOrders: get().salesOrders, prestige, companyStartedAtGameTimeMs: get().companyStartedAtGameTimeMs, currentGameTimeMs: get().lastProcessedAtMs, categories: ['facilities', 'finance'], inventory });
     set({ facilities, inventory: achievementResult.inventory, market, finance, productionStatistics, achievements: achievementResult.achievements, prestige: achievementResult.prestige });
     return true;
   },
@@ -557,7 +557,7 @@ export const useGameStore = create<GameState>((set, get) => {
       productionStatistics: get().productionStatistics,
       facilities,
       finance,
-      salesContracts: get().salesContracts,
+      salesOrders: get().salesOrders,
       prestige,
       companyStartedAtGameTimeMs: get().companyStartedAtGameTimeMs,
       currentGameTimeMs: get().lastProcessedAtMs,
@@ -578,7 +578,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const facilities = hasConstructedFacility ? get().facilities.clone() : get().facilities;
     let inventory = hasActiveFacility ? get().inventory.clone() : get().inventory;
     let productionStatistics = get().productionStatistics;
-    let salesContracts: SalesContracts | null = null;
+    let salesOrders: SalesOrders | null = null;
     let market: Market | null = null;
     let marketFinance: Finance | null = null;
     let research = get().research;
@@ -655,8 +655,14 @@ export const useGameStore = create<GameState>((set, get) => {
         }
       }
 
-      const currentSalesContracts = salesContracts ?? get().salesContracts;
-      const offerChance = calculateSalesContractOfferChance(currentSalesContracts.getOfferedContracts().length);
+      const currentSalesOrders = salesOrders ?? get().salesOrders;
+      const currentPrestige = calculateCompanyPrestigeSummary(get().prestige.getEvents(), stepEndGameTimeMs).totalPrestige;
+      const offerChance = calculateSalesOrderAcquisitionChance({
+        openOrderCount: currentSalesOrders.getOfferedOrders().length,
+        companyPrestige: currentPrestige,
+        economyPhase: (marketFinance ?? get().finance).getEconomyPhase(),
+        hasEligibleInventory: getSalesOfferResourceTypes(research.getCompletedProjectIds(), productionStatistics.toSnapshot().producedByResource).some((resourceType) => inventory.getAmount(resourceType) >= getSalesResourceProfile(resourceType).standardOrderLot),
+      });
       customerPipelineProgress += (stepMs / 1_000) * offerChance / 60;
 
       for (const resourceType of RESOURCE_TYPES) {
@@ -693,21 +699,26 @@ export const useGameStore = create<GameState>((set, get) => {
       unprocessedWorkMs = totalSalesMs - completedSalesMinutes * REALTIME_WORK_MINUTE_MS;
 
       if (completedSalesMinutes > 0) {
-        salesContracts ??= get().salesContracts.clone();
+        salesOrders ??= get().salesOrders.clone();
         const activeMarket = market ?? get().market;
-        const contractsCreated = salesContracts.advanceTime(
-          completedSalesMinutes,
-          getSalesOfferResourceTypes(research.getCompletedProjectIds(), productionStatistics.toSnapshot().producedByResource),
-          (resourceType) => activeMarket.getGlobalPrice(resourceType) * getSalesContractPremiumMultiplier(research.getCompletedProjectIds(), MARKET_SALES_CONTRACT_PREMIUM),
-          getMaximumOpenSalesContracts(research.getCompletedProjectIds()),
-          Math.random,
-          (resourceType) => productionStatistics.toSnapshot().producedByResource[resourceType] > 0
-            ? getSalesOfferProducedResourceWeight(research.getCompletedProjectIds())
-            : 1,
-        );
+        let ordersCreated = 0;
+        for (let minute = 0; minute < completedSalesMinutes; minute += 1) {
+          const result = salesOrders.advanceTime({
+            currentGameTimeMs: stepEndGameTimeMs - (completedSalesMinutes - minute - 1) * REALTIME_WORK_MINUTE_MS,
+            maximumOpenOrders: getMaximumOpenSalesOrders(research.getCompletedProjectIds()),
+            companyPrestige: calculateCompanyPrestigeSummary(get().prestige.getEvents(), stepEndGameTimeMs).totalPrestige,
+            economyPhase: (marketFinance ?? get().finance).getEconomyPhase(),
+            inventoryByResource: Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, inventory.getAmount(resourceType)])) as Record<ResourceType, number>,
+            globalPrices: Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, activeMarket.getGlobalPrice(resourceType)])) as Record<ResourceType, number>,
+            candidateResourceTypes: getSalesOfferResourceTypes(research.getCompletedProjectIds(), productionStatistics.toSnapshot().producedByResource),
+            getResourceWeight: (resourceType) => productionStatistics.toSnapshot().producedByResource[resourceType] > 0 ? getSalesOfferProducedResourceWeight(research.getCompletedProjectIds()) : 1,
+            bidResearchMultiplier: getSalesOrderBidMultiplier(research.getCompletedProjectIds(), MARKET_SALES_ORDER_BID_MULTIPLIER),
+          });
+          ordersCreated += result.ordersCreated;
+        }
         elapsedMinutes += completedSalesMinutes;
 
-        if (contractsCreated > 0) {
+        if (ordersCreated > 0) {
           customerPipelineProgress = 0;
         }
       }
@@ -819,7 +830,7 @@ export const useGameStore = create<GameState>((set, get) => {
         productionStatistics,
         facilities,
         finance: marketFinance ?? get().finance,
-        salesContracts: salesContracts ?? get().salesContracts,
+        salesOrders: salesOrders ?? get().salesOrders,
         prestige,
         companyStartedAtGameTimeMs: get().companyStartedAtGameTimeMs,
         currentGameTimeMs: nextGameTimeMs,
@@ -837,7 +848,7 @@ export const useGameStore = create<GameState>((set, get) => {
       ...(achievementResult.inventory !== get().inventory ? { inventory: achievementResult.inventory } : {}),
       ...(marketFinance ? { finance: marketFinance } : {}),
       ...(productionStatistics !== get().productionStatistics ? { productionStatistics } : {}),
-      ...(salesContracts ? { salesContracts } : {}),
+      ...(salesOrders ? { salesOrders } : {}),
       ...(market ? { market } : {}),
       ...(research !== get().research ? { research } : {}),
       ...(achievementResult.achievements !== get().achievements ? { achievements: achievementResult.achievements } : {}),
@@ -878,7 +889,7 @@ export const useGameStore = create<GameState>((set, get) => {
       productionStatistics: state.productionStatistics,
       facilities: state.facilities,
       finance,
-      salesContracts: state.salesContracts,
+      salesOrders: state.salesOrders,
       prestige,
       companyStartedAtGameTimeMs: state.companyStartedAtGameTimeMs,
       currentGameTimeMs: state.lastProcessedAtMs,
@@ -1000,7 +1011,7 @@ export const useGameStore = create<GameState>((set, get) => {
       productionStatistics: state.productionStatistics,
       facilities: state.facilities,
       finance,
-      salesContracts: state.salesContracts,
+      salesOrders: state.salesOrders,
       prestige,
       companyStartedAtGameTimeMs: state.companyStartedAtGameTimeMs,
       currentGameTimeMs: state.lastProcessedAtMs,
@@ -1010,26 +1021,28 @@ export const useGameStore = create<GameState>((set, get) => {
     set({ research, finance, ...achievementResult });
     return true;
   },
-  createSalesContractRequest: (resourceType, quantity) => {
-    const salesContracts = get().salesContracts.clone();
-    if (!salesContracts.createOfferForResource(
+  createSalesOrderRequest: (resourceType, quantity) => {
+    const salesOrders = get().salesOrders.clone();
+    if (!salesOrders.createDevelopmentOrderForResource(
       resourceType,
       quantity,
-      get().market.getGlobalPrice(resourceType) * getSalesContractPremiumMultiplier(get().research.getCompletedProjectIds(), MARKET_SALES_CONTRACT_PREMIUM),
-      getMaximumOpenSalesContracts(get().research.getCompletedProjectIds()),
+      get().market.getGlobalPrice(resourceType) * getSalesOrderBidMultiplier(get().research.getCompletedProjectIds(), MARKET_SALES_ORDER_BID_MULTIPLIER),
+      getMaximumOpenSalesOrders(get().research.getCompletedProjectIds()),
+      get().lastProcessedAtMs,
+      calculateCompanyPrestigeSummary(get().prestige.getEvents(), get().lastProcessedAtMs).totalPrestige,
     )) {
       return false;
     }
 
-    set({ salesContracts, customerPipelineProgress: 0 });
+    set({ salesOrders, customerPipelineProgress: 0 });
     return true;
   },
-  fulfillSalesContract: (contractId) => {
+  fulfillSalesOrder: (orderId) => {
     get().advanceRealtime(Date.now());
-    const salesContracts = get().salesContracts.clone();
-    const contract = salesContracts.getOfferedContract(contractId);
+    const salesOrders = get().salesOrders.clone();
+    const order = salesOrders.getOfferedOrder(orderId);
 
-    if (!contract) {
+    if (!order) {
       return false;
     }
 
@@ -1037,49 +1050,48 @@ export const useGameStore = create<GameState>((set, get) => {
     const finance = get().finance.clone();
     const market = get().market.clone();
 
-    if (!inventory.has(contract.resourceType, contract.quantity)) {
+    if (!inventory.has(order.resourceType, order.quantity)) {
       return false;
     }
 
-    const quality = inventory.getQuality(contract.resourceType);
-    const occurredAt = new Date().toISOString();
+    const quality = inventory.getQuality(order.resourceType);
     const currentGameTimeMs = get().lastProcessedAtMs;
-    if (!inventory.remove(contract.resourceType, contract.quantity)
-      || !finance.applyTransaction({ amount: contract.reward, description: `Contract fulfilled: ${contract.customerName}`, detailLines: [`Delivered ${contract.quantity} ${contract.resourceType}`], kind: 'operating', source: 'contract-sale', occurredAtGameTimeMs: currentGameTimeMs })
-      || !salesContracts.fulfill(contract.id, occurredAt)
-      || !market.addToGlobal(contract.resourceType, contract.quantity, quality)) {
+    if (!inventory.remove(order.resourceType, order.quantity)
+      || !finance.applyTransaction({ amount: order.reward, description: `Customer order fulfilled: ${order.customerName}`, detailLines: [`Delivered ${order.quantity} ${order.resourceType}`], kind: 'operating', source: 'order-sale', occurredAtGameTimeMs: currentGameTimeMs })
+      || !salesOrders.fulfill(order.id, currentGameTimeMs, calculateCompanyPrestigeSummary(get().prestige.getEvents(), currentGameTimeMs).totalPrestige)
+      || !market.addToGlobal(order.resourceType, order.quantity, quality)) {
       return false;
     }
 
     const prestige = get().prestige.clone();
     syncCompanyBalancePrestige(prestige, finance, currentGameTimeMs);
     syncCompanyAssetsPrestige(prestige, { finance, inventory: get().inventory, market: get().market, facilities: get().facilities, research: get().research }, currentGameTimeMs);
-    prestige.recordSalesContract(contract.id, contract.reward, currentGameTimeMs);
+    prestige.recordSalesOrder(order.id, order.reward, order.premiumPercent, currentGameTimeMs);
 
     const achievementResult = applyAchievementUnlocks({
       achievements: get().achievements,
       productionStatistics: get().productionStatistics,
       facilities: get().facilities,
       finance,
-      salesContracts,
+      salesOrders,
       prestige,
       companyStartedAtGameTimeMs: get().companyStartedAtGameTimeMs,
       currentGameTimeMs,
       categories: ['sales', 'finance', 'prestige'],
       inventory,
     });
-    set({ market, finance, salesContracts, ...achievementResult });
+    set({ market, finance, salesOrders, ...achievementResult });
     return true;
   },
-  rejectSalesContract: (contractId) => {
-    const salesContracts = get().salesContracts.clone();
-    const rejected = salesContracts.reject(contractId, new Date().toISOString());
+  rejectSalesOrder: (orderId) => {
+    const salesOrders = get().salesOrders.clone();
+    const rejected = salesOrders.reject(orderId, get().lastProcessedAtMs);
 
     if (!rejected) {
       return false;
     }
 
-    set({ salesContracts });
+    set({ salesOrders });
     return true;
   },
   resetRealtimeClock: (nowMs) => {
@@ -1092,7 +1104,7 @@ export const useGameStore = create<GameState>((set, get) => {
     inventory: get().inventory.toSnapshot(),
     market: get().market.toSnapshot(),
     facilities: get().facilities.toSnapshot(),
-    salesContracts: get().salesContracts.toSnapshot(),
+    salesOrders: get().salesOrders.toSnapshot(),
     achievements: get().achievements.toSnapshot(),
     productionStatistics: get().productionStatistics.toSnapshot(),
     prestige: get().prestige.toSnapshot(),
@@ -1109,7 +1121,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const finance = Finance.fromSnapshot(snapshot.finance);
     const market = Market.fromSnapshot(snapshot.market);
     const facilities = FacilityCollection.fromSnapshot(snapshot.facilities);
-    const salesContracts = SalesContracts.fromSnapshot(snapshot.salesContracts);
+    const salesOrders = SalesOrders.fromSnapshot(snapshot.salesOrders);
     const achievements = AchievementLedger.fromSnapshot(snapshot.achievements);
     const productionStatistics = ProductionStatistics.fromSnapshot(snapshot.productionStatistics);
     const prestige = PrestigeLedger.fromSnapshot(snapshot.prestige);
@@ -1126,7 +1138,7 @@ export const useGameStore = create<GameState>((set, get) => {
       productionStatistics,
       facilities,
       finance,
-      salesContracts,
+      salesOrders,
       prestige,
       companyStartedAtGameTimeMs: snapshot.time.companyStartedAtGameTimeMs,
       currentGameTimeMs: snapshot.time.lastProcessedAtMs,
@@ -1139,7 +1151,7 @@ export const useGameStore = create<GameState>((set, get) => {
     inventory: achievementResult.inventory,
     market,
     facilities,
-    salesContracts,
+    salesOrders,
     achievements: achievementResult.achievements,
     productionStatistics,
     prestige: achievementResult.prestige,

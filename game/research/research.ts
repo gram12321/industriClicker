@@ -7,7 +7,7 @@ export type CompletedResearchProject = { projectId: ResearchProjectId; completed
 export type ActiveResearchProject = { projectId: ResearchProjectId; progressMs: number; durationMs: number; paidCost: number };
 export type ResearchLedgerSnapshot = { completed: CompletedResearchProject[]; active: ActiveResearchProject[] };
 
-export const BASE_MAXIMUM_OPEN_SALES_CONTRACTS = 2;
+export const BASE_MAXIMUM_OPEN_SALES_ORDERS = 2;
 export const BASE_SIMULTANEOUS_RESEARCH_PROJECTS = 1;
 
 export function getMaximumSimultaneousResearchProjects(completedProjectIds: readonly string[]): number {
@@ -17,11 +17,11 @@ export function getMaximumSimultaneousResearchProjects(completedProjectIds: read
   }, BASE_SIMULTANEOUS_RESEARCH_PROJECTS);
 }
 
-export function getMaximumOpenSalesContracts(completedProjectIds: readonly string[]): number {
+export function getMaximumOpenSalesOrders(completedProjectIds: readonly string[]): number {
   return completedProjectIds.reduce((maximum, projectId) => {
     const effect = getResearchProject(projectId)?.effect;
-    return effect?.kind === 'max-open-sales-contracts' ? Math.max(maximum, effect.maximum) : maximum;
-  }, BASE_MAXIMUM_OPEN_SALES_CONTRACTS);
+    return effect?.kind === 'max-open-sales-orders' ? Math.max(maximum, effect.maximum) : maximum;
+  }, BASE_MAXIMUM_OPEN_SALES_ORDERS);
 }
 
 export function getRecipeResearchWorkSpeedMultiplier(recipeName: RecipeName, completedProjectIds: readonly string[]): number {
@@ -42,10 +42,10 @@ export function getSalesOfferProducedResourceWeight(completedProjectIds: readonl
   }, 1);
 }
 
-export function getSalesContractPremiumMultiplier(completedProjectIds: readonly string[], baseMultiplier: number): number {
+export function getSalesOrderBidMultiplier(completedProjectIds: readonly string[], baseMultiplier: number): number {
   return completedProjectIds.reduce((multiplier, projectId) => {
     const effect = getResearchProject(projectId)?.effect;
-    return effect?.kind === 'sales-contract-premium' ? Math.max(multiplier, effect.multiplier) : multiplier;
+    return effect?.kind === 'sales-order-bid-multiplier' ? Math.max(multiplier, effect.multiplier) : multiplier;
   }, baseMultiplier);
 }
 

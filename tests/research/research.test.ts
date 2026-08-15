@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ACHIEVEMENT_DEFINITIONS } from '@/game/achievements';
 import { FACILITIES } from '@/game/facilities';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
-import { SalesContracts } from '@/game/sales';
-import { BASE_MAXIMUM_OPEN_SALES_CONTRACTS, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesContracts, getRecipeResearchProjectId, getSalesContractPremiumMultiplier, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, RESEARCH_PROJECTS } from '@/game/research';
+import { BASE_MAXIMUM_OPEN_SALES_ORDERS, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesOrders, getRecipeResearchProjectId, getSalesOrderBidMultiplier, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, RESEARCH_PROJECTS } from '@/game/research';
 
 function createProductionTotals(produced: readonly ResourceType[]): Record<ResourceType, number> {
   return RESOURCE_TYPES.reduce((totals, resourceType) => {
@@ -14,14 +13,14 @@ function createProductionTotals(produced: readonly ResourceType[]): Record<Resou
 
 describe('sales research effects', () => {
   it('starts with two open contract slots and raises the first researched capacity to three', () => {
-    expect(BASE_MAXIMUM_OPEN_SALES_CONTRACTS).toBe(2);
-    expect(getMaximumOpenSalesContracts(['sales-capacity-1'])).toBe(3);
+    expect(BASE_MAXIMUM_OPEN_SALES_ORDERS).toBe(2);
+    expect(getMaximumOpenSalesOrders(['sales-capacity-1'])).toBe(3);
   });
 
   it('raises contract rewards without changing the base market-sale premium', () => {
-    expect(getSalesContractPremiumMultiplier([], 1.2)).toBe(1.2);
-    expect(getSalesContractPremiumMultiplier(['contract-value-3'], 1.2)).toBe(1.35);
-    expect(getSalesContractPremiumMultiplier(['contract-value-3', 'contract-value-5'], 1.2)).toBe(1.5);
+    expect(getSalesOrderBidMultiplier([], 1.2)).toBe(1.2);
+    expect(getSalesOrderBidMultiplier(['bid-value-3'], 1.2)).toBe(1.35);
+    expect(getSalesOrderBidMultiplier(['bid-value-3', 'bid-value-5'], 1.2)).toBe(1.5);
   });
 
   it('limits fully targeted offers to resources the company has produced', () => {
@@ -29,18 +28,6 @@ describe('sales research effects', () => {
 
     expect(getSalesOfferResourceTypes(['sales-targeting-5'], totals)).toEqual([ResourceType.Grain, ResourceType.Water]);
     expect(getSalesOfferResourceTypes(['sales-targeting-5'], createProductionTotals([]))).toEqual(RESOURCE_TYPES);
-  });
-
-  it('weights produced resources when generating a sales offer', () => {
-    const contracts = new SalesContracts();
-    const rolls = [0, 0.5, 0];
-    const random = () => rolls.shift() ?? 0;
-    const producedResources = new Set<ResourceType>([ResourceType.Grain]);
-
-    contracts.advanceTime(1, [ResourceType.Grain, ResourceType.Bread], () => 1, 2, random, (resourceType) => producedResources.has(resourceType) ? getSalesOfferProducedResourceWeight(['sales-targeting-1']) : 1);
-
-    expect(contracts.getOfferedContracts()).toHaveLength(1);
-    expect(contracts.getOfferedContracts()[0].resourceType).toBe(ResourceType.Grain);
   });
 
   it('uses the highest completed local market network tier as the market-depth multiplier', () => {

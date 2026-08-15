@@ -2,8 +2,8 @@ import { getRecipeDisplayName, type RecipeName } from '@/game/recipes';
 
 export type ResearchEffect =
   | { kind: 'grant'; amount: number }
-  | { kind: 'max-open-sales-contracts'; maximum: number }
-  | { kind: 'sales-contract-premium'; multiplier: number }
+  | { kind: 'max-open-sales-orders'; maximum: number }
+  | { kind: 'sales-order-bid-multiplier'; multiplier: number }
   | { kind: 'sales-offer-produced-resource-weight'; multiplier: number }
   | { kind: 'sales-offer-produced-only' }
   | { kind: 'local-market-depth'; multiplier: number }
@@ -15,10 +15,10 @@ export type ResearchEffect =
 export function describeResearchEffect(effect: ResearchEffect): string {
   switch (effect.kind) {
     case 'grant': return `Grant €${effect.amount.toLocaleString()}`;
-    case 'max-open-sales-contracts': return `Maximum open contracts: ${effect.maximum}`;
-    case 'sales-contract-premium': return `Contract sale premium: ${Math.round((effect.multiplier - 1) * 100)}%`;
+    case 'max-open-sales-orders': return `Maximum open orders: ${effect.maximum}`;
+    case 'sales-order-bid-multiplier': return `Customer-order bid premium: ${Math.round((effect.multiplier - 1) * 100)}%`;
     case 'sales-offer-produced-resource-weight': return `Produced resources are ${effect.multiplier}× more likely in sales offers`;
-    case 'sales-offer-produced-only': return 'Sales offers only request resources your company has produced';
+    case 'sales-offer-produced-only': return 'Customer orders only request resources your company has produced';
     case 'local-market-depth': return `Local market depth: ${effect.multiplier.toFixed(1)}×`;
     case 'local-regional-diffusion': return `Local-regional diffusion rate: ${effect.multiplier.toFixed(2)}×`;
     case 'research-capacity': return `Additional simultaneous research projects: ${effect.additionalSlots}`;

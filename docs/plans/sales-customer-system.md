@@ -26,7 +26,7 @@ Use provisional resource-domain customer types:
 
 Utilities are a customer domain rather than market-only. Each resource catalogue entry can later own a `salesDomain` and a `standardOrderLot`, so extending the production tree means adding data rather than new sales logic.
 
-Market share should sum to 100% **within each domain**, not globally. A large construction buyer therefore represents a larger part of construction demand, without competing with food buyers. Large-share customers are selected more often and buy more, but negotiate harder and are slower to build a relationship with.
+Market share should sum to 100% **within each domain**, not globally. Generate a variable number of customers per domain with the Winemaker-style skewed draw, additional-draw/minimum selection, domain share multiplier, and final residual adjustment rather than fixed shares or a fixed count. A large construction buyer therefore represents a larger part of construction demand, without competing with food buyers. Large-share customers are selected more often and buy more, but negotiate harder and are slower to build a relationship with.
 
 Do not import Winemaker’s country, wine tradition, taste/quality preferences, asking price, or contract rules.
 

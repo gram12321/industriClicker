@@ -29,7 +29,7 @@ function getTransactionResourceIcon(description: string): string | null {
 
 function getTransactionIcon(description: string): string {
   if (description.includes('local market')) return APP_ICONS.localMarket;
-  if (description.startsWith('Contract fulfilled')) return APP_ICONS.globalMarket;
+  if (description.startsWith('Customer order fulfilled')) return APP_ICONS.globalMarket;
   if (description.startsWith('Constructed')) return APP_ICONS.building;
   return APP_ICONS.currency;
 }

@@ -55,7 +55,7 @@ function CompanyGamePersistence({ children }: { children: ReactNode }) {
         || state.inventory !== previousState.inventory
         || state.market !== previousState.market
         || state.facilities !== previousState.facilities
-        || state.salesContracts !== previousState.salesContracts
+        || state.salesOrders !== previousState.salesOrders
         || state.achievements !== previousState.achievements
         || state.productionStatistics !== previousState.productionStatistics
         || state.prestige !== previousState.prestige

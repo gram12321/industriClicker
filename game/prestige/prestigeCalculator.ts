@@ -44,14 +44,14 @@ export function calculateCompanyAssetsPrestige(input: Pick<CompanyCapitalInput, 
   return roundPrestige(Math.log(1 + Math.max(0, netWorth) / FINANCE_INITIAL_BALANCE));
 }
 
-export function calculateSalesContractPrestige(reward: number): number {
+export function calculateSalesOrderPrestige(reward: number, premiumPercent = 0): number {
   if (!Number.isFinite(reward) || reward <= 0) {
     return 0;
   }
 
   // Prestige deliberately has no fixed maximum. Finite inputs keep this logarithmic
   // formula finite; a cap adds no safety and would silently limit late-game progression.
-  return roundPrestige(0.1 + 0.15 * Math.log(1 + reward));
+  return roundPrestige((0.1 + 0.15 * Math.log(1 + reward)) * (1 + Math.max(0, premiumPercent) / 500));
 }
 
 /** Temporary equal-weight facility model; use total facility asset value when that metric exists. */
@@ -115,7 +115,7 @@ export function calculateCompanyPrestigeSummary(
   const assetsPrestige = currentEvents.filter((event) => event.type === 'company_assets').reduce((sum, event) => sum + event.currentAmount, 0);
   const facilityConditionPrestige = currentEvents.filter((event) => event.type === 'facility_condition').reduce((sum, event) => sum + event.currentAmount, 0);
   const salesPrestige = currentEvents
-    .filter((event) => event.type === 'sales_contract')
+    .filter((event) => event.type === 'sales_order')
     .reduce((sum, event) => sum + event.currentAmount, 0);
   const achievementPrestige = currentEvents
     .filter((event) => event.type === 'achievement')

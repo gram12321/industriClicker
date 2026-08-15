@@ -11,7 +11,7 @@ export type FinanceReportPeriod = (typeof FINANCE_REPORT_PERIODS)[number]['id'];
 
 export const FINANCE_TRANSACTION_SOURCES = [
   'admin-adjustment', 'market-purchase', 'market-sale', 'facility-construction', 'facility-upgrade', 'facility-repair',
-  'research-investment', 'research-refund', 'research-grant', 'contract-sale', 'loan-proceeds', 'loan-payment',
+  'research-investment', 'research-refund', 'research-grant', 'order-sale', 'loan-proceeds', 'loan-payment',
   'loan-origination-fee', 'loan-search-fee', 'loan-extra-payment-fee', 'loan-prepayment-penalty', 'loan-late-fee',
   'facility-sale', 'forced-asset-liquidation', 'loan-restructure',
 ] as const;

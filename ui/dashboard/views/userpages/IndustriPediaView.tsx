@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Button, Card, List, Text } from 'react-native-paper';
 import { FACILITY_GROUPS, getFacilityDefinition } from '@/game/facilities';
 import { FINANCE_INITIAL_BALANCE } from '@/game/company/companyConstants';
@@ -13,8 +13,9 @@ import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS, RECIPE_ICONS } from '@/icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '@/theme';
+import { SALES_CUSTOMER_DOMAIN_PROFILES, SALES_CUSTOMER_DOMAINS, getSalesCustomerCatalogue, getSalesResourceProfile, type SalesCustomerDomain, type SalesOrders } from '@/game/sales';
 
-export function IndustriPediaView({ market }: { market: Market }) {
+export function IndustriPediaView({ companyPrestige, currentGameTimeMs, market, salesOrders }: { companyPrestige: number; currentGameTimeMs: number; market: Market; salesOrders: SalesOrders }) {
   const [activeSection, setActiveSection] = useState<IndustriPediaSection>('resources');
 
   return <>
@@ -33,10 +34,12 @@ export function IndustriPediaView({ market }: { market: Market }) {
     {activeSection === 'finance' && <FinanceSection />}
     {activeSection === 'prestige' && <PrestigeSection />}
     {activeSection === 'achievements' && <AchievementsSection />}
+    {activeSection === 'customer-domains' && <CustomerDomainsSection />}
+    {activeSection === 'customers' && <CustomersSection companyPrestige={companyPrestige} currentGameTimeMs={currentGameTimeMs} salesOrders={salesOrders} />}
   </>;
 }
 
-type IndustriPediaSection = 'resources' | 'facilities' | 'recipes' | 'market-flow' | 'finance' | 'prestige' | 'achievements';
+type IndustriPediaSection = 'resources' | 'facilities' | 'recipes' | 'market-flow' | 'finance' | 'prestige' | 'achievements' | 'customer-domains' | 'customers';
 
 const INDUSTRIPEDIA_SECTIONS: ReadonlyArray<{ id: IndustriPediaSection; label: string }> = [
   { id: 'resources', label: 'Resources' },
@@ -46,7 +49,30 @@ const INDUSTRIPEDIA_SECTIONS: ReadonlyArray<{ id: IndustriPediaSection; label: s
   { id: 'finance', label: 'Finance' },
   { id: 'prestige', label: 'Prestige' },
   { id: 'achievements', label: 'Achievements' },
+  { id: 'customer-domains', label: 'Customer domains' },
+  { id: 'customers', label: 'Customers' },
 ];
+
+function CustomerDomainsSection() {
+  return <>
+    <SectionHeading eyebrow="CUSTOMER DOMAINS" title="Who buys your goods" subtitle="Domains replace Winemaker countries and customer types: each controls buyer scale, bidding, order value, and frequency." />
+    {SALES_CUSTOMER_DOMAINS.map((domain) => { const profile = SALES_CUSTOMER_DOMAIN_PROFILES[domain]; const resources = RESOURCE_TYPES.filter((resourceType) => getSalesResourceProfile(resourceType).domain === domain); return <Card key={domain} mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text variant="titleMedium">{profile.label}</Text><Text style={styles.cardDescription}>{`Bid range: ${formatNumber(profile.bidRange[0] * 100, { decimals: 0 })}%–${formatNumber(profile.bidRange[1] * 100, { decimals: 0 })}% of reference before buyer, relationship, prestige, and economy effects.`}</Text><Text style={styles.salesAvailability}>{`Target order value: ${formatCurrency(profile.targetOrderValue[0])}–${formatCurrency(profile.targetOrderValue[1])} · Frequency: ${formatNumber(profile.frequency, { smartDecimals: true })}×`}</Text><Text style={styles.salesAvailability}>{`Share scale: ${formatNumber(profile.marketShareMultiplier, { smartDecimals: true })}× · Relationship gain: ${formatNumber(profile.relationshipGainMultiplier, { smartDecimals: true })}×`}</Text><Text style={styles.cardDescription}>{`Resources: ${resources.map((resourceType) => `${getResourceIcon(resourceType)} ${getResource(resourceType).name} (lot ${formatNumber(getSalesResourceProfile(resourceType).standardOrderLot)})`).join(', ')}`}</Text></Card.Content></Card>; })}
+  </>;
+}
+
+function CustomersSection({ companyPrestige, currentGameTimeMs, salesOrders }: { companyPrestige: number; currentGameTimeMs: number; salesOrders: SalesOrders }) {
+  const [selectedDomain, setSelectedDomain] = useState<SalesCustomerDomain | 'all'>('all');
+  const [knownOnly, setKnownOnly] = useState(false);
+  const [expandedCustomerId, setExpandedCustomerId] = useState<string | null>(null);
+  const customerStates = new Map(salesOrders.getCustomerStates().map((state) => [state.customerId, state]));
+  const catalogue = getSalesCustomerCatalogue();
+  const customers = catalogue.filter((customer) => (selectedDomain === 'all' || customer.domain === selectedDomain) && (!knownOnly || customerStates.has(customer.id)));
+  return <>
+    <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text style={styles.cardKicker}>CUSTOMER DIRECTORY</Text><Text variant="titleMedium">{`${formatNumber(customers.length)} of ${formatNumber(catalogue.length)} buyers`}</Text><Text style={styles.cardDescription}>A deterministic local catalogue generated with the Winemaker-style skewed market-share flow. Your relationships and order history remain company-owned. Tap a customer for the complete profile.</Text></Card.Content></Card>
+    <View style={localStyles.sectionTabs}><Button compact mode={selectedDomain === 'all' ? 'contained' : 'outlined'} onPress={() => setSelectedDomain('all')}>All domains</Button>{SALES_CUSTOMER_DOMAINS.map((domain) => <Button compact key={domain} mode={selectedDomain === domain ? 'contained' : 'outlined'} onPress={() => setSelectedDomain(domain)}>{SALES_CUSTOMER_DOMAIN_PROFILES[domain].label}</Button>)}<Button compact mode={knownOnly ? 'contained' : 'outlined'} onPress={() => setKnownOnly((value) => !value)}>{knownOnly ? 'Known only' : 'Show known'}</Button></View>
+    {customers.map((customer) => { const state = customerStates.get(customer.id); const relationship = salesOrders.getCustomerState(customer.id, currentGameTimeMs, companyPrestige).relationship; const isExpanded = expandedCustomerId === customer.id; return <Card key={customer.id} mode="contained" style={styles.featureCard}><Pressable accessibilityLabel={`${isExpanded ? 'Hide' : 'Show'} details for ${customer.name}`} accessibilityRole="button" accessibilityState={{ expanded: isExpanded }} onPress={() => setExpandedCustomerId((current) => current === customer.id ? null : customer.id)}><Card.Content style={styles.cardContent}><View style={localStyles.customerHeader}><View style={localStyles.customerTitle}><Text variant="titleMedium">{customer.name}</Text><Text style={styles.cardDescription}>{SALES_CUSTOMER_DOMAIN_PROFILES[customer.domain].label}</Text></View><MaterialCommunityIcons color={colors.muted} name={isExpanded ? 'chevron-up' : 'chevron-down'} size={22} /></View><Text style={styles.salesAvailability}>{`${formatNumber(customer.marketShare * 100, { smartDecimals: true })}% market share · ${formatNumber(customer.purchasingPower * 100, { decimals: 0 })}% purchasing power · ${formatNumber(customer.bidMultiplier * 100, { decimals: 0 })}% bid profile`}</Text><Text style={styles.salesAvailability}>{state ? `Relationship: ${formatNumber(relationship, { smartDecimals: true })} · Fulfilled: ${formatNumber(state.fulfilledOrderCount)} · Expired: ${formatNumber(state.expiredOrderCount)}` : `Relationship baseline: ${formatNumber(relationship, { smartDecimals: true })}`}</Text>{isExpanded && <View style={localStyles.customerDetails}><Text style={styles.cardDescription}>Bid profile combines this customer's domain bid range, purchasing power, and market-share bargaining effect. Current orders then apply relationship, prestige, economy, and Bid Value research.</Text><Text style={styles.salesAvailability}>{`Current relationship: ${formatNumber(relationship, { smartDecimals: true })} / 100`}</Text><Text style={styles.salesAvailability}>Larger buyers place more orders but start from a lower relationship baseline and negotiate harder.</Text></View>}</Card.Content></Pressable></Card>; })}
+  </>;
+}
 
 function MarketFlowSection({ market }: { market: Market }) {
   const [selectedResource, setSelectedResource] = useState<(typeof RESOURCE_TYPES)[number]>(RESOURCE_TYPES[0]);
@@ -273,12 +299,12 @@ function RecipesSection() {
 
 function FinanceSection() {
   return <>
-    <SectionHeading eyebrow="FINANCE" title="Company funds" subtitle="Euros purchase facility land and fund upgrades; customer contracts earn them." />
+    <SectionHeading eyebrow="FINANCE" title="Company funds" subtitle="Euros purchase facility land and fund upgrades; customer orders earn them." />
     <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
       <Text style={styles.cardKicker}>STARTING CAPITAL</Text><CurrencyValue value={FINANCE_INITIAL_BALANCE} style={styles.balanceValue} />
       <Text style={styles.cardDescription}>A facility needs both its land purchase and Construction Materials. You can sell one for 70% of its current condition-adjusted book value.</Text>
     </Card.Content></Card>
-    <Card mode="contained" style={styles.featureCard}><Card.Content><List.Item description={<View style={localStyles.iconValue}><Text>Each fulfilled unit pays</Text><CurrencyValue value={1} /><Text>. The requested quantity must be fully available in inventory before a contract can be supplied.</Text></View>} left={(props) => <List.Icon {...props} icon={APP_ICONS.contracts} />} title="Customer contracts" /><List.Item description="Each facility has separate Speed and Output upgrades. Every level costs euros, Construction Materials, and Industrial Machines." left={(props) => <List.Icon {...props} icon={APP_ICONS.speed} />} title="Facility upgrades" /><List.Item description="Every accepted cost and income is recorded in the Finance activity list." left={(props) => <List.Icon {...props} icon={APP_ICONS.financeHistory} />} title="Transaction history" /></Card.Content></Card>
+    <Card mode="contained" style={styles.featureCard}><Card.Content><List.Item description="A customer locks a bid price, premium, and quantity. The full requested quantity must be available before fulfilment." left={(props) => <List.Icon {...props} icon={APP_ICONS.contracts} />} title="Customer orders" /><List.Item description="Each facility has separate Speed and Output upgrades. Every level costs euros, Construction Materials, and Industrial Machines." left={(props) => <List.Icon {...props} icon={APP_ICONS.speed} />} title="Facility upgrades" /><List.Item description="Every accepted cost and income is recorded in the Finance activity list." left={(props) => <List.Icon {...props} icon={APP_ICONS.financeHistory} />} title="Transaction history" /></Card.Content></Card>
     <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
       <Text style={styles.cardKicker}>LOANS AND LENDER LIMITS</Text>
       <Text style={styles.cardDescription}>A lender must consider your company eligible before it contributes to borrowing. Company stability is one part of credit rating: 35% age score (a square-root curve that reaches 100% at 240 active hours), 40% recent operating consistency (a 60% starter score blends out across 16 fifteen-minute periods), and 25% expense efficiency (100% at a 25% operating margin).</Text>
@@ -293,8 +319,8 @@ function FinanceSection() {
 function PrestigeSection() {
   return <>
     <SectionHeading eyebrow="PRESTIGE" title="Company standing" subtitle="How company standing is recorded and fades over time." />
-    <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text style={styles.cardKicker}>WHAT IT IS</Text><Text style={styles.cardDescription}>Prestige is an informational company-standing score. It does not affect production, pricing, or customer offers yet.</Text></Card.Content></Card>
-    <Card mode="contained" style={styles.featureCard}><Card.Content><List.Item description="A permanent, recalculated source based on current company cash." left={(props) => <List.Icon {...props} icon={APP_ICONS.bank} />} title="Company balance" /><List.Item description="A permanent source based on average facility condition. 50% condition is neutral; higher condition grants prestige and lower condition applies a penalty. Facilities currently have equal weight; future asset-value metrics can make larger facilities count more." left={(props) => <List.Icon {...props} icon="factory" />} title="Facility condition" /><List.Item description={`Each fulfilled contract creates a fading event. Its half-life is ${formatNumber(PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS, { smartDecimals: true })} active hours.`} left={(props) => <List.Icon {...props} icon={APP_ICONS.contracts} />} title="Contract sales" /></Card.Content></Card>
+    <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text style={styles.cardKicker}>WHAT IT IS</Text><Text style={styles.cardDescription}>Prestige improves customer discovery, bid quality, and the relationship baseline. It does not change production or ordinary market prices.</Text></Card.Content></Card>
+    <Card mode="contained" style={styles.featureCard}><Card.Content><List.Item description="A permanent, recalculated source based on current company cash." left={(props) => <List.Icon {...props} icon={APP_ICONS.bank} />} title="Company balance" /><List.Item description="A permanent source based on average facility condition. 50% condition is neutral; higher condition grants prestige and lower condition applies a penalty. Facilities currently have equal weight; future asset-value metrics can make larger facilities count more." left={(props) => <List.Icon {...props} icon="factory" />} title="Facility condition" /><List.Item description={`Each fulfilled customer order creates a fading event. Its half-life is ${formatNumber(PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS, { smartDecimals: true })} active hours.`} left={(props) => <List.Icon {...props} icon={APP_ICONS.contracts} />} title="Customer orders" /></Card.Content></Card>
     <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text style={styles.cardKicker}>DECAY</Text><Text style={styles.cardDescription}>Prestige decay uses active game time. Background time does not decay prestige; Fast-forward does.</Text><Text style={styles.cardDescription}>For a fading event: current = original × 0.5^(active hours ÷ half-life). Select an event in the Prestige dialog to see its original value, current value, hourly decay, and projections.</Text></Card.Content></Card>
   </>;
 }
@@ -324,7 +350,7 @@ function AchievementsSection() {
     </Card.Content></Card>
     <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
       <Text style={styles.cardKicker}>PRODUCTION AND COMPANY</Text>
-      <Text style={styles.cardDescription}>Every resource has a ten-tier production chain, from 10 to 250,000 units. Other series track total production, completed contracts, delivered quantity, largest contract, cash reserves, active time, and company prestige.</Text>
+      <Text style={styles.cardDescription}>Every resource has a ten-tier production chain, from 10 to 250,000 units. Other series track total production, completed orders, delivered quantity, largest order, cash reserves, active time, and company prestige.</Text>
     </Card.Content></Card>
   </>;
 }
@@ -409,4 +435,7 @@ const localStyles = StyleSheet.create({
   conditionTableRow: { flexDirection: 'row', gap: 4 },
   conditionTableCell: { color: colors.charcoal, flex: 1, fontSize: 10, textAlign: 'right' },
   conditionTableHeader: { color: colors.muted, fontSize: 9, fontWeight: '700' },
+  customerDetails: { borderTopColor: '#E2E8E5', borderTopWidth: 1, gap: 6, marginTop: 4, paddingTop: 10 },
+  customerHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  customerTitle: { flex: 1, gap: 2, paddingRight: 8 },
 });

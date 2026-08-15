@@ -6,7 +6,7 @@ import { calculatePrestigeDecayDetails, type CompanyPrestigeSummary } from '@/ga
 import { colors } from '@/theme';
 import { formatNumber, formatSigned } from '@/utils';
 
-type Filter = 'all' | 'company_balance' | 'company_assets' | 'sales_contract' | 'achievement';
+type Filter = 'all' | 'company_balance' | 'company_assets' | 'sales_order' | 'achievement';
 type PrestigeEventGroup = {
   id: string;
   label: string;
@@ -18,7 +18,7 @@ const EVENT_LABELS: Record<PrestigeEventType, string> = {
   company_balance: 'Company balance',
   company_assets: 'Company assets',
   facility_condition: 'Facility condition',
-  sales_contract: 'Customer contract',
+  sales_order: 'Customer order',
   achievement: 'Achievement',
   finance_penalty: 'Finance penalty',
 };
@@ -42,8 +42,8 @@ export function PrestigeDialog({ facilityConditions = [], isOpen, onClose, summa
     <Dialog.Title>Company prestige</Dialog.Title>
     <Dialog.Content><ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator style={[styles.dialogScroll, { maxHeight: Math.max(200, height - 190) }]}>
       <Text style={styles.description}>A record of your company’s standing. Prestige has no gameplay effect yet.</Text>
-      <Surface elevation={0} style={styles.totalCard}><Text style={styles.kicker}>CURRENT PRESTIGE</Text><Text style={styles.totalValue}>{formatNumber(summary.totalPrestige, { smartDecimals: true })}</Text><SummaryRow label="Company assets" value={summary.assetsPrestige} /><SummaryRow label="Cash reserves" value={summary.balancePrestige} /><SummaryRow label="Facility condition" value={summary.facilityConditionPrestige} /><SummaryRow label="Contract sales" value={summary.salesPrestige} /><SummaryRow label="Achievements" value={summary.achievementPrestige} /></Surface>
-      <View style={styles.filters}><Button compact mode={filter === 'all' ? 'contained' : 'outlined'} onPress={() => setFilter('all')}>All</Button><Button compact mode={filter === 'company_assets' ? 'contained' : 'outlined'} onPress={() => setFilter('company_assets')}>Assets</Button><Button compact mode={filter === 'company_balance' ? 'contained' : 'outlined'} onPress={() => setFilter('company_balance')}>Cash</Button><Button compact mode={filter === 'sales_contract' ? 'contained' : 'outlined'} onPress={() => setFilter('sales_contract')}>Sales</Button><Button compact mode={filter === 'achievement' ? 'contained' : 'outlined'} onPress={() => setFilter('achievement')}>Achievements</Button></View>
+      <Surface elevation={0} style={styles.totalCard}><Text style={styles.kicker}>CURRENT PRESTIGE</Text><Text style={styles.totalValue}>{formatNumber(summary.totalPrestige, { smartDecimals: true })}</Text><SummaryRow label="Company assets" value={summary.assetsPrestige} /><SummaryRow label="Cash reserves" value={summary.balancePrestige} /><SummaryRow label="Facility condition" value={summary.facilityConditionPrestige} /><SummaryRow label="Customer orders" value={summary.salesPrestige} /><SummaryRow label="Achievements" value={summary.achievementPrestige} /></Surface>
+      <View style={styles.filters}><Button compact mode={filter === 'all' ? 'contained' : 'outlined'} onPress={() => setFilter('all')}>All</Button><Button compact mode={filter === 'company_assets' ? 'contained' : 'outlined'} onPress={() => setFilter('company_assets')}>Assets</Button><Button compact mode={filter === 'company_balance' ? 'contained' : 'outlined'} onPress={() => setFilter('company_balance')}>Cash</Button><Button compact mode={filter === 'sales_order' ? 'contained' : 'outlined'} onPress={() => setFilter('sales_order')}>Sales</Button><Button compact mode={filter === 'achievement' ? 'contained' : 'outlined'} onPress={() => setFilter('achievement')}>Achievements</Button></View>
       <Text style={styles.historyHeading} variant="titleMedium">Prestige history</Text>
       <View style={styles.eventList}>
         {eventGroups.length === 0 ? <Text style={styles.emptyText}>No matching prestige events yet.</Text> : eventGroups.map((group) => {

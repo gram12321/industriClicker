@@ -50,7 +50,7 @@ export type NormalizationControlPoint = {
  * inverted consumer curve must remain technically positive.
  *
  * Consumers:
- * - `game/sales/salesContracts.ts` for unfulfilled-contract probability control points.
+ * - `game/sales/salesOrders.ts` for customer-order probability calculations.
  *
  * Maintenance note: Future coding AIs adding a consumer must register it in
  * this comment and keep the consumer list current.
@@ -116,7 +116,7 @@ function isValidControlPoint(point: NormalizationControlPoint): boolean {
  * 0.6 → 0.80, 0.75 → ~0.92, 0.9 → 0.98, 0.99 → ~0.995
  *
  * Consumers:
- * - `game/sales/salesContracts.ts` for inverting the unfulfilled-contract pressure curve.
+ * - `game/sales/salesOrders.ts` for customer-order probability calculations.
  * - `game/facilities/facility.ts` for condition wear scaling.
  * - `game/facilities/facilityUpgrades.ts` for the inverse condition-efficiency penalty.
  *

@@ -34,13 +34,15 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Lender availability | A per-lender eligibility and borrowing-cap calculation derived from the company's assets, credit score, outstanding debt, lender market exposure, and lender contract cap. |
 | Lender search | A paid, foreground-time finance activity. Its fee and work requirement scale with offer count and how tightly lender type, amount, and term are constrained; matching offers appear only when the work completes. |
 | Economy phase | The persistent crash, recession, stable, expansion, or boom state. It changes deterministically every 10 foreground minutes with a bias toward stable and adjusts future loan interest offers. |
-| Sales contract | A customer request for a resource and integer quantity, retained as offered, completed, or rejected. |
+| Customer order | A customer-specific bid for one resource, with a locked reference price, bid premium, meaningful lot-sized quantity, expiry, and full-fulfilment requirement. An order is not a future contract. |
+| Customer catalogue | A deterministic local stand-in for the future shared customer registry. Each domain generates a variable number of buyers until its market share reaches 100%, using a skewed, domain-scaled market-share draw; definitions include domain, market share, purchasing power, and bid profile. Company-specific relationship and order history remain in the company snapshot. |
+| Customer relationship | A 0â€“100 company-specific score that decays toward a prestige-derived baseline during foreground time, increases after fulfilment, and decreases when an order expires. |
 | Speed upgrade / Output upgrade | Facility levels that respectively improve work speed or recipe output and consume euros, Construction Materials, and Industrial Machines. |
 | Assigned workers / Required workers | The local worker count and calculated staffing target for a facility. |
 | Facility condition | A persisted 0–1 measure of a constructed facility's wear state. It begins at 1 and decreases during foreground time and completed production cycles. |
 | Recipe condition-wear multiplier | A static per-recipe balance value that scales production wear without following live market prices. |
 | Facility efficiency | The production-speed multiplier formed from staffing efficiency and facility condition. |
-| Company prestige | An informational company-standing value derived from prestige events. |
+| Company prestige | A company-standing value derived from prestige events. It improves customer discovery, bid quality, and relationship baselines. |
 | Local player profile | A device-local, non-authenticated profile that groups one or more companies. |
 | Active company | The selected company whose snapshot is restored into runtime state and may advance foreground game time. |
 | Device session | The persisted local selection of a player profile and active company; logging out clears this selection only. |
@@ -52,9 +54,9 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Progression gate | A pure all-of requirement check over achievements, current prestige, completed research, and a starting condition. |
 | Research project | A code-defined, one-time company project with an up-front cost, foreground duration, requirements, and completion effect. Recipe research durations are three times their base duration. |
 | Active research | The one paid research project currently accumulating foreground milliseconds for its company, with its effective duration retained when it starts. |
-| Sales capacity | The derived maximum number of open customer contracts. It starts at two and is raised by completed Sales Capacity research. |
+| Sales capacity | The derived maximum number of open customer orders. It starts at two and is raised by completed Sales Capacity research. |
 | Sales targeting | Research that first favors, then exclusively selects, resources with recorded company production when creating customer offers. |
-| Contract value | Research that increases the premium paid by customer contracts; it does not change ordinary market-sale prices. |
+| Bid value | Research that increases the premium paid by customer orders; it does not change ordinary market-sale prices. |
 | Progression grant | A durable, one-use entitlement that can make one specific player action free or faster. The first-facility recipe grant makes that facility's first recipe research free and ten times faster. |
 
 ## Time, State, and Persistence

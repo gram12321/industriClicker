@@ -6,7 +6,7 @@ export const MARKET_DIFFUSION_MAX_EQUILIBRIUM_CORRECTION = 0.5;
 export const MARKET_DIFFUSION_REFERENCE_INTERVAL_MS = 60_000;
 /** Foreground cadence for applying market-pool diffusion. */
 export const MARKET_DIFFUSION_INTERVAL_MS = 5_000;
-export const MARKET_SALES_CONTRACT_PREMIUM = 1.2;
+export const MARKET_SALES_ORDER_BID_MULTIPLIER = 1.2;
 export const MARKET_AUTOSELL_DEFAULT_MAX_PER_MINUTE = 50;
 export const MARKET_AUTOTRADE_INTERVAL_OPTIONS = [
   { label: 'Every 5 seconds', milliseconds: 5_000 },

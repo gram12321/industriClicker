@@ -2,7 +2,7 @@ import type { FacilityCollection } from '@/game/facilities';
 import type { Finance } from '@/game/finance';
 import type { PrestigeLedger } from '@/game/prestige';
 import { calculateCompanyPrestigeSummary } from '@/game/prestige';
-import type { SalesContracts } from '@/game/sales';
+import type { SalesOrders } from '@/game/sales';
 import { AchievementLedger } from './achievement';
 import { ACHIEVEMENT_CATEGORIES, ACHIEVEMENT_DEFINITIONS, type AchievementCategory, type AchievementDefinition } from './achievementConstants';
 import type { ProductionStatistics } from './productionStatistics';
@@ -33,13 +33,13 @@ export type AchievementDisplay = AchievementDefinition & {
 export function createAchievementEvaluationContext(input: {
   facilities: FacilityCollection;
   finance: Finance;
-  salesContracts: SalesContracts;
+  salesOrders: SalesOrders;
   prestige: PrestigeLedger;
   productionStatistics: ProductionStatistics;
   companyStartedAtGameTimeMs: number;
   currentGameTimeMs: number;
 }): AchievementEvaluationContext {
-  const fulfilledContracts = input.salesContracts.getCompletedContracts().filter((contract) => contract.status === 'fulfilled');
+  const fulfilledContracts = input.salesOrders.getCompletedOrders().filter((order) => order.status === 'fulfilled');
   const facilityList = input.facilities.getAll();
 
   return {
