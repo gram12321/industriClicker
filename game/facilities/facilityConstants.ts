@@ -35,8 +35,8 @@ export const FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE = 1 / 1_200;
 export const FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT = 1 / 1_200;
 /** Fixed work-equivalent condition loss for every completed production cycle. */
 export const FACILITY_PRODUCTION_CONDITION_LOSS_PER_CYCLE = 0.05 / 1_200;
-/** Construction Materials required to restore one point of condition. */
-export const FACILITY_REPAIR_MATERIAL_COST_RATE = 0.9;
+/** Fraction of each facility construction input required to restore one point of condition. */
+export const FACILITY_REPAIR_MATERIAL_COST_RATE = 0.45;
 
 /** Fixed order keeps production deterministic and runs utility producers first. */
 export const FACILITY_PRODUCTION_ORDER = [
@@ -211,7 +211,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     icon: 'factory',
     landCost: 100,
     constructionMaterialsCost: 50,
-    industrialMachinesCost: 20,
+    industrialMachinesCost: 8,
     upgradeCost: 250,
     baseWorkers: 18,
     recipes: [ALL_RECIPES[RecipeName.CoalPower], ALL_RECIPES[RecipeName.SolarPower]],

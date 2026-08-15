@@ -3,7 +3,7 @@ import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { FACILITIES } from '@/game/facilities/facilityConstants';
 import { getRecipeDisplayName, RecipeName } from '@/game/recipes';
-import { getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getRecipeResearchProjectId, getResearchProject } from '@/game/research';
+import { getRecipeResearchProjectId, getResearchProject } from '@/game/research';
 import { getResource, ResourceType } from '@/game/resources';
 import {
   RECIPE_ECONOMY_BREAK_EVEN_HORIZON_MINUTES,
@@ -16,36 +16,41 @@ import {
 } from '../support/recipeEconomy';
 
 const RECIPE_WINDOW_SCENARIOS = [
-  { label: 'Baseline', localDepthLevel: 0, diffusionLevel: 0 },
-  { label: 'Networks III (3/3)', localDepthLevel: 3, diffusionLevel: 3 },
+  { label: 'Base market', localDepthLevel: 0, diffusionLevel: 0 },
+  { label: 'Network III', localDepthLevel: 3, diffusionLevel: 3 },
 ] as const;
 const CHAIN_SCENARIOS: ReadonlyArray<{ label: string; scenario: RecipeEconomyChainScenario }> = [
   {
-    label: 'Staples: utilities -> Grain',
+    label: 'Staples: utilities -> Farm',
     scenario: {
       facilities: [
         { recipeName: RecipeName.ProduceWater },
         { recipeName: RecipeName.ProduceElectricity },
         { recipeName: RecipeName.GrowGrain },
+        { recipeName: RecipeName.GrowSugar },
       ],
       durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
-      sellResourceTypes: [ResourceType.Water, ResourceType.Electricity, ResourceType.Grain],
+      primaryOutputResourceTypes: [ResourceType.Grain, ResourceType.Sugar],
+      includeConstructionInputsDemand: true,
     },
   },
   {
-    label: 'Extraction: utilities -> Iron',
+    label: 'Extraction: utilities -> Mine',
     scenario: {
       facilities: [
         { recipeName: RecipeName.ProduceWater },
         { recipeName: RecipeName.ProduceElectricity },
+        { recipeName: RecipeName.MineCoal },
         { recipeName: RecipeName.MineIron },
+        { recipeName: RecipeName.MineCopper },
       ],
       durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
-      sellResourceTypes: [ResourceType.Water, ResourceType.Electricity, ResourceType.Iron],
+      primaryOutputResourceTypes: [ResourceType.Coal, ResourceType.Iron, ResourceType.Copper],
+      includeConstructionInputsDemand: true,
     },
   },
   {
-    label: 'Fertilizer bridge: inputs -> Grain and Sugar',
+    label: 'Fertilizer bridge: quarry -> Grain and Sugar',
     scenario: {
       facilities: [
         { recipeName: RecipeName.ProduceWater },
@@ -57,15 +62,104 @@ const CHAIN_SCENARIOS: ReadonlyArray<{ label: string; scenario: RecipeEconomyCha
         { recipeName: RecipeName.GrowSugar },
       ],
       durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
-      sellResourceTypes: [
-        ResourceType.Water,
-        ResourceType.Electricity,
-        ResourceType.Minerals,
-        ResourceType.Chemicals,
-        ResourceType.Fertilizer,
-        ResourceType.Grain,
-        ResourceType.Sugar,
+      primaryOutputResourceTypes: [ResourceType.Grain, ResourceType.Sugar],
+      includeConstructionInputsDemand: true,
+    },
+  },
+  {
+    label: 'Fertilizer bridge: market inputs -> Grain and Sugar',
+    scenario: {
+      facilities: [
+        { recipeName: RecipeName.ProduceWater },
+        { recipeName: RecipeName.ProduceElectricity },
+        { recipeName: RecipeName.SynthesizeFertilizer },
+        { recipeName: RecipeName.GrowGrain },
+        { recipeName: RecipeName.GrowSugar },
       ],
+      durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
+      primaryOutputResourceTypes: [ResourceType.Grain, ResourceType.Sugar],
+      includeConstructionInputsDemand: true,
+    },
+  },
+  {
+    label: 'Fertilizer: quarry -> Fertilizer',
+    scenario: {
+      facilities: [
+        { recipeName: RecipeName.ProduceWater },
+        { recipeName: RecipeName.ProduceElectricity },
+        { recipeName: RecipeName.QuarryMinerals },
+        { recipeName: RecipeName.ProduceChemicals },
+        { recipeName: RecipeName.SynthesizeFertilizer },
+      ],
+      durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
+      primaryOutputResourceTypes: [ResourceType.Fertilizer],
+      includeConstructionInputsDemand: true,
+    },
+  },
+  {
+    label: 'Plastic: quarry -> Plastic',
+    scenario: {
+      facilities: [
+        { recipeName: RecipeName.ProduceWater },
+        { recipeName: RecipeName.ProduceElectricity },
+        { recipeName: RecipeName.QuarryMinerals },
+        { recipeName: RecipeName.ProduceChemicals },
+        { recipeName: RecipeName.ProducePlastic },
+      ],
+      durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
+      primaryOutputResourceTypes: [ResourceType.Plastic],
+      includeConstructionInputsDemand: true,
+    },
+  },
+  {
+    label: 'Steel: mines -> Steel',
+    scenario: {
+      facilities: [
+        { recipeName: RecipeName.ProduceWater },
+        { recipeName: RecipeName.ProduceElectricity },
+        { recipeName: RecipeName.MineCoal },
+        { recipeName: RecipeName.MineIron },
+        { recipeName: RecipeName.ProduceSteel },
+      ],
+      durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
+      primaryOutputResourceTypes: [ResourceType.Steel],
+      includeConstructionInputsDemand: true,
+    },
+  },
+  {
+    label: 'Poultry -> Cake',
+    scenario: {
+      facilities: [
+        { recipeName: RecipeName.ProduceWater },
+        { recipeName: RecipeName.ProduceElectricity },
+        { recipeName: RecipeName.QuarryMinerals },
+        { recipeName: RecipeName.ProduceChemicals },
+        { recipeName: RecipeName.SynthesizeFertilizer },
+        { recipeName: RecipeName.GrowGrain },
+        { recipeName: RecipeName.RaiseChicken },
+        { recipeName: RecipeName.BakeCake },
+      ],
+      durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
+      primaryOutputResourceTypes: [ResourceType.Cake],
+      includeConstructionInputsDemand: true,
+    },
+  },
+  {
+    label: 'Cattle -> Meat Pie',
+    scenario: {
+      facilities: [
+        { recipeName: RecipeName.ProduceWater },
+        { recipeName: RecipeName.ProduceElectricity },
+        { recipeName: RecipeName.QuarryMinerals },
+        { recipeName: RecipeName.ProduceChemicals },
+        { recipeName: RecipeName.SynthesizeFertilizer },
+        { recipeName: RecipeName.GrowGrain },
+        { recipeName: RecipeName.RaiseCattle },
+        { recipeName: RecipeName.BakeMeatPie },
+      ],
+      durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
+      primaryOutputResourceTypes: [ResourceType.MeatPie],
+      includeConstructionInputsDemand: true,
     },
   },
   {
@@ -87,30 +181,16 @@ const CHAIN_SCENARIOS: ReadonlyArray<{ label: string; scenario: RecipeEconomyCha
         { recipeName: RecipeName.BakeMeatPie },
       ],
       durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
-      sellResourceTypes: [
-        ResourceType.Water,
-        ResourceType.Electricity,
-        ResourceType.Minerals,
-        ResourceType.Chemicals,
-        ResourceType.Fertilizer,
-        ResourceType.Grain,
-        ResourceType.Fruit,
-        ResourceType.Meat,
-        ResourceType.Milk,
-        ResourceType.Wool,
-        ResourceType.Eggs,
-        ResourceType.Cake,
-        ResourceType.PremiumCake,
-        ResourceType.MeatPie,
-      ],
+      primaryOutputResourceTypes: [ResourceType.Cake, ResourceType.PremiumCake, ResourceType.MeatPie],
+      includeConstructionInputsDemand: true,
     },
   },
   {
     label: 'Construction: inputs -> Construction Materials',
     scenario: {
       facilities: [
-        { recipeName: RecipeName.ProduceWater },
-        { recipeName: RecipeName.ProduceElectricity },
+        { recipeName: RecipeName.ElectricPumping },
+        { recipeName: RecipeName.CoalPower },
         { recipeName: RecipeName.MineCoal },
         { recipeName: RecipeName.MineIron },
         { recipeName: RecipeName.QuarryClay },
@@ -123,20 +203,7 @@ const CHAIN_SCENARIOS: ReadonlyArray<{ label: string; scenario: RecipeEconomyCha
         { recipeName: RecipeName.ProduceConstructionMaterials },
       ],
       durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
-      sellResourceTypes: [
-        ResourceType.Water,
-        ResourceType.Electricity,
-        ResourceType.Coal,
-        ResourceType.Iron,
-        ResourceType.Clay,
-        ResourceType.Sand,
-        ResourceType.Stone,
-        ResourceType.Steel,
-        ResourceType.Bricks,
-        ResourceType.Cement,
-        ResourceType.ReinforcedConcrete,
-        ResourceType.ConstructionMaterials,
-      ],
+      primaryOutputResourceTypes: [ResourceType.ConstructionMaterials],
       includeConstructionInputsDemand: true,
     },
   },
@@ -144,8 +211,8 @@ const CHAIN_SCENARIOS: ReadonlyArray<{ label: string; scenario: RecipeEconomyCha
     label: 'Industrial Machines: inputs -> Industrial Machines',
     scenario: {
       facilities: [
-        { recipeName: RecipeName.ProduceWater },
-        { recipeName: RecipeName.ProduceElectricity },
+        { recipeName: RecipeName.ElectricPumping },
+        { recipeName: RecipeName.CoalPower },
         { recipeName: RecipeName.QuarrySand },
         { recipeName: RecipeName.QuarryMinerals },
         { recipeName: RecipeName.ProduceChemicals },
@@ -161,34 +228,37 @@ const CHAIN_SCENARIOS: ReadonlyArray<{ label: string; scenario: RecipeEconomyCha
         { recipeName: RecipeName.AssembleIndustrialMachines },
       ],
       durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
-      sellResourceTypes: [
-        ResourceType.Water,
-        ResourceType.Electricity,
-        ResourceType.Sand,
-        ResourceType.Minerals,
-        ResourceType.Chemicals,
-        ResourceType.Coal,
-        ResourceType.Iron,
-        ResourceType.Copper,
-        ResourceType.Gold,
-        ResourceType.Plastic,
-        ResourceType.Silicon,
-        ResourceType.Steel,
-        ResourceType.ElectricCircuits,
-        ResourceType.AdvancedComponents,
-        ResourceType.IndustrialMachines,
+      primaryOutputResourceTypes: [ResourceType.IndustrialMachines],
+      includeConstructionInputsDemand: true,
+    },
+  },
+  {
+    label: 'Construction Materials: market inputs -> Construction Materials',
+    scenario: {
+      facilities: [
+        { recipeName: RecipeName.ElectricPumping },
+        { recipeName: RecipeName.CoalPower },
+        { recipeName: RecipeName.ProduceConstructionMaterials },
       ],
+      durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
+      primaryOutputResourceTypes: [ResourceType.ConstructionMaterials],
+      includeConstructionInputsDemand: true,
+    },
+  },
+  {
+    label: 'Industrial Machines: market inputs -> Industrial Machines',
+    scenario: {
+      facilities: [
+        { recipeName: RecipeName.ElectricPumping },
+        { recipeName: RecipeName.CoalPower },
+        { recipeName: RecipeName.AssembleIndustrialMachines },
+      ],
+      durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
+      primaryOutputResourceTypes: [ResourceType.IndustrialMachines],
+      includeConstructionInputsDemand: true,
     },
   },
 ];
-const PORTFOLIO_NETWORK_SCENARIOS = [
-  { label: 'Baseline', localDepthLevel: 0, diffusionLevel: 0 },
-  { label: 'Networks I (1/1)', localDepthLevel: 1, diffusionLevel: 1 },
-  { label: 'Networks III (3/3)', localDepthLevel: 3, diffusionLevel: 3 },
-  { label: 'Networks V (5/5)', localDepthLevel: 5, diffusionLevel: 5 },
-  { label: 'Networks X (10/10)', localDepthLevel: 10, diffusionLevel: 10 },
-] as const;
-
 function money(value: number): string {
   return value.toFixed(2);
 }
@@ -197,21 +267,11 @@ function minute(value: number | null): string {
   return value === null ? 'not reached' : String(value);
 }
 
-function upgradePaybackEstimate(upgradeCost: number, incrementalMarginPerMinute: number): string {
-  if (upgradeCost <= 0) return 'n/a';
-  if (incrementalMarginPerMinute <= 0) return 'not profitable';
-  return String(Math.ceil(upgradeCost / incrementalMarginPerMinute));
-}
-
 function marketResearchProjectIds(localDepthLevel: number, diffusionLevel: number): string[] {
   return [
     ...Array.from({ length: localDepthLevel }, (_, index) => `local-market-network-${index + 1}`),
     ...Array.from({ length: diffusionLevel }, (_, index) => `market-diffusion-network-${index + 1}`),
   ];
-}
-
-function marketResearchCost(projectIds: readonly string[]): number {
-  return projectIds.reduce((total, projectId) => total + (getResearchProject(projectId)?.cost ?? 0), 0);
 }
 
 function markdownTable(rows: ReadonlyArray<Record<string, string | number>>): string {
@@ -249,6 +309,16 @@ function grouped<T>(entries: readonly RecipeReportEntry[], makeRow: (entry: Reci
   return result;
 }
 
+function chainFacilitiesSummary(chainFacilities: RecipeEconomyChainScenario['facilities']): string {
+  const counts = new Map<string, number>();
+  for (const chainFacility of chainFacilities) {
+    const facility = Object.values(FACILITIES).find((definition) => definition.recipes.some((recipe) => recipe.name === chainFacility.recipeName));
+    if (!facility) throw new Error(`No facility found for chain recipe ${chainFacility.recipeName}.`);
+    counts.set(facility.name, (counts.get(facility.name) ?? 0) + Math.max(0, Math.floor(chainFacility.count ?? 1)));
+  }
+  return [...counts].map(([name, count]) => `${name} x${count}`).join(', ');
+}
+
 describe('recipe economy report', () => {
   it('prints recipe economy tables when invoked by the report command', () => {
     if (process.env.RECIPE_ECONOMY_REPORT !== '1') return;
@@ -260,109 +330,74 @@ describe('recipe economy report', () => {
       '',
       '## Recipe windows',
       '',
+      'Each recipe is assessed in a base market and a Network III market with Local Market Network III and Market Diffusion Network III already owned. The Network III scenario measures recipe resilience; its research is pre-owned and is not charged to facility payback. The 15/60/180-minute margins are cumulative averages; window till unprofitable is the first completed output cycle with a non-positive margin, so a later recovery remains possible.',
+      '',
     ];
     const entries = recipeEntries();
-    const recipeRows = grouped(entries, (entry) => RECIPE_WINDOW_SCENARIOS.map((scenario) => {
+    const recipeRows = grouped(entries, (entry) => {
       const recipeName = entry.recipeName;
-      const completedResearchProjectIds = marketResearchProjectIds(scenario.localDepthLevel, scenario.diffusionLevel);
-      const initial = simulateRecipeEconomy({ recipeName, durationMinutes: 1, completedResearchProjectIds });
-      const shortRun = simulateRecipeEconomy({ recipeName, durationMinutes: RECIPE_ECONOMY_SHORT_WINDOW_MINUTES, completedResearchProjectIds });
-      const longRun = simulateRecipeEconomy({ recipeName, durationMinutes: RECIPE_ECONOMY_LONG_WINDOW_MINUTES, completedResearchProjectIds });
-      const extendedRun = simulateRecipeEconomy({ recipeName, durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES, completedResearchProjectIds });
-      const horizon = simulateRecipeEconomy({ recipeName, durationMinutes: RECIPE_ECONOMY_BREAK_EVEN_HORIZON_MINUTES, completedResearchProjectIds });
-      return {
+      const scenarioResults = RECIPE_WINDOW_SCENARIOS.map((scenario) => {
+        const completedResearchProjectIds = marketResearchProjectIds(scenario.localDepthLevel, scenario.diffusionLevel);
+        return {
+          scenario,
+          initial: simulateRecipeEconomy({ recipeName, durationMinutes: 1, completedResearchProjectIds }),
+          shortRun: simulateRecipeEconomy({ recipeName, durationMinutes: RECIPE_ECONOMY_SHORT_WINDOW_MINUTES, completedResearchProjectIds }),
+          longRun: simulateRecipeEconomy({ recipeName, durationMinutes: RECIPE_ECONOMY_LONG_WINDOW_MINUTES, completedResearchProjectIds }),
+          extendedRun: simulateRecipeEconomy({ recipeName, durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES, completedResearchProjectIds }),
+          horizon: simulateRecipeEconomy({ recipeName, durationMinutes: RECIPE_ECONOMY_BREAK_EVEN_HORIZON_MINUTES, completedResearchProjectIds }),
+        };
+      });
+      return scenarioResults.map(({ scenario, initial, shortRun, longRun, extendedRun, horizon }) => ({
         recipe: entry.recipe,
         scenario: scenario.label,
-        facilityCost: money(initial.facilityInvestmentCost),
-        recipeResearchCost: money(getResearchProject(getRecipeResearchProjectId(recipeName))?.cost ?? 0),
-        marketResearchCost: money(marketResearchCost(completedResearchProjectIds)),
-        initialMargin: money(initial.initialNetMarginPerMinute),
-        margin15m: money(shortRun.netMarginPerMinute),
-        margin60m: money(longRun.netMarginPerMinute),
-        margin180m: money(extendedRun.netMarginPerMinute),
-        outputPriceDropPerUnit: money(initial.initialOutputUnitPrice - longRun.finalOutputUnitPrice),
-        outputPriceDropPercent: initial.initialOutputUnitPrice > 0
-          ? `${(((initial.initialOutputUnitPrice - longRun.finalOutputUnitPrice) / initial.initialOutputUnitPrice) * 100).toFixed(1)}%`
-          : '0.0%',
-        maintenance60m: money(longRun.totalMaintenanceCost),
-        breakEven: minute(horizon.breakEvenMinute),
-        payback: minute(horizon.paybackMinute),
-      };
-    }));
+        'Facility/recipe cost (EUR)': `${money(initial.facilityInvestmentCost)}/${money(getResearchProject(getRecipeResearchProjectId(recipeName))?.cost ?? 0)}`,
+        'initial margin': money(initial.initialNetMarginPerMinute),
+        'margin 15m/60m/180m': `${money(shortRun.netMarginPerMinute)}/${money(longRun.netMarginPerMinute)}/${money(extendedRun.netMarginPerMinute)}`,
+        'output price drop at 180m EUR/percent': `${money(initial.initialOutputUnitPrice - extendedRun.finalOutputUnitPrice)}/${initial.initialOutputUnitPrice > 0
+          ? `${(((initial.initialOutputUnitPrice - extendedRun.finalOutputUnitPrice) / initial.initialOutputUnitPrice) * 100).toFixed(1)}%`
+          : '0.0%'}`,
+        'maintenance 60m': money(longRun.totalMaintenanceCost),
+        'window till unprofitable': minute(horizon.breakEvenMinute),
+        'facility payback': minute(horizon.paybackMinute),
+      }));
+    });
     console.log('\nRecipe economy: one fully staffed facility, local input purchases, local output sales, 70% repair threshold');
     for (const [facility, rows] of recipeRows) {
       const flatRows = rows.flat();
       console.log(`\n${facility}`);
       console.table(flatRows);
-      reportSections.push(`## ${facility}`, '', 'Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.', '', markdownTable(flatRows), '');
+      reportSections.push(`## ${facility}`, '', 'Network III applies pre-owned Local Market Network III and Market Diffusion Network III. It is a market-resilience scenario: neither network research nor recipe-unlock research is charged to facility payback.', '', markdownTable(flatRows), '');
     }
 
-    const chainRows = CHAIN_SCENARIOS.flatMap(({ label, scenario }) => RECIPE_WINDOW_SCENARIOS.map((marketScenario) => {
-      const completedResearchProjectIds = marketResearchProjectIds(marketScenario.localDepthLevel, marketScenario.diffusionLevel);
-      const result = simulateRecipeEconomyChain({ ...scenario, completedResearchProjectIds });
-      const primarySoldResource = scenario.sellResourceTypes[0]!;
+    const chainRows = CHAIN_SCENARIOS.map(({ label, scenario }) => {
+      const shortRun = simulateRecipeEconomyChain({ ...scenario, durationMinutes: RECIPE_ECONOMY_SHORT_WINDOW_MINUTES });
+      const longRun = simulateRecipeEconomyChain({ ...scenario, durationMinutes: RECIPE_ECONOMY_LONG_WINDOW_MINUTES });
+      const extendedRun = simulateRecipeEconomyChain(scenario);
+      const horizon = simulateRecipeEconomyChain({ ...scenario, durationMinutes: RECIPE_ECONOMY_BREAK_EVEN_HORIZON_MINUTES });
+      const stalledFacilityMinutes = shortRun.stalledFacilityMinutes + longRun.stalledFacilityMinutes + extendedRun.stalledFacilityMinutes + horizon.stalledFacilityMinutes;
+      if (stalledFacilityMinutes > 0) throw new Error(`Connected-chain scenario "${label}" stalled for ${stalledFacilityMinutes} facility-minutes.`);
       return {
         chain: label,
-        marketScenario: marketScenario.label,
-        surplusSold: scenario.sellResourceTypes.map((resourceType) => getResource(resourceType).name).join(', '),
-        facilityInvestmentCost: money(result.facilityInvestmentCost),
-        recipeResearchCost: money(result.recipeResearchInvestmentCost),
-        constructionMaterialsDemand: money(result.constructionMaterialsDemand),
-        constructionDemandFulfilled: money(result.fulfilledConstructionMaterialsDemand),
-        industrialMachinesDemand: money(result.industrialMachinesDemand),
-        machinesDemandFulfilled: money(result.fulfilledIndustrialMachinesDemand),
-        margin180m: money(result.netMarginPerMinute),
-        finalPrimaryUnitPrice: money(result.finalSoldUnitPrices[primarySoldResource] ?? 0),
-        payback: minute(result.paybackMinute),
-        stalledFacilityMinutes: result.stalledFacilityMinutes,
+        'primary output': scenario.primaryOutputResourceTypes.map((resourceType) => getResource(resourceType).name).join(', '),
+        facilities: chainFacilitiesSummary(scenario.facilities),
+        'setup cost (EUR)': money(extendedRun.facilityInvestmentCost + extendedRun.recipeResearchInvestmentCost),
+        'market input cost (EUR)': money(extendedRun.totalInputCost),
+        'margin 15m/60m/180m': `${money(shortRun.netMarginPerMinute)}/${money(longRun.netMarginPerMinute)}/${money(extendedRun.netMarginPerMinute)}`,
+        'window till unprofitable': minute(horizon.breakEvenMinute),
+        'facility payback': minute(horizon.paybackMinute),
       };
-    }));
+    });
     console.log('\nConnected-chain economy (180 minutes)');
     console.table(chainRows);
     reportSections.push(
       '## Connected-chain economy (180 minutes)',
       '',
-      'Each row runs all listed facilities in one shared market. Upstream production is available to downstream facilities before the listed surplus outputs are sold. Payback includes land, Construction Materials, Industrial Machines, and each distinct recipe-unlock research cost. Construction-input demand consumes the total material and machine requirement for every participating facility evenly through the scenario; it represents external building demand, not a player expense.',
+      'Each row runs all listed facilities in one shared base market. Upstream production is available to downstream facilities before each minute ends; the chain retains the following minute\'s required inputs and sells every other produced good. The 15/60/180-minute margins are cumulative averages; window till unprofitable is the first output minute with a non-positive margin, so a later recovery remains possible. Setup cost includes land, Construction Materials, Industrial Machines, and each distinct recipe-unlock research cost. Construction demand consumes the participating facilities\' total Construction Materials and Industrial Machines requirement evenly through the 180-minute scenario; it is external demand, not a player expense. A scenario that stalls a facility is treated as an invalid report scenario.',
       '',
       markdownTable(chainRows),
       '',
     );
 
-    const portfolioRows = PORTFOLIO_NETWORK_SCENARIOS.map((scenario) => {
-      const completedResearchProjectIds = marketResearchProjectIds(scenario.localDepthLevel, scenario.diffusionLevel);
-      const totalNetProfit = entries.reduce((total, entry) => {
-        const result = simulateRecipeEconomy({
-          recipeName: entry.recipeName,
-          durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
-          completedResearchProjectIds,
-        });
-        return total + result.totalRevenue - result.totalInputCost - result.totalMaintenanceCost;
-      }, 0);
-      return {
-        scenario: scenario.label,
-        localDepth: `${getLocalMarketDepthMultiplier(completedResearchProjectIds).toFixed(1)}x`,
-        localRegionalDiffusion: `${getLocalRegionalDiffusionMultiplier(completedResearchProjectIds).toFixed(2)}x`,
-        cumulativeResearchCost: marketResearchCost(completedResearchProjectIds),
-        netProfit180m: totalNetProfit,
-      };
-    });
-    const baselinePortfolioNetProfit = portfolioRows[0]!.netProfit180m;
-    const portfolioPaybackRows = portfolioRows.map((row) => {
-      const incrementalNetProfit180m = row.netProfit180m - baselinePortfolioNetProfit;
-      return {
-        scenario: row.scenario,
-        localDepth: row.localDepth,
-        localRegionalDiffusion: row.localRegionalDiffusion,
-        cumulativeResearchCost: money(row.cumulativeResearchCost),
-        portfolioNetProfit180m: money(row.netProfit180m),
-        incrementalNetProfit180m: money(incrementalNetProfit180m),
-        incrementalMarginPerMinute: money(incrementalNetProfit180m / RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES),
-        networkPaybackEstimateMinutes: upgradePaybackEstimate(row.cumulativeResearchCost, incrementalNetProfit180m / RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES),
-      };
-    });
-    console.log('\nMarket network portfolio payback (180 minutes)');
-    console.table(portfolioPaybackRows);
-    reportSections.push('## Market network portfolio payback (180 minutes)', '', 'One continuously selling facility per recipe. Results sum the independent recipe simulations, while each network cost is paid once. This isolates company-wide research value; it is not a shared-market multi-facility simulation.', '', markdownTable(portfolioPaybackRows), '');
     const reportPath = process.env.RECIPE_ECONOMY_REPORT_PATH;
     if (reportPath) {
       writeFileSync(reportPath, `${reportSections.join('\n')}\n`, 'utf8');

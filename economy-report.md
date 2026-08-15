@@ -4,197 +4,189 @@ One fully staffed facility, local input purchases, local output sales, normal ma
 
 ## Recipe windows
 
+Each recipe is assessed in a base market and a Network III market with Local Market Network III and Market Diffusion Network III already owned. The Network III scenario measures recipe resilience; its research is pre-owned and is not charged to facility payback. The 15/60/180-minute margins are cumulative averages; window till unprofitable is the first completed output cycle with a non-positive margin, so a later recovery remains possible.
+
 ## Animal Farm
 
-Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.
+Network III applies pre-owned Local Market Network III and Market Diffusion Network III. It is a market-resilience scenario: neither network research nor recipe-unlock research is charged to facility payback.
 
-| recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Raise Cattle | Baseline | 1105.00 | 140.00 | 0.00 | 15.96 | 11.05 | 8.39 | 5.81 | 2.42 | 24.2% | 134.71 | not reached | 194 |
-| Raise Cattle | Networks III (3/3) | 1105.00 | 140.00 | 19150.00 | 15.96 | 11.73 | 9.88 | 7.41 | 1.59 | 15.9% | 134.71 | not reached | 150 |
-| Raise Chicken | Baseline | 1105.00 | 175.00 | 0.00 | 24.92 | 19.23 | 14.91 | 10.40 | 2.25 | 22.5% | 113.23 | not reached | 81 |
-| Raise Chicken | Networks III (3/3) | 1105.00 | 175.00 | 19150.00 | 24.92 | 20.31 | 17.12 | 12.40 | 1.46 | 14.6% | 113.23 | not reached | 66 |
-| Raise Sheep | Baseline | 1105.00 | 157.00 | 0.00 | 24.25 | 18.54 | 15.48 | 11.63 | 2.56 | 25.6% | 124.98 | not reached | 76 |
-| Raise Sheep | Networks III (3/3) | 1105.00 | 157.00 | 19150.00 | 24.25 | 19.33 | 17.30 | 13.45 | 1.69 | 16.9% | 124.98 | not reached | 66 |
+| recipe | scenario | Facility/recipe cost (EUR) | initial margin | margin 15m/60m/180m | output price drop at 180m EUR/percent | maintenance 60m | window till unprofitable | facility payback |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Raise Cattle | Base market | 1105.00/131.00 | 15.67 | 13.09/9.69/6.82 | 3.15/31.5% | 68.02 | not reached | 161 |
+| Raise Cattle | Network III | 1105.00/131.00 | 15.67 | 13.87/11.26/8.44 | 2.35/23.5% | 68.02 | not reached | 121 |
+| Raise Chicken | Base market | 1105.00/170.00 | 24.68 | 20.98/15.95/11.21 | 2.59/25.9% | 57.03 | not reached | 74 |
+| Raise Chicken | Network III | 1105.00/170.00 | 24.68 | 22.18/18.22/13.23 | 1.94/19.4% | 57.03 | not reached | 61 |
+| Raise Sheep | Base market | 1105.00/150.00 | 23.99 | 20.78/16.61/12.53 | 3.16/31.6% | 62.78 | not reached | 69 |
+| Raise Sheep | Network III | 1105.00/150.00 | 23.99 | 21.69/18.49/14.38 | 2.37/23.7% | 62.78 | not reached | 60 |
 
 ## Assembly Plant
 
-Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.
+Network III applies pre-owned Local Market Network III and Market Diffusion Network III. It is a market-resilience scenario: neither network research nor recipe-unlock research is charged to facility payback.
 
-| recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Assemble Industrial Machines | Baseline | 8030.00 | 320.00 | 0.00 | 142.82 | 48.31 | 9.15 | 0.39 | 48.83 | 32.6% | 1582.69 | 2 | 230 |
-| Assemble Industrial Machines | Networks III (3/3) | 8030.00 | 320.00 | 19150.00 | 142.82 | 66.49 | 38.34 | 3.42 | 35.59 | 23.7% | 1681.73 | 2 | not reached |
+| recipe | scenario | Facility/recipe cost (EUR) | initial margin | margin 15m/60m/180m | output price drop at 180m EUR/percent | maintenance 60m | window till unprofitable | facility payback |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Assemble Industrial Machines | Base market | 8030.00/320.00 | 139.67 | 65.25/22.34/-12.80 | 59.26/39.5% | 791.34 | 2 | not reached |
+| Assemble Industrial Machines | Network III | 8030.00/320.00 | 139.67 | 84.33/52.35/20.38 | 47.99/32.0% | 840.87 | 2 | not reached |
 
 ## Bakery
 
-Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.
+Network III applies pre-owned Local Market Network III and Market Diffusion Network III. It is a market-resilience scenario: neither network research nor recipe-unlock research is charged to facility payback.
 
-| recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Bake Bread | Baseline | 2660.00 | 167.00 | 0.00 | 43.06 | 36.23 | 28.87 | 20.56 | 0.61 | 25.3% | 268.94 | not reached | 109 |
-| Bake Bread | Networks III (3/3) | 2660.00 | 167.00 | 19150.00 | 43.06 | 37.68 | 32.06 | 23.81 | 0.39 | 16.4% | 268.94 | not reached | 91 |
-| Bake Cake | Baseline | 2660.00 | 212.00 | 0.00 | 78.15 | 50.01 | 26.66 | 13.26 | 4.50 | 64.2% | 276.01 | not reached | not reached |
-| Bake Cake | Networks III (3/3) | 2660.00 | 212.00 | 19150.00 | 78.15 | 58.49 | 37.67 | 21.19 | 3.68 | 52.6% | 276.01 | not reached | 83 |
-| Bake Meat Pie | Baseline | 2660.00 | 254.00 | 0.00 | 37.87 | 18.58 | 0.03 | -8.17 | 4.48 | 56.0% | 296.65 | 24 | not reached |
-| Bake Meat Pie | Networks III (3/3) | 2660.00 | 254.00 | 19150.00 | 37.87 | 24.64 | 10.38 | 0.20 | 3.53 | 44.1% | 296.65 | 51 | not reached |
-| Bake Premium Cake | Baseline | 2660.00 | 283.00 | 0.00 | 95.63 | 64.91 | 35.04 | 16.99 | 6.86 | 57.2% | 286.09 | not reached | 121 |
-| Bake Premium Cake | Networks III (3/3) | 2660.00 | 283.00 | 19150.00 | 95.63 | 74.45 | 49.80 | 28.67 | 5.41 | 45.1% | 286.09 | not reached | 50 |
+| recipe | scenario | Facility/recipe cost (EUR) | initial margin | margin 15m/60m/180m | output price drop at 180m EUR/percent | maintenance 60m | window till unprofitable | facility payback |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Bake Bread | Base market | 2660.00/167.00 | 43.11 | 38.57/31.11/22.52 | 0.72/30.0% | 134.47 | not reached | 97 |
+| Bake Bread | Network III | 2660.00/167.00 | 43.11 | 40.02/34.30/25.78 | 0.54/22.5% | 134.47 | not reached | 83 |
+| Bake Cake | Base market | 2660.00/212.00 | 78.21 | 52.40/28.96/15.27 | 4.81/68.8% | 138.00 | not reached | 167 |
+| Bake Cake | Network III | 2660.00/212.00 | 78.21 | 60.88/39.97/23.20 | 4.29/61.3% | 138.00 | not reached | 73 |
+| Bake Meat Pie | Base market | 2660.00/254.00 | 37.93 | 21.19/2.50/-5.90 | 5.00/62.6% | 148.33 | 26 | not reached |
+| Bake Meat Pie | Network III | 2660.00/254.00 | 37.93 | 27.25/12.86/2.43 | 4.32/54.1% | 148.33 | 62 | not reached |
+| Bake Premium Cake | Base market | 2660.00/283.00 | 95.69 | 67.39/37.42/19.12 | 7.54/62.8% | 143.04 | not reached | 94 |
+| Bake Premium Cake | Network III | 2660.00/283.00 | 95.69 | 76.93/52.19/30.79 | 6.53/54.5% | 143.04 | not reached | 47 |
 
 ## Chemical Plant
 
-Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.
+Network III applies pre-owned Local Market Network III and Market Diffusion Network III. It is a market-resilience scenario: neither network research nor recipe-unlock research is charged to facility payback.
 
-| recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Produce Chemicals | Baseline | 4240.00 | 198.00 | 0.00 | 29.21 | 13.99 | 6.23 | 0.69 | 4.86 | 48.6% | 740.04 | 58 | not reached |
-| Produce Chemicals | Networks III (3/3) | 4240.00 | 198.00 | 19150.00 | 29.21 | 16.39 | 9.82 | 4.44 | 3.69 | 36.9% | 740.04 | 113 | not reached |
-| Produce Plastic | Baseline | 4240.00 | 234.00 | 0.00 | 51.78 | 14.03 | -14.30 | -28.47 | 9.03 | 60.2% | 680.23 | 13 | not reached |
-| Produce Plastic | Networks III (3/3) | 4240.00 | 234.00 | 19150.00 | 51.78 | 24.63 | 2.24 | -14.16 | 7.46 | 49.8% | 680.23 | 26 | not reached |
-| Synthesize Fertilizer | Baseline | 4240.00 | 239.00 | 0.00 | 35.49 | 10.14 | -4.37 | -13.06 | 6.25 | 62.5% | 713.35 | 15 | not reached |
-| Synthesize Fertilizer | Networks III (3/3) | 4240.00 | 239.00 | 19150.00 | 35.49 | 15.99 | 3.49 | -5.85 | 5.15 | 51.5% | 713.35 | 29 | not reached |
+| recipe | scenario | Facility/recipe cost (EUR) | initial margin | margin 15m/60m/180m | output price drop at 180m EUR/percent | maintenance 60m | window till unprofitable | facility payback |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Produce Chemicals | Base market | 4240.00/198.00 | 28.93 | 20.83/12.39/7.34 | 5.74/57.4% | 370.02 | not reached | not reached |
+| Produce Chemicals | Network III | 4240.00/198.00 | 28.93 | 23.23/15.99/10.67 | 4.88/48.8% | 370.02 | not reached | not reached |
+| Produce Plastic | Base market | 4240.00/234.00 | 51.54 | 20.17/-8.63/-22.45 | 10.23/68.2% | 340.12 | 17 | not reached |
+| Produce Plastic | Network III | 4240.00/234.00 | 51.54 | 30.77/7.91/-8.51 | 9.13/60.9% | 340.12 | 36 | not reached |
+| Synthesize Fertilizer | Base market | 4240.00/239.00 | 35.23 | 16.66/1.58/-6.71 | 7.05/70.5% | 356.67 | 24 | not reached |
+| Synthesize Fertilizer | Network III | 4240.00/239.00 | 35.23 | 22.51/9.44/0.11 | 6.32/63.2% | 356.67 | 59 | not reached |
 
 ## Construction Factory
 
-Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.
+Network III applies pre-owned Local Market Network III and Market Diffusion Network III. It is a market-resilience scenario: neither network research nor recipe-unlock research is charged to facility payback.
 
-| recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Produce Bricks | Baseline | 3280.00 | 194.00 | 0.00 | 54.85 | 8.51 | -1.41 | -4.44 | 1.14 | 76.2% | 416.00 | 11 | not reached |
-| Produce Bricks | Networks III (3/3) | 3280.00 | 194.00 | 19150.00 | 54.85 | 17.25 | 4.13 | -0.41 | 1.07 | 71.1% | 416.00 | 27 | not reached |
-| Produce Cement | Baseline | 3280.00 | 241.00 | 0.00 | 47.11 | 17.68 | -1.43 | -10.57 | 3.09 | 68.6% | 486.32 | 19 | not reached |
-| Produce Cement | Networks III (3/3) | 3280.00 | 241.00 | 19150.00 | 47.11 | 25.78 | 8.31 | -2.92 | 2.59 | 57.5% | 486.32 | 41 | not reached |
-| Produce Construction Materials | Baseline | 3280.00 | 376.00 | 0.00 | 40.85 | 17.77 | 2.86 | -8.15 | 11.96 | 70.3% | 390.62 | 29 | not reached |
-| Produce Construction Materials | Networks III (3/3) | 3280.00 | 376.00 | 19150.00 | 40.85 | 22.57 | 10.35 | -0.97 | 9.62 | 56.6% | 434.56 | 60 | not reached |
-| Produce Reinforced Concrete | Baseline | 3280.00 | 343.00 | 0.00 | 116.13 | 59.26 | 17.50 | -7.47 | 16.02 | 72.8% | 565.97 | 39 | not reached |
-| Produce Reinforced Concrete | Networks III (3/3) | 3280.00 | 343.00 | 19150.00 | 116.13 | 74.68 | 36.95 | 8.90 | 13.42 | 61.0% | 565.97 | 96 | not reached |
+| recipe | scenario | Facility/recipe cost (EUR) | initial margin | margin 15m/60m/180m | output price drop at 180m EUR/percent | maintenance 60m | window till unprofitable | facility payback |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Produce Bricks | Base market | 3280.00/194.00 | 54.99 | 12.22/2.05/-1.03 | 1.23/81.7% | 208.00 | 19 | not reached |
+| Produce Bricks | Network III | 3280.00/194.00 | 54.99 | 20.95/7.59/2.86 | 1.16/77.5% | 208.00 | 153 | not reached |
+| Produce Cement | Base market | 3280.00/241.00 | 47.28 | 22.04/2.62/-6.39 | 3.46/76.9% | 243.16 | 25 | not reached |
+| Produce Cement | Network III | 3280.00/241.00 | 47.28 | 30.15/12.36/1.04 | 3.14/69.9% | 243.16 | 59 | not reached |
+| Produce Construction Materials | Base market | 3280.00/376.00 | 41.08 | 22.23/6.12/-5.52 | 14.25/83.8% | 195.31 | 38 | not reached |
+| Produce Construction Materials | Network III | 3280.00/376.00 | 41.08 | 27.46/13.97/1.88 | 12.80/75.3% | 217.28 | 82 | not reached |
+| Produce Reinforced Concrete | Base market | 3280.00/343.00 | 116.33 | 64.41/22.21/-2.55 | 18.20/82.7% | 282.98 | 46 | not reached |
+| Produce Reinforced Concrete | Network III | 3280.00/343.00 | 116.33 | 79.83/41.66/13.55 | 16.67/75.8% | 282.98 | 116 | not reached |
 
 ## Electronics Factory
 
-Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.
+Network III applies pre-owned Local Market Network III and Market Diffusion Network III. It is a market-resilience scenario: neither network research nor recipe-unlock research is charged to facility payback.
 
-| recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Produce Advanced Components | Baseline | 5350.00 | 286.00 | 0.00 | 131.53 | 79.38 | 45.98 | 22.06 | 28.17 | 28.2% | 904.16 | 217 | not reached |
-| Produce Advanced Components | Networks III (3/3) | 5350.00 | 286.00 | 19150.00 | 131.53 | 90.45 | 66.59 | 42.79 | 20.83 | 20.8% | 904.16 | not reached | 98 |
-| Produce Silicon | Baseline | 5350.00 | 211.00 | 0.00 | 38.07 | 19.66 | 9.82 | 1.84 | 11.62 | 48.4% | 827.19 | 70 | not reached |
-| Produce Silicon | Networks III (3/3) | 5350.00 | 211.00 | 19150.00 | 38.07 | 22.57 | 14.70 | 7.03 | 8.70 | 36.2% | 827.19 | 145 | not reached |
+| recipe | scenario | Facility/recipe cost (EUR) | initial margin | margin 15m/60m/180m | output price drop at 180m EUR/percent | maintenance 60m | window till unprofitable | facility payback |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Produce Advanced Components | Base market | 5350.00/286.00 | 131.12 | 87.51/53.51/30.34 | 32.67/32.7% | 452.08 | 228 | 169 |
+| Produce Advanced Components | Network III | 5350.00/286.00 | 131.12 | 98.58/74.12/50.46 | 26.59/26.6% | 452.08 | not reached | 82 |
+| Produce Silicon | Base market | 5350.00/211.00 | 37.71 | 27.01/16.72/9.38 | 14.37/59.9% | 413.59 | not reached | not reached |
+| Produce Silicon | Network III | 5350.00/211.00 | 37.71 | 29.93/21.59/14.02 | 12.13/50.6% | 413.59 | not reached | not reached |
 
 ## Farm
 
-Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.
+Network III applies pre-owned Local Market Network III and Market Diffusion Network III. It is a market-resilience scenario: neither network research nor recipe-unlock research is charged to facility payback.
 
-| recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Grow Fruit | Baseline | 295.00 | 124.00 | 0.00 | 9.61 | 7.86 | 6.42 | 5.19 | 0.15 | 16.1% | 28.30 | not reached | 44 |
-| Grow Fruit | Networks III (3/3) | 295.00 | 124.00 | 19150.00 | 9.61 | 8.35 | 7.13 | 5.77 | 0.11 | 11.7% | 28.30 | not reached | 40 |
-| Grow Grain | Baseline | 295.00 | 108.00 | 0.00 | 4.03 | 0.15 | -1.67 | -1.88 | 0.13 | 16.4% | 32.66 | 8 | not reached |
-| Grow Grain | Networks III (3/3) | 295.00 | 108.00 | 19150.00 | 4.03 | 1.47 | -0.07 | -0.52 | 0.10 | 12.2% | 32.66 | 19 | not reached |
-| Grow Sugar | Baseline | 295.00 | 104.00 | 0.00 | 1.25 | -0.29 | -1.24 | -1.31 | 0.06 | 9.1% | 29.44 | 6 | not reached |
-| Grow Sugar | Networks III (3/3) | 295.00 | 104.00 | 19150.00 | 1.25 | 0.20 | -0.51 | -0.68 | 0.05 | 6.6% | 29.44 | 12 | not reached |
+| recipe | scenario | Facility/recipe cost (EUR) | initial margin | margin 15m/60m/180m | output price drop at 180m EUR/percent | maintenance 60m | window till unprofitable | facility payback |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Grow Fruit | Base market | 295.00/124.00 | 9.50 | 8.11/6.65/5.40 | 0.12/13.4% | 14.15 | not reached | 43 |
+| Grow Fruit | Network III | 295.00/124.00 | 9.50 | 8.59/7.36/5.98 | 0.09/10.1% | 14.15 | not reached | 38 |
+| Grow Grain | Base market | 295.00/108.00 | 6.31 | 2.32/0.16/-0.32 | 0.16/19.9% | 16.33 | 19 | not reached |
+| Grow Grain | Network III | 295.00/108.00 | 6.31 | 3.80/1.94/1.17 | 0.12/15.0% | 16.33 | 183 | not reached |
+| Grow Sugar | Base market | 295.00/104.00 | 2.54 | 1.18/0.08/-0.20 | 0.06/8.6% | 14.72 | 21 | not reached |
+| Grow Sugar | Network III | 295.00/104.00 | 2.54 | 1.73/0.87/0.47 | 0.05/6.5% | 14.72 | 200 | not reached |
 
 ## Industrial Processing Factory
 
-Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.
+Network III applies pre-owned Local Market Network III and Market Diffusion Network III. It is a market-resilience scenario: neither network research nor recipe-unlock research is charged to facility payback.
 
-| recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Produce Electric Circuits | Baseline | 2130.00 | 219.00 | 0.00 | 96.41 | 66.20 | 35.97 | 16.36 | 5.10 | 20.4% | 346.56 | 136 | 59 |
-| Produce Electric Circuits | Networks III (3/3) | 2130.00 | 219.00 | 19150.00 | 96.41 | 74.49 | 53.11 | 34.23 | 3.60 | 14.4% | 346.56 | not reached | 34 |
-| Produce Steel | Baseline | 2130.00 | 171.00 | 0.00 | 54.80 | 24.44 | 1.25 | -10.85 | 4.68 | 66.8% | 318.71 | 22 | not reached |
-| Produce Steel | Networks III (3/3) | 2130.00 | 171.00 | 19150.00 | 54.80 | 33.63 | 13.15 | -1.10 | 3.86 | 55.1% | 318.71 | 49 | not reached |
+| recipe | scenario | Facility/recipe cost (EUR) | initial margin | margin 15m/60m/180m | output price drop at 180m EUR/percent | maintenance 60m | window till unprofitable | facility payback |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Produce Electric Circuits | Base market | 2130.00/219.00 | 95.73 | 69.39/38.86/19.17 | 6.16/24.6% | 173.28 | 230 | 49 |
+| Produce Electric Circuits | Network III | 2130.00/219.00 | 95.73 | 77.67/56.00/36.99 | 4.80/19.2% | 173.28 | not reached | 31 |
+| Produce Steel | Base market | 2130.00/171.00 | 54.20 | 27.35/3.90/-8.30 | 5.41/77.3% | 159.35 | 27 | not reached |
+| Produce Steel | Network III | 2130.00/171.00 | 54.20 | 36.55/15.81/1.41 | 4.88/69.7% | 159.35 | 62 | not reached |
 
 ## Mine
 
-Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.
+Network III applies pre-owned Local Market Network III and Market Diffusion Network III. It is a market-resilience scenario: neither network research nor recipe-unlock research is charged to facility payback.
 
-| recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Mine Coal | Baseline | 715.00 | 89.00 | 0.00 | 35.78 | 16.07 | 5.69 | 1.27 | 1.27 | 70.7% | 100.94 | 83 | not reached |
-| Mine Coal | Networks III (3/3) | 715.00 | 89.00 | 19150.00 | 35.78 | 21.60 | 10.65 | 4.76 | 1.11 | 61.9% | 100.94 | 175 | 85 |
-| Mine Copper | Baseline | 715.00 | 135.00 | 0.00 | 18.08 | 7.42 | 0.90 | -2.40 | 2.03 | 40.6% | 107.15 | 24 | not reached |
-| Mine Copper | Networks III (3/3) | 715.00 | 135.00 | 19150.00 | 18.08 | 10.62 | 4.95 | 1.24 | 1.55 | 30.9% | 107.15 | 127 | not reached |
-| Mine Gold | Baseline | 715.00 | 131.00 | 0.00 | 37.23 | 24.99 | 15.38 | 9.63 | 35.55 | 44.4% | 113.14 | not reached | 39 |
-| Mine Gold | Networks III (3/3) | 715.00 | 131.00 | 19150.00 | 37.23 | 28.42 | 19.99 | 13.72 | 26.92 | 33.7% | 113.14 | not reached | 29 |
-| Mine Iron | Baseline | 715.00 | 94.00 | 0.00 | 20.93 | 8.11 | -0.46 | -4.71 | 2.20 | 49.0% | 103.66 | 20 | not reached |
-| Mine Iron | Networks III (3/3) | 715.00 | 94.00 | 19150.00 | 20.93 | 12.09 | 4.66 | -0.24 | 1.72 | 38.3% | 103.66 | 53 | not reached |
+| recipe | scenario | Facility/recipe cost (EUR) | initial margin | margin 15m/60m/180m | output price drop at 180m EUR/percent | maintenance 60m | window till unprofitable | facility payback |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Mine Coal | Base market | 715.00/89.00 | 35.06 | 16.98/6.53/2.05 | 1.41/78.6% | 50.47 | 135 | not reached |
+| Mine Coal | Network III | 715.00/89.00 | 35.06 | 22.51/11.49/5.53 | 1.30/72.5% | 50.47 | not reached | 66 |
+| Mine Copper | Base market | 715.00/135.00 | 17.31 | 8.40/1.79/-1.58 | 2.39/47.8% | 53.57 | 31 | not reached |
+| Mine Copper | Network III | 715.00/135.00 | 17.31 | 11.60/5.85/2.07 | 1.99/39.9% | 53.57 | 133 | not reached |
+| Mine Gold | Base market | 715.00/131.00 | 36.41 | 26.02/16.32/10.51 | 43.70/54.6% | 56.57 | not reached | 36 |
+| Mine Gold | Network III | 715.00/131.00 | 36.41 | 29.45/20.93/14.59 | 36.85/46.1% | 56.57 | not reached | 28 |
+| Mine Iron | Base market | 715.00/94.00 | 20.19 | 9.05/0.40/-3.91 | 2.56/56.9% | 51.83 | 22 | not reached |
+| Mine Iron | Network III | 715.00/94.00 | 20.19 | 13.03/5.52/0.56 | 2.19/48.7% | 51.83 | 67 | not reached |
 
 ## Power Plant
 
-Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.
+Network III applies pre-owned Local Market Network III and Market Diffusion Network III. It is a market-resilience scenario: neither network research nor recipe-unlock research is charged to facility payback.
 
-| recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Coal Power | Baseline | 3950.00 | 128.00 | 0.00 | 5.58 | -7.69 | -8.32 | -8.77 | 0.09 | 23.4% | 676.72 | 1 | not reached |
-| Coal Power | Networks III (3/3) | 3950.00 | 128.00 | 19150.00 | 5.58 | -6.60 | -7.00 | -7.40 | 0.07 | 18.5% | 676.72 | 1 | not reached |
-| Solar Power | Baseline | 3950.00 | 100.00 | 0.00 | 1.46 | -6.36 | -6.06 | -5.72 | 0.03 | 8.4% | 538.62 | 1 | not reached |
-| Solar Power | Networks III (3/3) | 3950.00 | 100.00 | 19150.00 | 1.46 | -6.27 | -5.98 | -5.60 | 0.02 | 6.2% | 538.62 | 1 | not reached |
+| recipe | scenario | Facility/recipe cost (EUR) | initial margin | margin 15m/60m/180m | output price drop at 180m EUR/percent | maintenance 60m | window till unprofitable | facility payback |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Coal Power | Base market | 2150.00/128.00 | 6.04 | 2.19/0.50/-0.49 | 0.11/27.5% | 184.17 | 31 | not reached |
+| Coal Power | Network III | 2150.00/128.00 | 6.04 | 3.40/1.91/0.88 | 0.09/23.0% | 184.17 | 127 | not reached |
+| Solar Power | Base market | 2150.00/100.00 | 0.89 | 0.62/0.48/0.36 | 0.04/10.0% | 146.59 | 103 | not reached |
+| Solar Power | Network III | 2150.00/100.00 | 0.89 | 0.70/0.56/0.43 | 0.03/7.7% | 146.59 | 103 | not reached |
 
 ## Quarry
 
-Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.
+Network III applies pre-owned Local Market Network III and Market Diffusion Network III. It is a market-resilience scenario: neither network research nor recipe-unlock research is charged to facility payback.
 
-| recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Quarry Clay | Baseline | 1305.00 | 104.00 | 0.00 | 8.74 | 5.20 | 3.04 | 2.10 | 0.21 | 26.0% | 135.72 | not reached | not reached |
-| Quarry Clay | Networks III (3/3) | 1305.00 | 104.00 | 19150.00 | 8.74 | 6.09 | 4.30 | 3.06 | 0.15 | 19.2% | 135.72 | not reached | not reached |
-| Quarry Minerals | Baseline | 1305.00 | 144.00 | 0.00 | 19.74 | 9.92 | 5.12 | 3.53 | 0.43 | 43.5% | 135.72 | not reached | not reached |
-| Quarry Minerals | Networks III (3/3) | 1305.00 | 144.00 | 19150.00 | 19.74 | 12.84 | 8.06 | 5.66 | 0.36 | 35.8% | 135.72 | not reached | not reached |
-| Quarry Sand | Baseline | 1305.00 | 84.00 | 0.00 | 9.24 | 3.47 | 0.05 | -0.81 | 0.19 | 47.9% | 132.61 | 20 | not reached |
-| Quarry Sand | Networks III (3/3) | 1305.00 | 84.00 | 19150.00 | 9.24 | 5.17 | 2.06 | 0.64 | 0.15 | 38.6% | 132.61 | 65 | not reached |
-| Quarry Stone | Baseline | 1305.00 | 124.00 | 0.00 | 30.98 | 17.38 | 8.53 | 5.20 | 0.96 | 47.8% | 141.10 | not reached | not reached |
-| Quarry Stone | Networks III (3/3) | 1305.00 | 124.00 | 19150.00 | 30.98 | 21.75 | 13.47 | 8.83 | 0.77 | 38.6% | 141.10 | not reached | 135 |
+| recipe | scenario | Facility/recipe cost (EUR) | initial margin | margin 15m/60m/180m | output price drop at 180m EUR/percent | maintenance 60m | window till unprofitable | facility payback |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Quarry Clay | Base market | 1305.00/104.00 | 8.79 | 6.38/4.17/3.09 | 0.18/22.6% | 67.86 | not reached | not reached |
+| Quarry Clay | Network III | 1305.00/104.00 | 8.79 | 7.27/5.43/4.05 | 0.14/17.5% | 67.86 | not reached | not reached |
+| Quarry Minerals | Base market | 1305.00/144.00 | 19.79 | 11.10/6.25/4.52 | 0.40/40.3% | 67.86 | not reached | not reached |
+| Quarry Minerals | Network III | 1305.00/144.00 | 19.79 | 14.03/9.19/6.65 | 0.34/33.6% | 67.86 | not reached | 196 |
+| Quarry Sand | Base market | 1305.00/84.00 | 9.29 | 4.63/1.16/0.16 | 0.18/44.2% | 66.31 | 32 | not reached |
+| Quarry Sand | Network III | 1305.00/84.00 | 9.29 | 6.32/3.16/1.61 | 0.15/37.4% | 66.31 | not reached | not reached |
+| Quarry Stone | Base market | 1305.00/124.00 | 31.04 | 18.62/9.70/6.25 | 0.95/47.5% | 70.55 | not reached | 238 |
+| Quarry Stone | Network III | 1305.00/124.00 | 31.04 | 22.99/14.65/9.87 | 0.79/39.6% | 70.55 | not reached | 115 |
 
 ## Small Utility Works
 
-Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.
+Network III applies pre-owned Local Market Network III and Market Diffusion Network III. It is a market-resilience scenario: neither network research nor recipe-unlock research is charged to facility payback.
 
-| recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Produce Electricity | Baseline | 635.00 | 74.00 | 0.00 | 7.85 | 5.74 | 5.10 | 4.23 | 0.07 | 16.7% | 61.39 | not reached | 142 |
-| Produce Electricity | Networks III (3/3) | 635.00 | 74.00 | 19150.00 | 7.85 | 6.09 | 5.44 | 4.49 | 0.05 | 12.8% | 61.39 | not reached | 132 |
-| Produce Water | Baseline | 635.00 | 53.00 | 0.00 | 2.89 | 1.62 | 1.19 | 0.91 | 0.03 | 31.8% | 52.65 | not reached | not reached |
-| Produce Water | Networks III (3/3) | 635.00 | 53.00 | 19150.00 | 2.89 | 1.79 | 1.41 | 1.08 | 0.02 | 24.5% | 52.65 | not reached | not reached |
+| recipe | scenario | Facility/recipe cost (EUR) | initial margin | margin 15m/60m/180m | output price drop at 180m EUR/percent | maintenance 60m | window till unprofitable | facility payback |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Produce Electricity | Base market | 635.00/74.00 | 7.46 | 6.27/5.61/4.68 | 0.06/15.2% | 30.70 | not reached | 126 |
+| Produce Electricity | Network III | 635.00/74.00 | 7.46 | 6.63/5.95/4.94 | 0.05/12.2% | 30.70 | not reached | 117 |
+| Produce Water | Base market | 635.00/53.00 | 2.55 | 2.07/1.63/1.31 | 0.03/28.9% | 26.32 | not reached | not reached |
+| Produce Water | Network III | 635.00/53.00 | 2.55 | 2.24/1.85/1.48 | 0.02/23.1% | 26.32 | not reached | not reached |
 
 ## Water Well
 
-Networks III (3/3) applies Local Market Network III and Market Diffusion Network III before production begins.
+Network III applies pre-owned Local Market Network III and Market Diffusion Network III. It is a market-resilience scenario: neither network research nor recipe-unlock research is charged to facility payback.
 
-| recipe | scenario | facilityCost | recipeResearchCost | marketResearchCost | initialMargin | margin15m | margin60m | margin180m | outputPriceDropPerUnit | outputPriceDropPercent | maintenance60m | breakEven | payback |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Electric Pumping | Baseline | 550.00 | 91.00 | 0.00 | 2.47 | -0.03 | -0.97 | -1.03 | 0.05 | 45.7% | 50.80 | 7 | not reached |
-| Electric Pumping | Networks III (3/3) | 550.00 | 91.00 | 19150.00 | 2.47 | 0.62 | -0.32 | -0.55 | 0.04 | 38.0% | 50.80 | 14 | not reached |
-| Manual Pumping | Baseline | 550.00 | 46.00 | 0.00 | 2.77 | 1.74 | 1.31 | 1.02 | 0.03 | 31.8% | 45.60 | not reached | not reached |
-| Manual Pumping | Networks III (3/3) | 550.00 | 46.00 | 19150.00 | 2.77 | 1.91 | 1.52 | 1.19 | 0.02 | 24.5% | 45.60 | not reached | not reached |
+| recipe | scenario | Facility/recipe cost (EUR) | initial margin | margin 15m/60m/180m | output price drop at 180m EUR/percent | maintenance 60m | window till unprofitable | facility payback |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Electric Pumping | Base market | 550.00/91.00 | 2.30 | 0.41/-0.55/-0.65 | 0.04/42.8% | 25.40 | 10 | not reached |
+| Electric Pumping | Network III | 550.00/91.00 | 2.30 | 1.06/0.10/-0.17 | 0.04/36.2% | 25.40 | 23 | not reached |
+| Manual Pumping | Base market | 550.00/46.00 | 2.62 | 2.13/1.69/1.36 | 0.03/28.9% | 22.80 | not reached | not reached |
+| Manual Pumping | Network III | 550.00/46.00 | 2.62 | 2.30/1.90/1.53 | 0.02/23.1% | 22.80 | not reached | not reached |
 
 ## Connected-chain economy (180 minutes)
 
-Each row runs all listed facilities in one shared market. Upstream production is available to downstream facilities before the listed surplus outputs are sold. Payback includes land, Construction Materials, Industrial Machines, and each distinct recipe-unlock research cost. Construction-input demand consumes the total material and machine requirement for every participating facility evenly through the scenario; it represents external building demand, not a player expense.
+Each row runs all listed facilities in one shared base market. Upstream production is available to downstream facilities before each minute ends; the chain retains the following minute's required inputs and sells every other produced good. The 15/60/180-minute margins are cumulative averages; window till unprofitable is the first output minute with a non-positive margin, so a later recovery remains possible. Setup cost includes land, Construction Materials, Industrial Machines, and each distinct recipe-unlock research cost. Construction demand consumes the participating facilities' total Construction Materials and Industrial Machines requirement evenly through the 180-minute scenario; it is external demand, not a player expense. A scenario that stalls a facility is treated as an invalid report scenario.
 
-| chain | marketScenario | surplusSold | facilityInvestmentCost | recipeResearchCost | constructionMaterialsDemand | constructionDemandFulfilled | industrialMachinesDemand | machinesDemandFulfilled | margin180m | finalPrimaryUnitPrice | payback | stalledFacilityMinutes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Staples: utilities -> Grain | Baseline | Water, Electricity, Grain | 1565.00 | 235.00 | 0.00 | 0.00 | 0.00 | 0.00 | 12.34 | 0.07 | 137 | 0 |
-| Staples: utilities -> Grain | Networks III (3/3) | Water, Electricity, Grain | 1565.00 | 235.00 | 0.00 | 0.00 | 0.00 | 0.00 | 13.69 | 0.08 | 120 | 0 |
-| Extraction: utilities -> Iron | Baseline | Water, Electricity, Iron | 1985.00 | 221.00 | 0.00 | 0.00 | 0.00 | 0.00 | 11.34 | 0.07 | not reached | 0 |
-| Extraction: utilities -> Iron | Networks III (3/3) | Water, Electricity, Iron | 1985.00 | 221.00 | 0.00 | 0.00 | 0.00 | 0.00 | 15.37 | 0.08 | 124 | 0 |
-| Fertilizer bridge: inputs -> Grain and Sugar | Baseline | Water, Electricity, Minerals, Chemicals, Fertilizer, Grain, Sugar | 11645.00 | 920.00 | 0.00 | 0.00 | 0.00 | 0.00 | 24.36 | 0.11 | not reached | 0 |
-| Fertilizer bridge: inputs -> Grain and Sugar | Networks III (3/3) | Water, Electricity, Minerals, Chemicals, Fertilizer, Grain, Sugar | 11645.00 | 920.00 | 0.00 | 0.00 | 0.00 | 0.00 | 40.03 | 0.10 | not reached | 0 |
-| Animal farm and bakery: inputs -> Cake, Premium Cake, and Meat Pie | Baseline | Water, Electricity, Minerals, Chemicals, Fertilizer, Grain, Fruit, Meat, Milk, Wool, Eggs, Cake, Premium Cake, Meat Pie | 22940.00 | 2161.00 | 0.00 | 0.00 | 0.00 | 0.00 | 28.11 | 0.13 | not reached | 0 |
-| Animal farm and bakery: inputs -> Cake, Premium Cake, and Meat Pie | Networks III (3/3) | Water, Electricity, Minerals, Chemicals, Fertilizer, Grain, Fruit, Meat, Milk, Wool, Eggs, Cake, Premium Cake, Meat Pie | 22940.00 | 2161.00 | 0.00 | 0.00 | 0.00 | 0.00 | 104.31 | 0.12 | 130 | 0 |
-| Construction: inputs -> Construction Materials | Baseline | Water, Electricity, Coal, Iron, Clay, Sand, Stone, Steel, Bricks, Cement, Reinforced Concrete, Construction Materials | 21865.00 | 1947.00 | 590.00 | 590.00 | 74.00 | 74.00 | -9.19 | 0.14 | not reached | 0 |
-| Construction: inputs -> Construction Materials | Networks III (3/3) | Water, Electricity, Coal, Iron, Clay, Sand, Stone, Steel, Bricks, Cement, Reinforced Concrete, Construction Materials | 21865.00 | 1947.00 | 590.00 | 590.00 | 74.00 | 74.00 | 127.84 | 0.13 | 164 | 0 |
-| Industrial Machines: inputs -> Industrial Machines | Baseline | Water, Electricity, Sand, Minerals, Chemicals, Coal, Iron, Copper, Gold, Plastic, Silicon, Steel, Electric Circuits, Advanced Components, Industrial Machines | 38210.00 | 2443.00 | 0.00 | 0.00 | 0.00 | 0.00 | -51.05 | 0.14 | not reached | 0 |
-| Industrial Machines: inputs -> Industrial Machines | Networks III (3/3) | Water, Electricity, Sand, Minerals, Chemicals, Coal, Iron, Copper, Gold, Plastic, Silicon, Steel, Electric Circuits, Advanced Components, Industrial Machines | 38210.00 | 2443.00 | 0.00 | 0.00 | 0.00 | 0.00 | 328.64 | 0.13 | 78 | 0 |
-
-## Market network portfolio payback (180 minutes)
-
-One continuously selling facility per recipe. Results sum the independent recipe simulations, while each network cost is paid once. This isolates company-wide research value; it is not a shared-market multi-facility simulation.
-
-| scenario | localDepth | localRegionalDiffusion | cumulativeResearchCost | portfolioNetProfit180m | incrementalNetProfit180m | incrementalMarginPerMinute | networkPaybackEstimateMinutes |
+| chain | primary output | facilities | setup cost (EUR) | market input cost (EUR) | margin 15m/60m/180m | window till unprofitable | facility payback |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Baseline | 1.0x | 1.00x | 0.00 | 6344.99 | 0.00 | 0.00 | n/a |
-| Networks I (1/1) | 1.2x | 1.15x | 1350.00 | 17912.75 | 11567.77 | 64.27 | 22 |
-| Networks III (3/3) | 1.9x | 1.50x | 19150.00 | 39229.25 | 32884.27 | 182.69 | 105 |
-| Networks V (5/5) | 3.1x | 2.00x | 179150.00 | 65857.69 | 59512.71 | 330.63 | 542 |
-| Networks X (10/10) | 8.0x | 4.00x | 21164150.00 | 110751.44 | 104406.45 | 580.04 | 36488 |
+| Staples: utilities -> Farm | Grain, Sugar | Small Utility Works x2, Farm x2 | 2199.00 | 2052.67 | 14.62/10.73/8.13 | not reached | not reached |
+| Extraction: utilities -> Mine | Coal, Iron, Copper | Small Utility Works x2, Mine x3 | 3860.00 | 8226.56 | 40.86/13.66/-1.54 | 46 | not reached |
+| Fertilizer bridge: quarry -> Grain and Sugar | Grain, Sugar | Small Utility Works x2, Quarry x1, Chemical Plant x2, Farm x2 | 12565.00 | 2497.43 | 54.15/3.60/-81.88 | 45 | not reached |
+| Fertilizer bridge: market inputs -> Grain and Sugar | Grain, Sugar | Small Utility Works x2, Chemical Plant x1, Farm x2 | 6678.00 | 3889.72 | 10.17/-3.53/0.26 | 62 | not reached |
+| Fertilizer: quarry -> Fertilizer | Fertilizer | Small Utility Works x2, Quarry x1, Chemical Plant x2 | 11763.00 | 375.04 | 48.79/-10.61/-73.42 | 41 | not reached |
+| Plastic: quarry -> Plastic | Plastic | Small Utility Works x2, Quarry x1, Chemical Plant x2 | 11758.00 | 466.93 | 57.32/-3.26/-67.41 | 41 | not reached |
+| Steel: mines -> Steel | Steel | Small Utility Works x2, Mine x2, Industrial Processing Factory x1 | 5311.00 | 4764.07 | 62.95/32.42/14.35 | 123 | not reached |
+| Poultry -> Cake | Cake | Small Utility Works x2, Quarry x1, Chemical Plant x2, Farm x1, Animal Farm x1, Bakery x1 | 16313.00 | 2865.27 | 123.39/67.09/-265.32 | 41 | not reached |
+| Cattle -> Meat Pie | Meat Pie | Small Utility Works x2, Quarry x1, Chemical Plant x2, Farm x1, Animal Farm x1, Bakery x1 | 16316.00 | 4027.45 | 85.47/38.78/-293.31 | 35 | not reached |
+| Animal farm and bakery: inputs -> Cake, Premium Cake, and Meat Pie | Cake, Premium Cake, Meat Pie | Small Utility Works x2, Quarry x1, Chemical Plant x2, Farm x2, Animal Farm x3, Bakery x3 | 25080.00 | 5159.75 | 248.05/162.56/-119.06 | 31 | not reached |
+| Construction: inputs -> Construction Materials | Construction Materials | Water Well x1, Power Plant x1, Mine x2, Quarry x3, Industrial Processing Factory x1, Construction Factory x4 | 25334.00 | 16314.11 | 247.79/236.24/134.37 | 1 | not reached |
+| Industrial Machines: inputs -> Industrial Machines | Industrial Machines | Water Well x1, Power Plant x1, Quarry x2, Chemical Plant x2, Mine x4, Electronics Factory x2, Industrial Processing Factory x2, Assembly Plant x1 | 42175.00 | 26550.42 | 622.74/385.39/-82.97 | 1 | not reached |
+| Construction Materials: market inputs -> Construction Materials | Construction Materials | Water Well x1, Power Plant x1, Construction Factory x1 | 6575.00 | 4559.16 | 219.02/24.29/-0.62 | 1 | not reached |
+| Industrial Machines: market inputs -> Industrial Machines | Industrial Machines | Water Well x1, Power Plant x1, Assembly Plant x1 | 11269.00 | 21738.16 | 98.36/-565.37/19.35 | 1 | 192 |
 

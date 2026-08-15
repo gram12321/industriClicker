@@ -3,7 +3,7 @@ import { MARKET_DIFFUSION_INTERVAL_MS, Market } from '@/game/market';
 import { getRecipe, type RecipeName } from '@/game/recipes';
 import { getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getRecipeResearchProjectId, getResearchProject } from '@/game/research';
 import { ResourceType } from '@/game/resources';
-import { FACILITIES, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_PRODUCTION_ORDER } from '@/game/facilities/facilityConstants';
+import { FACILITIES, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_PRODUCTION_ORDER, FACILITY_REPAIR_MATERIAL_COST_RATE } from '@/game/facilities/facilityConstants';
 import type { Facility } from '@/game/facilities/facility';
 import { FacilityCollection } from '@/game/facilities/facilityCollection';
 import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, getRecipeProductionConditionLoss, type ProductionOutput } from '@/game/facilities/facilityProduction';
@@ -57,8 +57,8 @@ export type RecipeEconomyChainFacility = {
 export type RecipeEconomyChainScenario = {
   facilities: readonly RecipeEconomyChainFacility[];
   durationMinutes: number;
-  /** Resources sold after all same-minute chain production has consumed its inputs. */
-  sellResourceTypes: readonly ResourceType[];
+  /** Primary goods whose chain economics the scenario is intended to assess. */
+  primaryOutputResourceTypes: readonly ResourceType[];
   completedResearchProjectIds?: readonly string[];
   /**
    * Consumes the construction inputs needed to build all participating
@@ -81,7 +81,9 @@ export type RecipeEconomyChainResult = {
   fulfilledConstructionMaterialsDemand: number;
   industrialMachinesDemand: number;
   fulfilledIndustrialMachinesDemand: number;
-  finalSoldUnitPrices: Partial<Record<ResourceType, number>>;
+  constructionDemandCost: number;
+  fulfilledConstructionDemandCost: number;
+  breakEvenMinute: number | null;
   stalledFacilityMinutes: number;
 };
 
@@ -177,9 +179,14 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
     .reduce((total, output) => total + output.amount * initialView.outputMultiplier * market.getLocalPrice(output.resourceType), 0);
   const initialInputCostPerMinute = initialCyclesPerMinute * recipe.inputs
     .reduce((total, input) => total + input.amount * market.getLocalPrice(input.resourceType), 0);
+  const initialRepairCost = FACILITY_REPAIR_MATERIAL_COST_RATE * (
+    definition.landCost
+    + definition.constructionMaterialsCost * market.getLocalPrice(ResourceType.ConstructionMaterials)
+    + definition.industrialMachinesCost * market.getLocalPrice(ResourceType.IndustrialMachines)
+  );
   const initialMaintenancePerMinute = (
     FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE + initialCyclesPerMinute * getRecipeProductionConditionLoss(recipe)
-  ) * definition.constructionMaterialsCost * 0.9 * market.getLocalPrice(ResourceType.ConstructionMaterials);
+  ) * initialRepairCost;
   const initialNetMarginPerMinute = initialRevenuePerMinute - initialInputCostPerMinute - initialMaintenancePerMinute;
   let cycleOperatingMargin = 0;
 
@@ -280,12 +287,14 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
 /**
  * Simulates a connected production chain in one shared local market. Facilities
  * run in normal production order, so an upstream output can supply a downstream
- * facility during the same minute before only designated final goods are sold.
+ * facility during the same minute. At the end of each minute, it retains only
+ * enough shared inventory for the following minute's chain inputs and sells
+ * all other produced goods to the local market.
  */
 export function simulateRecipeEconomyChain({
   facilities: chainFacilities,
   durationMinutes,
-  sellResourceTypes,
+  primaryOutputResourceTypes: _primaryOutputResourceTypes,
   completedResearchProjectIds = [],
   includeConstructionInputsDemand = false,
 }: RecipeEconomyChainScenario): RecipeEconomyChainResult {
@@ -295,8 +304,8 @@ export function simulateRecipeEconomyChain({
   const market = new Market();
   market.setLocalMarketDepthMultiplier(getLocalMarketDepthMultiplier(completedResearchProjectIds));
   market.setLocalRegionalDiffusionMultiplier(getLocalRegionalDiffusionMultiplier(completedResearchProjectIds));
-  const sellableResources = new Set(sellResourceTypes);
   const activeFacilities: Facility[] = [];
+  const producedResourceTypes = new Set<ResourceType>();
   let facilityInvestmentCost = 0;
   const researchedRecipes = new Set<RecipeName>();
   let recipeResearchInvestmentCost = 0;
@@ -311,6 +320,7 @@ export function simulateRecipeEconomyChain({
       researchedRecipes.add(chainFacility.recipeName);
       recipeResearchInvestmentCost += getResearchProject(getRecipeResearchProjectId(chainFacility.recipeName))?.cost ?? 0;
     }
+    for (const output of getRecipe(chainFacility.recipeName).outputs) producedResourceTypes.add(output.resourceType);
     for (let index = 0; index < count; index += 1) {
       facilities.build(facilityType);
       const facility = facilities.getAllByType(facilityType).at(-1)!;
@@ -331,10 +341,15 @@ export function simulateRecipeEconomyChain({
   let outstandingMaintenanceCost = 0;
   let fulfilledConstructionMaterialsDemand = 0;
   let fulfilledIndustrialMachinesDemand = 0;
+  const constructionDemandCost = includeConstructionInputsDemand
+    ? constructionMaterialsDemand * market.getLocalPrice(ResourceType.ConstructionMaterials)
+      + industrialMachinesDemand * market.getLocalPrice(ResourceType.IndustrialMachines)
+    : 0;
+  let fulfilledConstructionDemandCost = 0;
   let cumulativeNetProfit = 0;
   let paybackMinute: number | null = null;
+  let breakEvenMinute: number | null = null;
   let stalledFacilityMinutes = 0;
-  const finalSoldUnitPrices: Partial<Record<ResourceType, number>> = {};
 
   for (let minute = 1; minute <= minutes; minute += 1) {
     const revenueBefore = totalRevenue;
@@ -374,26 +389,44 @@ export function simulateRecipeEconomyChain({
       }
     }
 
-    for (const output of outputs) {
-      if (!sellableResources.has(output.resourceType)) continue;
-      const trade = market.sellToLocal(output.resourceType, output.amount, inventory.getQuality(output.resourceType));
+    const nextMinuteInputDemand = activeFacilities.reduce((demand, facility) => {
+      const recipeName = facility.getView().activeRecipeName;
+      if (!recipeName) return demand;
+      const recipe = getRecipe(recipeName);
+      const work = calculateFacilityEffectiveWork(facility.getView(), BASE_WORK_PER_MINUTE);
+      const progress = facility.getView().recipeProgress[recipeName] ?? 0;
+      const cyclesToStart = Math.max(0, Math.ceil((progress + work - WORK_COMPLETION_EPSILON) / recipe.requiredWork) - (progress > 0 ? 1 : 0));
+      for (const input of recipe.inputs) {
+        demand[input.resourceType] = (demand[input.resourceType] ?? 0) + input.amount * cyclesToStart;
+      }
+      return demand;
+    }, {} as Partial<Record<ResourceType, number>>);
+    for (const resourceType of producedResourceTypes) {
+      const surplus = Math.max(0, inventory.getAmount(resourceType) - (nextMinuteInputDemand[resourceType] ?? 0));
+      if (surplus <= 0) continue;
+      const trade = market.sellToLocal(resourceType, surplus, inventory.getQuality(resourceType));
       if (!trade.success) continue;
-      inventory.remove(output.resourceType, output.amount);
+      inventory.remove(resourceType, trade.amount);
       totalRevenue += trade.amount * trade.unitPrice;
-      finalSoldUnitPrices[output.resourceType] = trade.unitPrice;
     }
 
     if (includeConstructionInputsDemand && constructionMaterialsDemand > 0) {
       const targetDemand = constructionMaterialsDemand * minute / minutes;
       const requestedAmount = targetDemand - fulfilledConstructionMaterialsDemand;
       const trade = market.buyFromLocal(ResourceType.ConstructionMaterials, requestedAmount);
-      if (trade.success) fulfilledConstructionMaterialsDemand += trade.amount;
+      if (trade.success) {
+        fulfilledConstructionMaterialsDemand += trade.amount;
+        fulfilledConstructionDemandCost += trade.amount * trade.unitPrice;
+      }
     }
     if (includeConstructionInputsDemand && industrialMachinesDemand > 0) {
       const targetDemand = industrialMachinesDemand * minute / minutes;
       const requestedAmount = targetDemand - fulfilledIndustrialMachinesDemand;
       const trade = market.buyFromLocal(ResourceType.IndustrialMachines, requestedAmount);
-      if (trade.success) fulfilledIndustrialMachinesDemand += trade.amount;
+      if (trade.success) {
+        fulfilledIndustrialMachinesDemand += trade.amount;
+        fulfilledConstructionDemandCost += trade.amount * trade.unitPrice;
+      }
     }
 
     for (const facility of activeFacilities) {
@@ -414,6 +447,7 @@ export function simulateRecipeEconomyChain({
     ), 0);
     const minuteMaintenanceCost = repairSpend - repairSpendBefore + outstandingMaintenanceCost - maintenanceBefore;
     const minuteNetMargin = totalRevenue - revenueBefore - (totalInputCost - inputCostBefore) - minuteMaintenanceCost;
+    if (breakEvenMinute === null && outputs.length > 0 && minuteNetMargin <= 0) breakEvenMinute = minute;
     cumulativeNetProfit += minuteNetMargin;
     if (paybackMinute === null && cumulativeNetProfit >= facilityInvestmentCost + recipeResearchInvestmentCost) paybackMinute = minute;
 
@@ -436,7 +470,9 @@ export function simulateRecipeEconomyChain({
     fulfilledConstructionMaterialsDemand,
     industrialMachinesDemand: includeConstructionInputsDemand ? industrialMachinesDemand : 0,
     fulfilledIndustrialMachinesDemand,
-    finalSoldUnitPrices,
+    constructionDemandCost,
+    fulfilledConstructionDemandCost,
+    breakEvenMinute,
     stalledFacilityMinutes,
   };
 }

@@ -13,10 +13,10 @@ The catalogue in `game/resources/resourceConstants.ts` is the source of truth fo
 | Grain | Farm: Grow Grain | 1 Water, 1 Electricity, 0.025 Fertilizer |
 | Sugar | Farm: Grow Sugar | 3 Water, 0.04 Fertilizer |
 | Fruit | Farm: Grow Fruit | 2 Water, 0.03 Fertilizer |
-| Meat | Animal Farm: Raise Cattle / Sheep / Chicken | 12 / 8 / 4 Grain, 8 / 6 / 4 Water, 5 / 4 / 3 Electricity |
-| Milk | Animal Farm: Raise Cattle | 12 Grain, 8 Water, 5 Electricity |
-| Wool | Animal Farm: Raise Sheep | 8 Grain, 6 Water, 4 Electricity |
-| Eggs | Animal Farm: Raise Chicken | 4 Grain, 4 Water, 3 Electricity |
+| Meat | Animal Farm: Raise Cattle / Sheep / Chicken | 3 / 2 / 1 Grain, 2 / 1.5 / 1 Water, 1.25 / 1 / 0.75 Electricity |
+| Milk | Animal Farm: Raise Cattle | 3 Grain, 2 Water, 1.25 Electricity |
+| Wool | Animal Farm: Raise Sheep | 2 Grain, 1.5 Water, 1 Electricity |
+| Eggs | Animal Farm: Raise Chicken | 1 Grain, 1 Water, 0.75 Electricity |
 | Bread | Bakery: Bake Bread | 1.5 Grain, 1 Water, 1 Electricity |
 | Cake | Bakery: Bake Cake | 1 Grain, 0.5 Eggs, 2 Water, 2 Electricity |
 | Premium Cake | Bakery: Bake Premium Cake | 1 Grain, 0.5 Eggs, 1 Fruit, 1 Milk, 2 Water, 2 Electricity |

@@ -85,8 +85,8 @@ describe('advanceAllFacilityProduction', () => {
     const outputs = advanceAllFacilityProduction(facilities, inventory, () => 0.24);
 
     expect(outputs.map((output) => output.recipeName)).toEqual([RecipeName.GrowGrain, RecipeName.GrowGrain, RecipeName.GrowSugar]);
-    expect(inventory.getAmount(ResourceType.Grain)).toBeCloseTo(2.4);
-    expect(inventory.getAmount(ResourceType.Sugar)).toBeCloseTo(1.2);
+    expect(inventory.getAmount(ResourceType.Grain)).toBeCloseTo(2.7);
+    expect(inventory.getAmount(ResourceType.Sugar)).toBeCloseTo(1.4);
     expect(inventory.getAmount(ResourceType.Water)).toBe(0);
     expect(inventory.getAmount(ResourceType.Electricity)).toBe(0);
     expect(facility.getView().activeRecipeName).toBe(RecipeName.GrowGrain);
