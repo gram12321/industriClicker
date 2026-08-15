@@ -1,7 +1,7 @@
 import { calculateAsymmetricalScaler01, normalizeWithControlPoints01 } from '@/game/core/math/scaling';
 import type { EconomyPhase } from '@/game/finance';
 import { getResource, type ResourceType } from '@/game/resources';
-import { SALES_CUSTOMER_DOMAIN_PROFILES, SALES_CUSTOMER_TYPE_PROFILES, SALES_ECONOMY_MULTIPLIERS, SALES_ORDER_BASE_ACQUISITION_CHANCE_PER_MINUTE, SALES_ORDER_BUNDLE_PRESTIGE_CONTROL_POINTS, SALES_ORDER_DURATION_MS, SALES_ORDER_MARKET_VOLUME_SCALING, SALES_ORDER_MAXIMUM_QUANTITY, SALES_ORDER_MAXIMUM_GLOBAL_PREMIUM, SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP, SALES_ORDER_MINIMUM_GLOBAL_PREMIUM, SALES_ORDER_MINIMUM_QUANTITY, SALES_ORDER_PENDING_PENALTY_PER_OPEN_ORDER, SALES_ORDER_PRESTIGE_DISCOVERY_BASE, SALES_ORDER_PRESTIGE_DISCOVERY_SCALE, SALES_ORDER_PRESSURE_OFFER_CHANCE, SALES_ORDER_VOLUME_SCALING } from './salesConstants';
+import { SALES_CUSTOMER_DOMAIN_PROFILES, SALES_CUSTOMER_TYPE_PROFILES, SALES_ECONOMY_MULTIPLIERS, SALES_ORDER_BASE_ACQUISITION_CHANCE_PER_MINUTE, SALES_ORDER_BUNDLE_PRESTIGE_CONTROL_POINTS, SALES_ORDER_DURATION_MS, SALES_ORDER_MARKET_VOLUME_SCALING, SALES_ORDER_MAXIMUM_QUANTITY, SALES_ORDER_MAXIMUM_GLOBAL_PREMIUM, SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP, SALES_ORDER_MINIMUM_GLOBAL_PREMIUM, SALES_ORDER_MINIMUM_QUANTITY, SALES_ORDER_PENDING_PENALTY_PER_OPEN_ORDER, SALES_ORDER_PRESTIGE_DISCOVERY_BASE, SALES_ORDER_PRESTIGE_DISCOVERY_SCALE, SALES_ORDER_PRESSURE_OFFER_CHANCE, SALES_ORDER_SELECTION_MAX_RELATIONSHIP_MULTIPLIER, SALES_ORDER_SELECTION_STOCK_COVERAGE_CAP, SALES_ORDER_VOLUME_SCALING } from './salesConstants';
 import { SALES_CUSTOMER_CATALOGUE_VERSION, SALES_CUSTOMER_RELATIONSHIP, SALES_CUSTOMER_WORLD_SEED, advanceSalesCustomerRelationship, calculateSalesCustomerRelationshipBaseline, calculateSalesCustomerRelationshipChange, createSalesCustomerState, getSalesCustomerCatalogue, getSalesResourceProfile, type SalesCustomerDefinition, type SalesCustomerState } from './salesCustomers';
 import { getDeterministicUnitInterval, pickDeterministicWeighted } from './salesRandom';
 
@@ -11,19 +11,31 @@ export type SalesOrder = { id: string; status: SalesOrderStatus; customerId: str
 export type SalesOrdersSnapshot = { offered: SalesOrder[]; completed: SalesOrder[]; customerStates: SalesCustomerState[]; nextOrderNumber: number; worldSeed: string; catalogueVersion: number };
 export type SalesOrderGenerationInput = { currentGameTimeMs: number; maximumOpenOrders: number; maximumOrderValue: number; companyPrestige: number; economyPhase: EconomyPhase; inventoryByResource: Readonly<Record<ResourceType, number>>; globalPrices: Readonly<Record<ResourceType, number>>; globalSupplies: Readonly<Record<ResourceType, number>>; candidateResourceTypes: readonly ResourceType[]; getResourceWeight: (resourceType: ResourceType) => number; bidResearchMultiplier: number };
 export type SalesOrderAcquisitionDetails = { baseChance: number; prestigeDiscoveryMultiplier: number; pendingMultiplier: number; economyMultiplier: number; chance: number };
+export type SalesOrderAcquisitionInput = { openOrderCount: number; maximumOpenOrders: number; companyPrestige: number; economyPhase: EconomyPhase; hasEligibleInventory: boolean };
 export type SalesOrderEligibilityInput = Pick<SalesOrderGenerationInput, 'candidateResourceTypes' | 'inventoryByResource' | 'globalPrices' | 'maximumOrderValue'>;
+export type SalesOrderSelectionWeightInput = {
+  inventoryAmount: number;
+  standardOrderLot: number;
+  productionWeight: number;
+  customerMarketShare: number;
+  domainFrequency: number;
+  customerTypeFrequency: number;
+  relationship: number;
+};
 
 const clamp = (value: number, minimum: number, maximum: number): number => Math.max(minimum, Math.min(maximum, value));
 function cloneOrder(order: SalesOrder): SalesOrder { return { ...order, lines: order.lines.map((line) => ({ ...line })) }; }
 function cloneState(state: SalesCustomerState): SalesCustomerState { return { ...state }; }
 function cloneCustomer(customer: SalesCustomerDefinition): SalesCustomerDefinition { return { ...customer, operatingDomains: [...customer.operatingDomains] }; }
 
-export function calculateSalesOrderAcquisitionChance(input: { openOrderCount: number; companyPrestige: number; economyPhase: EconomyPhase; hasEligibleInventory: boolean }): number {
+export function calculateSalesOrderAcquisitionChance(input: SalesOrderAcquisitionInput): number {
   return calculateSalesOrderAcquisitionDetails(input).chance;
 }
-export function calculateSalesOrderAcquisitionDetails(input: { openOrderCount: number; companyPrestige: number; economyPhase: EconomyPhase; hasEligibleInventory: boolean }): SalesOrderAcquisitionDetails {
+export function calculateSalesOrderAcquisitionDetails(input: SalesOrderAcquisitionInput): SalesOrderAcquisitionDetails {
   const discovery = SALES_ORDER_PRESTIGE_DISCOVERY_BASE + Math.max(0, input.companyPrestige) / (Math.max(0, input.companyPrestige) + SALES_ORDER_PRESTIGE_DISCOVERY_SCALE) * (1 - SALES_ORDER_PRESTIGE_DISCOVERY_BASE);
-  const pending = Math.max(0.08, 1 - input.openOrderCount * SALES_ORDER_PENDING_PENALTY_PER_OPEN_ORDER);
+  const pending = input.openOrderCount >= input.maximumOpenOrders
+    ? 0
+    : Math.max(0.08, 1 - input.openOrderCount * SALES_ORDER_PENDING_PENALTY_PER_OPEN_ORDER);
   const economyMultiplier = SALES_ECONOMY_MULTIPLIERS[input.economyPhase].acquisition;
   return { baseChance: SALES_ORDER_BASE_ACQUISITION_CHANCE_PER_MINUTE, prestigeDiscoveryMultiplier: discovery, pendingMultiplier: pending, economyMultiplier, chance: input.hasEligibleInventory ? clamp(SALES_ORDER_BASE_ACQUISITION_CHANCE_PER_MINUTE * discovery * pending * economyMultiplier, 0, 0.95) : 0 };
 }
@@ -37,6 +49,22 @@ export function getEligibleSalesOrderResourceTypes(input: SalesOrderEligibilityI
       && globalPrice > 0
       && standardOrderLot * globalPrice <= maximumOrderValue;
   });
+}
+export function calculateSalesOrderStockCoverageWeight(inventoryAmount: number, standardOrderLot: number): number {
+  if (!Number.isFinite(inventoryAmount) || !Number.isFinite(standardOrderLot) || standardOrderLot <= 0) return 0;
+  const lotCoverage = Math.max(0, inventoryAmount) / standardOrderLot;
+  return Math.sqrt(Math.min(SALES_ORDER_SELECTION_STOCK_COVERAGE_CAP, lotCoverage));
+}
+export function calculateSalesOrderSelectionWeight(input: SalesOrderSelectionWeightInput): number {
+  const stockCoverageWeight = calculateSalesOrderStockCoverageWeight(input.inventoryAmount, input.standardOrderLot);
+  const relationshipMultiplier = 1 + clamp(input.relationship, 0, 1)
+    * (SALES_ORDER_SELECTION_MAX_RELATIONSHIP_MULTIPLIER - 1);
+  return Math.max(0, input.productionWeight)
+    * stockCoverageWeight
+    * Math.max(0, input.customerMarketShare)
+    * Math.max(0, input.domainFrequency)
+    * Math.max(0, input.customerTypeFrequency)
+    * relationshipMultiplier;
 }
 export function calculateSalesOrderTargetValue(input: { baseTargetValue: number; companyPrestige: number; relationship: number }): number {
   const prestige = Math.max(0, input.companyPrestige); const prestigeProgress = prestige / (prestige + SALES_ORDER_VOLUME_SCALING.prestigeScale);
@@ -107,14 +135,47 @@ export class SalesOrders {
     this.advanceRelationships(input.currentGameTimeMs, input.companyPrestige); const ordersExpired = this.expireOrders(input.currentGameTimeMs, input.companyPrestige);
     const maximumOrderValue = Math.max(SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP, input.maximumOrderValue);
     const eligibleResources = getEligibleSalesOrderResourceTypes({ ...input, maximumOrderValue });
-    const acquisitionChance = calculateSalesOrderAcquisitionChance({ openOrderCount: this.offered.length, companyPrestige: input.companyPrestige, economyPhase: input.economyPhase, hasEligibleInventory: eligibleResources.length > 0 });
+    const acquisitionChance = calculateSalesOrderAcquisitionChance({ openOrderCount: this.offered.length, maximumOpenOrders: input.maximumOpenOrders, companyPrestige: input.companyPrestige, economyPhase: input.economyPhase, hasEligibleInventory: eligibleResources.length > 0 });
     if (this.offered.length >= input.maximumOpenOrders || eligibleResources.length === 0 || getDeterministicUnitInterval(`acquire:${this.worldSeed}:${this.nextOrderNumber}:${input.currentGameTimeMs}`) >= acquisitionChance) return { ordersCreated: 0, ordersExpired, acquisitionChance };
-    const primaryResource = pickDeterministicWeighted(eligibleResources.map((value) => ({ value, weight: Math.max(0.01, input.getResourceWeight(value)) })), `resource:${this.nextOrderNumber}`); if (!primaryResource) return { ordersCreated: 0, ordersExpired, acquisitionChance };
-    const primaryDomain = getSalesResourceProfile(primaryResource).domain; const customer = pickDeterministicWeighted(this.getCustomerCatalogueInternal().filter((candidate) => candidate.domain === primaryDomain).map((value) => ({ value, weight: value.marketShare * SALES_CUSTOMER_DOMAIN_PROFILES[value.domain].frequency * SALES_CUSTOMER_TYPE_PROFILES[value.customerType].frequencyMultiplier })), `customer:${this.nextOrderNumber}`); if (!customer) return { ordersCreated: 0, ordersExpired, acquisitionChance };
-    const state = this.getCustomerState(customer.id, input.currentGameTimeMs, input.companyPrestige); const compatibleResources = eligibleResources.filter((resourceType) => customer.operatingDomains.includes(getSalesResourceProfile(resourceType).domain));
+    const customerCatalogue = this.getCustomerCatalogueInternal();
+    const customerResourcePair = pickDeterministicWeighted(eligibleResources.flatMap((resourceType) => {
+      const resourceProfile = getSalesResourceProfile(resourceType);
+      return customerCatalogue
+        .filter((customer) => customer.domain === resourceProfile.domain)
+        .map((customer) => {
+          const state = this.getCustomerState(customer.id, input.currentGameTimeMs, input.companyPrestige);
+          return {
+            value: { customer, resourceType, state },
+            weight: calculateSalesOrderSelectionWeight({
+              inventoryAmount: input.inventoryByResource[resourceType],
+              standardOrderLot: resourceProfile.standardOrderLot,
+              productionWeight: input.getResourceWeight(resourceType),
+              customerMarketShare: customer.marketShare,
+              domainFrequency: SALES_CUSTOMER_DOMAIN_PROFILES[customer.domain].frequency,
+              customerTypeFrequency: SALES_CUSTOMER_TYPE_PROFILES[customer.customerType].frequencyMultiplier,
+              relationship: state.relationship,
+            }),
+          };
+        });
+    }), `customer-resource:${this.nextOrderNumber}`);
+    if (!customerResourcePair) return { ordersCreated: 0, ordersExpired, acquisitionChance };
+    const { customer, resourceType: primaryResource, state } = customerResourcePair;
+    const compatibleResources = eligibleResources.filter((resourceType) => customer.operatingDomains.includes(getSalesResourceProfile(resourceType).domain));
     const lineCount = calculateSalesOrderBundleLineCount({ candidateCount: compatibleResources.length, companyPrestige: input.companyPrestige, relationship: state.relationship, marketShare: customer.marketShare, bundleAppetite: SALES_CUSTOMER_TYPE_PROFILES[customer.customerType].bundleAppetite, seed: `bundle:${this.nextOrderNumber}` });
     const selectedResources: ResourceType[] = [primaryResource]; const remaining = compatibleResources.filter((resourceType) => resourceType !== primaryResource);
-    while (selectedResources.length < lineCount && remaining.length > 0) { const next = pickDeterministicWeighted(remaining.map((value) => ({ value, weight: Math.max(0.01, input.getResourceWeight(value)) })), `bundle:${this.nextOrderNumber}:${selectedResources.length}`); if (!next) break; selectedResources.push(next); remaining.splice(remaining.indexOf(next), 1); }
+    while (selectedResources.length < lineCount && remaining.length > 0) {
+      const next = pickDeterministicWeighted(remaining.map((value) => ({
+        value,
+        weight: Math.max(0.01, input.getResourceWeight(value))
+          * calculateSalesOrderStockCoverageWeight(
+            input.inventoryByResource[value],
+            getSalesResourceProfile(value).standardOrderLot,
+          ),
+      })), `bundle:${this.nextOrderNumber}:${selectedResources.length}`);
+      if (!next) break;
+      selectedResources.push(next);
+      remaining.splice(remaining.indexOf(next), 1);
+    }
     const domain = SALES_CUSTOMER_DOMAIN_PROFILES[customer.domain]; const type = SALES_CUSTOMER_TYPE_PROFILES[customer.customerType]; const baseTargetValue = (domain.targetOrderValue[0] + (domain.targetOrderValue[1] - domain.targetOrderValue[0]) * getDeterministicUnitInterval(`value:${this.nextOrderNumber}`)) * (type.targetValueMultiplier[0] + (type.targetValueMultiplier[1] - type.targetValueMultiplier[0]) * getDeterministicUnitInterval(`type-value:${this.nextOrderNumber}`));
     const targetValue = Math.min(maximumOrderValue, calculateSalesOrderTargetValue({ baseTargetValue, companyPrestige: input.companyPrestige, relationship: state.relationship })); const lines: SalesOrderLine[] = []; let remainingOrderValue = maximumOrderValue;
     for (const resourceType of selectedResources) {

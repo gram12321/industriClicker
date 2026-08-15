@@ -5,6 +5,7 @@ import type { Market } from '@/game/market';
 import { calculateCompanyPrestigeSummary, type PrestigeLedger } from '@/game/prestige';
 import type { ProductionStatistics } from '@/game/achievements';
 import {
+  getMaximumOpenSalesOrders,
   getSalesOfferProducedResourceWeight,
   getSalesOfferResourceTypes,
   getSalesOrderMaximumCompanyValueFraction,
@@ -24,7 +25,7 @@ export type SalesOrderAcquisitionStatus = SalesOrderAcquisitionDetails & {
   maximumOrderValue: number;
 };
 
-export type SalesOrderAcquisitionInput = {
+export type SalesOrderAcquisitionStatusInput = {
   facilities: FacilityCollection;
   finance: Finance;
   inventory: Inventory;
@@ -38,7 +39,7 @@ export type SalesOrderAcquisitionInput = {
 
 /** Provides the UI and simulation with one authoritative sales-offer eligibility state. */
 export function getSalesOrderAcquisitionStatus(
-  input: SalesOrderAcquisitionInput,
+  input: SalesOrderAcquisitionStatusInput,
 ): SalesOrderAcquisitionStatus {
   const completedResearchProjectIds = input.research.getCompletedProjectIds();
   const maximumOrderValue = Math.max(
@@ -69,6 +70,7 @@ export function getSalesOrderAcquisitionStatus(
   return {
     ...calculateSalesOrderAcquisitionDetails({
       openOrderCount: input.salesOrders.getOfferedOrders().length,
+      maximumOpenOrders: getMaximumOpenSalesOrders(completedResearchProjectIds),
       companyPrestige: calculateCompanyPrestigeSummary(
         input.prestige.getEvents(),
         input.currentGameTimeMs,

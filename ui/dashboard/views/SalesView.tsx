@@ -25,6 +25,7 @@ export function SalesView({ companyPrestige, customerPipelineProgress, currentGa
   const openOrders = salesOrders.getOfferedOrders();
   const closedOrders = salesOrders.getCompletedOrders();
   const count = openOrders.length;
+  const isAtCapacity = count >= maximumOpenOrders;
   const { hasEligibleInventory } = salesOrderAcquisition;
   const acquisition = salesOrderAcquisition;
   const hasPipelineOverflow = customerPipelineProgress > 1;
@@ -37,7 +38,7 @@ export function SalesView({ companyPrestige, customerPipelineProgress, currentGa
     <SectionHeading eyebrow="SALES" title="Customer orders" subtitle="Inventory-ready orders are shaped by customer type, relationships, prestige, and the economy." />
     <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
       <Text style={styles.cardKicker}>CUSTOMER ACQUISITION</Text>
-      {hasEligibleInventory ? <Text variant="titleMedium"><Text style={{ color: getColorClass(acquisition.chance) }}>{`${formatNumber(acquisition.chance * 100, { smartDecimals: true })}%`}</Text>{` / min · ~${formatNumber(calculateSalesOrderEstimatedWaitMinutes(acquisition.chance), { smartDecimals: true })} min`}</Text> : <Text variant="titleMedium">Inventory needed for offers</Text>}
+      {isAtCapacity ? <Text variant="titleMedium">Capacity full · 0% / min</Text> : hasEligibleInventory ? <Text variant="titleMedium"><Text style={{ color: getColorClass(acquisition.chance) }}>{`${formatNumber(acquisition.chance * 100, { smartDecimals: true })}%`}</Text>{` / min · ~${formatNumber(calculateSalesOrderEstimatedWaitMinutes(acquisition.chance), { smartDecimals: true })} min`}</Text> : <Text variant="titleMedium">Inventory needed for offers</Text>}
       <View style={localStyles.factorRow}><Factor description="Prestige discovery" icon={APP_ICONS.prestige} value={acquisition.prestigeDiscoveryMultiplier} /><Factor description="Open-order capacity" icon={APP_ICONS.openOrders} value={acquisition.pendingMultiplier} /><Factor color={economyColor} description={`${economyPhase} economy`} icon={ECONOMY_PHASE_ICONS[economyPhase]} value={acquisition.economyMultiplier} /></View>
       <View accessibilityLabel={`Customer pipeline ${formatNumber(Math.min(customerPipelineProgress, 1) * 100, { decimals: 0 })}%`} style={styles.customerPipelineProgressTrack}><ProgressBar accessible={false} color={getColorClass(Math.min(customerPipelineProgress, 1))} progress={Math.min(customerPipelineProgress, 1)} style={styles.customerPipelineProgressBar} />{hasPipelineOverflow && <View pointerEvents="none" style={[styles.customerPipelineOverflow, { width: `${pipelineOverflowProgress * 100}%` }]} />}</View>
     </Card.Content></Card>
