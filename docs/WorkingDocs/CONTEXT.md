@@ -10,6 +10,9 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Resource | A typed item the player can gain, spend, transform, and hold in inventory. |
 | Grain, Bread, Water, Electricity, Sugar, Fruit, Eggs, Meat, Milk, Wool, Cake, Premium Cake, Meat Pie, Coal, Iron, Copper, Gold, Minerals, Steel, Electric Circuits, Chemicals, Fertilizer, Plastic, Silicon, Advanced Components, Industrial Machines, Bricks, Cement, Reinforced Concrete, Construction Materials, Sand, Clay, Stone | Current resource names. |
 | Inventory | Player-owned resource quantities and their associated quality. |
+| Resource flow | A categorized, signed change to a player-owned resource: facility output/input, market trade, customer-order delivery, facility spending, or reward. |
+| Inventory flow period | The shared Inventory reporting window: last 15 seconds, 1 minute, 15 minutes, 1 hour, or all company time. It uses foreground logical game time. |
+| Facility maintenance statistics | Lifetime repaired-condition, largest-repair, and repair-value facts owned by Facilities. |
 | Resource quality | A property of an inventory entry; its gameplay rule is not yet designed. |
 | Logistics multiplier | A resource catalogue value for physical shipping, storage, and market-network constraints on adjacent-market diffusion. |
 | Value-density multiplier | A resource catalogue value for the economic value of moving a resource relative to its transport burden. |
@@ -33,7 +36,7 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Credit rating | A derived score and grade based on asset strength, liquidity, company age, and loan-payment history. |
 | Lender availability | A per-lender eligibility and borrowing-cap calculation derived from the company's assets, credit score, outstanding debt, lender market exposure, and lender contract cap. |
 | Lender search | A paid, foreground-time finance activity. Its fee and work requirement scale with offer count and how tightly lender type, amount, and term are constrained; matching offers appear only when the work completes. |
-| Economy phase | The persistent crash, recession, stable, expansion, or boom state. It changes deterministically every 10 foreground minutes with a bias toward stable and adjusts future loan interest offers. |
+| Economy phase | The persistent crash, recession, stable, expansion, or boom state. It changes deterministically every 10 foreground minutes with a bias toward stable. It adjusts new customer-order frequency, new customer bid premiums, and future loan interest offers. |
 | Customer order | A customer-specific, atomic bundle of one or more inventory-ready resource lines, with locked global reference prices, bids, premiums, market-pressure volume multipliers, lot-sized quantities, expiry, and full-fulfilment requirement. The domain target value scales with company prestige and receives a modest relationship volume bonus; live global shortage or oversupply can then adjust a line's requested lots within a bounded range, but its reward cannot exceed the derived company-value cap. An order is not a future contract. |
 | Customer catalogue | A deterministic local stand-in for the future shared customer registry. Each domain generates a variable number of buyers until its market share reaches 100%, using a skewed, domain-scaled market-share draw. Definitions include a home domain, customer type, generated operating domains, market share, purchasing power, and bid profile. Company-specific relationship and order history remain in the company snapshot. |
 | Customer type | A buyer-behaviour profile separate from a home domain. Private Customer, Retail Chain, Construction Contractor, Industrial Enterprise, Utility Operator, and Government Procurement control frequency, target-value tendency, global premium tendency, bundle appetite, market-share tendency, and allowed operating domains. |
@@ -51,7 +54,7 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Prestige event | A company-level prestige source that may decay with active foreground time. |
 | Achievement | A durable company milestone defined in code and unlocked once when its typed condition is met. |
 | Achievement unlock | The persisted achievement ID and logical foreground time at which its condition was first met. |
-| Production statistics | Lifetime facility output totals by resource, recorded only when a recipe completes output. |
+| Lifetime facility output | The all-time `facility-output` totals in Resource Flow, recorded only when a recipe completes output. Achievements and sales targeting consume these totals. |
 | Progression gate | A pure all-of requirement check over achievements, current prestige, completed research, and a starting condition. |
 | Research project | A code-defined, one-time company project with an up-front cost, foreground duration, requirements, and completion effect. Recipe research durations are three times their base duration. |
 | Active research | The one paid research project currently accumulating foreground milliseconds for its company, with its effective duration retained when it starts. |

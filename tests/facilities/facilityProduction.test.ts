@@ -181,6 +181,17 @@ describe('advanceAllFacilityProduction', () => {
     expect(inventory.getAmount(ResourceType.Grain)).toBe(getRecipe(RecipeName.GrowGrain).outputs[0].amount);
   });
 
+  it('reports recipe inputs when a production cycle begins', () => {
+    const { facilities } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    const inventory = new Inventory();
+    addRecipeInputs(inventory, RecipeName.GrowGrain, 1);
+    const consumed = [] as Array<{ resourceType: ResourceType; amount: number }>;
+
+    advanceAllFacilityProduction(facilities, inventory, () => 0.03, (input) => consumed.push(input));
+
+    expect(consumed).toEqual(getRecipe(RecipeName.GrowGrain).inputs);
+  });
+
   it('applies the output upgrade when a cycle completes', () => {
     const { facilities, facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
     facility.upgradeOutput();

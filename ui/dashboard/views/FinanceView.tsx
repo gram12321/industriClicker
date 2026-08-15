@@ -964,7 +964,7 @@ function Funding({
         <Panel title="LENDER SEARCH">
           <Text style={s.hint}>
             Credit rating affects lender eligibility, borrowing limits, rates,
-            and origination fees. Economy phase affects offered rates only.
+            and origination fees. In finance, economy phase affects offered rates only.
           </Text>
           <Row
             label={`Economy: ${data.economyPhase}`}
@@ -1071,7 +1071,7 @@ function Funding({
           />
           <Text style={s.hint}>
             Credit affects lender eligibility, limits, rates, and origination
-            fees. Economy affects offered rates only.
+            fees. In finance, economy affects offered rates only.
           </Text>
           <Button
             disabled={!!activeSearch}

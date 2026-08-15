@@ -1,9 +1,10 @@
 import { type FinanceSnapshot } from '../../finance/finance';
 import { type InventorySnapshot } from '../../inventory/inventory';
+import { ResourceFlowLedger } from '../../inventory/resourceFlow';
 import { type FacilityCollectionSnapshot } from '../../facilities/facilityCollection';
+import { isFacilityMaintenanceStatisticsSnapshot, type FacilityMaintenanceStatisticsSnapshot } from '../../facilities/facilityMaintenanceStatistics';
 import { type SalesOrdersSnapshot } from '../../sales/salesOrders';
 import { isAchievementLedgerSnapshot, type AchievementLedgerSnapshot } from '../../achievements/achievement';
-import { isProductionStatisticsSnapshot, type ProductionStatisticsSnapshot } from '../../achievements/productionStatistics';
 import { isPrestigeLedgerSnapshot, type PrestigeLedgerSnapshot } from '../../prestige/prestige';
 import { type MarketSnapshot } from '../../market/marketTypes';
 import { MARKET_AUTOTRADE_INTERVAL_OPTIONS } from '../../market/marketConstants';
@@ -30,11 +31,12 @@ export type GameTimeSnapshot = {
 export type GameSnapshot = {
   finance: FinanceSnapshot;
   inventory: InventorySnapshot;
+  resourceFlow: ReturnType<ResourceFlowLedger['toSnapshot']>;
   market: MarketSnapshot;
   facilities: FacilityCollectionSnapshot;
   salesOrders: SalesOrdersSnapshot;
   achievements: AchievementLedgerSnapshot;
-  productionStatistics: ProductionStatisticsSnapshot;
+  facilityMaintenance: FacilityMaintenanceStatisticsSnapshot;
   prestige: PrestigeLedgerSnapshot;
   research: ResearchLedgerSnapshot;
   grants: GrantLedgerSnapshot;
@@ -74,9 +76,9 @@ function isMarketAutomationSnapshot(value: unknown): boolean {
 
 /** Structural guard used by the company-scoped SQLite save adapter. */
 export function isGameSnapshot(value: unknown): value is GameSnapshot {
-  if (!isRecord(value) || !isRecord(value.finance) || !isRecord(value.inventory)
+  if (!isRecord(value) || !isRecord(value.finance) || !isRecord(value.inventory) || !ResourceFlowLedger.isSnapshot(value.resourceFlow)
     || !isRecord(value.market) || !isRecord(value.facilities) || !isRecord(value.salesOrders)
-    || !isRecord(value.achievements) || !isRecord(value.productionStatistics)
+    || !isRecord(value.achievements) || !isFacilityMaintenanceStatisticsSnapshot(value.facilityMaintenance)
     || !isRecord(value.prestige) || !isResearchLedgerSnapshot(value.research) || !isGrantLedgerSnapshot(value.grants) || !isGameTimeSnapshot(value.time)) {
     return false;
   }
@@ -137,6 +139,5 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
     && typeof value.salesOrders.worldSeed === 'string'
     && typeof value.salesOrders.catalogueVersion === 'number'
     && isAchievementLedgerSnapshot(value.achievements)
-    && isProductionStatisticsSnapshot(value.productionStatistics)
     && isPrestigeLedgerSnapshot(value.prestige);
 }

@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Card, List, ProgressBar, Text } from 'react-native-paper';
-import type { AchievementLedger, AchievementCategory, ProductionStatistics } from '@/game/achievements';
+import type { AchievementLedger, AchievementCategory } from '@/game/achievements';
 import { ACHIEVEMENT_CATEGORIES, createAchievementEvaluationContext, filterAchievementSeriesForDisplay, getAchievementDisplay } from '@/game/achievements';
-import type { FacilityCollection } from '@/game/facilities';
+import type { FacilityCollection, FacilityMaintenanceStatistics } from '@/game/facilities';
 import type { Finance } from '@/game/finance';
+import type { ResourceFlowLedger } from '@/game/inventory';
 import type { PrestigeLedger } from '@/game/prestige';
 import type { SalesOrders } from '@/game/sales';
 import { colors } from '@/theme';
@@ -37,7 +38,8 @@ export function AchievementsView({
   facilities,
   finance,
   prestige,
-  productionStatistics,
+  facilityMaintenance,
+  resourceFlow,
   salesOrders,
 }: {
   achievements: AchievementLedger;
@@ -46,7 +48,8 @@ export function AchievementsView({
   facilities: FacilityCollection;
   finance: Finance;
   prestige: PrestigeLedger;
-  productionStatistics: ProductionStatistics;
+  resourceFlow: ResourceFlowLedger;
+  facilityMaintenance: FacilityMaintenanceStatistics;
   salesOrders: SalesOrders;
 }) {
   const [selectedCategory, setSelectedCategory] = useState<AchievementCategory | 'all'>('all');
@@ -56,7 +59,8 @@ export function AchievementsView({
     finance,
     salesOrders,
     prestige,
-    productionStatistics,
+    facilityMaintenance,
+    resourceFlow,
     companyStartedAtGameTimeMs,
     currentGameTimeMs,
   });

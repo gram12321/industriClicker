@@ -74,6 +74,7 @@ export function advanceAllFacilityProduction(
   facilities: FacilityCollection,
   inventory: Inventory,
   getEffectiveWork: (facility: FacilityView, recipeName: RecipeName) => number,
+  onInputConsumed?: (input: RecipeInput) => void,
 ): ProductionOutput[] {
   const outputs: ProductionOutput[] = [];
 
@@ -96,7 +97,7 @@ export function advanceAllFacilityProduction(
 
         if (progress === 0) {
           for (const input of recipe.inputs) {
-            inventory.remove(input.resourceType, input.amount);
+            if (inventory.remove(input.resourceType, input.amount)) onInputConsumed?.(input);
           }
         }
 

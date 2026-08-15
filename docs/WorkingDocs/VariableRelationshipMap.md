@@ -360,12 +360,14 @@ flowchart LR
 | State | Kind | Owner | Changes through | Saved as |
 |---|---|---|---|---|
 | `inventory.entries.*.quantity`, `.quality` | Stored | `Inventory` | Resource commands and production | `InventorySnapshot` |
+| Resource-flow all-time category totals and the latest one-hour buckets | Stored | `ResourceFlowLedger` | Inventory-affecting commands and foreground production/autotrade | Resource-flow snapshot inside `GameSnapshot` |
 | `finance.balance`, `.transactions`, `.loans`, `.lenders`, `.activeLoanSearch`, `.loanSearchOffers`, economy phase, loan-payment history | Stored | `Finance` | Accepted transactions, timed lender searches, loan actions, economy transitions, and foreground repayment attempts | `FinanceSnapshot` |
 | Numbered facility instances, production-cycle recipe order/current position, and recipe progress | Stored | `FacilityCollection` | Construction, cycle setup, upgrades, and production | Facility snapshot |
 | Facility upgrade levels, assigned workers, and 0–1 condition | Stored | `Facility` | Upgrade/staffing commands and foreground wear/production tear | Facility snapshot |
 | `salesOrders.offered`/`.completed` atomic order lines, `.customerStates`, `.nextOrderNumber` | Stored | `SalesOrders` | Customer-order bundle creation, expiry, fulfilment, and relationship actions | `SalesOrdersSnapshot` |
 | `achievements.unlocks` | Stored | `AchievementLedger` | Post-command achievement evaluation | `AchievementLedgerSnapshot` |
-| `productionStatistics.producedByResource` | Stored | `ProductionStatistics` | Completed facility recipe output only | `ProductionStatisticsSnapshot` |
+| `resourceFlow.allTime.facility-output.*` | Stored | `ResourceFlowLedger` | Completed facility recipe output only | Resource-flow snapshot inside `GameSnapshot` |
+| Facility maintenance repaired-condition, largest-repair, and repair-value totals | Stored | `FacilityMaintenanceStatistics` | Successful facility repairs | Facility-maintenance snapshot inside `GameSnapshot` |
 | `prestige.events` | Stored | `PrestigeLedger` | Balance changes and fulfilled sales | `PrestigeLedgerSnapshot` |
 | `research.completed`, `.active[]` (including each active project's effective duration) | Stored | `ResearchLedger` | Research start, foreground advance, per-project completion and cancellation | `ResearchLedgerSnapshot` |
 | `grants.grants` | Stored | `GrantLedger` | First facility construction and free-action consumption | `GrantLedgerSnapshot` |
@@ -385,10 +387,10 @@ Derived values include facility efficiency, production work/output, customer-ord
 | `buyMissingConstructionInputs` | Facility definition; local Construction Materials and Industrial Machines prices/supply; balance; inventory | Market; Finance; Inventory |
 | `acceptLoanOffer` | Derived credit rating and selected deterministic lender offer | Finance loan/transaction state, prestige, finance achievements |
 | `startLoanSearch`, `makeExtraLoanPayment`, `repayLoanInFull` | Selected criteria or active loan, lender policy caps, balance | Search activity/fee or finance transactions, loans, payment history, and derived credit rating |
-| `buildFacility`, `destroyFacility`, `repairFacility`, `setFacilityRecipe`, `setFacilityProductionCycle`, `setFacilityWorkers`, `upgradeFacility` | Facility definition, researched recipes, balance, Construction Materials, and Industrial Machines where applicable | Facilities; Finance; Inventory where applicable |
-| `advanceRealtime`, `advanceGameTime`, `fastForwardOneMinute` | Time anchors and all timed state | Game time, pipeline, facility condition, inventory, customer orders/relationships, local/regional/global market, active research, active lender searches, due loan payments |
-| Completed production outputs | Recipe outputs and facility output multiplier | Inventory; production statistics; production achievements |
-| `fulfillSalesOrder`, `rejectSalesOrder` | Customer order; inventory and finance where applicable | Customer orders/relationships; inventory and finance where applicable |
+| `buildFacility`, `destroyFacility`, `repairFacility`, `setFacilityRecipe`, `setFacilityProductionCycle`, `setFacilityWorkers`, `upgradeFacility` | Facility definition, researched recipes, balance, Construction Materials, and Industrial Machines where applicable | Facilities; Finance; Inventory and resource-flow history where applicable |
+| `advanceRealtime`, `advanceGameTime`, `fastForwardOneMinute` | Time anchors and all timed state | Game time, pipeline, facility condition, inventory/resource-flow history, customer orders/relationships, local/regional/global market, active research, active lender searches, due loan payments |
+| Completed production outputs | Recipe outputs and facility output multiplier | Inventory; all-time facility-output resource flow; production achievements; sales targeting |
+| `fulfillSalesOrder`, `rejectSalesOrder` | Customer order; inventory and finance where applicable | Customer orders/relationships; inventory, finance, and resource-flow history where applicable |
 | Achievement evaluation | Post-command domain state | Achievement unlocks; idempotent achievement prestige events |
 | `getResearchAvailability`, `startResearch`, `cancelResearch(projectId)` | Code catalogue, pure gate context, finance, research ledger, progression grants | Research; grant use; finance/prestige and relevant achievements |
 | `createSalesOrderRequest` | Selected resource, quantity, derived capacity | Development customer order and pipeline |
@@ -402,7 +404,7 @@ All normal state changes batch persistence; background and explicit checkpoints 
 
 | State group | Save representation | Restore |
 |---|---|---|
-| Inventory, finance (including loans), facilities, customer order/relationship state, achievements, production statistics, prestige, research, progression grants | Respective snapshot inside a company-keyed `GameSnapshot` | Restore the active company's valid snapshot; customer catalogue remains deterministic code data |
+| Inventory, resource-flow history, finance (including loans), facilities and maintenance statistics, customer order/relationship state, achievements, prestige, research, progression grants | Respective snapshot inside a company-keyed `GameSnapshot` | Restore the active company's valid snapshot; customer catalogue remains deterministic code data |
 | Foreground game time and pipeline | `GameTimeSnapshot` | Restore logical/partial time and pipeline; reset observation anchor |
 | Catalogues and balance configuration | Typed code definitions | Reload from the app version; never save |
 | Player/company/session/tutorial metadata | Dedicated company-domain SQLite records | Load before an active company runtime session begins |
