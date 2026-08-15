@@ -5,9 +5,12 @@ import type { SalesCustomerDomain, SalesCustomerType } from './salesCustomers';
 export const SALES_ORDER_DURATION_MS = 20 * 60 * 1_000;
 export const SALES_ORDER_MINIMUM_QUANTITY = 1;
 export const SALES_ORDER_MAXIMUM_QUANTITY = 1_000_000;
-export const SALES_ORDER_BASE_ACQUISITION_CHANCE_PER_MINUTE = 0.28;
+export const SALES_ORDER_BASE_ACQUISITION_CHANCE_PER_MINUTE = 1;
 export const SALES_ORDER_PENDING_PENALTY_PER_OPEN_ORDER = 0.13;
 export const SALES_ORDER_PRESTIGE_DISCOVERY_SCALE = 120;
+export const SALES_ORDER_PRESTIGE_DISCOVERY_BASE = 0.65;
+export const SALES_ORDER_BASE_COMPANY_VALUE_FRACTION = 0.5;
+export const SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP = 100;
 /**
  * Offer value grows with company progression, while repeat customers grant a
  * smaller throughput bonus. Both curves are capped to keep the order economy bounded.

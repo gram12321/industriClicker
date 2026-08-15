@@ -6,11 +6,11 @@ import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
 import { MARKET_DIFFUSION_INTERVAL_MS, MARKET_SALES_ORDER_BID_MULTIPLIER, Market, canAutoBuyMarketResource, canBuyMarketResource, canSellMarketResource, type MarketAutomation } from '@/game/market';
 import type { GameSnapshot } from '@/game/core/state';
 import { BASE_WORK_PER_MINUTE, FOREGROUND_SIMULATION_STEP_MS, REALTIME_WORK_MINUTE_MS, calculateRealtimeAdvance } from '@/game/core/time';
-import { SalesOrders, calculateSalesOrderAcquisitionChance, getSalesResourceProfile } from '@/game/sales';
+import { SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP, SalesOrders, calculateSalesOrderAcquisitionChance, getSalesResourceProfile } from '@/game/sales';
 import { AchievementLedger, ProductionStatistics, createAchievementEvaluationContext, evaluateAchievementUnlocks, type AchievementCategory } from '@/game/achievements';
 import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyAssetsPrestige, calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary, calculateFacilityConditionPrestige } from '@/game/prestige';
 import { evaluateGateRequirements, type GateContext, type GateEvaluation } from '@/game/gates';
-import { ResearchLedger, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesOrders, getMaximumSimultaneousResearchProjects, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, getSalesOrderBidMultiplier, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, type ResearchProjectId } from '@/game/research';
+import { ResearchLedger, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesOrders, getMaximumSimultaneousResearchProjects, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, getSalesOrderBidMultiplier, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, getSalesOrderMaximumCompanyValueFraction, type ResearchProjectId } from '@/game/research';
 import { FIRST_FACILITY_RECIPE_RESEARCH_GRANT_ID, FIRST_FACILITY_RECIPE_RESEARCH_WORK_SPEED_MULTIPLIER, GrantLedger } from '@/game/grants';
 import type { StartingConditionId } from '@/game/company/companyTypes';
 import { STANDARD_START_CONSTRUCTION_MATERIALS, STANDARD_START_INDUSTRIAL_MACHINES } from '@/game/company/companyConstants';
@@ -657,11 +657,15 @@ export const useGameStore = create<GameState>((set, get) => {
 
       const currentSalesOrders = salesOrders ?? get().salesOrders;
       const currentPrestige = calculateCompanyPrestigeSummary(get().prestige.getEvents(), stepEndGameTimeMs).totalPrestige;
+      const maximumOrderValue = Math.max(
+        SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP,
+        calculateAssets({ finance: marketFinance ?? get().finance, inventory, market: market ?? get().market, facilities, research }).totalAssets * getSalesOrderMaximumCompanyValueFraction(research.getCompletedProjectIds()),
+      );
       const offerChance = calculateSalesOrderAcquisitionChance({
         openOrderCount: currentSalesOrders.getOfferedOrders().length,
         companyPrestige: currentPrestige,
         economyPhase: (marketFinance ?? get().finance).getEconomyPhase(),
-        hasEligibleInventory: getSalesOfferResourceTypes(research.getCompletedProjectIds(), productionStatistics.toSnapshot().producedByResource).some((resourceType) => inventory.getAmount(resourceType) >= getSalesResourceProfile(resourceType).standardOrderLot),
+        hasEligibleInventory: getSalesOfferResourceTypes(research.getCompletedProjectIds(), productionStatistics.toSnapshot().producedByResource).some((resourceType) => inventory.getAmount(resourceType) >= getSalesResourceProfile(resourceType).standardOrderLot && getSalesResourceProfile(resourceType).standardOrderLot * (market ?? get().market).getGlobalPrice(resourceType) <= maximumOrderValue),
       });
       customerPipelineProgress += (stepMs / 1_000) * offerChance / 60;
 
@@ -706,6 +710,7 @@ export const useGameStore = create<GameState>((set, get) => {
           const result = salesOrders.advanceTime({
             currentGameTimeMs: stepEndGameTimeMs - (completedSalesMinutes - minute - 1) * REALTIME_WORK_MINUTE_MS,
             maximumOpenOrders: getMaximumOpenSalesOrders(research.getCompletedProjectIds()),
+            maximumOrderValue,
             companyPrestige: calculateCompanyPrestigeSummary(get().prestige.getEvents(), stepEndGameTimeMs).totalPrestige,
             economyPhase: (marketFinance ?? get().finance).getEconomyPhase(),
             inventoryByResource: Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, inventory.getAmount(resourceType)])) as Record<ResourceType, number>,

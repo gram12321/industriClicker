@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Avatar, Divider, IconButton, Menu, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { APP_ICONS } from '@/icons';
+import { APP_ICONS, ECONOMY_PHASE_ICONS } from '@/icons';
 import { calculateCompanyPrestigeSummary, getMaximumOpenSalesOrders, type FacilityType, useCompanySessionStore, useGameStore } from '@/game';
 import { colors } from '@/theme';
 import { ActiveProcessesOverlay, AdminDashboard, AchievementsView, CollectionDialog, ConstructionTutorialDialog, FirstFacilityTutorialDialog, GameViewContent, FacilityConstructionDialog, BuildFacilityTutorialDialog, IndustriPediaView, isDevAdminSurfaceAvailable, LeaderboardScreen, PrestigeDialog, ProfileScreen, ResearchView, SettingsScreen, styles, ProductionTutorialDialog, TutorialGuideDialog, LoginView, type GameViewId } from '@/ui';
@@ -100,6 +100,8 @@ function GameShell({ companyName }: { companyName: string }) {
   const prestigeSummary = calculateCompanyPrestigeSummary(prestige.getEvents(), lastProcessedAtMs);
   const elapsedForegroundTimeMs = Math.max(0, lastProcessedAtMs - companyStartedAtGameTimeMs);
   const maximumOpenContracts = getMaximumOpenSalesOrders(research.getCompletedProjectIds());
+  const economyPhase = finance.getEconomyPhase();
+  const economyPhaseColor = economyPhase === 'crash' || economyPhase === 'recession' ? colors.error : economyPhase === 'stable' ? colors.onDark : colors.paleGreen;
   const completeActivityInstantly = (_processId: string, remainingMs: number) => {
     advanceRealtime(Date.now());
     advanceGameTime(remainingMs);
@@ -138,6 +140,7 @@ function GameShell({ companyName }: { companyName: string }) {
             {tutorial.completedWelcome && <Pressable accessibilityLabel="Open company prestige" accessibilityRole="button" onPress={() => setIsPrestigeOpen(true)} style={styles.prestigeInline}><MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.achievements} size={17} /><Text style={styles.prestigeInlineValue}>{formatNumber(prestigeSummary.totalPrestige, { smartDecimals: true })}</Text></Pressable>}
           </View>
           <View style={styles.headerActions}>
+            <View accessibilityLabel={`Economy: ${economyPhase}`} style={styles.headerElapsedTime}><MaterialCommunityIcons color={economyPhaseColor} name={ECONOMY_PHASE_ICONS[economyPhase] as never} size={18} /></View>
             {tutorial.completedWelcome && <IconButton accessibilityLabel="Fast-forward one minute" icon={APP_ICONS.fastForward} iconColor={colors.onDark} onPress={fastForwardOneMinute} />}
             <View accessibilityLabel={isTutorialOpen && tutorialStep === 3 ? 'Tutorial highlighted company time' : `Time ${formatElapsedTime(elapsedForegroundTimeMs)}`} style={styles.headerElapsedTime}><MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.elapsedTime} size={17} /><Text style={styles.headerElapsedTimeValue}>{formatElapsedTime(elapsedForegroundTimeMs)}</Text></View>
             <Menu anchor={<Pressable accessibilityLabel="Open profile menu" accessibilityRole="button" onPress={() => setIsProfileMenuOpen(true)} style={styles.profileButton}><Avatar.Text label={companyName.slice(0, 2).toUpperCase()} size={38} style={styles.avatar} /></Pressable>} onDismiss={() => setIsProfileMenuOpen(false)} visible={isProfileMenuOpen}>

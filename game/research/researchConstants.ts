@@ -6,6 +6,7 @@ import type { ResearchEffect } from './researchEffects';
 const BASE_RESEARCH_PROJECT_IDS = [
   'capital-grant-1', 'capital-grant-2', 'capital-grant-3', 'capital-grant-4', 'capital-grant-5', 'capital-grant-6', 'capital-grant-7', 'capital-grant-8', 'capital-grant-9', 'capital-grant-10',
   'sales-capacity-1', 'sales-capacity-2', 'sales-capacity-3', 'sales-capacity-4', 'sales-capacity-5',
+  'sales-order-value-limit-1', 'sales-order-value-limit-2', 'sales-order-value-limit-3', 'sales-order-value-limit-4', 'sales-order-value-limit-5',
   'sales-targeting-1', 'sales-targeting-2', 'sales-targeting-3', 'sales-targeting-4', 'sales-targeting-5',
   'bid-value-1', 'bid-value-2', 'bid-value-3', 'bid-value-4', 'bid-value-5',
   'local-market-network-1', 'local-market-network-2', 'local-market-network-3', 'local-market-network-4', 'local-market-network-5', 'local-market-network-6', 'local-market-network-7', 'local-market-network-8', 'local-market-network-9', 'local-market-network-10',
@@ -16,7 +17,7 @@ const BASE_RESEARCH_PROJECT_IDS = [
 export type RecipeResearchProjectId = `recipe-${RecipeName}` | `recipe-${RecipeName}-level-${number}`;
 export type ResearchProjectId = (typeof BASE_RESEARCH_PROJECT_IDS)[number] | RecipeResearchProjectId;
 export const RESEARCH_PROJECT_IDS: readonly ResearchProjectId[] = [...BASE_RESEARCH_PROJECT_IDS, ...Object.values(RecipeName).flatMap((recipeName) => [getRecipeResearchProjectId(recipeName), ...Array.from({ length: 10 }, (_, index) => getRecipeResearchLevelProjectId(recipeName, index + 1))])];
-export type ResearchChainId = 'capital-grants' | 'sales-capacity' | 'sales-targeting' | 'bid-value' | 'local-market-network' | 'market-diffusion-network' | 'research-capacity' | 'recipe-unlocks';
+export type ResearchChainId = 'capital-grants' | 'sales-capacity' | 'sales-order-value-limit' | 'sales-targeting' | 'bid-value' | 'local-market-network' | 'market-diffusion-network' | 'research-capacity' | 'recipe-unlocks';
 
 export type ResearchProjectDefinition = {
   id: ResearchProjectId;
@@ -73,6 +74,11 @@ export const RESEARCH_PROJECTS: readonly ResearchProjectDefinition[] = [
   { id: 'sales-capacity-3', chainId: 'sales-capacity', tier: 3, name: 'Sales Capacity III', cost: 3_000, durationMs: 180_000, requirements: [{ kind: 'research', projectId: 'sales-capacity-2', label: 'Sales Capacity II' }, CASH_TIER_1], effect: { kind: 'max-open-sales-orders', maximum: 7 } },
   { id: 'sales-capacity-4', chainId: 'sales-capacity', tier: 4, name: 'Sales Capacity IV', cost: 7_000, durationMs: 360_000, requirements: [{ kind: 'research', projectId: 'sales-capacity-3', label: 'Sales Capacity III' }, PRESTIGE_TIER_1], effect: { kind: 'max-open-sales-orders', maximum: 10 } },
   { id: 'sales-capacity-5', chainId: 'sales-capacity', tier: 5, name: 'Sales Capacity V', cost: 15_000, durationMs: 720_000, requirements: [{ kind: 'research', projectId: 'sales-capacity-4', label: 'Sales Capacity IV' }, CONTRACTS_TIER_2], effect: { kind: 'max-open-sales-orders', maximum: 15 } },
+  { id: 'sales-order-value-limit-1', chainId: 'sales-order-value-limit', tier: 1, name: 'Order Scope I', cost: 75, durationMs: 45_000, requirements: [FACILITY_TIER_1], effect: { kind: 'sales-order-value-cap', maximumCompanyValueFraction: 0.75 } },
+  { id: 'sales-order-value-limit-2', chainId: 'sales-order-value-limit', tier: 2, name: 'Order Scope II', cost: 750, durationMs: 120_000, requirements: [{ kind: 'research', projectId: 'sales-order-value-limit-1', label: 'Order Scope I' }, CONTRACTS_TIER_1], effect: { kind: 'sales-order-value-cap', maximumCompanyValueFraction: 1 } },
+  { id: 'sales-order-value-limit-3', chainId: 'sales-order-value-limit', tier: 3, name: 'Order Scope III', cost: 3_000, durationMs: 300_000, requirements: [{ kind: 'research', projectId: 'sales-order-value-limit-2', label: 'Order Scope II' }, CASH_TIER_1], effect: { kind: 'sales-order-value-cap', maximumCompanyValueFraction: 1.5 } },
+  { id: 'sales-order-value-limit-4', chainId: 'sales-order-value-limit', tier: 4, name: 'Order Scope IV', cost: 12_000, durationMs: 900_000, requirements: [{ kind: 'research', projectId: 'sales-order-value-limit-3', label: 'Order Scope III' }, PRESTIGE_TIER_1], effect: { kind: 'sales-order-value-cap', maximumCompanyValueFraction: 2.5 } },
+  { id: 'sales-order-value-limit-5', chainId: 'sales-order-value-limit', tier: 5, name: 'Order Scope V', cost: 50_000, durationMs: 2_700_000, requirements: [{ kind: 'research', projectId: 'sales-order-value-limit-4', label: 'Order Scope IV' }, CONTRACTS_TIER_2], effect: { kind: 'sales-order-value-cap', maximumCompanyValueFraction: 4 } },
   { id: 'sales-targeting-1', chainId: 'sales-targeting', tier: 1, name: 'Sales Targeting I', cost: 100, durationMs: 120_000, requirements: [FACILITY_TIER_1], effect: { kind: 'sales-offer-produced-resource-weight', multiplier: 2 } },
   { id: 'sales-targeting-2', chainId: 'sales-targeting', tier: 2, name: 'Sales Targeting II', cost: 5000, durationMs: 300_000, requirements: [{ kind: 'research', projectId: 'sales-targeting-1', label: 'Sales Targeting I' }, CONTRACTS_TIER_1], effect: { kind: 'sales-offer-produced-resource-weight', multiplier: 4 } },
   { id: 'sales-targeting-3', chainId: 'sales-targeting', tier: 3, name: 'Sales Targeting III', cost: 1_000, durationMs: 900_000, requirements: [{ kind: 'research', projectId: 'sales-targeting-2', label: 'Sales Targeting II' }, CASH_TIER_1], effect: { kind: 'sales-offer-produced-resource-weight', multiplier: 8 } },

@@ -3,6 +3,7 @@ import { getRecipeDisplayName, type RecipeName } from '@/game/recipes';
 export type ResearchEffect =
   | { kind: 'grant'; amount: number }
   | { kind: 'max-open-sales-orders'; maximum: number }
+  | { kind: 'sales-order-value-cap'; maximumCompanyValueFraction: number }
   | { kind: 'sales-order-bid-multiplier'; multiplier: number }
   | { kind: 'sales-offer-produced-resource-weight'; multiplier: number }
   | { kind: 'sales-offer-produced-only' }
@@ -16,6 +17,7 @@ export function describeResearchEffect(effect: ResearchEffect): string {
   switch (effect.kind) {
     case 'grant': return `Grant €${effect.amount.toLocaleString()}`;
     case 'max-open-sales-orders': return `Maximum open orders: ${effect.maximum}`;
+    case 'sales-order-value-cap': return `Maximum order value: ${Math.round(effect.maximumCompanyValueFraction * 100)}% of company assets`;
     case 'sales-order-bid-multiplier': return `Customer-order bid premium: ${Math.round((effect.multiplier - 1) * 100)}%`;
     case 'sales-offer-produced-resource-weight': return `Produced resources are ${effect.multiplier}× more likely in sales offers`;
     case 'sales-offer-produced-only': return 'Customer orders only request resources your company has produced';

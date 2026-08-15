@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ACHIEVEMENT_DEFINITIONS } from '@/game/achievements';
 import { FACILITIES } from '@/game/facilities';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
-import { BASE_MAXIMUM_OPEN_SALES_ORDERS, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesOrders, getRecipeResearchProjectId, getSalesOrderBidMultiplier, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, RESEARCH_PROJECTS } from '@/game/research';
+import { BASE_MAXIMUM_OPEN_SALES_ORDERS, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesOrders, getRecipeResearchProjectId, getSalesOrderBidMultiplier, getSalesOrderMaximumCompanyValueFraction, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, RESEARCH_PROJECTS } from '@/game/research';
 
 function createProductionTotals(produced: readonly ResourceType[]): Record<ResourceType, number> {
   return RESOURCE_TYPES.reduce((totals, resourceType) => {
@@ -21,6 +21,12 @@ describe('sales research effects', () => {
     expect(getSalesOrderBidMultiplier([], 1.2)).toBe(1.2);
     expect(getSalesOrderBidMultiplier(['bid-value-3'], 1.2)).toBe(1.35);
     expect(getSalesOrderBidMultiplier(['bid-value-3', 'bid-value-5'], 1.2)).toBe(1.5);
+  });
+
+  it('raises the maximum customer-order value from a conservative share of company assets', () => {
+    expect(getSalesOrderMaximumCompanyValueFraction([])).toBe(0.5);
+    expect(getSalesOrderMaximumCompanyValueFraction(['sales-order-value-limit-1'])).toBe(0.75);
+    expect(getSalesOrderMaximumCompanyValueFraction(['sales-order-value-limit-1', 'sales-order-value-limit-5'])).toBe(4);
   });
 
   it('limits fully targeted offers to resources the company has produced', () => {
