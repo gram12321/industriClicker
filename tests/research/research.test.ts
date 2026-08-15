@@ -70,4 +70,11 @@ describe('catalogue progression coverage', () => {
       expect(achievementResources).toContain(resourceType);
     }
   });
+
+  it('applies the threefold duration multiplier to every recipe research project', () => {
+    const recipeProjects = RESEARCH_PROJECTS.filter((project) => project.effect.kind === 'recipe-unlock' || project.effect.kind === 'recipe-work-speed-bonus');
+
+    expect(recipeProjects).not.toHaveLength(0);
+    expect(recipeProjects.every((project) => project.durationMs >= 45_000)).toBe(true);
+  });
 });

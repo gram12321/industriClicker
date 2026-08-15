@@ -1,4 +1,5 @@
-import { ADVANCED_LOAN_CONFIG, ECONOMY_PHASES, ECONOMY_TRANSITION, FINANCE_INITIAL_BALANCE, LOAN_COLLECTION, LOAN_PAYMENT_INTERVAL_MS, LOAN_TERMS, type EconomyPhase, type FinanceTransactionKind, type FinanceTransactionSource, type LenderType } from './financeConstants';
+import { FINANCE_INITIAL_BALANCE } from '@/game/company/companyConstants';
+import { ADVANCED_LOAN_CONFIG, ECONOMY_PHASES, ECONOMY_TRANSITION, LOAN_COLLECTION, LOAN_PAYMENT_INTERVAL_MS, LOAN_TERMS, type EconomyPhase, type FinanceTransactionKind, type FinanceTransactionSource, type LenderType } from './financeConstants';
 import { createInitialLenders, estimatePrepaymentPenalty, type Lender, type LoanSearchCriteria, type LoanSearchEstimate } from './loanService';
 
 export type FinanceTransaction = { id: string; amount: number; description: string; detailLines: string[]; kind: FinanceTransactionKind; source: FinanceTransactionSource; balanceAfter: number; occurredAtGameTimeMs: number };

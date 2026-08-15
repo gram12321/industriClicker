@@ -367,7 +367,7 @@ flowchart LR
 | `achievements.unlocks` | Stored | `AchievementLedger` | Post-command achievement evaluation | `AchievementLedgerSnapshot` |
 | `productionStatistics.producedByResource` | Stored | `ProductionStatistics` | Completed facility recipe output only | `ProductionStatisticsSnapshot` |
 | `prestige.events` | Stored | `PrestigeLedger` | Balance changes and fulfilled sales | `PrestigeLedgerSnapshot` |
-| `research.completed`, `.active` | Stored | `ResearchLedger` | Research start, foreground advance, completion, cancellation | `ResearchLedgerSnapshot` |
+| `research.completed`, `.active` (including an active project's effective duration) | Stored | `ResearchLedger` | Research start, foreground advance, completion, cancellation | `ResearchLedgerSnapshot` |
 | `grants.grants` | Stored | `GrantLedger` | First facility construction and free-action consumption | `GrantLedgerSnapshot` |
 | `market.local`, `.regional`, `.global`, `.automation` | Stored | `Market` | Manual local trades, contract fulfilment, and adjacent-pair diffusion | `MarketSnapshot` |
 | `startingConditionId` | Runtime | Zustand game store | Company activation/session change | No; source is the local company record |

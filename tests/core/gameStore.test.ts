@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { createStartingGameSnapshot, useGameStore } from '@/game/core/stores';
 import { FACILITIES, FacilityType } from '@/game/facilities';
+import { RecipeName } from '@/game/recipes';
+import { FIRST_FACILITY_RECIPE_RESEARCH_WORK_SPEED_MULTIPLIER } from '@/game/grants';
+import { getRecipeResearchProjectId, getResearchProject } from '@/game/research';
 import { ResourceType } from '@/game/resources';
 
 describe('market autobuy', () => {
@@ -23,6 +26,14 @@ describe('market autobuy', () => {
 });
 
 describe('facility construction inputs', () => {
+  it('creates the requested standard starting resources', () => {
+    const snapshot = createStartingGameSnapshot(0);
+
+    expect(snapshot.finance.balance).toBe(200);
+    expect(snapshot.inventory.entries[ResourceType.ConstructionMaterials]?.quantity).toBe(10);
+    expect(snapshot.inventory.entries[ResourceType.IndustrialMachines]?.quantity).toBe(3);
+  });
+
   it('requires and consumes Industrial Machines alongside land and Construction Materials', () => {
     const state = useGameStore.getState();
     state.restoreSnapshot(createStartingGameSnapshot(0));
@@ -35,5 +46,23 @@ describe('facility construction inputs', () => {
     expect(state.buildFacility(FacilityType.Farm)).toBe(true);
     expect(useGameStore.getState().inventory.getAmount(ResourceType.ConstructionMaterials)).toBe(10 - farm.constructionMaterialsCost);
     expect(useGameStore.getState().inventory.getAmount(ResourceType.IndustrialMachines)).toBe(0);
+  });
+
+  it('makes the first facility recipe research free and ten times faster', () => {
+    const state = useGameStore.getState();
+    state.restoreSnapshot(createStartingGameSnapshot(0));
+    const projectId = getRecipeResearchProjectId(RecipeName.GrowGrain);
+    const project = getResearchProject(projectId)!;
+
+    expect(state.buildFacility(FacilityType.Farm)).toBe(true);
+    expect(state.getResearchAvailability(projectId)).toMatchObject({
+      cost: 0,
+      durationMs: Math.ceil(project.durationMs / FIRST_FACILITY_RECIPE_RESEARCH_WORK_SPEED_MULTIPLIER),
+      startable: true,
+      usesFreeGrant: true,
+    });
+
+    expect(state.startResearch(projectId)).toBe(true);
+    expect(useGameStore.getState().research.getActiveProject()?.durationMs).toBe(Math.ceil(project.durationMs / FIRST_FACILITY_RECIPE_RESEARCH_WORK_SPEED_MULTIPLIER));
   });
 });

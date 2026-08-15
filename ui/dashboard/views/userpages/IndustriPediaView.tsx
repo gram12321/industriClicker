@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Card, List, Text } from 'react-native-paper';
 import { FACILITY_GROUPS, getFacilityDefinition } from '@/game/facilities';
-import { FINANCE_INITIAL_BALANCE } from '@/game/finance';
+import { FINANCE_INITIAL_BALANCE } from '@/game/company/companyConstants';
 import { PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS } from '@/game/prestige';
 import type { Market, MarketDiffusionDetails } from '@/game/market';
 import { getResource, getResourceIcon, RESOURCE_GROUPS, RESOURCE_TYPES, ResourceType } from '@/game/resources';

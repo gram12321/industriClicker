@@ -11,7 +11,7 @@ import { AchievementLedger, ProductionStatistics, createAchievementEvaluationCon
 import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyAssetsPrestige, calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary, calculateFacilityConditionPrestige } from '@/game/prestige';
 import { evaluateGateRequirements, type GateContext, type GateEvaluation } from '@/game/gates';
 import { ResearchLedger, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesContracts, getMaximumSimultaneousResearchProjects, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, getSalesContractPremiumMultiplier, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, type ResearchProjectId } from '@/game/research';
-import { FIRST_FACILITY_RECIPE_RESEARCH_GRANT_ID, GrantLedger } from '@/game/grants';
+import { FIRST_FACILITY_RECIPE_RESEARCH_GRANT_ID, FIRST_FACILITY_RECIPE_RESEARCH_WORK_SPEED_MULTIPLIER, GrantLedger } from '@/game/grants';
 import type { StartingConditionId } from '@/game/company/companyTypes';
 import { STANDARD_START_CONSTRUCTION_MATERIALS, STANDARD_START_INDUSTRIAL_MACHINES } from '@/game/company/companyConstants';
 import { create } from 'zustand';
@@ -21,6 +21,7 @@ export type ResearchAvailability = GateEvaluation & {
   startable: boolean;
   unmetReasons: string[];
   cost: number;
+  durationMs: number;
   usesFreeGrant: boolean;
 };
 
@@ -132,6 +133,12 @@ function getRecipeResearchGrantTarget(project: ReturnType<typeof getResearchProj
   return Object.values(FACILITIES).find((facility) => facility.recipes.some((recipe) => recipe.name === recipeName))?.type ?? null;
 }
 
+function getResearchDurationMs(project: NonNullable<ReturnType<typeof getResearchProject>>, usesFreeGrant: boolean): number {
+  return usesFreeGrant
+    ? Math.ceil(project.durationMs / FIRST_FACILITY_RECIPE_RESEARCH_WORK_SPEED_MULTIPLIER)
+    : project.durationMs;
+}
+
 function getResearchAvailabilityForState(input: {
   projectId: ResearchProjectId;
   achievements: AchievementLedger;
@@ -143,16 +150,16 @@ function getResearchAvailabilityForState(input: {
   startingConditionId: StartingConditionId | null;
 }): ResearchAvailability {
   const project = getResearchProject(input.projectId);
-  if (!project) return { allowed: false, startable: false, unmetReasons: ['Unknown research project.'], cost: 0, usesFreeGrant: false };
-  if (input.research.hasCompleted(project.id)) return { allowed: false, startable: false, unmetReasons: ['Research already completed.'], cost: project.cost, usesFreeGrant: false };
-  if (input.research.getActiveProjects().length >= getMaximumSimultaneousResearchProjects(input.research.getCompletedProjectIds())) return { allowed: false, startable: false, unmetReasons: ['All research slots are occupied.'], cost: project.cost, usesFreeGrant: false };
+  if (!project) return { allowed: false, startable: false, unmetReasons: ['Unknown research project.'], cost: 0, durationMs: 0, usesFreeGrant: false };
+  if (input.research.hasCompleted(project.id)) return { allowed: false, startable: false, unmetReasons: ['Research already completed.'], cost: project.cost, durationMs: project.durationMs, usesFreeGrant: false };
+  if (input.research.getActiveProjects().length >= getMaximumSimultaneousResearchProjects(input.research.getCompletedProjectIds())) return { allowed: false, startable: false, unmetReasons: ['All research slots are occupied.'], cost: project.cost, durationMs: project.durationMs, usesFreeGrant: false };
   const evaluation = evaluateGateRequirements(project.requirements, createResearchGateContext(input));
   const unmetReasons = [...evaluation.unmetReasons];
   const grantTarget = getRecipeResearchGrantTarget(project);
   const usesFreeGrant = grantTarget !== null && input.grants.hasAvailableFreeActionForTargets('start-research', [grantTarget, project.id]);
-  if (usesFreeGrant) return { allowed: evaluation.allowed, startable: unmetReasons.length === 0, unmetReasons, cost: 0, usesFreeGrant: true };
+  if (usesFreeGrant) return { allowed: evaluation.allowed, startable: unmetReasons.length === 0, unmetReasons, cost: 0, durationMs: getResearchDurationMs(project, true), usesFreeGrant: true };
   if (!input.finance.canAfford(project.cost)) unmetReasons.push(`Requires €${project.cost.toLocaleString()} available.`);
-  return { allowed: evaluation.allowed, startable: unmetReasons.length === 0, unmetReasons, cost: project.cost, usesFreeGrant: false };
+  return { allowed: evaluation.allowed, startable: unmetReasons.length === 0, unmetReasons, cost: project.cost, durationMs: getResearchDurationMs(project, false), usesFreeGrant: false };
 }
 
 /** Produces a fresh, current-version company snapshot without touching runtime state. */
@@ -930,7 +937,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const finance = state.finance.clone();
     const grantTarget = getRecipeResearchGrantTarget(project);
     if ((availability.usesFreeGrant && (!grantTarget || !grants.useFreeActionForTargets('start-research', [grantTarget, project.id], state.lastProcessedAtMs)))
-      || !research.start(projectId, availability.cost)
+      || !research.start(projectId, availability.cost, availability.durationMs)
       || !finance.applyTransaction({ amount: -availability.cost, description: `Research started: ${project.name}`, detailLines: [`Capitalized cost: €${availability.cost.toFixed(2)}`], kind: 'investing', source: 'research-investment', occurredAtGameTimeMs: state.lastProcessedAtMs })) return false;
 
     const prestige = state.prestige.clone();
