@@ -21,9 +21,14 @@ export type AchievementMetric =
   | 'facility-efficiency-count'
   | 'resource-produced'
   | 'total-produced'
-  | 'fulfilled-contract-count'
-  | 'fulfilled-contract-quantity'
-  | 'largest-contract-quantity'
+  | 'fulfilled-order-count'
+  | 'fulfilled-order-quantity'
+  | 'largest-order-quantity'
+  | 'trusted-customer-count'
+  | 'fulfilled-order-ratio'
+  | 'high-premium-order-count'
+  | 'largest-bundle-line-count'
+  | 'fulfilled-order-domain-count'
   | 'cash-balance'
   | 'foreground-minutes'
   | 'company-prestige';
@@ -40,6 +45,7 @@ export type AchievementDefinition = {
   threshold: number;
   resourceType?: ResourceType;
   facilityEfficiencyThreshold?: number;
+  minimumCompletedOrderCount?: number;
   prestigeAmount: number;
   prestigeHalfLifeForegroundHours: number;
   rewards?: readonly AchievementReward[];
@@ -95,9 +101,14 @@ export const ACHIEVEMENT_DEFINITIONS: readonly AchievementDefinition[] = [
   ].map(({ tier, count, efficiency }) => ({ id: `facility_efficiency_tier_${tier}`, seriesId: 'facility_efficiency', category: 'facilities' as const, tier, name: `Operational Excellence ${tier}`, description: `Have ${count} facilities at ${Math.round(efficiency * 100)}% efficiency or higher at once.`, icon: 'gauge', metric: 'facility-efficiency-count' as const, threshold: count, facilityEfficiencyThreshold: efficiency, prestigeAmount: ACHIEVEMENT_TIER_PRESTIGE[Math.min(tier - 1, ACHIEVEMENT_TIER_PRESTIGE.length - 1)].amount, prestigeHalfLifeForegroundHours: ACHIEVEMENT_TIER_PRESTIGE[Math.min(tier - 1, ACHIEVEMENT_TIER_PRESTIGE.length - 1)].halfLifeForegroundHours })),
   ...RESOURCE_TYPES.flatMap((resourceType) => createResourceProductionAchievements(resourceType, RESOURCES[resourceType].name, RESOURCES[resourceType].icon)),
   ...createTieredAchievements({ seriesId: 'total_production', category: 'production', name: 'Production Line', description: 'Complete {threshold} total output.', icon: 'package-variant', metric: 'total-produced', thresholds: [1, 100, 1_000] }),
-  ...createTieredAchievements({ seriesId: 'fulfilled_orders', category: 'sales', name: 'Order Closer', description: 'Fulfil {threshold} customer orders.', icon: 'handshake-outline', metric: 'fulfilled-contract-count', thresholds: [1, 10, 50] }),
-  ...createTieredAchievements({ seriesId: 'fulfilled_quantity', category: 'sales', name: 'Reliable Supplier', description: 'Deliver {threshold} order units.', icon: 'truck-delivery-outline', metric: 'fulfilled-contract-quantity', thresholds: [10, 100, 1_000] }),
-  ...createTieredAchievements({ seriesId: 'largest_contract', category: 'sales', name: 'Big Deal', description: 'Fulfil one order for {threshold} units.', icon: 'briefcase-outline', metric: 'largest-contract-quantity', thresholds: [3, 6, 10] }),
+  ...createTieredAchievements({ seriesId: 'fulfilled_orders', category: 'sales', name: 'Order Closer', description: 'Fulfil {threshold} customer orders.', icon: 'handshake-outline', metric: 'fulfilled-order-count', thresholds: [1, 10, 50] }),
+  ...createTieredAchievements({ seriesId: 'fulfilled_quantity', category: 'sales', name: 'Reliable Supplier', description: 'Deliver {threshold} order units.', icon: 'truck-delivery-outline', metric: 'fulfilled-order-quantity', thresholds: [10, 100, 1_000] }),
+  ...createTieredAchievements({ seriesId: 'largest_order', category: 'sales', name: 'Big Deal', description: 'Fulfil one order for {threshold} units.', icon: 'briefcase-outline', metric: 'largest-order-quantity', thresholds: [3, 6, 10] }),
+  ...createTieredAchievements({ seriesId: 'trusted_customers', category: 'sales', name: 'Trusted Portfolio', description: 'Keep {threshold} customers at 60+ relationship.', icon: 'account-group-outline', metric: 'trusted-customer-count', thresholds: [1, 3, 6] }),
+  ...createTieredAchievements({ seriesId: 'sales_reliability', category: 'sales', name: 'Reliability Index', description: 'Keep fulfilled-order reliability above {threshold}%.', icon: 'shield-check-outline', metric: 'fulfilled-order-ratio', thresholds: [60, 75, 85] }).map((achievement) => ({ ...achievement, minimumCompletedOrderCount: 10 })),
+  ...createTieredAchievements({ seriesId: 'premium_orders', category: 'sales', name: 'Premium Negotiator', description: 'Fulfil {threshold} orders above +10% premium.', icon: 'cash-plus', metric: 'high-premium-order-count', thresholds: [1, 10, 50] }),
+  ...createTieredAchievements({ seriesId: 'bundle_maturity', category: 'sales', name: 'Bundle Specialist', description: 'Fulfil one order with {threshold} lines.', icon: 'package-variant-closed-plus', metric: 'largest-bundle-line-count', thresholds: [2, 3, 4] }),
+  ...createTieredAchievements({ seriesId: 'domain_reach', category: 'sales', name: 'Domain Reach', description: 'Fulfil orders in {threshold} sales domains.', icon: 'earth', metric: 'fulfilled-order-domain-count', thresholds: [2, 4, 6] }),
   ...createTieredAchievements({ seriesId: 'cash_reserves', category: 'finance', name: 'Cash Reserves', description: 'Hold €{threshold}.', icon: 'cash-multiple', metric: 'cash-balance', thresholds: [15_000, 25_000, 50_000] }),
   ...createTieredAchievements({ seriesId: 'company_time', category: 'time', name: 'Active Operator', description: 'Operate for {threshold} foreground minutes.', icon: 'clock-outline', metric: 'foreground-minutes', thresholds: [10, 60, 300] }),
   ...createTieredAchievements({ seriesId: 'company_prestige', category: 'prestige', name: 'Company Standing', description: 'Reach {threshold} company prestige.', icon: 'trophy-outline', metric: 'company-prestige', thresholds: [1, 5, 20] }),

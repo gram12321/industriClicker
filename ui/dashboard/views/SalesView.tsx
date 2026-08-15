@@ -16,7 +16,7 @@ import { APP_ICONS, ECONOMY_PHASE_ICONS, SALES_CUSTOMER_DOMAIN_ICONS, SALES_CUST
 import { DetailRow, SectionHeading } from '@/ui/dashboard/components/DashboardPrimitives';
 import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 
-const SALES_RESEARCH_CHAINS: readonly ResearchChainId[] = ['sales-capacity', 'sales-order-value-limit', 'sales-targeting', 'bid-value', 'local-market-network', 'market-diffusion-network'];
+const SALES_RESEARCH_CHAINS: readonly ResearchChainId[] = ['sales-capacity', 'sales-order-value-limit', 'sales-targeting', 'bid-value', 'relationship-management', 'sales-intelligence', 'local-market-network', 'market-diffusion-network'];
 
 export function SalesView({ companyPrestige, customerPipelineProgress, currentGameTimeMs, economyPhase, fulfillSalesOrder, getResearchAvailability, inventory, market, maximumOpenOrders, rejectSalesOrder, research, salesOrderAcquisition, salesOrders, startResearch }: { companyPrestige: number; customerPipelineProgress: number; currentGameTimeMs: number; economyPhase: 'crash' | 'recession' | 'stable' | 'expansion' | 'boom'; fulfillSalesOrder: (id: string) => boolean; getResearchAvailability: (projectId: ResearchProjectId) => ResearchAvailability; inventory: Inventory; market: Market; maximumOpenOrders: number; rejectSalesOrder: (id: string) => boolean; research: ResearchLedger; salesOrderAcquisition: SalesOrderAcquisitionStatus; salesOrders: SalesOrders; startResearch: (projectId: ResearchProjectId) => boolean }) {
   const [salesList, setSalesList] = useState<'open' | 'closed'>('open');

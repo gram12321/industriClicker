@@ -10,7 +10,7 @@ import { SalesOrders, getSalesOrderAcquisitionStatus, getSalesOrderResourceWeigh
 import { AchievementLedger, ProductionStatistics, createAchievementEvaluationContext, evaluateAchievementUnlocks, type AchievementCategory } from '@/game/achievements';
 import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyAssetsPrestige, calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary, calculateFacilityConditionPrestige } from '@/game/prestige';
 import { evaluateGateRequirements, type GateContext, type GateEvaluation } from '@/game/gates';
-import { ResearchLedger, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesOrders, getMaximumSimultaneousResearchProjects, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, getSalesOrderBidMultiplier, getSalesOfferResourceTypes, type ResearchProjectId } from '@/game/research';
+import { ResearchLedger, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesOrders, getMaximumSimultaneousResearchProjects, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, getSalesOrderBidMultiplier, getSalesOfferResourceTypes, getSalesOrderBundleMaturityMultiplier, getSalesOrderMinimumPremiumBonus, getSalesPressureOfferChanceMultiplier, getSalesRelationshipDecayHalfLifeMultiplier, getSalesRelationshipFailureLossMultiplier, getSalesRelationshipFulfilmentGainMultiplier, type ResearchProjectId } from '@/game/research';
 import { FIRST_FACILITY_RECIPE_RESEARCH_GRANT_ID, FIRST_FACILITY_RECIPE_RESEARCH_WORK_SPEED_MULTIPLIER, GrantLedger } from '@/game/grants';
 import type { StartingConditionId } from '@/game/company/companyTypes';
 import { STANDARD_START_CONSTRUCTION_MATERIALS, STANDARD_START_INDUSTRIAL_MACHINES } from '@/game/company/companyConstants';
@@ -710,20 +710,27 @@ export const useGameStore = create<GameState>((set, get) => {
       if (completedSalesMinutes > 0) {
         salesOrders ??= get().salesOrders.clone();
         const activeMarket = market ?? get().market;
+        const completedResearchProjectIds = research.getCompletedProjectIds();
         let ordersCreated = 0;
         for (let minute = 0; minute < completedSalesMinutes; minute += 1) {
           const result = salesOrders.advanceTime({
             currentGameTimeMs: stepEndGameTimeMs - (completedSalesMinutes - minute - 1) * REALTIME_WORK_MINUTE_MS,
-            maximumOpenOrders: getMaximumOpenSalesOrders(research.getCompletedProjectIds()),
+            maximumOpenOrders: getMaximumOpenSalesOrders(completedResearchProjectIds),
             maximumOrderValue,
             companyPrestige: calculateCompanyPrestigeSummary(get().prestige.getEvents(), stepEndGameTimeMs).totalPrestige,
             economyPhase: (marketFinance ?? get().finance).getEconomyPhase(),
             inventoryByResource: Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, inventory.getAmount(resourceType)])) as Record<ResourceType, number>,
             globalPrices: Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, activeMarket.getGlobalPrice(resourceType)])) as Record<ResourceType, number>,
             globalSupplies: Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, activeMarket.getGlobalEntry(resourceType).supply])) as Record<ResourceType, number>,
-            candidateResourceTypes: getSalesOfferResourceTypes(research.getCompletedProjectIds(), productionStatistics.toSnapshot().producedByResource),
+            candidateResourceTypes: getSalesOfferResourceTypes(completedResearchProjectIds, productionStatistics.toSnapshot().producedByResource),
             getResourceWeight: (resourceType) => getSalesOrderResourceWeight(resourceType, research, productionStatistics),
-            bidResearchMultiplier: getSalesOrderBidMultiplier(research.getCompletedProjectIds(), MARKET_SALES_ORDER_BID_MULTIPLIER),
+            bidResearchMultiplier: getSalesOrderBidMultiplier(completedResearchProjectIds, MARKET_SALES_ORDER_BID_MULTIPLIER),
+            relationshipDecayHalfLifeMultiplier: getSalesRelationshipDecayHalfLifeMultiplier(completedResearchProjectIds),
+            relationshipFulfilmentGainMultiplier: getSalesRelationshipFulfilmentGainMultiplier(completedResearchProjectIds),
+            relationshipFailureLossMultiplier: getSalesRelationshipFailureLossMultiplier(completedResearchProjectIds),
+            pressureOfferChanceMultiplier: getSalesPressureOfferChanceMultiplier(completedResearchProjectIds),
+            bundleMaturityMultiplier: getSalesOrderBundleMaturityMultiplier(completedResearchProjectIds),
+            minimumPremiumBonus: getSalesOrderMinimumPremiumBonus(completedResearchProjectIds),
           });
           ordersCreated += result.ordersCreated;
         }
@@ -1081,8 +1088,9 @@ export const useGameStore = create<GameState>((set, get) => {
       const quality = inventory.getQuality(line.resourceType);
       if (!inventory.remove(line.resourceType, line.quantity) || !market.addToGlobal(line.resourceType, line.quantity, quality)) return false;
     }
+    const completedResearchProjectIds = get().research.getCompletedProjectIds();
     if (!finance.applyTransaction({ amount: order.reward, description: `Customer order fulfilled: ${order.customerName}`, detailLines: order.lines.map((line) => `Delivered ${line.quantity} ${line.resourceType}`), kind: 'operating', source: 'order-sale', occurredAtGameTimeMs: currentGameTimeMs })
-      || !salesOrders.fulfill(order.id, currentGameTimeMs, calculateCompanyPrestigeSummary(get().prestige.getEvents(), currentGameTimeMs).totalPrestige)) {
+      || !salesOrders.fulfill(order.id, currentGameTimeMs, calculateCompanyPrestigeSummary(get().prestige.getEvents(), currentGameTimeMs).totalPrestige, getSalesRelationshipDecayHalfLifeMultiplier(completedResearchProjectIds), getSalesRelationshipFulfilmentGainMultiplier(completedResearchProjectIds), getSalesRelationshipFailureLossMultiplier(completedResearchProjectIds))) {
       return false;
     }
 
@@ -1108,7 +1116,8 @@ export const useGameStore = create<GameState>((set, get) => {
   },
   rejectSalesOrder: (orderId) => {
     const salesOrders = get().salesOrders.clone();
-    const rejected = salesOrders.reject(orderId, get().lastProcessedAtMs, calculateCompanyPrestigeSummary(get().prestige.getEvents(), get().lastProcessedAtMs).totalPrestige);
+    const completedResearchProjectIds = get().research.getCompletedProjectIds();
+    const rejected = salesOrders.reject(orderId, get().lastProcessedAtMs, calculateCompanyPrestigeSummary(get().prestige.getEvents(), get().lastProcessedAtMs).totalPrestige, getSalesRelationshipDecayHalfLifeMultiplier(completedResearchProjectIds), getSalesRelationshipFulfilmentGainMultiplier(completedResearchProjectIds), getSalesRelationshipFailureLossMultiplier(completedResearchProjectIds));
 
     if (!rejected) {
       return false;

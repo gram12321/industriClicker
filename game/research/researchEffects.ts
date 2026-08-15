@@ -5,6 +5,12 @@ export type ResearchEffect =
   | { kind: 'max-open-sales-orders'; maximum: number }
   | { kind: 'sales-order-value-cap'; maximumCompanyValueFraction: number }
   | { kind: 'sales-order-bid-multiplier'; multiplier: number }
+  | { kind: 'sales-relationship-decay-half-life'; multiplier: number }
+  | { kind: 'sales-relationship-fulfilment-gain'; multiplier: number }
+  | { kind: 'sales-relationship-failure-loss'; multiplier: number }
+  | { kind: 'sales-pressure-offer-chance'; multiplier: number }
+  | { kind: 'sales-order-bundle-maturity'; multiplier: number }
+  | { kind: 'sales-order-minimum-premium-bonus'; bonus: number }
   | { kind: 'sales-offer-produced-resource-weight'; multiplier: number }
   | { kind: 'sales-offer-produced-only' }
   | { kind: 'local-market-depth'; multiplier: number }
@@ -19,6 +25,12 @@ export function describeResearchEffect(effect: ResearchEffect): string {
     case 'max-open-sales-orders': return `Maximum open orders: ${effect.maximum}`;
     case 'sales-order-value-cap': return `Maximum order value: ${Math.round(effect.maximumCompanyValueFraction * 100)}% of company assets`;
     case 'sales-order-bid-multiplier': return `Customer-order bid premium: ${Math.round((effect.multiplier - 1) * 100)}%`;
+    case 'sales-relationship-decay-half-life': return `Customer relationship retention: +${Math.round((effect.multiplier - 1) * 100)}%`;
+    case 'sales-relationship-fulfilment-gain': return `Relationship gain on fulfilment: +${Math.round((effect.multiplier - 1) * 100)}%`;
+    case 'sales-relationship-failure-loss': return `Relationship loss on rejection/expiry: ${Math.round((1 - effect.multiplier) * 100)}% lower`;
+    case 'sales-pressure-offer-chance': return `Below-global pressure-offer chance: ${Math.round((1 - effect.multiplier) * 100)}% lower`;
+    case 'sales-order-bundle-maturity': return `Bundle maturity growth: +${Math.round((effect.multiplier - 1) * 100)}%`;
+    case 'sales-order-minimum-premium-bonus': return `Minimum bid premium floor: +${Math.round(effect.bonus * 100)} pts`;
     case 'sales-offer-produced-resource-weight': return `Produced resources are ${effect.multiplier}× more likely in sales offers`;
     case 'sales-offer-produced-only': return 'Customer orders only request resources your company has produced';
     case 'local-market-depth': return `Local market depth: ${effect.multiplier.toFixed(1)}×`;

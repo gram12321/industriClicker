@@ -57,6 +57,48 @@ export function getSalesOrderBidMultiplier(completedProjectIds: readonly string[
   }, baseMultiplier);
 }
 
+export function getSalesRelationshipDecayHalfLifeMultiplier(completedProjectIds: readonly string[]): number {
+  return completedProjectIds.reduce((multiplier, projectId) => {
+    const effect = getResearchProject(projectId)?.effect;
+    return effect?.kind === 'sales-relationship-decay-half-life' ? Math.max(multiplier, effect.multiplier) : multiplier;
+  }, 1);
+}
+
+export function getSalesRelationshipFulfilmentGainMultiplier(completedProjectIds: readonly string[]): number {
+  return completedProjectIds.reduce((multiplier, projectId) => {
+    const effect = getResearchProject(projectId)?.effect;
+    return effect?.kind === 'sales-relationship-fulfilment-gain' ? Math.max(multiplier, effect.multiplier) : multiplier;
+  }, 1);
+}
+
+export function getSalesRelationshipFailureLossMultiplier(completedProjectIds: readonly string[]): number {
+  return completedProjectIds.reduce((multiplier, projectId) => {
+    const effect = getResearchProject(projectId)?.effect;
+    return effect?.kind === 'sales-relationship-failure-loss' ? Math.min(multiplier, effect.multiplier) : multiplier;
+  }, 1);
+}
+
+export function getSalesPressureOfferChanceMultiplier(completedProjectIds: readonly string[]): number {
+  return completedProjectIds.reduce((multiplier, projectId) => {
+    const effect = getResearchProject(projectId)?.effect;
+    return effect?.kind === 'sales-pressure-offer-chance' ? Math.min(multiplier, effect.multiplier) : multiplier;
+  }, 1);
+}
+
+export function getSalesOrderBundleMaturityMultiplier(completedProjectIds: readonly string[]): number {
+  return completedProjectIds.reduce((multiplier, projectId) => {
+    const effect = getResearchProject(projectId)?.effect;
+    return effect?.kind === 'sales-order-bundle-maturity' ? Math.max(multiplier, effect.multiplier) : multiplier;
+  }, 1);
+}
+
+export function getSalesOrderMinimumPremiumBonus(completedProjectIds: readonly string[]): number {
+  return completedProjectIds.reduce((bonus, projectId) => {
+    const effect = getResearchProject(projectId)?.effect;
+    return effect?.kind === 'sales-order-minimum-premium-bonus' ? Math.max(bonus, effect.bonus) : bonus;
+  }, 0);
+}
+
 export function getLocalMarketDepthMultiplier(completedProjectIds: readonly string[]): number {
   return completedProjectIds.reduce((multiplier, projectId) => {
     const effect = getResearchProject(projectId)?.effect;

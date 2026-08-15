@@ -16,9 +16,15 @@ export type AchievementEvaluationContext = {
   facilityEfficiencies: readonly number[];
   producedByResource: ReturnType<ProductionStatistics['toSnapshot']>['producedByResource'];
   totalProduced: number;
-  fulfilledContractCount: number;
-  fulfilledContractQuantity: number;
-  largestFulfilledContractQuantity: number;
+  fulfilledOrderCount: number;
+  fulfilledOrderQuantity: number;
+  largestFulfilledOrderQuantity: number;
+  trustedCustomerCount: number;
+  fulfilledOrderRatio: number;
+  highPremiumOrderCount: number;
+  largestFulfilledOrderBundleLineCount: number;
+  fulfilledOrderDomainCount: number;
+  completedOrderCount: number;
   cashBalance: number;
   foregroundMinutes: number;
   companyPrestige: number;
@@ -39,7 +45,15 @@ export function createAchievementEvaluationContext(input: {
   companyStartedAtGameTimeMs: number;
   currentGameTimeMs: number;
 }): AchievementEvaluationContext {
-  const fulfilledContracts = input.salesOrders.getCompletedOrders().filter((order) => order.status === 'fulfilled');
+  const companyPrestige = calculateCompanyPrestigeSummary(input.prestige.getEvents(), input.currentGameTimeMs).totalPrestige;
+  const completedOrders = input.salesOrders.getCompletedOrders();
+  const fulfilledOrders = completedOrders.filter((order) => order.status === 'fulfilled');
+  const fulfilledOrderQuantity = fulfilledOrders.reduce((total, order) => total + order.lines.reduce((lineTotal, line) => lineTotal + line.quantity, 0), 0);
+  const fulfilledOrderCount = fulfilledOrders.length;
+  const trustedCustomerCount = input.salesOrders
+    .getCustomerCatalogue()
+    .filter((customer) => input.salesOrders.getCustomerState(customer.id, input.currentGameTimeMs, companyPrestige).relationship >= 0.6)
+    .length;
   const facilityList = input.facilities.getAll();
 
   return {
@@ -54,12 +68,18 @@ export function createAchievementEvaluationContext(input: {
     facilityEfficiencies: facilityList.map((facility) => facility.getView().facilityEfficiency),
     producedByResource: input.productionStatistics.toSnapshot().producedByResource,
     totalProduced: input.productionStatistics.getTotalProduced(),
-    fulfilledContractCount: fulfilledContracts.length,
-    fulfilledContractQuantity: fulfilledContracts.reduce((total, contract) => total + contract.lines.reduce((lineTotal, line) => lineTotal + line.quantity, 0), 0),
-    largestFulfilledContractQuantity: fulfilledContracts.reduce((largest, contract) => Math.max(largest, contract.lines.reduce((lineTotal, line) => lineTotal + line.quantity, 0)), 0),
+    fulfilledOrderCount,
+    fulfilledOrderQuantity,
+    largestFulfilledOrderQuantity: fulfilledOrders.reduce((largest, order) => Math.max(largest, order.lines.reduce((lineTotal, line) => lineTotal + line.quantity, 0)), 0),
+    trustedCustomerCount,
+    fulfilledOrderRatio: completedOrders.length > 0 ? fulfilledOrderCount / completedOrders.length * 100 : 0,
+    highPremiumOrderCount: fulfilledOrders.filter((order) => order.premiumPercent >= 10).length,
+    largestFulfilledOrderBundleLineCount: fulfilledOrders.reduce((largest, order) => Math.max(largest, order.lines.length), 0),
+    fulfilledOrderDomainCount: new Set(fulfilledOrders.map((order) => order.customerDomain)).size,
+    completedOrderCount: completedOrders.length,
     cashBalance: input.finance.getBalance(),
     foregroundMinutes: Math.max(0, input.currentGameTimeMs - input.companyStartedAtGameTimeMs) / 60_000,
-    companyPrestige: calculateCompanyPrestigeSummary(input.prestige.getEvents(), input.currentGameTimeMs).totalPrestige,
+    companyPrestige,
   };
 }
 
@@ -74,9 +94,14 @@ export function getAchievementCurrentValue(definition: AchievementDefinition, co
     case 'facility-efficiency-count': return context.facilityEfficiencies.filter((efficiency) => efficiency >= (definition.facilityEfficiencyThreshold ?? Infinity)).length;
     case 'resource-produced': return definition.resourceType ? context.producedByResource[definition.resourceType] : 0;
     case 'total-produced': return context.totalProduced;
-    case 'fulfilled-contract-count': return context.fulfilledContractCount;
-    case 'fulfilled-contract-quantity': return context.fulfilledContractQuantity;
-    case 'largest-contract-quantity': return context.largestFulfilledContractQuantity;
+    case 'fulfilled-order-count': return context.fulfilledOrderCount;
+    case 'fulfilled-order-quantity': return context.fulfilledOrderQuantity;
+    case 'largest-order-quantity': return context.largestFulfilledOrderQuantity;
+    case 'trusted-customer-count': return context.trustedCustomerCount;
+    case 'fulfilled-order-ratio': return context.completedOrderCount >= (definition.minimumCompletedOrderCount ?? 0) ? context.fulfilledOrderRatio : 0;
+    case 'high-premium-order-count': return context.highPremiumOrderCount;
+    case 'largest-bundle-line-count': return context.largestFulfilledOrderBundleLineCount;
+    case 'fulfilled-order-domain-count': return context.fulfilledOrderDomainCount;
     case 'cash-balance': return context.cashBalance;
     case 'foreground-minutes': return context.foregroundMinutes;
     case 'company-prestige': return context.companyPrestige;

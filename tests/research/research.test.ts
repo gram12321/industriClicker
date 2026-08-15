@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ACHIEVEMENT_DEFINITIONS } from '@/game/achievements';
 import { FACILITIES } from '@/game/facilities';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
-import { BASE_MAXIMUM_OPEN_SALES_ORDERS, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesOrders, getRecipeResearchProjectId, getSalesOrderBidMultiplier, getSalesOrderMaximumCompanyValueFraction, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, RESEARCH_PROJECTS, ResearchLedger } from '@/game/research';
+import { BASE_MAXIMUM_OPEN_SALES_ORDERS, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesOrders, getRecipeResearchProjectId, getSalesOrderBidMultiplier, getSalesOrderBundleMaturityMultiplier, getSalesOrderMaximumCompanyValueFraction, getSalesOrderMinimumPremiumBonus, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, getSalesPressureOfferChanceMultiplier, getSalesRelationshipDecayHalfLifeMultiplier, getSalesRelationshipFailureLossMultiplier, getSalesRelationshipFulfilmentGainMultiplier, RESEARCH_PROJECTS, ResearchLedger } from '@/game/research';
 
 function createProductionTotals(produced: readonly ResourceType[]): Record<ResourceType, number> {
   return RESOURCE_TYPES.reduce((totals, resourceType) => {
@@ -17,7 +17,7 @@ describe('sales research effects', () => {
     expect(getMaximumOpenSalesOrders(['sales-capacity-1'])).toBe(3);
   });
 
-  it('raises contract rewards without changing the base market-sale premium', () => {
+  it('raises order rewards without changing the base market-sale premium', () => {
     expect(getSalesOrderBidMultiplier([], 1.2)).toBe(1.2);
     expect(getSalesOrderBidMultiplier(['bid-value-3'], 1.2)).toBe(1.35);
     expect(getSalesOrderBidMultiplier(['bid-value-3', 'bid-value-5'], 1.2)).toBe(1.5);
@@ -44,6 +44,20 @@ describe('sales research effects', () => {
   it('caps the market diffusion network at a fourfold local-regional rate', () => {
     expect(getLocalRegionalDiffusionMultiplier([])).toBe(1);
     expect(getLocalRegionalDiffusionMultiplier(['market-diffusion-network-1', 'market-diffusion-network-10'])).toBe(4);
+  });
+
+  it('applies relationship-management multipliers with best completed tier effects', () => {
+    expect(getSalesRelationshipDecayHalfLifeMultiplier([])).toBe(1);
+    expect(getSalesRelationshipDecayHalfLifeMultiplier(['relationship-management-1', 'relationship-management-4'])).toBe(1.25);
+    expect(getSalesRelationshipFulfilmentGainMultiplier(['relationship-management-2'])).toBe(1.08);
+    expect(getSalesRelationshipFailureLossMultiplier(['relationship-management-3', 'relationship-management-5'])).toBe(0.8);
+  });
+
+  it('applies sales-intelligence multipliers with bounded pressure and premium improvements', () => {
+    expect(getSalesPressureOfferChanceMultiplier([])).toBe(1);
+    expect(getSalesPressureOfferChanceMultiplier(['sales-intelligence-1'])).toBe(0.9);
+    expect(getSalesOrderBundleMaturityMultiplier(['sales-intelligence-2', 'sales-intelligence-4'])).toBe(1.2);
+    expect(getSalesOrderMinimumPremiumBonus(['sales-intelligence-3', 'sales-intelligence-5'])).toBe(0.08);
   });
 });
 

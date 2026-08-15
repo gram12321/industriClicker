@@ -21,6 +21,8 @@ const CHAIN_DETAILS: Record<ResearchChainId, { eyebrow: string; icon: string; ti
   'sales-order-value-limit': { eyebrow: 'SALES', icon: 'scale-balance', title: 'Order scope', subtitle: 'Raise the share of company assets a customer order may request.' },
   'sales-targeting': { eyebrow: 'SALES', icon: 'bullseye-arrow', title: 'Sales targeting', subtitle: 'Focus customer offers on goods your company has produced.' },
   'bid-value': { eyebrow: 'SALES', icon: 'cash-multiple', title: 'Bid value', subtitle: 'Increase the premium paid by customer orders.' },
+  'relationship-management': { eyebrow: 'SALES', icon: 'account-heart-outline', title: 'Relationship management', subtitle: 'Improve trust retention and soften losses from rejected or expired orders.' },
+  'sales-intelligence': { eyebrow: 'SALES', icon: 'brain', title: 'Sales intelligence', subtitle: 'Reduce pressure offers, grow bundle maturity, and improve premium floors.' },
   'local-market-network': { eyebrow: 'MARKET', icon: 'storefront-outline', title: 'Local market network', subtitle: 'Expand local market depth so each trade shifts prices less.' },
   'market-diffusion-network': { eyebrow: 'MARKET', icon: 'transit-connection-variant', title: 'Market diffusion network', subtitle: 'Increase the rate at which local and regional markets rebalance.' },
   'research-capacity': { eyebrow: 'RESEARCH', icon: 'flask-plus-outline', title: 'Research capacity', subtitle: 'Unlock additional research slots so projects can run simultaneously.' },
@@ -32,7 +34,7 @@ type ResearchGroup = { eyebrow: string; icon: string; id: ResearchGroupId; title
 
 const RESEARCH_GROUPS: readonly ResearchGroup[] = [
   { id: 'capital-grants', chainIds: ['capital-grants'], eyebrow: 'CAPITAL', icon: 'bank-outline', title: 'Capital grants', subtitle: 'Fund staged company investment with one-time research grants.' },
-  { id: 'sales', chainIds: ['sales-capacity', 'sales-order-value-limit', 'sales-targeting', 'bid-value', 'market-diffusion-network', 'local-market-network'], eyebrow: 'SALES', icon: 'handshake-outline', title: 'Sales research', subtitle: 'Grow your customer pipeline, target better orders, improve bids, and improve market reach.' },
+  { id: 'sales', chainIds: ['sales-capacity', 'sales-order-value-limit', 'sales-targeting', 'bid-value', 'relationship-management', 'sales-intelligence', 'market-diffusion-network', 'local-market-network'], eyebrow: 'SALES', icon: 'handshake-outline', title: 'Sales research', subtitle: 'Grow your pipeline, improve trust outcomes, sharpen offers, and improve market reach.' },
   { id: 'research-capacity', chainIds: ['research-capacity'], eyebrow: 'RESEARCH', icon: 'flask-plus-outline', title: 'Research capacity', subtitle: 'Unlock additional research slots so projects can run simultaneously.' },
   { id: 'recipe-unlocks', chainIds: ['recipe-unlocks'], eyebrow: 'RECIPES', icon: 'flask-outline', title: 'Recipe research', subtitle: 'Unlock production recipes for your facilities.' },
 ];
