@@ -21,6 +21,19 @@ export const SALES_ORDER_VOLUME_SCALING = {
   maximumRelationshipMultiplier: 1.2,
 } as const;
 
+/**
+ * Per-line order volume responds to current global supply versus the resource's
+ * global benchmark. It deliberately stays secondary to company progression and
+ * the order-value cap: shortages raise requested lots a little, while abundant
+ * markets can produce larger clearance-style orders.
+ */
+export const SALES_ORDER_MARKET_VOLUME_SCALING = {
+  maximumOversupplyMultiplier: 1.3,
+  maximumShortageMultiplier: 1.12,
+  oversupplyRatioAtMaximum: 3,
+  shortageRatioAtMaximum: 0.2,
+} as const;
+
 export const SALES_ORDER_BUNDLE_PRESTIGE_CONTROL_POINTS = [
   { input: 0, normalized: 0 },
   { input: 1, normalized: 0.05 },
@@ -91,10 +104,10 @@ export const SALES_CUSTOMER_GENERATION = {
 } as const;
 
 export const SALES_RESOURCE_PROFILES: Readonly<Record<ResourceType, { domain: SalesCustomerDomain; standardOrderLot: number }>> = {
-  grain: { domain: 'food', standardOrderLot: 10 }, bread: { domain: 'food', standardOrderLot: 10 }, sugar: { domain: 'food', standardOrderLot: 10 }, cake: { domain: 'food', standardOrderLot: 10 }, 'premium-cake': { domain: 'food', standardOrderLot: 10 }, eggs: { domain: 'food', standardOrderLot: 10 }, fruit: { domain: 'food', standardOrderLot: 10 }, meat: { domain: 'food', standardOrderLot: 10 }, 'meat-pie': { domain: 'food', standardOrderLot: 10 }, milk: { domain: 'food', standardOrderLot: 10 },
-  coal: { domain: 'raw-materials', standardOrderLot: 25 }, iron: { domain: 'raw-materials', standardOrderLot: 25 }, copper: { domain: 'raw-materials', standardOrderLot: 25 }, sand: { domain: 'raw-materials', standardOrderLot: 25 }, clay: { domain: 'raw-materials', standardOrderLot: 25 }, stone: { domain: 'raw-materials', standardOrderLot: 25 }, minerals: { domain: 'raw-materials', standardOrderLot: 25 }, gold: { domain: 'raw-materials', standardOrderLot: 1 },
-  steel: { domain: 'industrial-inputs', standardOrderLot: 10 }, chemicals: { domain: 'industrial-inputs', standardOrderLot: 10 }, fertilizer: { domain: 'industrial-inputs', standardOrderLot: 10 }, plastic: { domain: 'industrial-inputs', standardOrderLot: 10 }, wool: { domain: 'industrial-inputs', standardOrderLot: 10 },
-  bricks: { domain: 'construction-materials', standardOrderLot: 25 }, cement: { domain: 'construction-materials', standardOrderLot: 10 }, 'reinforced-concrete': { domain: 'construction-materials', standardOrderLot: 5 }, 'construction-materials': { domain: 'construction-materials', standardOrderLot: 5 },
-  'electric-circuits': { domain: 'electronics', standardOrderLot: 5 }, silicon: { domain: 'electronics', standardOrderLot: 5 }, 'advanced-components': { domain: 'electronics', standardOrderLot: 2 }, 'industrial-machines': { domain: 'electronics', standardOrderLot: 1 },
+  grain: { domain: 'food', standardOrderLot: 100 }, bread: { domain: 'food', standardOrderLot: 50 }, sugar: { domain: 'food', standardOrderLot: 75 }, cake: { domain: 'food', standardOrderLot: 10 }, 'premium-cake': { domain: 'food', standardOrderLot: 5 }, eggs: { domain: 'food', standardOrderLot: 25 }, fruit: { domain: 'food', standardOrderLot: 25 }, meat: { domain: 'food', standardOrderLot: 20 }, 'meat-pie': { domain: 'food', standardOrderLot: 10 }, milk: { domain: 'food', standardOrderLot: 25 },
+  coal: { domain: 'raw-materials', standardOrderLot: 100 }, iron: { domain: 'raw-materials', standardOrderLot: 100 }, copper: { domain: 'raw-materials', standardOrderLot: 75 }, sand: { domain: 'raw-materials', standardOrderLot: 500 }, clay: { domain: 'raw-materials', standardOrderLot: 250 }, stone: { domain: 'raw-materials', standardOrderLot: 200 }, minerals: { domain: 'raw-materials', standardOrderLot: 150 }, gold: { domain: 'raw-materials', standardOrderLot: 1 },
+  steel: { domain: 'industrial-inputs', standardOrderLot: 50 }, chemicals: { domain: 'industrial-inputs', standardOrderLot: 75 }, fertilizer: { domain: 'industrial-inputs', standardOrderLot: 100 }, plastic: { domain: 'industrial-inputs', standardOrderLot: 50 }, wool: { domain: 'industrial-inputs', standardOrderLot: 25 },
+  bricks: { domain: 'construction-materials', standardOrderLot: 100 }, cement: { domain: 'construction-materials', standardOrderLot: 100 }, 'reinforced-concrete': { domain: 'construction-materials', standardOrderLot: 25 }, 'construction-materials': { domain: 'construction-materials', standardOrderLot: 10 },
+  'electric-circuits': { domain: 'electronics', standardOrderLot: 25 }, silicon: { domain: 'electronics', standardOrderLot: 10 }, 'advanced-components': { domain: 'electronics', standardOrderLot: 5 }, 'industrial-machines': { domain: 'electronics', standardOrderLot: 1 },
   water: { domain: 'utilities', standardOrderLot: 500 }, electricity: { domain: 'utilities', standardOrderLot: 250 },
 };

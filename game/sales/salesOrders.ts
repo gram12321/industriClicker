@@ -1,14 +1,14 @@
 import { calculateAsymmetricalScaler01, normalizeWithControlPoints01 } from '@/game/core/math/scaling';
 import type { EconomyPhase } from '@/game/finance';
-import type { ResourceType } from '@/game/resources';
-import { SALES_CUSTOMER_DOMAIN_PROFILES, SALES_CUSTOMER_TYPE_PROFILES, SALES_ECONOMY_MULTIPLIERS, SALES_ORDER_BASE_ACQUISITION_CHANCE_PER_MINUTE, SALES_ORDER_BUNDLE_PRESTIGE_CONTROL_POINTS, SALES_ORDER_DURATION_MS, SALES_ORDER_MAXIMUM_QUANTITY, SALES_ORDER_MAXIMUM_GLOBAL_PREMIUM, SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP, SALES_ORDER_MINIMUM_GLOBAL_PREMIUM, SALES_ORDER_MINIMUM_QUANTITY, SALES_ORDER_PENDING_PENALTY_PER_OPEN_ORDER, SALES_ORDER_PRESTIGE_DISCOVERY_BASE, SALES_ORDER_PRESTIGE_DISCOVERY_SCALE, SALES_ORDER_PRESSURE_OFFER_CHANCE, SALES_ORDER_VOLUME_SCALING } from './salesConstants';
+import { getResource, type ResourceType } from '@/game/resources';
+import { SALES_CUSTOMER_DOMAIN_PROFILES, SALES_CUSTOMER_TYPE_PROFILES, SALES_ECONOMY_MULTIPLIERS, SALES_ORDER_BASE_ACQUISITION_CHANCE_PER_MINUTE, SALES_ORDER_BUNDLE_PRESTIGE_CONTROL_POINTS, SALES_ORDER_DURATION_MS, SALES_ORDER_MARKET_VOLUME_SCALING, SALES_ORDER_MAXIMUM_QUANTITY, SALES_ORDER_MAXIMUM_GLOBAL_PREMIUM, SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP, SALES_ORDER_MINIMUM_GLOBAL_PREMIUM, SALES_ORDER_MINIMUM_QUANTITY, SALES_ORDER_PENDING_PENALTY_PER_OPEN_ORDER, SALES_ORDER_PRESTIGE_DISCOVERY_BASE, SALES_ORDER_PRESTIGE_DISCOVERY_SCALE, SALES_ORDER_PRESSURE_OFFER_CHANCE, SALES_ORDER_VOLUME_SCALING } from './salesConstants';
 import { SALES_CUSTOMER_CATALOGUE_VERSION, SALES_CUSTOMER_RELATIONSHIP, SALES_CUSTOMER_WORLD_SEED, advanceSalesCustomerRelationship, calculateSalesCustomerRelationshipBaseline, calculateSalesCustomerRelationshipChange, createSalesCustomerState, getSalesCustomerCatalogue, getSalesResourceProfile, type SalesCustomerDefinition, type SalesCustomerState } from './salesCustomers';
 
 export type SalesOrderStatus = 'offered' | 'fulfilled' | 'rejected' | 'expired';
-export type SalesOrderLine = { resourceType: ResourceType; quantity: number; globalReferenceUnitPrice: number; bidUnitPrice: number; premiumPercent: number; reward: number };
+export type SalesOrderLine = { resourceType: ResourceType; quantity: number; globalReferenceUnitPrice: number; bidUnitPrice: number; premiumPercent: number; marketVolumeMultiplier: number; reward: number };
 export type SalesOrder = { id: string; status: SalesOrderStatus; customerId: string; customerName: string; customerDomain: SalesCustomerDefinition['domain']; customerType: SalesCustomerDefinition['customerType']; lines: SalesOrderLine[]; globalReferenceValue: number; premiumPercent: number; reward: number; offeredAtGameTimeMs: number; expiresAtGameTimeMs: number; fulfilledAtGameTimeMs?: number; rejectedAtGameTimeMs?: number; expiredAtGameTimeMs?: number };
 export type SalesOrdersSnapshot = { offered: SalesOrder[]; completed: SalesOrder[]; customerStates: SalesCustomerState[]; nextOrderNumber: number; worldSeed: string; catalogueVersion: number };
-export type SalesOrderGenerationInput = { currentGameTimeMs: number; maximumOpenOrders: number; maximumOrderValue: number; companyPrestige: number; economyPhase: EconomyPhase; inventoryByResource: Readonly<Record<ResourceType, number>>; globalPrices: Readonly<Record<ResourceType, number>>; candidateResourceTypes: readonly ResourceType[]; getResourceWeight: (resourceType: ResourceType) => number; bidResearchMultiplier: number };
+export type SalesOrderGenerationInput = { currentGameTimeMs: number; maximumOpenOrders: number; maximumOrderValue: number; companyPrestige: number; economyPhase: EconomyPhase; inventoryByResource: Readonly<Record<ResourceType, number>>; globalPrices: Readonly<Record<ResourceType, number>>; globalSupplies: Readonly<Record<ResourceType, number>>; candidateResourceTypes: readonly ResourceType[]; getResourceWeight: (resourceType: ResourceType) => number; bidResearchMultiplier: number };
 
 const clamp = (value: number, minimum: number, maximum: number): number => Math.max(minimum, Math.min(maximum, value));
 function roll(seed: string): number { let hash = 2_166_136_261; for (let index = 0; index < seed.length; index += 1) { hash ^= seed.charCodeAt(index); hash = Math.imul(hash, 16_777_619); } return (hash >>> 0) / 4_294_967_296; }
@@ -31,6 +31,17 @@ export function calculateSalesOrderTargetValue(input: { baseTargetValue: number;
   const relationshipMultiplier = 1 + clamp(input.relationship, 0, 1) * (SALES_ORDER_VOLUME_SCALING.maximumRelationshipMultiplier - 1);
   return Math.max(0, input.baseTargetValue) * prestigeMultiplier * relationshipMultiplier;
 }
+export function calculateSalesOrderMarketVolumeMultiplier(input: { resourceType: ResourceType; globalSupply: number }): number {
+  const benchmarkSupply = getResource(input.resourceType).market.globalBenchmarkSupply;
+  if (!Number.isFinite(input.globalSupply) || benchmarkSupply <= 0) return 1;
+  const supplyRatio = Math.max(0, input.globalSupply) / benchmarkSupply;
+  if (supplyRatio < 1) {
+    const progress = clamp((1 - supplyRatio) / (1 - SALES_ORDER_MARKET_VOLUME_SCALING.shortageRatioAtMaximum), 0, 1);
+    return 1 + (SALES_ORDER_MARKET_VOLUME_SCALING.maximumShortageMultiplier - 1) * calculateAsymmetricalScaler01(progress);
+  }
+  const progress = clamp((supplyRatio - 1) / (SALES_ORDER_MARKET_VOLUME_SCALING.oversupplyRatioAtMaximum - 1), 0, 1);
+  return 1 + (SALES_ORDER_MARKET_VOLUME_SCALING.maximumOversupplyMultiplier - 1) * calculateAsymmetricalScaler01(progress);
+}
 export function calculateSalesOrderBundleLineCount(input: { candidateCount: number; companyPrestige: number; relationship: number; marketShare: number; bundleAppetite: number; seed: string }): number {
   if (input.candidateCount <= 1) return Math.max(0, input.candidateCount);
   const prestigeProgress = normalizeWithControlPoints01(Math.max(0, input.companyPrestige), SALES_ORDER_BUNDLE_PRESTIGE_CONTROL_POINTS);
@@ -45,7 +56,7 @@ export function calculateSalesOrderBundleLineCount(input: { candidateCount: numb
 export function calculateSalesOrderEstimatedWaitMinutes(chance: number): number { return chance > 0 ? 1 / chance : 0; }
 export function calculateSalesOrderMarketComparison(order: Pick<SalesOrder, 'lines' | 'reward'>, getLocalUnitPrice: (resourceType: ResourceType) => number): { normalSaleValue: number; gain: number; gainPercent: number } { const normalSaleValue = order.lines.reduce((sum, line) => sum + line.quantity * getLocalUnitPrice(line.resourceType), 0); const gain = order.reward - normalSaleValue; return { normalSaleValue, gain, gainPercent: normalSaleValue > 0 ? gain / normalSaleValue * 100 : 0 }; }
 
-function createOrderLine(input: { resourceType: ResourceType; targetValue: number; globalReferenceUnitPrice: number; customer: SalesCustomerDefinition; relationship: number; companyPrestige: number; economyPhase: EconomyPhase; bidResearchMultiplier: number; seed: string; maximumReward?: number }): SalesOrderLine | null {
+function createOrderLine(input: { resourceType: ResourceType; targetValue: number; globalReferenceUnitPrice: number; globalSupply: number; customer: SalesCustomerDefinition; relationship: number; companyPrestige: number; economyPhase: EconomyPhase; bidResearchMultiplier: number; seed: string; maximumReward?: number }): SalesOrderLine | null {
   const typeProfile = SALES_CUSTOMER_TYPE_PROFILES[input.customer.customerType];
   const positiveTail = Math.min(0.8, -Math.log(Math.max(0.0001, 1 - roll(`${input.seed}:positive-tail`))) * 0.08);
   const pressurePenalty = roll(`${input.seed}:pressure-offer`) < SALES_ORDER_PRESSURE_OFFER_CHANCE ? -(0.05 + Math.min(0.2, -Math.log(Math.max(0.0001, 1 - roll(`${input.seed}:pressure-size`))) * 0.04)) : 0;
@@ -55,11 +66,12 @@ function createOrderLine(input: { resourceType: ResourceType; targetValue: numbe
   const premium = clamp((typeProfile.globalPremiumBaseline + positiveTail + relationshipBonus + prestigeBonus + purchasingPowerBonus) * SALES_ECONOMY_MULTIPLIERS[input.economyPhase].bid + pressurePenalty, SALES_ORDER_MINIMUM_GLOBAL_PREMIUM, SALES_ORDER_MAXIMUM_GLOBAL_PREMIUM);
   const bidUnitPrice = Math.max(0.01, input.globalReferenceUnitPrice * (1 + premium) * Math.max(0, input.bidResearchMultiplier));
   const lot = getSalesResourceProfile(input.resourceType).standardOrderLot;
-  const requestedQuantity = clamp(Math.ceil(input.targetValue / bidUnitPrice / lot) * lot, Math.max(lot, SALES_ORDER_MINIMUM_QUANTITY), SALES_ORDER_MAXIMUM_QUANTITY);
+  const marketVolumeMultiplier = calculateSalesOrderMarketVolumeMultiplier({ resourceType: input.resourceType, globalSupply: input.globalSupply });
+  const requestedQuantity = clamp(Math.ceil(input.targetValue * marketVolumeMultiplier / bidUnitPrice / lot) * lot, Math.max(lot, SALES_ORDER_MINIMUM_QUANTITY), SALES_ORDER_MAXIMUM_QUANTITY);
   const maximumQuantity = input.maximumReward === undefined ? SALES_ORDER_MAXIMUM_QUANTITY : Math.floor(input.maximumReward / bidUnitPrice / lot) * lot;
   const quantity = Math.min(requestedQuantity, maximumQuantity);
   if (quantity < lot) return null;
-  return { resourceType: input.resourceType, quantity, globalReferenceUnitPrice: input.globalReferenceUnitPrice, bidUnitPrice, premiumPercent: bidUnitPrice / input.globalReferenceUnitPrice * 100 - 100, reward: quantity * bidUnitPrice };
+  return { resourceType: input.resourceType, quantity, globalReferenceUnitPrice: input.globalReferenceUnitPrice, bidUnitPrice, premiumPercent: bidUnitPrice / input.globalReferenceUnitPrice * 100 - 100, marketVolumeMultiplier, reward: quantity * bidUnitPrice };
 }
 
 export class SalesOrders {
@@ -74,7 +86,7 @@ export class SalesOrders {
   createDevelopmentOrderForResource(resourceType: ResourceType, quantity: number, globalReferenceUnitPrice: number, maximumOpenOrders: number, currentGameTimeMs: number, companyPrestige: number): SalesOrder | null {
     if (!Number.isInteger(quantity) || quantity < SALES_ORDER_MINIMUM_QUANTITY || quantity > SALES_ORDER_MAXIMUM_QUANTITY || this.offered.length >= maximumOpenOrders || !Number.isFinite(globalReferenceUnitPrice) || globalReferenceUnitPrice <= 0) return null;
     const profile = getSalesResourceProfile(resourceType); const customer = this.getCustomerCatalogue().find((candidate) => candidate.domain === profile.domain); if (!customer) return null;
-    const state = this.getCustomerState(customer.id, currentGameTimeMs, companyPrestige); const line = createOrderLine({ resourceType, targetValue: quantity * globalReferenceUnitPrice, globalReferenceUnitPrice, customer, relationship: state.relationship, companyPrestige, economyPhase: 'stable', bidResearchMultiplier: 1, seed: `development:${this.nextOrderNumber}` });
+    const state = this.getCustomerState(customer.id, currentGameTimeMs, companyPrestige); const line = createOrderLine({ resourceType, targetValue: quantity * globalReferenceUnitPrice, globalReferenceUnitPrice, globalSupply: getResource(resourceType).market.globalBenchmarkSupply, customer, relationship: state.relationship, companyPrestige, economyPhase: 'stable', bidResearchMultiplier: 1, seed: `development:${this.nextOrderNumber}` });
     if (!line) return null;
     const order = this.createOrder(customer, [line], currentGameTimeMs); this.nextOrderNumber += 1; this.offered.push(order); return cloneOrder(order);
   }
@@ -93,7 +105,7 @@ export class SalesOrders {
     const domain = SALES_CUSTOMER_DOMAIN_PROFILES[customer.domain]; const type = SALES_CUSTOMER_TYPE_PROFILES[customer.customerType]; const baseTargetValue = (domain.targetOrderValue[0] + (domain.targetOrderValue[1] - domain.targetOrderValue[0]) * roll(`value:${this.nextOrderNumber}`)) * (type.targetValueMultiplier[0] + (type.targetValueMultiplier[1] - type.targetValueMultiplier[0]) * roll(`type-value:${this.nextOrderNumber}`));
     const targetValue = Math.min(maximumOrderValue, calculateSalesOrderTargetValue({ baseTargetValue, companyPrestige: input.companyPrestige, relationship: state.relationship })); const lines: SalesOrderLine[] = []; let remainingOrderValue = maximumOrderValue;
     for (const resourceType of selectedResources) {
-      const line = createOrderLine({ resourceType, targetValue: targetValue / selectedResources.length, globalReferenceUnitPrice: input.globalPrices[resourceType], customer, relationship: state.relationship, companyPrestige: input.companyPrestige, economyPhase: input.economyPhase, bidResearchMultiplier: input.bidResearchMultiplier, seed: `line:${this.nextOrderNumber}:${resourceType}`, maximumReward: remainingOrderValue });
+      const line = createOrderLine({ resourceType, targetValue: targetValue / selectedResources.length, globalReferenceUnitPrice: input.globalPrices[resourceType], globalSupply: input.globalSupplies[resourceType], customer, relationship: state.relationship, companyPrestige: input.companyPrestige, economyPhase: input.economyPhase, bidResearchMultiplier: input.bidResearchMultiplier, seed: `line:${this.nextOrderNumber}:${resourceType}`, maximumReward: remainingOrderValue });
       if (!line) continue;
       lines.push(line); remainingOrderValue -= line.reward;
     }

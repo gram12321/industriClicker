@@ -1,16 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { ResourceType, RESOURCE_TYPES } from '@/game/resources';
-import { SALES_ORDER_DURATION_MS, SalesOrders, calculateSalesOrderAcquisitionChance, calculateSalesOrderAcquisitionDetails, calculateSalesOrderBundleLineCount, calculateSalesOrderTargetValue } from '@/game/sales';
+import { getResource, ResourceType, RESOURCE_TYPES } from '@/game/resources';
+import { SALES_ORDER_DURATION_MS, SalesOrders, calculateSalesOrderAcquisitionChance, calculateSalesOrderAcquisitionDetails, calculateSalesOrderBundleLineCount, calculateSalesOrderMarketVolumeMultiplier, calculateSalesOrderTargetValue } from '@/game/sales';
 
 function quantities(resourceType: ResourceType, amount: number): Record<ResourceType, number> {
   return RESOURCE_TYPES.reduce((result, candidate) => { result[candidate] = candidate === resourceType ? amount : 0; return result; }, {} as Record<ResourceType, number>);
 }
 function prices(value: number): Record<ResourceType, number> { return RESOURCE_TYPES.reduce((result, resourceType) => { result[resourceType] = value; return result; }, {} as Record<ResourceType, number>); }
+function benchmarkSupplies(): Record<ResourceType, number> { return RESOURCE_TYPES.reduce((result, resourceType) => { result[resourceType] = getResource(resourceType).market.globalBenchmarkSupply; return result; }, {} as Record<ResourceType, number>); }
 
 describe('sales orders', () => {
   it('requires a meaningful utility lot and locks bid, reference price, and premium', () => {
     const orders = new SalesOrders();
-    const result = orders.advanceTime({ currentGameTimeMs: 60_000, maximumOpenOrders: 2, maximumOrderValue: 10_000, companyPrestige: 500, economyPhase: 'boom', inventoryByResource: quantities(ResourceType.Water, 1_000), globalPrices: prices(1), candidateResourceTypes: [ResourceType.Water], getResourceWeight: () => 1, bidResearchMultiplier: 1 });
+    const result = orders.advanceTime({ currentGameTimeMs: 60_000, maximumOpenOrders: 2, maximumOrderValue: 10_000, companyPrestige: 500, economyPhase: 'boom', inventoryByResource: quantities(ResourceType.Water, 1_000), globalPrices: prices(1), globalSupplies: benchmarkSupplies(), candidateResourceTypes: [ResourceType.Water], getResourceWeight: () => 1, bidResearchMultiplier: 1 });
     expect(result.ordersCreated).toBe(1);
     const order = orders.getOfferedOrders()[0];
     expect(order.lines).toHaveLength(1);
@@ -38,7 +39,7 @@ describe('sales orders', () => {
 
   it('does not create a request when a meaningful lot alone exceeds the company-value cap', () => {
     const orders = new SalesOrders();
-    const result = orders.advanceTime({ currentGameTimeMs: 60_000, maximumOpenOrders: 2, maximumOrderValue: 100, companyPrestige: 500, economyPhase: 'boom', inventoryByResource: quantities(ResourceType.Water, 1_000), globalPrices: prices(1), candidateResourceTypes: [ResourceType.Water], getResourceWeight: () => 1, bidResearchMultiplier: 1 });
+    const result = orders.advanceTime({ currentGameTimeMs: 60_000, maximumOpenOrders: 2, maximumOrderValue: 100, companyPrestige: 500, economyPhase: 'boom', inventoryByResource: quantities(ResourceType.Water, 1_000), globalPrices: prices(1), globalSupplies: benchmarkSupplies(), candidateResourceTypes: [ResourceType.Water], getResourceWeight: () => 1, bidResearchMultiplier: 1 });
 
     expect(result.ordersCreated).toBe(0);
     expect(result.acquisitionChance).toBe(0);
@@ -46,7 +47,7 @@ describe('sales orders', () => {
 
   it('keeps a generated order at or below the company-value cap after lot rounding', () => {
     const orders = new SalesOrders();
-    const result = orders.advanceTime({ currentGameTimeMs: 60_000, maximumOpenOrders: 2, maximumOrderValue: 500, companyPrestige: 500, economyPhase: 'boom', inventoryByResource: quantities(ResourceType.Grain, 1_000), globalPrices: prices(1), candidateResourceTypes: [ResourceType.Grain], getResourceWeight: () => 1, bidResearchMultiplier: 1 });
+    const result = orders.advanceTime({ currentGameTimeMs: 60_000, maximumOpenOrders: 2, maximumOrderValue: 500, companyPrestige: 500, economyPhase: 'boom', inventoryByResource: quantities(ResourceType.Grain, 1_000), globalPrices: prices(1), globalSupplies: benchmarkSupplies(), candidateResourceTypes: [ResourceType.Grain], getResourceWeight: () => 1, bidResearchMultiplier: 1 });
 
     expect(result.ordersCreated).toBe(1);
     expect(orders.getOfferedOrders()[0].reward).toBeLessThanOrEqual(500);
@@ -63,6 +64,15 @@ describe('sales orders', () => {
     expect(loyalCustomerValue).toBeCloseTo(establishedCompanyValue * 1.2);
   });
 
+  it('keeps global supply pressure bounded while allowing both shortage and oversupply to request more lots', () => {
+    const resourceType = ResourceType.Grain;
+    const benchmark = getResource(resourceType).market.globalBenchmarkSupply;
+
+    expect(calculateSalesOrderMarketVolumeMultiplier({ resourceType, globalSupply: benchmark })).toBe(1);
+    expect(calculateSalesOrderMarketVolumeMultiplier({ resourceType, globalSupply: 0 })).toBeCloseTo(1.12);
+    expect(calculateSalesOrderMarketVolumeMultiplier({ resourceType, globalSupply: benchmark * 3 })).toBeCloseTo(1.3);
+  });
+
   it('keeps one line common while allowing more compatible lines as customer maturity rises', () => {
     expect(calculateSalesOrderBundleLineCount({ candidateCount: 1, companyPrestige: 300, relationship: 1, marketShare: 0.2, bundleAppetite: 1, seed: 'one' })).toBe(1);
     expect(calculateSalesOrderBundleLineCount({ candidateCount: 8, companyPrestige: 0, relationship: 0, marketShare: 0.001, bundleAppetite: 0.08, seed: 'early' })).toBe(1);
@@ -72,7 +82,7 @@ describe('sales orders', () => {
 
   it('changes relationship for fulfilment, rejection, and expiry', () => {
     const orders = new SalesOrders();
-    orders.advanceTime({ currentGameTimeMs: 60_000, maximumOpenOrders: 2, maximumOrderValue: 10_000, companyPrestige: 500, economyPhase: 'boom', inventoryByResource: quantities(ResourceType.Water, 1_000), globalPrices: prices(1), candidateResourceTypes: [ResourceType.Water], getResourceWeight: () => 1, bidResearchMultiplier: 1 });
+    orders.advanceTime({ currentGameTimeMs: 60_000, maximumOpenOrders: 2, maximumOrderValue: 10_000, companyPrestige: 500, economyPhase: 'boom', inventoryByResource: quantities(ResourceType.Water, 1_000), globalPrices: prices(1), globalSupplies: benchmarkSupplies(), candidateResourceTypes: [ResourceType.Water], getResourceWeight: () => 1, bidResearchMultiplier: 1 });
     const order = orders.getOfferedOrders()[0]; const before = orders.getCustomerState(order.customerId, 60_000, 500).relationship;
     orders.fulfill(order.id, 61_000, 500);
     expect(orders.getCustomerState(order.customerId, 61_000, 500).relationship).toBeGreaterThan(before);
@@ -82,7 +92,7 @@ describe('sales orders', () => {
     expect(orders.getCustomerState(rejected.customerId, 62_500, 500).relationship).toBeLessThan(beforeRejection);
     orders.createDevelopmentOrderForResource(ResourceType.Water, 500, 1, 2, 63_000, 500);
     const expiring = orders.getOfferedOrders()[0]; const beforeExpiry = orders.getCustomerState(expiring.customerId, 63_000, 500).relationship;
-    orders.advanceTime({ currentGameTimeMs: expiring.expiresAtGameTimeMs + SALES_ORDER_DURATION_MS, maximumOpenOrders: 2, maximumOrderValue: 10_000, companyPrestige: 500, economyPhase: 'boom', inventoryByResource: quantities(ResourceType.Water, 1_000), globalPrices: prices(1), candidateResourceTypes: [ResourceType.Water], getResourceWeight: () => 1, bidResearchMultiplier: 1 });
+    orders.advanceTime({ currentGameTimeMs: expiring.expiresAtGameTimeMs + SALES_ORDER_DURATION_MS, maximumOpenOrders: 2, maximumOrderValue: 10_000, companyPrestige: 500, economyPhase: 'boom', inventoryByResource: quantities(ResourceType.Water, 1_000), globalPrices: prices(1), globalSupplies: benchmarkSupplies(), candidateResourceTypes: [ResourceType.Water], getResourceWeight: () => 1, bidResearchMultiplier: 1 });
     expect(orders.getCompletedOrders().some((candidate) => candidate.status === 'expired')).toBe(true);
     expect(orders.getCustomerState(expiring.customerId, expiring.expiresAtGameTimeMs + SALES_ORDER_DURATION_MS, 500).relationship).toBeLessThan(beforeExpiry);
   });
