@@ -30,6 +30,7 @@ export default function HomeScreen() {
 
 function GameShell({ companyName }: { companyName: string }) {
   const [activeView, setActiveView] = useState<ActiveScreen>('company');
+  const [pediaInitialSection, setPediaInitialSection] = useState<'resources' | 'economy'>('resources');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [onlyInStock, setOnlyInStock] = useState(false);
   const [showActiveRecipeInputs, setShowActiveRecipeInputs] = useState(false);
@@ -131,20 +132,21 @@ function GameShell({ companyName }: { companyName: string }) {
       <View style={styles.screen}>
         <View style={styles.header}><View style={styles.topBar}>
           <View style={styles.balanceInline}>
-            <View accessibilityLabel={isTutorialOpen && tutorialStep === 2 ? 'Tutorial highlighted company balance' : undefined} style={styles.balanceAmount}>
+            <Pressable accessibilityLabel={isTutorialOpen && tutorialStep === 2 ? 'Tutorial highlighted company balance' : 'Open Finance'} accessibilityRole="button" onPress={() => setActiveView('finance')} style={styles.balanceAmount}>
               <MaterialCommunityIcons accessibilityLabel="Balance icon" color={colors.onDark} name={APP_ICONS.currency} size={21} />
               <Text style={styles.balanceInlineValue}>{formatCurrency(finance.getBalance())}</Text>
-            </View>
+            </Pressable>
             {tutorial.completedWelcome && <Pressable accessibilityLabel="Open company prestige" accessibilityRole="button" onPress={() => setIsPrestigeOpen(true)} style={styles.prestigeInline}><MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.achievements} size={17} /><Text style={styles.prestigeInlineValue}>{formatNumber(prestigeSummary.totalPrestige, { smartDecimals: true })}</Text></Pressable>}
           </View>
           <View style={styles.headerActions}>
+            {tutorial.completedWelcome && <Pressable accessibilityLabel={`Open IndustriPedia economy phase: ${finance.getEconomyPhase()}`} accessibilityRole="button" onPress={() => { setPediaInitialSection('economy'); setActiveView('pedia'); }} style={styles.economyPhaseButton}><MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.economyPhase} size={21} /></Pressable>}
             {tutorial.completedWelcome && <IconButton accessibilityLabel="Fast-forward one minute" icon={APP_ICONS.fastForward} iconColor={colors.onDark} onPress={fastForwardOneMinute} />}
             <View accessibilityLabel={isTutorialOpen && tutorialStep === 3 ? 'Tutorial highlighted company time' : `Time ${formatElapsedTime(elapsedForegroundTimeMs)}`} style={styles.headerElapsedTime}><MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.elapsedTime} size={17} /><Text style={styles.headerElapsedTimeValue}>{formatElapsedTime(elapsedForegroundTimeMs)}</Text></View>
             <Menu anchor={<Pressable accessibilityLabel="Open profile menu" accessibilityRole="button" onPress={() => setIsProfileMenuOpen(true)} style={styles.profileButton}><Avatar.Text label={companyName.slice(0, 2).toUpperCase()} size={38} style={styles.avatar} /></Pressable>} onDismiss={() => setIsProfileMenuOpen(false)} visible={isProfileMenuOpen}>
               <Menu.Item leadingIcon={APP_ICONS.account} onPress={() => { setIsProfileMenuOpen(false); setActiveView('profile'); }} title="Profile" />
               <Menu.Item leadingIcon={APP_ICONS.settings} onPress={() => { setIsProfileMenuOpen(false); setActiveView('settings'); }} title="Settings" />
               <Menu.Item leadingIcon="format-list-numbered" onPress={() => { setIsProfileMenuOpen(false); setActiveView('leaderboard'); }} title="Leaderboard" />
-              <Menu.Item leadingIcon={APP_ICONS.help} onPress={() => { setIsProfileMenuOpen(false); setActiveView('pedia'); }} title="IndustriPedia" />
+              <Menu.Item leadingIcon={APP_ICONS.help} onPress={() => { setIsProfileMenuOpen(false); setPediaInitialSection('resources'); setActiveView('pedia'); }} title="IndustriPedia" />
               <Menu.Item leadingIcon={APP_ICONS.achievements} onPress={() => { setIsProfileMenuOpen(false); setActiveView('achievements'); }} title="Achievements" />
               {isAdminDashboardAvailable && <Menu.Item leadingIcon={APP_ICONS.shield} onPress={() => { setIsProfileMenuOpen(false); setActiveView('admin'); }} title="Admin Dashboard" />}
               <Divider />
@@ -159,7 +161,7 @@ function GameShell({ companyName }: { companyName: string }) {
                 : activeView === 'research' ? <ResearchView facilities={facilities} finance={finance} getAvailability={getResearchAvailability} onCancel={cancelResearch} onStart={startResearch} research={research} />
                 : activeView === 'settings' ? <SettingsScreen onLogout={logout} />
                   : activeView === 'leaderboard' ? <LeaderboardScreen />
-                    : activeView === 'pedia' ? <IndustriPediaView market={market} />
+                    : activeView === 'pedia' ? <IndustriPediaView initialSection={pediaInitialSection} market={market} />
                     : <GameViewContent achievements={achievements} activeTab={activeView === 'admin' ? 'company' : activeView} buyMarketResource={buyMarketResource} companyName={companyName} companyStartedAtGameTimeMs={companyStartedAtGameTimeMs} currentGameTimeMs={lastProcessedAtMs} customerPipelineProgress={customerPipelineProgress} facilities={facilities} finance={finance} fulfillSalesContract={fulfillSalesContract} getResearchAvailability={getResearchAvailability} inventory={inventory} isBuildFacilityTutorial={isBuildFacilityTutorialOpen} market={market} maximumOpenContracts={maximumOpenContracts} onAcceptLoanOffer={acceptLoanOffer} onBuildFacilityLayout={setBuildFacilityButtonLayout} onExtraLoanPayment={makeExtraLoanPayment} onRemoveLoanOffer={removeLoanOffer} onRemoveUnavailableLoanOffers={removeUnavailableLoanOffers} onRepayLoanInFull={repayLoanInFull} onStartLoanSearch={startLoanSearch} onlyInStock={onlyInStock} openConstructionYard={() => { if (isBuildFacilityTutorialOpen) setIsBuildFacilityTutorialOpen(false); setIsConstructionYardOpen(true); if (isBuildFacilityTutorialOpen) setIsConstructionTutorialOpen(true); }} rejectSalesContract={rejectSalesContract} repairFacility={repairFacility} requestFacilityDestruction={setPendingDestruction} research={research} salesContracts={salesContracts} sellMarketResource={sellMarketResource} setFacilityProductionActive={setFacilityProductionActive} setFacilityProductionCycle={setFacilityProductionCycle} setFacilityWorkers={setFacilityWorkers} setMarketAutomation={setMarketAutomation} setOnlyInStock={setOnlyInStock} setShowActiveRecipeInputs={setShowActiveRecipeInputs} showActiveRecipeInputs={showActiveRecipeInputs} startResearch={startResearch} upgradeFacility={upgradeFacility} />}
         </ScrollView>
         {tutorial.completedWelcome && <ActiveProcessesOverlay customerPipelineProgress={customerPipelineProgress} facilities={facilities} finance={finance} inventory={inventory} maximumOpenContracts={maximumOpenContracts} onCompleteProcess={completeActivityInstantly} research={research} salesContracts={salesContracts} showInstantCompletion={isAdminDashboardAvailable} />}

@@ -122,6 +122,7 @@ export const styles = StyleSheet.create({
   facilityUpgradesSection: { backgroundColor: colors.softBackground, borderColor: '#D5DEDA', borderRadius: 10, borderWidth: 1, marginTop: 8, padding: 8 },
   header: { backgroundColor: colors.primary },
   headerActions: { alignItems: 'center', flexDirection: 'row' },
+  economyPhaseButton: { alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 44 },
   headerElapsedTime: { alignItems: 'center', flexDirection: 'row', gap: 3, minHeight: 44, paddingHorizontal: 4 },
   headerElapsedTimeValue: { color: colors.onDark, fontSize: 13, fontWeight: '700' },
   inventoryHeading: { color: colors.charcoal, marginTop: 8 },

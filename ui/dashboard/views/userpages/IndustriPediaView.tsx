@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { Button, Card, List, Text } from 'react-native-paper';
 import { FACILITY_GROUPS, getFacilityDefinition } from '@/game/facilities';
 import { FINANCE_INITIAL_BALANCE } from '@/game/company/companyConstants';
+import { ECONOMY_INTEREST_MULTIPLIERS, ECONOMY_PHASES } from '@/game/finance';
 import { PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS } from '@/game/prestige';
 import type { Market, MarketDiffusionDetails } from '@/game/market';
 import { getResource, getResourceIcon, RESOURCE_GROUPS, RESOURCE_TYPES, ResourceType } from '@/game/resources';
@@ -14,8 +15,8 @@ import { APP_ICONS, RECIPE_ICONS } from '@/icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '@/theme';
 
-export function IndustriPediaView({ market }: { market: Market }) {
-  const [activeSection, setActiveSection] = useState<IndustriPediaSection>('resources');
+export function IndustriPediaView({ initialSection = 'resources', market }: { initialSection?: IndustriPediaSection; market: Market }) {
+  const [activeSection, setActiveSection] = useState<IndustriPediaSection>(initialSection);
 
   return <>
     <SectionHeading eyebrow="INDUSTRIPEDIA" title="Company reference" subtitle="A quick reference for the systems currently available in your company." />
@@ -31,12 +32,14 @@ export function IndustriPediaView({ market }: { market: Market }) {
     {activeSection === 'recipes' && <RecipesSection />}
     {activeSection === 'market-flow' && <MarketFlowSection market={market} />}
     {activeSection === 'finance' && <FinanceSection />}
+    {activeSection === 'economy' && <EconomySection />}
+    {activeSection === 'loans' && <LoansSection />}
     {activeSection === 'prestige' && <PrestigeSection />}
     {activeSection === 'achievements' && <AchievementsSection />}
   </>;
 }
 
-type IndustriPediaSection = 'resources' | 'facilities' | 'recipes' | 'market-flow' | 'finance' | 'prestige' | 'achievements';
+type IndustriPediaSection = 'resources' | 'facilities' | 'recipes' | 'market-flow' | 'finance' | 'economy' | 'loans' | 'prestige' | 'achievements';
 
 const INDUSTRIPEDIA_SECTIONS: ReadonlyArray<{ id: IndustriPediaSection; label: string }> = [
   { id: 'resources', label: 'Resources' },
@@ -44,6 +47,8 @@ const INDUSTRIPEDIA_SECTIONS: ReadonlyArray<{ id: IndustriPediaSection; label: s
   { id: 'recipes', label: 'Recipes' },
   { id: 'market-flow', label: 'Market flow' },
   { id: 'finance', label: 'Finance' },
+  { id: 'economy', label: 'Economy' },
+  { id: 'loans', label: 'Loans' },
   { id: 'prestige', label: 'Prestige' },
   { id: 'achievements', label: 'Achievements' },
 ];
@@ -278,14 +283,39 @@ function FinanceSection() {
       <Text style={styles.cardKicker}>STARTING CAPITAL</Text><CurrencyValue value={FINANCE_INITIAL_BALANCE} style={styles.balanceValue} />
       <Text style={styles.cardDescription}>A facility needs both its land purchase and Construction Materials. You can sell one for 70% of its current condition-adjusted book value.</Text>
     </Card.Content></Card>
-    <Card mode="contained" style={styles.featureCard}><Card.Content><List.Item description={<View style={localStyles.iconValue}><Text>Each fulfilled unit pays</Text><CurrencyValue value={1} /><Text>. The requested quantity must be fully available in inventory before a contract can be supplied.</Text></View>} left={(props) => <List.Icon {...props} icon={APP_ICONS.contracts} />} title="Customer contracts" /><List.Item description="Each facility has separate Speed and Output upgrades. Every level costs euros, Construction Materials, and Industrial Machines." left={(props) => <List.Icon {...props} icon={APP_ICONS.speed} />} title="Facility upgrades" /><List.Item description="Every accepted cost and income is recorded in the Finance activity list." left={(props) => <List.Icon {...props} icon={APP_ICONS.financeHistory} />} title="Transaction history" /></Card.Content></Card>
+    <Card mode="contained" style={styles.featureCard}><Card.Content>
+      <List.Item description={<View style={localStyles.iconValue}><Text>Each fulfilled unit pays</Text><CurrencyValue value={1} /><Text>. The requested quantity must be fully available in inventory before a contract can be supplied.</Text></View>} left={(props) => <List.Icon {...props} icon={APP_ICONS.contracts} />} title="Customer contracts" />
+      <List.Item description="Each facility has separate Speed and Output upgrades. Every level costs euros, Construction Materials, and Industrial Machines." left={(props) => <List.Icon {...props} icon={APP_ICONS.speed} />} title="Facility upgrades" />
+      <List.Item description="Every accepted cost and income is recorded in the Finance activity list." left={(props) => <List.Icon {...props} icon={APP_ICONS.financeHistory} />} title="Transaction history" />
+    </Card.Content></Card>
+  </>;
+}
+
+function EconomySection() {
+  return <>
+    <SectionHeading eyebrow="ECONOMY" title="Economy phases" subtitle="The economy changes with foreground time and affects future loan offers." />
+    <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
+      <Text style={styles.cardKicker}>HOW IT CHANGES</Text>
+      <Text style={styles.cardDescription}>The economy phase changes deterministically every 10 foreground minutes. It is biased to return toward Stable, so extreme phases are temporary.</Text>
+      <Text style={styles.cardDescription}>Background time does not advance the economy phase. Fast-forward does because it advances foreground game time.</Text>
+    </Card.Content></Card>
+    <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
+      <Text style={styles.cardKicker}>FUTURE LOAN RATES</Text>
+      {ECONOMY_PHASES.map((phase) => <View key={phase} style={localStyles.economyPhaseRow}><Text style={localStyles.economyPhaseName}>{phase}</Text><Text style={styles.cardDescription}>{`${formatNumber(ECONOMY_INTEREST_MULTIPLIERS[phase] - 1, { percent: true, decimals: 0 })} offered-rate change`}</Text></View>)}
+      <Text style={styles.cardDescription}>Economy phase does not change existing loan rates, production, market prices, or lender caps.</Text>
+    </Card.Content></Card>
+  </>;
+}
+
+function LoansSection() {
+  return <>
+    <SectionHeading eyebrow="LOANS" title="Borrowing and credit" subtitle="Lenders price offers from your company strength, their policies, and the current economy." />
     <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
       <Text style={styles.cardKicker}>LOANS AND LENDER LIMITS</Text>
       <Text style={styles.cardDescription}>A lender must consider your company eligible before it contributes to borrowing. Company stability is one part of credit rating: 35% age score (a square-root curve that reaches 100% at 240 active hours), 40% recent operating consistency (a 60% starter score blends out across 16 fifteen-minute periods), and 25% expense efficiency (100% at a 25% operating margin).</Text>
       <Text style={styles.cardDescription}>Asset strength combines debt position (35%), asset coverage (30%), cash liquidity (20%), and condition-adjusted facilities as recoverable collateral (15%). A debt-free cash-only company therefore scores 85%; facilities can supply the remaining collateral credit.</Text>
       <Text style={styles.cardDescription}>Each eligible lender has four caps. Asset cap is what your assets support; rating cap is what your credit supports; market cap is that lender’s exposure to one borrower; and contract cap is that lender product’s own maximum. The lowest is that lender’s policy cap.</Text>
       <Text style={styles.cardDescription}>Company ceiling is the largest policy cap among eligible lenders. Borrowing available is company ceiling minus outstanding debt. The Loans screen highlights the cap currently holding each lender back.</Text>
-      <Text style={styles.cardDescription}>Economy phase changes deterministically with foreground time and currently changes rates on future loan offers only. It does not change existing loan rates, production, market prices, or lender caps.</Text>
     </Card.Content></Card>
   </>;
 }
@@ -409,4 +439,6 @@ const localStyles = StyleSheet.create({
   conditionTableRow: { flexDirection: 'row', gap: 4 },
   conditionTableCell: { color: colors.charcoal, flex: 1, fontSize: 10, textAlign: 'right' },
   conditionTableHeader: { color: colors.muted, fontSize: 9, fontWeight: '700' },
+  economyPhaseName: { color: colors.charcoal, fontWeight: '700', textTransform: 'capitalize' },
+  economyPhaseRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
 });
