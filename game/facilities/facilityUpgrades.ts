@@ -10,7 +10,7 @@ export function getFacilityUpgradeCost(constructionCost: number, currentLevel: n
 
 /** Construction Materials or Industrial Machines required for the next upgrade level. */
 export function getFacilityUpgradeResourceCost(constructionResourceCost: number, currentLevel: number): number {
-  return Math.max(1, getFacilityUpgradeCost(Math.max(0, constructionResourceCost) * FACILITY_UPGRADE_RESOURCE_COST_RATE, currentLevel));
+  return scaleExponential(Math.max(0, constructionResourceCost) * FACILITY_UPGRADE_RESOURCE_COST_RATE, currentLevel, FACILITY_UPGRADE_COST_GROWTH);
 }
 
 /** Total paid cost for all completed levels in one facility upgrade track. */

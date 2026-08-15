@@ -3,20 +3,20 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Button, Card, List, Menu, Text } from 'react-native-paper';
 import { FACILITY_GROUPS, getFacilityDefinition } from '@/game/facilities';
 import { FINANCE_INITIAL_BALANCE } from '@/game/company/companyConstants';
-import { ECONOMY_INTEREST_MULTIPLIERS, ECONOMY_PHASES } from '@/game/finance';
+import { ECONOMY_INTEREST_MULTIPLIERS, ECONOMY_PHASES, type EconomyPhase } from '@/game/finance';
 import { PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS } from '@/game/prestige';
 import type { Market, MarketDiffusionDetails } from '@/game/market';
 import { getResource, getResourceIcon, RESOURCE_GROUPS, RESOURCE_TYPES, ResourceType } from '@/game/resources';
-import { formatCurrency, formatNumber, formatSigned, getColorClass, normalizeToUnitInterval } from '@/utils';
+import { formatCurrency, formatNumber, formatSigned, formatSignedPercent, getColorClass, normalizeToUnitInterval } from '@/utils';
 import { SectionHeading, WorkMetric } from '@/ui/dashboard/components/DashboardPrimitives';
 import { formatRecipeInputs, formatRecipeName, formatRecipeOutput } from '@/ui/dashboard/helpers/recipeFormatters';
 import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS, RECIPE_ICONS, SALES_CUSTOMER_DOMAIN_ICONS, SALES_CUSTOMER_TYPE_ICONS } from '@/icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '@/theme';
-import { SALES_CUSTOMER_BID_MULTIPLIER_RANGE, SALES_CUSTOMER_DOMAIN_PROFILES, SALES_CUSTOMER_DOMAINS, SALES_CUSTOMER_PURCHASING_POWER_RANGE, SALES_CUSTOMER_TYPE_PROFILES, SALES_CUSTOMER_TYPES, calculateSalesCustomerRelationshipDetails, getSalesCustomerRelationshipLabel, getSalesCustomerCatalogue, getSalesResourceProfile, type SalesCustomerDomain, type SalesCustomerType, type SalesOrders } from '@/game/sales';
+import { SALES_CUSTOMER_BID_MULTIPLIER_RANGE, SALES_CUSTOMER_DOMAIN_PROFILES, SALES_CUSTOMER_DOMAINS, SALES_CUSTOMER_PURCHASING_POWER_RANGE, SALES_CUSTOMER_TYPE_PROFILES, SALES_CUSTOMER_TYPES, SALES_ECONOMY_MULTIPLIERS, calculateSalesCustomerRelationshipDetails, getSalesCustomerRelationshipLabel, getSalesCustomerCatalogue, getSalesResourceProfile, type SalesCustomerDomain, type SalesCustomerType, type SalesOrders } from '@/game/sales';
 
-export function IndustriPediaView({ companyPrestige, currentGameTimeMs, initialSection = 'resources', market, salesOrders }: { companyPrestige: number; currentGameTimeMs: number; initialSection?: IndustriPediaSection; market: Market; salesOrders: SalesOrders }) {
+export function IndustriPediaView({ companyPrestige, currentGameTimeMs, economyPhase, initialSection = 'resources', market, salesOrders }: { companyPrestige: number; currentGameTimeMs: number; economyPhase: EconomyPhase; initialSection?: IndustriPediaSection; market: Market; salesOrders: SalesOrders }) {
   const [activeSection, setActiveSection] = useState<IndustriPediaSection>(initialSection);
 
   return <>
@@ -33,7 +33,7 @@ export function IndustriPediaView({ companyPrestige, currentGameTimeMs, initialS
     {activeSection === 'recipes' && <RecipesSection />}
     {activeSection === 'market-flow' && <MarketFlowSection market={market} />}
     {activeSection === 'finance' && <FinanceSection />}
-    {activeSection === 'economy' && <EconomySection />}
+    {activeSection === 'economy' && <EconomySection economyPhase={economyPhase} />}
     {activeSection === 'loans' && <LoansSection />}
     {activeSection === 'prestige' && <PrestigeSection />}
     {activeSection === 'achievements' && <AchievementsSection />}
@@ -460,18 +460,26 @@ function FinanceSection() {
   </>;
 }
 
-function EconomySection() {
+function EconomySection({ economyPhase }: { economyPhase: EconomyPhase }) {
+  const salesEffects = SALES_ECONOMY_MULTIPLIERS[economyPhase];
   return <>
-    <SectionHeading eyebrow="ECONOMY" title="Economy phases" subtitle="The economy changes with foreground time and affects future loan offers." />
+    <SectionHeading eyebrow="ECONOMY" title="Economy phases" subtitle="The economy changes with foreground time and affects new customer orders and future loan offers." />
+    <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
+      <Text style={styles.cardKicker}>CURRENT PHASE</Text>
+      <Text style={localStyles.economyCurrentPhase}>{economyPhase}</Text>
+      <List.Item description={`${formatSignedPercent(salesEffects.acquisition - 1, { decimals: 0 })} versus Stable`} left={(props) => <List.Icon {...props} icon={APP_ICONS.contracts} />} title="New customer-order frequency" />
+      <List.Item description={`${formatSignedPercent(salesEffects.bid - 1, { decimals: 0 })} versus Stable`} left={(props) => <List.Icon {...props} icon={APP_ICONS.bid} />} title="New customer bid premiums" />
+      <List.Item description={`${formatSignedPercent(ECONOMY_INTEREST_MULTIPLIERS[economyPhase] - 1, { decimals: 0 })} versus Stable`} left={(props) => <List.Icon {...props} icon={APP_ICONS.financeHistory} />} title="Future loan-offer rates" />
+    </Card.Content></Card>
     <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
       <Text style={styles.cardKicker}>HOW IT CHANGES</Text>
       <Text style={styles.cardDescription}>The economy phase changes deterministically every 10 foreground minutes. It is biased to return toward Stable, so extreme phases are temporary.</Text>
       <Text style={styles.cardDescription}>Background time does not advance the economy phase. Fast-forward does because it advances foreground game time.</Text>
     </Card.Content></Card>
     <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
-      <Text style={styles.cardKicker}>FUTURE LOAN RATES</Text>
-      {ECONOMY_PHASES.map((phase) => <View key={phase} style={localStyles.economyPhaseRow}><Text style={localStyles.economyPhaseName}>{phase}</Text><Text style={styles.cardDescription}>{`${formatNumber(ECONOMY_INTEREST_MULTIPLIERS[phase] - 1, { percent: true, decimals: 0 })} offered-rate change`}</Text></View>)}
-      <Text style={styles.cardDescription}>Economy phase does not change existing loan rates, production, market prices, or lender caps.</Text>
+      <Text style={styles.cardKicker}>PHASE EFFECTS</Text>
+      {ECONOMY_PHASES.map((phase) => <View key={phase} style={localStyles.economyPhaseRow}><Text style={localStyles.economyPhaseName}>{phase}</Text><Text style={styles.cardDescription}>{`${formatSignedPercent(SALES_ECONOMY_MULTIPLIERS[phase].acquisition - 1, { decimals: 0 })} order frequency · ${formatSignedPercent(SALES_ECONOMY_MULTIPLIERS[phase].bid - 1, { decimals: 0 })} bid premiums · ${formatSignedPercent(ECONOMY_INTEREST_MULTIPLIERS[phase] - 1, { decimals: 0 })} offered rates`}</Text></View>)}
+      <Text style={styles.cardDescription}>Economy phase does not change existing customer orders or loan rates, production, market prices, or lender caps.</Text>
     </Card.Content></Card>
   </>;
 }
@@ -610,6 +618,7 @@ const localStyles = StyleSheet.create({
   conditionTableCell: { color: colors.charcoal, flex: 1, fontSize: 10, textAlign: 'right' },
   conditionTableHeader: { color: colors.muted, fontSize: 9, fontWeight: '700' },
   economyPhaseName: { color: colors.charcoal, fontWeight: '700', textTransform: 'capitalize' },
+  economyCurrentPhase: { color: colors.charcoal, fontSize: 22, fontWeight: '700', textTransform: 'capitalize' },
   economyPhaseRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   customerDetails: { borderTopColor: '#E2E8E5', borderTopWidth: 1, gap: 6, marginTop: 4, paddingTop: 10 },
   customerHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
