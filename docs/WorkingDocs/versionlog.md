@@ -53,6 +53,199 @@ Write clear, factual release notes that explain what changed, where, and why it 
 
 ---
 
+## Version 0.000374 through 0.000361 - Customer orders and IndustriPedia polish
+**Date:** 2026-08-15 | **Commit(s):** d4161ebc2f9609bf2ad58f31ffecb05a47a66ebc, b9f2fd54cd3a325b0e08690ae4244ea3a3a41837, 9304177e0c0e33a6cf4b3203c1797af8b28f5cf8, 5361aa944afc20e8493d18b5ded913ca65f0cf17, d067df5910a9d4c56f4b2be76b6f18b1e8885812, 5a2dadb0004e19be982253bfa242391089366c1c, d94689dda538fd681c59cf01a52d37c9019c3363, f12d4c7988113b290ca7f546d2bad573d35ddb58, 9d7c859c9f6d28c8e1b28a920785e056ddbda675, 9437e6719f1635a4583edf1e521830eee1d04beb | **Stats:** +1709 / -758
+
+### Summary
+
+- Replaced the earlier single-resource sales flow with deterministic customer catalogues and multi-line customer orders.
+- Added customer relationships, order history, market-pressure sizing, research-controlled targeting, and global-market influence.
+- Refined the sales dashboard, IndustriPedia sales/market diagnostics, icons, formatting, and supporting tests.
+
+### Changes
+
+- **NEW FILE:** `docs/plans/sales-customer-system.md` (204 lines) - Recorded the customer and order implementation plan.
+- **NEW FILE:** `game/sales/salesCustomers.ts` (43 lines) and `salesOrders.ts` (66 lines) - Added customer generation, order construction, relationship inputs, and deterministic offer rules.
+- `game/sales/salesConstants.ts` and `game/sales/index.ts` - Added customer-order balance values and sales exports.
+- **REMOVED:** `game/sales/salesContracts.ts` - Replaced the single-resource contract implementation with customer orders.
+- `game/sales/salesCustomers.ts` - Defined home domains, customer types, operating domains, market share, purchasing power, and bid profiles for the local customer catalogue.
+- `game/sales/salesOrders.ts` - Added atomic bundles with locked global reference prices, bids, premiums, pressure-based quantities, lot sizing, expiry, and full-fulfilment checks.
+- `game/core/state/gameSnapshot.ts`, `game/core/stores/gameStore.ts`, and `app/_layout.tsx` - Added customer pipeline progress, relationship state, order history, and save/lifecycle integration; fulfilment, rejection, expiry, and relationship decay now update the company snapshot.
+- `game/achievements/`, `game/prestige/`, `game/research/`, `game/market/`, and `game/finance/` - Connected order activity to achievement progress, prestige, sales-targeting/bid-value research, global market pressure, and classified financial transactions.
+- `ui/dashboard/views/SalesView.tsx`, `ui/dashboard/views/userpages/IndustriPediaView.tsx`, `ui/dashboard/components/cards/ContractRequestCard.tsx`, and `ui/dashboard/components/ActiveProcessesOverlay.tsx` - Added open/closed order views, bundle readiness, reward and prestige readouts, rejection controls, sales research status, and active pipeline feedback.
+- **NEW FILE:** `tests/sales/salesCustomers.test.ts` (34 lines) and `tests/sales/salesOrders.test.ts` (53 lines) - Added deterministic customer and order coverage.
+- `tests/research/research.test.ts` and the later sales tests - Covered production-targeting research, customer generation, order sizing, premiums, and fulfilment-related rules.
+- `docs/WorkingDocs/CONTEXT.md`, `design.md`, `gameflow.md`, and `VariableRelationshipMap.md` - Documented the customer catalogue, relationships, order pipeline, and global-market effects.
+
+### Notes
+
+- The customer catalogue remains a deterministic local stand-in; no backend or shared account service was added.
+- Orders are company-specific and require complete bundle fulfilment; they are not future production contracts or shared multiplayer requests.
+- Customer relationship is split between a prestige-derived reputation baseline and retained order history, with foreground-time decay toward that baseline.
+
+---
+
+## Version 0.00035 through 0.000353b - Resource expansion and production upkeep
+**Date:** 2026-08-15 | **Commit(s):** e17619780e8d21a346d40d597ac94d120c8d29b5, f95b7d73fad4cb760bb3775aa5fa8ed6f48e2c03, 2beb5ab6dece0857cd323e08157b29a56450eb90, e2eda633e2a27e3a0e4172233b01332455ed182c, 34160805f6da787363a1d5c35c0362d506610908, 22c335c81959da78d9ec1edc2522f248c8d25a47, fef708ec78ea3322d4a323d2bd70194dda9687fa, a1f97def38ffe1a1e9e90a6d0f50a936c347cf7a, bb69ccb0abdcee70a5fe8881b046a9e3518909cf, 1f4179ea49704deb07992a78725115613714c5a1, b0bb1860044c9af29a7a66711c2f15973fcfe973, 7e8156e6b6dd3fe13a4d376fdb661dc322a0eab0, 6b20c55263e7400327432b0f3b073e8da1cdde09, 0996d6faef79ba5c2e7a35c4b8d350c67707b416 | **Stats:** +4164 / -1123
+
+### Summary
+
+- Expanded research, resource, and recipe balance for fertilizer, industrial machines, animal farming, and multi-output production.
+- Added facility production-cycle controls and made construction, repair, and upgrades account for the required material inputs.
+- Rebalanced recipe timing and economy-report expectations with focused production, inventory, finance, and research tests.
+
+### Changes
+
+- `game/resources/resourceConstants.ts`, `resourceTypes.ts`, `game/recipes/recipeConstants.ts`, and `recipeTypes.ts` - Added fertilizer, Industrial Machines, animal-farm resources, additional construction inputs, and recipes with multiple outputs.
+- `game/facilities/facilityConstants.ts`, `facilityTypes.ts`, `facilityProduction.ts`, `facility.ts`, and `facilityUpgrades.ts` - Added facility material requirements, ordered production-cycle behavior, repair/condition costs, and the three-input speed/output/condition upgrade path.
+- `game/core/stores/gameStore.ts`, `game/core/state/gameSnapshot.ts`, `game/finance/financeStatements.ts`, and `game/company/companyConstants.ts` - Connected expanded starting resources, production-cycle selection/progress, facility inputs, and material purchases to runtime and snapshots.
+- `ui/dashboard/views/FacilityView.tsx`, `ui/dashboard/views/userpages/IndustriPediaView.tsx`, `ui/dashboard/components/dialog/FacilityDialogs.tsx`, `ui/dashboard/helpers/recipeFormatters.ts`, and `app/index.tsx` - Added cycle ordering, recipe output/input details, construction cost rows, repair controls, and upgrade-cost presentation.
+- `game/facilities/facilityProduction.ts` and `game/facilities/facilityProduction.test.ts` - Verified multi-output completion, partial progress, input consumption, output upgrades, and the updated effective-work calculation.
+- `economy-report.md`, `tests/facilities/`, `tests/inventory/inventory.test.ts`, `tests/core/gameStore.test.ts`, `tests/finance/`, `tests/research/research.test.ts`, and `tests/market/market.test.ts` - Refreshed balance evidence and coverage for the new production and resource rules.
+- `docs/WorkingDocs/CONTEXT.md`, `design.md`, `gameflow.md`, `PROJECT_INFO.md`, and `VariableRelationshipMap.md` - Recorded the new resources, facility inputs, production-cycle state, and balance relationships.
+
+### Notes
+
+- Several version labels in these commits are inconsistent; the entry preserves the commit hashes and groups the related resource and production changes.
+- Standard company creation and the starting inventory were retuned alongside the new material requirements, so the early construction path remains supplied with the intended inputs.
+- Construction consumes land currency, Construction Materials, and Industrial Machines; repairs consume Construction Materials, while production recipes may consume and emit more than one resource line.
+
+---
+
+## Version 0.00034 through 0.000301a - Finance, loans, economy, and market research
+**Date:** 2026-08-13 | **Commit(s):** cf6b07fd3c7de518ac5f33c7830d4dda6fcec102, 161386a8dfe868d5dfb1d8dc159926c3ec4f9b3b, de45cef53bf3c9fc397d5399c06c731fcd3cd774, aad1158131a14464c2c2ef35a64b44d94f8d0bce, 0fc6dee8d0abdef2d4923becbfff2ff2070d2cb8, d210bfad051d7e81153aba18d58bac2574b1339a, 3f3f82c44ac3d52c7cd5bed54a34c4aa4db4f337, 5df02176b3831f0da3fef140680ed525f612b9fa, 75870cea739c18582d099503482defbb576dece8, 4c70d87111079b688b3240e8041e013617258bbc | **Stats:** +3129 / -1486
+
+### Summary
+
+- Expanded local finance with lender search, loan availability, repayment handling, economy phases, credit ratings, and improved loan presentation.
+- Added deterministic recipe-economy reporting and moved tests/support code out of live game modules.
+- Corrected symmetric local/regional market diffusion and added research chains for market depth and diffusion rate.
+
+### Changes
+
+- `game/finance/finance.ts`, `financeConstants.ts`, `financeStatements.ts`, `loanService.ts`, and `game/core/stores/gameStore.ts` - Added lender-offer refresh/removal, expanded amount and term ranges, foreground-minute repayment handling, economy-phase effects, credit-rating inputs, and validation against the currently stored offer.
+- `ui/dashboard/views/FinanceView.tsx`, `ui/dashboard/components/ActiveProcessesOverlay.tsx`, and `ui/dashboard/components/dialog/CollectionDialog.tsx` - Added finance statements, rolling period views, lender search progress, offer availability/removal, loan repayment status, and collection controls.
+- `game/market/market.ts`, `marketDiffusion.ts`, `marketConstants.ts`, `marketTypes.ts`, and `game/research/` - Replaced one-directional local/regional pressure with symmetric price-gap diffusion and added research multipliers for local market depth and diffusion rate.
+- `game/facilities/recipeEconomy.ts`, `tests/support/recipeEconomy.ts`, `tests/facilities/`, and `tools/runRecipeEconomyReport.mjs` - Added recipe margin, break-even, payback, maintenance, and upgrade-level evidence, then isolated the report/test support from production modules.
+- **NEW FILE:** `economy-report.md` (419 lines) and `tools/runRecipeEconomyReport.mjs` (24 lines) - Added generated economy evidence and its report runner.
+- **REMOVED:** `game/facilities/recipeEconomy.ts` - Removed the production-side copy after moving the calculation support under tests.
+- `game/prestige/`, `ui/dashboard/components/dialog/PrestigeDialog.tsx`, `ui/dashboard/views/SalesView.tsx`, and `ui/dashboard/views/userpages/IndustriPediaView.tsx` - Updated prestige presentation and finance/market reference content.
+- `tsconfig.json` - Enabled the React Native JSX compiler setting required by the current TypeScript setup.
+- `tests/finance/loanService.test.ts`, `tests/finance/financeCollections.test.ts`, `tests/market/market.test.ts`, and `tests/research/research.test.ts` - Added regression coverage for lender offers, collections, diffusion symmetry, and research effects.
+
+### Notes
+
+- The loan comparison metric is normalized over 52 finance payment cycles; it is not presented as a calendar-year rate.
+- Loan offers are deterministic and tied to current lender availability, assets, liabilities, credit, market exposure, and search criteria; accepting or removing an offer refreshes the remaining availability.
+- The report is generated evidence for balancing rather than runtime game state, and the cloud/backend boundary remains unchanged.
+
+---
+
+## Version 0.00029 through 0.00025 - Finance, regional market, achievements, and grants
+**Date:** 2026-08-11 | **Commit(s):** 7a940c2a87172386e4d1ec6b1359e1bb223d5856, 67f335b76a5f5d8737058788b1e1a4d689f6a008, b5c34d90f0a53448cff2bf5f7581186632d98ef6, c8c56efb36f315c6d498fb45b5169aa65d9817c9, e31812a2c1dccd5959b4f473ad4d5e4310f47fb4, e4f780609ae6c7fedff4818d20bb2919c4c63ccc, c926c9451496d6bf630946356a1a4a1e024499ed, 040227de07d84a2b6584df07bac852d860351759, 71945849bb719f94d55f073af24d36657357abeb, b13270d80369586d470f08ae5ac4ca6ffc59991e | **Stats:** +2798 / -536
+
+### Summary
+
+- Added inventory automation controls, including configurable auto-sell frequency and improved auto-buy presentation.
+- Added production-statistic achievements, progression grants, expanded recipe research, and the regional market reservoir.
+- Added classified finance statements, rolling reports, and the first lender/loan service implementation.
+
+### Changes
+
+- `game/achievements/`, `game/grants/`, and `game/prestige/` - Added lifetime production-stat tracking, achievement conditions using those totals, one-use progression grants, and related prestige effects.
+- **NEW FILE:** `game/grants/grant.ts` (76 lines), `grantConstants.ts` (2 lines), and `game/grants/index.ts` (2 lines) - Added the grant ledger and first-facility research grant.
+- `game/market/market.ts`, `marketDiffusion.ts`, `marketTypes.ts`, and `game/resources/resourceConstants.ts` - Added the device-local regional reservoir between local and global markets, adjacent diffusion targets, logistics/value-density data, and persistence integration.
+- `game/finance/finance.ts`, `financeConstants.ts`, `financeStatements.ts`, `loanService.ts`, and `game/core/state/gameSnapshot.ts` - Added classified append-only transactions, rolling finance periods, asset/liability calculations, lender definitions, search work/fees, and offer state.
+- **NEW FILE:** `game/finance/financeStatements.ts` (133 lines) and `game/finance/loanService.ts` (134 lines) - Added the statement and loan-service modules.
+- `game/core/stores/gameStore.ts`, `app/index.tsx`, `ui/dashboard/views/FinanceView.tsx`, `InventoryView.tsx`, `ResearchView.tsx`, and `IndustriPediaView.tsx` - Connected the new systems, automation settings, research chains, finance reports, regional market controls, and player-facing explanations.
+- `package.json`, `tests/`, and Vitest setup - Added deterministic automated tests for production, balance, market, research, and finance rules, including baseline timing and margin assertions.
+- `docs/WorkingDocs/CONTEXT.md`, `design.md`, `gameflow.md`, `PROJECT_INFO.md`, and `VariableRelationshipMap.md` - Documented regional markets, finance, achievements, grants, and automation.
+
+### Notes
+
+- The regional market is device-local and deterministic; cloud market sharing remains deferred.
+- The first-facility progression grant makes that facility's first recipe research free and ten times faster; grants are durable, typed, and consumed once.
+- Finance and regional-market state are saved with the local company snapshot; no migration or remote synchronization layer was introduced.
+
+---
+
+## Version 0.00024 through 0.000211 - Production backend, facility efficiency, and dashboard cleanup
+**Date:** 2026-08-09 | **Commit(s):** a91d2ef462ffc644c7e33f2d3ef01b894c1fc552, e3bda1d7d041fef6f67de5c34a8c3216c2ef2fd3, a76f568422f180781d19025a8465a64609868ad1, 15d2723b9a63e760c97120d11f01897526958b1d, 2c7da538e6f912cf8c67fadae51c8facd1d16af6, 80181b3ddba898b0157ff3070610fdc11aae6f5d, 6ec2a468bab647b91bd92b001af33868bc909d40, eb31a56310c9a4a938a5f4deeb72545e70f26c26, 46f91bd5e6704516524a212e4ee6a25f677e2e99, 4ea8a9e2b06da0094e38db007f3382163a77c5d7, c8d76dccf6f18526456ced54ece30333c83ce3c1, fdf43926df5d0906060a204073321523f81b6461, 49e60ff7709057f803eacc31f1fb7bc463770ec8, b855a5d7181fe22794edfb812894e3781677c9e9 | **Stats:** +1105 / -749
+
+### Summary
+
+- Extracted the production advancement engine and clarified facility production state ownership.
+- Added facility condition wear, nonlinear efficiency, condition-decay upgrades, staffing work contribution, and recipe-time rebalance.
+- Reworked the production/facility/inventory/IndustriPedia views around the updated facility model.
+
+### Changes
+
+- **NEW FILE:** `game/facilities/facilityProduction.ts` (97 lines) - Added the production advancement and effective-work calculations separated from the facility model, including input payment, partial progress, cycle completion, output creation, and cycle wear.
+- `game/facilities/facility.ts`, `facilityCollection.ts`, `facilityUpgrades.ts`, `facilityConstants.ts`, and `game/core/stores/gameStore.ts` - Added persisted condition in the `0–1` range, passive and cycle wear, condition efficiency, staffing work, condition-decay upgrade state, and condition synchronization during foreground advancement.
+- `ui/dashboard/views/ProductionView.tsx`, `FacilityView.tsx`, `GameView.tsx`, and `ui/dashboard/components/ActiveProcessesOverlay.tsx` - Updated production status, facility metrics, recipe locks, decay-cost readouts, worker controls, and process feedback.
+- `ui/dashboard/views/InventoryView.tsx` and `ui/dashboard/views/MarketView.tsx` - Merged market interaction into the inventory view and removed the separate market view.
+- `ui/dashboard/views/userpages/IndustriPediaView.tsx`, `ui/dashboard/components/dialog/FacilityDialogs.tsx`, `icons.ts`, and dashboard styles - Refined facility, recipe, inventory, and reference presentation.
+- `game/recipes/recipeConstants.ts`, `docs/WorkingDocs/CONTEXT.md`, `design.md`, `gameflow.md`, `PROJECT_INFO.md`, and `VariableRelationshipMap.md` - Updated recipe timing and documented the production/condition relationships.
+- `game/facilities/facilityProduction.test.ts`, `tests/facilities/recipeBalance.test.ts`, and related balance tests - Covered fully staffed and understaffed work, condition effects, cycle completion, output upgrades, recipe timing, and advanced-recipe margin ordering.
+
+### Notes
+
+- Facility condition is now a persisted source value that affects production efficiency; repairs and condition-decay upgrades are local game actions.
+- Condition efficiency uses an asymmetric wear curve, so losing condition becomes increasingly costly; condition-decay upgrades reduce both passive and production wear without increasing worker requirements.
+- Production state was moved out of `facility.ts` into a dedicated module so facility identity/upgrades and production advancement remain separate.
+
+---
+
+## Version 0.00020 through 0.000193a - Onboarding and production tutorial flow
+**Date:** 2026-08-08 | **Commit(s):** 37fb1930f0acf58af51e8a6809ba730f07203694, b381bc85ba9a469608344ca2a2d954345e5c7514, 757b09b84d74774af33409aba440d1cff56fc544, 051592de34b76068c8a2d4a8dd0e358551d1ea30, 1c0782a0d85dce598c65494e64ed8149cbd51317, d9803692c4a1e84413efa556c35acc42dfe4116e, 3fe1d5b0bdc3a4e27c2f92d27ca79053a6ef5427 | **Stats:** +477 / -130
+
+### Summary
+
+- Expanded the introductory tutorial from company orientation into production and first-facility guidance.
+- Added tutorial navigation, dismissal, exit, replay, highlighting, and an active-process overlay.
+- Connected research interactions to production, including recipe locks and clearer research project detail.
+
+### Changes
+
+- `ui/dashboard/components/dialog/TutorialDialog.tsx`, `ui/dashboard/views/ProductionView.tsx`, `ui/dashboard/views/GameView.tsx`, `app/index.tsx`, and dashboard styles - Added the five-step company orientation covering welcome, balance, company time, company overview, and production, followed by a two-step production/build-facility guide.
+- `game/core/stores/gameStore.ts`, `game/company/companyConstants.ts`, and `game/achievements/achievementConstants.ts` - Persisted and tuned tutorial-related state, first-facility progression, and starting values.
+- **NEW FILE:** `ui/dashboard/components/ActiveProcessesOverlay.tsx` (111 lines) - Added a shared overlay for active research, production, and other foreground processes.
+- `game/research/research.ts`, `researchConstants.ts`, `researchEffects.ts`, `ui/dashboard/views/ResearchView.tsx`, and `ui/dashboard/views/ProductionView.tsx` - Added recipe-unlock presentation, constructed-facility filtering, requirement checks, before/after recipe-time comparisons, expandable research details, and locked recipe options.
+- `game/facilities/advanceProduction.ts` and `facility.ts` - Updated production interactions used by the tutorial and research flow.
+
+### Notes
+
+- Tutorial progress remains local to the company/device session; no remote onboarding state was introduced.
+- Tutorial overlays can be dismissed, exited, reopened from the floating guide control, replayed from Profile, and navigated backward without changing the underlying production state.
+- Research and production remain foreground systems; the overlay reports active work but does not add offline catch-up.
+
+---
+
+## Version 0.00020 - Deployment cleanup and UI module refactor
+**Date:** 2026-08-07 | **Commit(s):** e1c91c0425a7a44e4b439512446cc783982b0a5a, 3c11b2edded8a4058fad8d8110da563b91f624c1, 79bd169a2365db9dc5f9ee5d3147254e6ed7318d | **Stats:** +435 / -1986
+
+### Summary
+
+- Removed stale generated web inspection artifacts and ignored local Android signing material for deployment work.
+- Reorganized dashboard components, dialogs, views, and public exports around clearer UI ownership.
+- Simplified facility construction presentation and extended the version log with the earlier missing history.
+
+### Changes
+
+- `.gitignore` - Ignored local Android signing credentials and credential directories.
+- `.tmp-web-export/` - Removed stale generated web bundle, favicon, metadata, and embedded documentation artifacts that were no longer part of the active deployment surface.
+- `ui/dashboard/components/`, `ui/dashboard/views/`, `ui/dashboard/shared/`, `ui/index.ts`, and `app/index.tsx` - Renamed and reorganized dashboard primitives, cards, dialogs, user pages, and public exports so imports follow the current UI ownership boundaries.
+- `ui/dashboard/components/dialog/FacilityDialogs.tsx` and dashboard styles - Split facility selection from construction confirmation, made facility cards selectable, and added currency/material summaries and recipe details to the confirmation flow.
+- `docs/WorkingDocs/versionlog.md` - Reconciled the earlier tutorial, market, account, research, resource, and production history that had landed before this commit.
+
+### Notes
+
+- This was deployment hygiene and UI structure work; it did not add a backend, cloud save, or web release target.
+- `credentials.json` and `credentials/` are ignored local signing material; no credentials were added to the repository.
+- The generated web export remains a development inspection artifact, not a product release target.
+
+---
+
 ## Version 0.00053e through 0.00053d - UI cleanup and polish
 **Date:** 2026-07-30 | **Commit(s):** 5facb01ccd5f1c02e4861607f4fa09d020abf7a4, 53606e447df40299d33d95c0511e3554384d30fc, b4934e0ddeac55159bbdf9a34660859c80f4b2bb, 89d7573dcb96debead6f58e83e00c4483df92265, e146ca514776c7ce692b91cfdff22034a845c6e1 | **Stats:** +573 / -770
 
