@@ -1,11 +1,11 @@
-import type { FacilityCollection } from '@/game/facilities';
+import type { FacilityCollection, FacilityMaintenanceStatistics } from '@/game/facilities';
 import type { Finance } from '@/game/finance';
+import type { ResourceFlowLedger } from '@/game/inventory';
 import type { PrestigeLedger } from '@/game/prestige';
 import { calculateCompanyPrestigeSummary } from '@/game/prestige';
 import type { SalesOrders } from '@/game/sales';
 import { AchievementLedger } from './achievement';
 import { ACHIEVEMENT_CATEGORIES, ACHIEVEMENT_DEFINITIONS, type AchievementCategory, type AchievementDefinition } from './achievementConstants';
-import type { ProductionStatistics } from './productionStatistics';
 
 export type AchievementEvaluationContext = {
   facilityCount: number;
@@ -14,7 +14,7 @@ export type AchievementEvaluationContext = {
   largestRepair: number;
   repairValueEuros: number;
   facilityEfficiencies: readonly number[];
-  producedByResource: ReturnType<ProductionStatistics['toSnapshot']>['producedByResource'];
+  producedByResource: ReturnType<ResourceFlowLedger['getLifetimeFacilityOutputByResource']>;
   totalProduced: number;
   fulfilledContractCount: number;
   fulfilledContractQuantity: number;
@@ -35,7 +35,8 @@ export function createAchievementEvaluationContext(input: {
   finance: Finance;
   salesOrders: SalesOrders;
   prestige: PrestigeLedger;
-  productionStatistics: ProductionStatistics;
+  facilityMaintenance: FacilityMaintenanceStatistics;
+  resourceFlow: ResourceFlowLedger;
   companyStartedAtGameTimeMs: number;
   currentGameTimeMs: number;
 }): AchievementEvaluationContext {
@@ -48,12 +49,12 @@ export function createAchievementEvaluationContext(input: {
       const facilityView = facility.getView();
       return total + facilityView.speedUpgradeLevel + facilityView.outputUpgradeLevel + facilityView.conditionDecayUpgradeLevel;
     }, 0),
-    repairedCondition: input.productionStatistics.getRepairedCondition(),
-    largestRepair: input.productionStatistics.getLargestRepair(),
-    repairValueEuros: input.productionStatistics.getRepairValueEuros(),
+    repairedCondition: input.facilityMaintenance.getRepairedCondition(),
+    largestRepair: input.facilityMaintenance.getLargestRepair(),
+    repairValueEuros: input.facilityMaintenance.getRepairValueEuros(),
     facilityEfficiencies: facilityList.map((facility) => facility.getView().facilityEfficiency),
-    producedByResource: input.productionStatistics.toSnapshot().producedByResource,
-    totalProduced: input.productionStatistics.getTotalProduced(),
+    producedByResource: input.resourceFlow.getLifetimeFacilityOutputByResource(),
+    totalProduced: input.resourceFlow.getTotalLifetimeFacilityOutput(),
     fulfilledContractCount: fulfilledContracts.length,
     fulfilledContractQuantity: fulfilledContracts.reduce((total, contract) => total + contract.lines.reduce((lineTotal, line) => lineTotal + line.quantity, 0), 0),
     largestFulfilledContractQuantity: fulfilledContracts.reduce((largest, contract) => Math.max(largest, contract.lines.reduce((lineTotal, line) => lineTotal + line.quantity, 0)), 0),

@@ -1,13 +1,13 @@
 import { Finance, LOAN_COLLECTION, buildFinanceStatementData, calculateAssets, calculateFacilityAssetValue, calculateLoanSearchEstimate, generateLoanOffers, LENDER_TYPES, refreshLoanOfferAvailability, type LoanOffer, type LoanSearchCriteria } from '@/game/finance';
-import { Inventory } from '@/game/inventory';
-import { FACILITIES, FacilityCollection, advanceAllFacilityProduction, calculateFacilityEffectiveWork, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
+import { Inventory, ResourceFlowLedger } from '@/game/inventory';
+import { FACILITIES, FacilityCollection, FacilityMaintenanceStatistics, advanceAllFacilityProduction, calculateFacilityEffectiveWork, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
 import type { RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
 import { MARKET_DIFFUSION_INTERVAL_MS, MARKET_SALES_ORDER_BID_MULTIPLIER, Market, canAutoBuyMarketResource, canBuyMarketResource, canSellMarketResource, type MarketAutomation } from '@/game/market';
 import type { GameSnapshot } from '@/game/core/state';
 import { BASE_WORK_PER_MINUTE, FOREGROUND_SIMULATION_STEP_MS, REALTIME_WORK_MINUTE_MS, calculateRealtimeAdvance } from '@/game/core/time';
 import { SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP, SalesOrders, calculateSalesOrderAcquisitionChance, getSalesResourceProfile } from '@/game/sales';
-import { AchievementLedger, ProductionStatistics, createAchievementEvaluationContext, evaluateAchievementUnlocks, type AchievementCategory } from '@/game/achievements';
+import { AchievementLedger, createAchievementEvaluationContext, evaluateAchievementUnlocks, type AchievementCategory } from '@/game/achievements';
 import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyAssetsPrestige, calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary, calculateFacilityConditionPrestige } from '@/game/prestige';
 import { evaluateGateRequirements, type GateContext, type GateEvaluation } from '@/game/gates';
 import { ResearchLedger, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesOrders, getMaximumSimultaneousResearchProjects, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, getSalesOrderBidMultiplier, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, getSalesOrderMaximumCompanyValueFraction, type ResearchProjectId } from '@/game/research';
@@ -28,11 +28,12 @@ export type ResearchAvailability = GateEvaluation & {
 type GameState = {
   finance: Finance;
   inventory: Inventory;
+  resourceFlow: ResourceFlowLedger;
   market: Market;
   facilities: FacilityCollection;
   salesOrders: SalesOrders;
   achievements: AchievementLedger;
-  productionStatistics: ProductionStatistics;
+  facilityMaintenance: FacilityMaintenanceStatistics;
   prestige: PrestigeLedger;
   research: ResearchLedger;
   grants: GrantLedger;
@@ -172,11 +173,12 @@ export function createStartingGameSnapshot(nowMs = Date.now()): GameSnapshot {
   return {
     finance: finance.toSnapshot(),
     inventory: inventory.toSnapshot(),
+    resourceFlow: new ResourceFlowLedger().toSnapshot(),
     market: new Market().toSnapshot(),
     facilities: new FacilityCollection().toSnapshot(),
     salesOrders: new SalesOrders().toSnapshot(),
     achievements: new AchievementLedger().toSnapshot(),
-    productionStatistics: new ProductionStatistics().toSnapshot(),
+    facilityMaintenance: new FacilityMaintenanceStatistics().toSnapshot(),
     prestige: createStartingPrestige(finance, nowMs).toSnapshot(),
     research: new ResearchLedger().toSnapshot(),
     grants: new GrantLedger().toSnapshot(),
@@ -191,7 +193,8 @@ export function createStartingGameSnapshot(nowMs = Date.now()): GameSnapshot {
 
 function applyAchievementUnlocks(input: {
   achievements: AchievementLedger;
-  productionStatistics: ProductionStatistics;
+  facilityMaintenance: FacilityMaintenanceStatistics;
+  resourceFlow: ResourceFlowLedger;
   facilities: FacilityCollection;
   finance: Finance;
   salesOrders: SalesOrders;
@@ -206,7 +209,8 @@ function applyAchievementUnlocks(input: {
     finance: input.finance,
     salesOrders: input.salesOrders,
     prestige: input.prestige,
-    productionStatistics: input.productionStatistics,
+    facilityMaintenance: input.facilityMaintenance,
+    resourceFlow: input.resourceFlow,
     companyStartedAtGameTimeMs: input.companyStartedAtGameTimeMs,
     currentGameTimeMs: input.currentGameTimeMs,
   });
@@ -244,11 +248,12 @@ export const useGameStore = create<GameState>((set, get) => {
   return ({
   finance: initialFinance,
   inventory: new Inventory(),
+  resourceFlow: new ResourceFlowLedger(),
   market: new Market(),
   facilities: new FacilityCollection(),
   salesOrders: new SalesOrders(),
   achievements: new AchievementLedger(),
-  productionStatistics: new ProductionStatistics(),
+  facilityMaintenance: new FacilityMaintenanceStatistics(),
   prestige: createStartingPrestige(initialFinance, initialGameTimeMs),
   research: new ResearchLedger(),
   grants: new GrantLedger(),
@@ -290,7 +295,9 @@ export const useGameStore = create<GameState>((set, get) => {
     const total = trade.unitPrice * trade.amount;
     if (!trade.success || !finance.canAfford(total) || !inventory.add(resourceType, trade.amount, trade.quality)
       || !finance.applyTransaction({ amount: -total, description: `Bought ${trade.amount} ${resourceType} from local market`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: get().lastProcessedAtMs })) return false;
-    set({ market, inventory, finance });
+    const resourceFlow = get().resourceFlow.clone();
+    resourceFlow.record('market-buy', resourceType, trade.amount, get().lastProcessedAtMs);
+    set({ market, inventory, finance, resourceFlow });
     return true;
   },
   sellMarketResource: (resourceType, amount) => {
@@ -305,7 +312,9 @@ export const useGameStore = create<GameState>((set, get) => {
     const total = trade.unitPrice * trade.amount;
     if (!trade.success || !inventory.remove(resourceType, amount)
       || !finance.applyTransaction({ amount: total, description: `Sold ${trade.amount} ${resourceType} to local market`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-sale', occurredAtGameTimeMs: get().lastProcessedAtMs })) return false;
-    set({ market, inventory, finance });
+    const resourceFlow = get().resourceFlow.clone();
+    resourceFlow.record('market-sell', resourceType, -trade.amount, get().lastProcessedAtMs);
+    set({ market, inventory, finance, resourceFlow });
     return true;
   },
   setMarketAutomation: (resourceType, updates) => {
@@ -337,7 +346,9 @@ export const useGameStore = create<GameState>((set, get) => {
       || trades.some(({ resourceType, trade }) => !inventory.add(resourceType, trade.amount, trade.quality))
       || !finance.applyTransaction({ amount: -purchaseCost, description: `Bought missing construction inputs for ${definition.name}`, detailLines: trades.map(({ resourceType, trade }) => `${trade.amount} ${resourceType} at €${trade.unitPrice.toFixed(2)} each`), kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: get().lastProcessedAtMs })) return false;
 
-    set({ market, inventory, finance });
+    const resourceFlow = get().resourceFlow.clone();
+    for (const { resourceType, trade } of trades) resourceFlow.record('market-buy', resourceType, trade.amount, get().lastProcessedAtMs);
+    set({ market, inventory, finance, resourceFlow });
     return true;
   },
   buildFacility: (facilityType) => {
@@ -365,7 +376,8 @@ export const useGameStore = create<GameState>((set, get) => {
     syncFacilityConditionPrestige(prestige, facilities, get().lastProcessedAtMs);
     const achievementResult = applyAchievementUnlocks({
       achievements: get().achievements,
-      productionStatistics: get().productionStatistics,
+      facilityMaintenance: get().facilityMaintenance,
+      resourceFlow: get().resourceFlow,
       facilities,
       finance,
       salesOrders: get().salesOrders,
@@ -384,7 +396,14 @@ export const useGameStore = create<GameState>((set, get) => {
         grantedAtGameTimeMs: get().lastProcessedAtMs,
       });
     }
-    set({ facilities, finance, grants, ...achievementResult });
+    const resourceFlow = get().resourceFlow.clone();
+    resourceFlow.record('facility-spending', ResourceType.ConstructionMaterials, -definition.constructionMaterialsCost, get().lastProcessedAtMs);
+    resourceFlow.record('facility-spending', ResourceType.IndustrialMachines, -definition.industrialMachinesCost, get().lastProcessedAtMs);
+    for (const resourceType of RESOURCE_TYPES) {
+      const rewardAmount = achievementResult.inventory.getAmount(resourceType) - inventory.getAmount(resourceType);
+      if (rewardAmount > 0) resourceFlow.record('reward', resourceType, rewardAmount, get().lastProcessedAtMs);
+    }
+    set({ facilities, finance, grants, resourceFlow, ...achievementResult });
     return true;
   },
   sellFacility: (facilityId) => {
@@ -488,14 +507,18 @@ export const useGameStore = create<GameState>((set, get) => {
       return false;
     }
 
-    const productionStatistics = get().productionStatistics.clone();
-    productionStatistics.recordRepair(1 - facilityView.facilityCondition, cashRepairCost + missingInputPurchaseCost + (constructionMaterialsRepairCost - missingConstructionMaterials) * market.getLocalPrice(ResourceType.ConstructionMaterials) + (industrialMachinesRepairCost - missingIndustrialMachines) * market.getLocalPrice(ResourceType.IndustrialMachines));
+    const facilityMaintenance = get().facilityMaintenance.clone();
+    facilityMaintenance.recordRepair(1 - facilityView.facilityCondition, cashRepairCost + missingInputPurchaseCost + (constructionMaterialsRepairCost - missingConstructionMaterials) * market.getLocalPrice(ResourceType.ConstructionMaterials) + (industrialMachinesRepairCost - missingIndustrialMachines) * market.getLocalPrice(ResourceType.IndustrialMachines));
     const prestige = get().prestige.clone();
     syncCompanyBalancePrestige(prestige, finance, get().lastProcessedAtMs);
     syncCompanyAssetsPrestige(prestige, { finance, inventory, market, facilities, research: get().research }, get().lastProcessedAtMs);
     syncFacilityConditionPrestige(prestige, facilities, get().lastProcessedAtMs);
-    const achievementResult = applyAchievementUnlocks({ achievements: get().achievements, productionStatistics, facilities, finance, salesOrders: get().salesOrders, prestige, companyStartedAtGameTimeMs: get().companyStartedAtGameTimeMs, currentGameTimeMs: get().lastProcessedAtMs, categories: ['facilities', 'finance'], inventory });
-    set({ facilities, inventory: achievementResult.inventory, market, finance, productionStatistics, achievements: achievementResult.achievements, prestige: achievementResult.prestige });
+    const achievementResult = applyAchievementUnlocks({ achievements: get().achievements, facilityMaintenance, resourceFlow: get().resourceFlow, facilities, finance, salesOrders: get().salesOrders, prestige, companyStartedAtGameTimeMs: get().companyStartedAtGameTimeMs, currentGameTimeMs: get().lastProcessedAtMs, categories: ['facilities', 'finance'], inventory });
+    const resourceFlow = get().resourceFlow.clone();
+    for (const { resourceType, trade } of trades) resourceFlow.record('market-buy', resourceType, trade.amount, get().lastProcessedAtMs);
+    resourceFlow.record('facility-spending', ResourceType.ConstructionMaterials, -constructionMaterialsRepairCost, get().lastProcessedAtMs);
+    resourceFlow.record('facility-spending', ResourceType.IndustrialMachines, -industrialMachinesRepairCost, get().lastProcessedAtMs);
+    set({ facilities, inventory: achievementResult.inventory, market, finance, facilityMaintenance, achievements: achievementResult.achievements, prestige: achievementResult.prestige, resourceFlow });
     return true;
   },
   upgradeFacility: (facilityId, upgradeKind) => {
@@ -554,7 +577,8 @@ export const useGameStore = create<GameState>((set, get) => {
     syncFacilityConditionPrestige(prestige, facilities, get().lastProcessedAtMs);
     const achievementResult = applyAchievementUnlocks({
       achievements: get().achievements,
-      productionStatistics: get().productionStatistics,
+      facilityMaintenance: get().facilityMaintenance,
+      resourceFlow: get().resourceFlow,
       facilities,
       finance,
       salesOrders: get().salesOrders,
@@ -564,7 +588,11 @@ export const useGameStore = create<GameState>((set, get) => {
       categories: ['facilities', 'finance', 'prestige'],
       inventory,
     });
-    set({ facilities, market, finance, ...achievementResult });
+    const resourceFlow = get().resourceFlow.clone();
+    for (const { resourceType, trade } of trades) resourceFlow.record('market-buy', resourceType, trade.amount, get().lastProcessedAtMs);
+    resourceFlow.record('facility-spending', ResourceType.ConstructionMaterials, -constructionMaterialsCost, get().lastProcessedAtMs);
+    resourceFlow.record('facility-spending', ResourceType.IndustrialMachines, -industrialMachinesCost, get().lastProcessedAtMs);
+    set({ facilities, market, finance, resourceFlow, ...achievementResult });
     return true;
   },
   advanceGameTime: (elapsedMilliseconds) => {
@@ -577,7 +605,12 @@ export const useGameStore = create<GameState>((set, get) => {
     const hasActiveFacility = hasConstructedFacility && get().facilities.getAll().some((facility) => facility.getView().isActive);
     const facilities = hasConstructedFacility ? get().facilities.clone() : get().facilities;
     let inventory = hasActiveFacility ? get().inventory.clone() : get().inventory;
-    let productionStatistics = get().productionStatistics;
+    let resourceFlow = get().resourceFlow;
+    const recordResourceFlow = (kind: Parameters<ResourceFlowLedger['record']>[0], resourceType: ResourceType, amount: number, occurredAtGameTimeMs: number) => {
+      if (resourceFlow === get().resourceFlow) resourceFlow = resourceFlow.clone();
+      resourceFlow.record(kind, resourceType, amount, occurredAtGameTimeMs);
+    };
+    let producedOutput = false;
     let salesOrders: SalesOrders | null = null;
     let market: Market | null = null;
     let marketFinance: Finance | null = null;
@@ -613,6 +646,7 @@ export const useGameStore = create<GameState>((set, get) => {
         const trade = buyingMarket.buyFromLocal(resourceType, purchaseAmount);
         if (trade.success && inventory.add(resourceType, trade.amount, trade.quality)) {
           marketFinance.applyTransaction({ amount: -trade.unitPrice * trade.amount, description: `Autobought ${formatNumber(trade.amount, { smartDecimals: true })} ${resourceType}`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: stepEndGameTimeMs });
+          recordResourceFlow('market-buy', resourceType, trade.amount, stepEndGameTimeMs);
         }
       }
 
@@ -635,6 +669,7 @@ export const useGameStore = create<GameState>((set, get) => {
             const trade = market.buyFromLocal(input.resourceType, purchaseAmount);
             if (trade.success && inventory.add(input.resourceType, trade.amount, trade.quality)) {
               marketFinance.applyTransaction({ amount: -trade.unitPrice * trade.amount, description: `Autobought ${formatNumber(trade.amount, { smartDecimals: true })} ${input.resourceType} for production`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: stepEndGameTimeMs });
+              recordResourceFlow('market-buy', input.resourceType, trade.amount, stepEndGameTimeMs);
             }
           }
         }
@@ -643,14 +678,11 @@ export const useGameStore = create<GameState>((set, get) => {
           facility,
           baseWork,
           getRecipeResearchWorkSpeedMultiplier(recipeName, research.getCompletedProjectIds()),
-        ));
+        ), (input) => recordResourceFlow('facility-input', input.resourceType, -input.amount, stepEndGameTimeMs));
         if (outputs.length > 0) {
-          if (productionStatistics === get().productionStatistics) {
-            productionStatistics = productionStatistics.clone();
-          }
-
+          producedOutput = true;
           for (const output of outputs) {
-            productionStatistics.record(output.resourceType, output.amount);
+            recordResourceFlow('facility-output', output.resourceType, output.amount, stepEndGameTimeMs);
           }
         }
       }
@@ -661,11 +693,12 @@ export const useGameStore = create<GameState>((set, get) => {
         SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP,
         calculateAssets({ finance: marketFinance ?? get().finance, inventory, market: market ?? get().market, facilities, research }).totalAssets * getSalesOrderMaximumCompanyValueFraction(research.getCompletedProjectIds()),
       );
+      const producedByResource = resourceFlow.getLifetimeFacilityOutputByResource();
       const offerChance = calculateSalesOrderAcquisitionChance({
         openOrderCount: currentSalesOrders.getOfferedOrders().length,
         companyPrestige: currentPrestige,
         economyPhase: (marketFinance ?? get().finance).getEconomyPhase(),
-        hasEligibleInventory: getSalesOfferResourceTypes(research.getCompletedProjectIds(), productionStatistics.toSnapshot().producedByResource).some((resourceType) => inventory.getAmount(resourceType) >= getSalesResourceProfile(resourceType).standardOrderLot && getSalesResourceProfile(resourceType).standardOrderLot * (market ?? get().market).getGlobalPrice(resourceType) <= maximumOrderValue),
+        hasEligibleInventory: getSalesOfferResourceTypes(research.getCompletedProjectIds(), producedByResource).some((resourceType) => inventory.getAmount(resourceType) >= getSalesResourceProfile(resourceType).standardOrderLot && getSalesResourceProfile(resourceType).standardOrderLot * (market ?? get().market).getGlobalPrice(resourceType) <= maximumOrderValue),
       });
       customerPipelineProgress += (stepMs / 1_000) * offerChance / 60;
 
@@ -686,6 +719,7 @@ export const useGameStore = create<GameState>((set, get) => {
         const trade = market.sellToLocal(resourceType, amount, inventory.getQuality(resourceType));
         if (trade.success && inventory.remove(resourceType, amount)) {
           marketFinance.applyTransaction({ amount: trade.unitPrice * trade.amount, description: `Autosold ${trade.amount} ${resourceType} to local market`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-sale', occurredAtGameTimeMs: stepEndGameTimeMs });
+          recordResourceFlow('market-sell', resourceType, -trade.amount, stepEndGameTimeMs);
         }
       }
 
@@ -716,8 +750,8 @@ export const useGameStore = create<GameState>((set, get) => {
             inventoryByResource: Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, inventory.getAmount(resourceType)])) as Record<ResourceType, number>,
             globalPrices: Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, activeMarket.getGlobalPrice(resourceType)])) as Record<ResourceType, number>,
             globalSupplies: Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, activeMarket.getGlobalEntry(resourceType).supply])) as Record<ResourceType, number>,
-            candidateResourceTypes: getSalesOfferResourceTypes(research.getCompletedProjectIds(), productionStatistics.toSnapshot().producedByResource),
-            getResourceWeight: (resourceType) => productionStatistics.toSnapshot().producedByResource[resourceType] > 0 ? getSalesOfferProducedResourceWeight(research.getCompletedProjectIds()) : 1,
+            candidateResourceTypes: getSalesOfferResourceTypes(research.getCompletedProjectIds(), producedByResource),
+            getResourceWeight: (resourceType) => producedByResource[resourceType] > 0 ? getSalesOfferProducedResourceWeight(research.getCompletedProjectIds()) : 1,
             bidResearchMultiplier: getSalesOrderBidMultiplier(research.getCompletedProjectIds(), MARKET_SALES_ORDER_BID_MULTIPLIER),
           });
           ordersCreated += result.ordersCreated;
@@ -753,7 +787,10 @@ export const useGameStore = create<GameState>((set, get) => {
           if (amount <= 0) continue;
           const trade = market.sellToLocal(resourceType, amount, inventory.getQuality(resourceType));
           const proceeds = trade.unitPrice * trade.amount * LOAN_COLLECTION.forcedInventoryRecoveryRate;
-          if (trade.success && inventory.remove(resourceType, trade.amount) && financeForLoanProcessing.applyTransaction({ amount: proceeds, description: `Forced inventory liquidation: ${resourceType}`, detailLines: [`Recovery rate: ${Math.round(LOAN_COLLECTION.forcedInventoryRecoveryRate * 100)}%`], kind: 'investing', source: 'forced-asset-liquidation', occurredAtGameTimeMs: nextGameTimeMs })) recovered += proceeds;
+          if (trade.success && inventory.remove(resourceType, trade.amount) && financeForLoanProcessing.applyTransaction({ amount: proceeds, description: `Forced inventory liquidation: ${resourceType}`, detailLines: [`Recovery rate: ${Math.round(LOAN_COLLECTION.forcedInventoryRecoveryRate * 100)}%`], kind: 'investing', source: 'forced-asset-liquidation', occurredAtGameTimeMs: nextGameTimeMs })) {
+            recordResourceFlow('market-sell', resourceType, -trade.amount, nextGameTimeMs);
+            recovered += proceeds;
+          }
           if (recovered >= maximumRecovery - 0.01) break;
         }
         for (const facility of facilities.getAll().sort((left, right) => calculateFacilityAssetValue(right, market!) - calculateFacilityAssetValue(left, market!))) {
@@ -821,7 +858,7 @@ export const useGameStore = create<GameState>((set, get) => {
     }
 
     const achievementCategories: AchievementCategory[] = [];
-    if (productionStatistics !== get().productionStatistics) {
+    if (producedOutput) {
       achievementCategories.push('production');
     }
     if (elapsedMinutes > 0) {
@@ -833,7 +870,8 @@ export const useGameStore = create<GameState>((set, get) => {
     const achievementResult = achievementCategories.length > 0
       ? applyAchievementUnlocks({
         achievements: get().achievements,
-        productionStatistics,
+        facilityMaintenance: get().facilityMaintenance,
+        resourceFlow,
         facilities,
         finance: marketFinance ?? get().finance,
         salesOrders: salesOrders ?? get().salesOrders,
@@ -845,6 +883,15 @@ export const useGameStore = create<GameState>((set, get) => {
       })
       : { achievements: get().achievements, prestige, inventory };
 
+    for (const resourceType of RESOURCE_TYPES) {
+      const rewardAmount = achievementResult.inventory.getAmount(resourceType) - inventory.getAmount(resourceType);
+      if (rewardAmount > 0) recordResourceFlow('reward', resourceType, rewardAmount, nextGameTimeMs);
+    }
+    if (resourceFlow === get().resourceFlow && resourceFlow.hasExpiredBuckets(nextGameTimeMs)) {
+      resourceFlow = resourceFlow.clone();
+      resourceFlow.prune(nextGameTimeMs);
+    }
+
     set({
       lastProcessedAtMs: nextGameTimeMs,
       unprocessedWorkMs,
@@ -852,8 +899,8 @@ export const useGameStore = create<GameState>((set, get) => {
       ...(hasConstructedFacility ? { facilities } : {}),
       ...(inventory !== get().inventory ? { inventory } : {}),
       ...(achievementResult.inventory !== get().inventory ? { inventory: achievementResult.inventory } : {}),
+      ...(resourceFlow !== get().resourceFlow ? { resourceFlow } : {}),
       ...(marketFinance ? { finance: marketFinance } : {}),
-      ...(productionStatistics !== get().productionStatistics ? { productionStatistics } : {}),
       ...(salesOrders ? { salesOrders } : {}),
       ...(market ? { market } : {}),
       ...(research !== get().research ? { research } : {}),
@@ -892,7 +939,8 @@ export const useGameStore = create<GameState>((set, get) => {
     syncCompanyAssetsPrestige(prestige, { finance, inventory: state.inventory, market: state.market, facilities: state.facilities, research: state.research }, state.lastProcessedAtMs);
     const achievementResult = applyAchievementUnlocks({
       achievements: state.achievements,
-      productionStatistics: state.productionStatistics,
+      facilityMaintenance: state.facilityMaintenance,
+      resourceFlow: state.resourceFlow,
       facilities: state.facilities,
       finance,
       salesOrders: state.salesOrders,
@@ -1014,7 +1062,8 @@ export const useGameStore = create<GameState>((set, get) => {
     syncCompanyAssetsPrestige(prestige, { finance, inventory: state.inventory, market: state.market, facilities: state.facilities, research: state.research }, state.lastProcessedAtMs);
     const achievementResult = applyAchievementUnlocks({
       achievements: state.achievements,
-      productionStatistics: state.productionStatistics,
+      facilityMaintenance: state.facilityMaintenance,
+      resourceFlow: state.resourceFlow,
       facilities: state.facilities,
       finance,
       salesOrders: state.salesOrders,
@@ -1077,7 +1126,8 @@ export const useGameStore = create<GameState>((set, get) => {
 
     const achievementResult = applyAchievementUnlocks({
       achievements: get().achievements,
-      productionStatistics: get().productionStatistics,
+      facilityMaintenance: get().facilityMaintenance,
+      resourceFlow: get().resourceFlow,
       facilities: get().facilities,
       finance,
       salesOrders,
@@ -1087,7 +1137,9 @@ export const useGameStore = create<GameState>((set, get) => {
       categories: ['sales', 'finance', 'prestige'],
       inventory,
     });
-    set({ market, finance, salesOrders, ...achievementResult });
+    const resourceFlow = get().resourceFlow.clone();
+    for (const line of order.lines) resourceFlow.record('customer-order', line.resourceType, -line.quantity, currentGameTimeMs);
+    set({ market, finance, salesOrders, resourceFlow, ...achievementResult });
     return true;
   },
   rejectSalesOrder: (orderId) => {
@@ -1109,11 +1161,12 @@ export const useGameStore = create<GameState>((set, get) => {
   createSnapshot: () => ({
     finance: get().finance.toSnapshot(),
     inventory: get().inventory.toSnapshot(),
+    resourceFlow: get().resourceFlow.toSnapshot(),
     market: get().market.toSnapshot(),
     facilities: get().facilities.toSnapshot(),
     salesOrders: get().salesOrders.toSnapshot(),
     achievements: get().achievements.toSnapshot(),
-    productionStatistics: get().productionStatistics.toSnapshot(),
+    facilityMaintenance: get().facilityMaintenance.toSnapshot(),
     prestige: get().prestige.toSnapshot(),
     research: get().research.toSnapshot(),
     grants: get().grants.toSnapshot(),
@@ -1130,19 +1183,21 @@ export const useGameStore = create<GameState>((set, get) => {
     const facilities = FacilityCollection.fromSnapshot(snapshot.facilities);
     const salesOrders = SalesOrders.fromSnapshot(snapshot.salesOrders);
     const achievements = AchievementLedger.fromSnapshot(snapshot.achievements);
-    const productionStatistics = ProductionStatistics.fromSnapshot(snapshot.productionStatistics);
+    const facilityMaintenance = FacilityMaintenanceStatistics.fromSnapshot(snapshot.facilityMaintenance);
     const prestige = PrestigeLedger.fromSnapshot(snapshot.prestige);
     const research = ResearchLedger.fromSnapshot(snapshot.research);
     market.restoreLocalMarketDepthMultiplier(getLocalMarketDepthMultiplier(research.getCompletedProjectIds()));
     market.setLocalRegionalDiffusionMultiplier(getLocalRegionalDiffusionMultiplier(research.getCompletedProjectIds()));
     const grants = GrantLedger.fromSnapshot(snapshot.grants);
     const inventory = Inventory.fromSnapshot(snapshot.inventory);
+    const resourceFlow = ResourceFlowLedger.fromSnapshot(snapshot.resourceFlow);
     syncCompanyBalancePrestige(prestige, finance, snapshot.time.lastProcessedAtMs);
     syncCompanyAssetsPrestige(prestige, { finance, inventory, market, facilities, research }, snapshot.time.lastProcessedAtMs);
     syncFacilityConditionPrestige(prestige, facilities, snapshot.time.lastProcessedAtMs);
     const achievementResult = applyAchievementUnlocks({
       achievements,
-      productionStatistics,
+      facilityMaintenance,
+      resourceFlow,
       facilities,
       finance,
       salesOrders,
@@ -1156,11 +1211,12 @@ export const useGameStore = create<GameState>((set, get) => {
     set({
     finance,
     inventory: achievementResult.inventory,
+    resourceFlow,
     market,
     facilities,
     salesOrders,
     achievements: achievementResult.achievements,
-    productionStatistics,
+    facilityMaintenance,
     prestige: achievementResult.prestige,
     research,
     grants,

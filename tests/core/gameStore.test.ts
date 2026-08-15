@@ -22,6 +22,7 @@ describe('market autobuy', () => {
 
     expect(useGameStore.getState().inventory.getAmount(ResourceType.Grain)).toBeCloseTo(360);
     expect(useGameStore.getState().market.getLocalPrice(ResourceType.Grain)).toBeLessThanOrEqual(1.25);
+    expect(useGameStore.getState().resourceFlow.getSummary(ResourceType.Grain, 5_000, 15_000)).toMatchObject({ market: 360, netChange: 360 });
   });
 });
 
@@ -60,6 +61,8 @@ describe('facility construction inputs', () => {
     expect(state.buildFacility(FacilityType.Farm)).toBe(true);
     expect(useGameStore.getState().inventory.getAmount(ResourceType.ConstructionMaterials)).toBe(10 - farm.constructionMaterialsCost);
     expect(useGameStore.getState().inventory.getAmount(ResourceType.IndustrialMachines)).toBe(0);
+    expect(useGameStore.getState().resourceFlow.getSummary(ResourceType.ConstructionMaterials, 0, null).facilitySpending).toBe(-farm.constructionMaterialsCost);
+    expect(useGameStore.getState().resourceFlow.getSummary(ResourceType.IndustrialMachines, 0, null).facilitySpending).toBe(-farm.industrialMachinesCost);
   });
 
   it('requires and consumes Construction Materials and Industrial Machines for facility upgrades', () => {

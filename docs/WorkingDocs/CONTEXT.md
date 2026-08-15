@@ -10,6 +10,9 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Resource | A typed item the player can gain, spend, transform, and hold in inventory. |
 | Grain, Bread, Water, Electricity, Sugar, Fruit, Eggs, Meat, Milk, Wool, Cake, Premium Cake, Meat Pie, Coal, Iron, Copper, Gold, Minerals, Steel, Electric Circuits, Chemicals, Fertilizer, Plastic, Silicon, Advanced Components, Industrial Machines, Bricks, Cement, Reinforced Concrete, Construction Materials, Sand, Clay, Stone | Current resource names. |
 | Inventory | Player-owned resource quantities and their associated quality. |
+| Resource flow | A categorized, signed change to a player-owned resource: facility output/input, market trade, customer-order delivery, facility spending, or reward. |
+| Inventory flow period | The shared Inventory reporting window: last 15 seconds, 1 minute, 15 minutes, 1 hour, or all company time. It uses foreground logical game time. |
+| Facility maintenance statistics | Lifetime repaired-condition, largest-repair, and repair-value facts owned by Facilities. |
 | Resource quality | A property of an inventory entry; its gameplay rule is not yet designed. |
 | Logistics multiplier | A resource catalogue value for physical shipping, storage, and market-network constraints on adjacent-market diffusion. |
 | Value-density multiplier | A resource catalogue value for the economic value of moving a resource relative to its transport burden. |
@@ -51,7 +54,7 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Prestige event | A company-level prestige source that may decay with active foreground time. |
 | Achievement | A durable company milestone defined in code and unlocked once when its typed condition is met. |
 | Achievement unlock | The persisted achievement ID and logical foreground time at which its condition was first met. |
-| Production statistics | Lifetime facility output totals by resource, recorded only when a recipe completes output. |
+| Lifetime facility output | The all-time `facility-output` totals in Resource Flow, recorded only when a recipe completes output. Achievements and sales targeting consume these totals. |
 | Progression gate | A pure all-of requirement check over achievements, current prestige, completed research, and a starting condition. |
 | Research project | A code-defined, one-time company project with an up-front cost, foreground duration, requirements, and completion effect. Recipe research durations are three times their base duration. |
 | Active research | The one paid research project currently accumulating foreground milliseconds for its company, with its effective duration retained when it starts. |

@@ -53,11 +53,12 @@ function CompanyGamePersistence({ children }: { children: ReactNode }) {
       if (
         state.finance !== previousState.finance
         || state.inventory !== previousState.inventory
+        || state.resourceFlow !== previousState.resourceFlow
         || state.market !== previousState.market
         || state.facilities !== previousState.facilities
         || state.salesOrders !== previousState.salesOrders
         || state.achievements !== previousState.achievements
-        || state.productionStatistics !== previousState.productionStatistics
+        || state.facilityMaintenance !== previousState.facilityMaintenance
         || state.prestige !== previousState.prestige
         || state.research !== previousState.research
         || state.companyStartedAtGameTimeMs !== previousState.companyStartedAtGameTimeMs

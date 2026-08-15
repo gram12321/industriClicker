@@ -19,14 +19,14 @@ Foreground elapsed time -> advanceGameTime -> registered timed rules
 | Balance values and catalogues | Typed TypeScript definitions | No |
 | Current game state | Zustand | Through `GameSnapshot` |
 | Local player/company/session metadata | Company domain and SQLite adapters | Yes, separately from `GameSnapshot` |
-| Finance, inventory, facilities, customer orders and relationships, achievements, production statistics, prestige, research, logical game time | Domain models in the store | Yes |
+| Finance, inventory and resource-flow history, facilities and maintenance statistics, customer orders and relationships, achievements, prestige, research, logical game time | Domain models in the store | Yes |
 | Foreground wall-clock observation anchor and derived UI data | Store/runtime helpers | No |
 | Durable snapshot | Company-keyed Expo SQLite adapter | Yes |
 | Cloud state | None | No |
 
 ## Production and Facilities
 
-Recipes consume inputs at cycle start; if inputs are absent, the facility stalls without banking work. A completed cycle grants every configured `baseOutput × outputMultiplier`. A facility may run one or more researched recipes as an ordered production cycle; when a recipe completes, it starts the next entry and returns to the first after the final entry. A production cycle may repeat a recipe. Each constructed facility is an independent numbered instance, so multiple facilities of one type can run different recipes, cycles, and upgrades.
+Recipes consume inputs at cycle start; if inputs are absent, the facility stalls without banking work. A completed cycle grants every configured `baseOutput × outputMultiplier`. A facility may run one or more researched recipes as an ordered production cycle; when a recipe completes, it starts the next entry and returns to the first after the final entry. A production cycle may repeat a recipe. Each constructed facility is an independent numbered instance, so multiple facilities of one type can run different recipes, cycles, and upgrades. Successful recipe-input consumption and completed outputs both record a categorized resource-flow entry at the foreground step's logical time.
 Players may pause a selected recipe without clearing it; resuming continues its retained cycle progress. A facility also stalls automatically at a cycle boundary when its next recipe inputs are unavailable.
 
 | Recipe | Inputs | Output | Work |
@@ -112,6 +112,7 @@ The deterministic recipe-economy simulator models one fully staffed facility buy
 - Foreground minute completion creates price-locked sales offers. Every five foreground seconds, source-capped diffusion balances every resource first between local/regional and then regional/global reservoirs. Offline time does neither.
 - Manual buys/sells trade only with the local market. A fulfilled customer order adds the delivered inventory and its quality directly to the global reservoir; its reference price, bid, premium, quantity, and reward are locked at offer time.
 - Each resource has one saved autotrade interval, defaulting to 5 seconds. At every completed interval, enabled autobuy fills its target inventory and may purchase the combined inputs for each active facility's full production cycle from the local market when its finite price cap, funds, supply, and access rule allow it. Autobuy buys the largest partial amount that leaves the resulting local unit price at or below its cap when the full target would exceed it; enabled autosell then sells under its existing rate, minimum inventory, and minimum-price limits. The autosell maximum remains a per-minute rate and is scaled to the interval.
+- Resource-flow history records manual and automatic local-market buys and sells, customer-order delivery, facility construction/upgrade/repair inputs, and achievement resource rewards. The most recent foreground hour is retained at one-second precision for 15-second through 1-hour Inventory views; all-time totals retain the same categories without unbounded history growth.
 
 ## Finance, Prestige, and Sales
 
@@ -140,7 +141,7 @@ The deterministic recipe-economy simulator models one fully staffed facility buy
 
 1. `TimeManager` measures active wall-clock time from `lastObservedAtMs`.
 2. `advanceGameTime` splits it into one-second simulation steps.
-3. Each step advances logical time and pipeline, applies passive condition wear to every constructed facility, then gives active facilities `elapsedSeconds / 60` base work in fixed order. A completed recipe cycle applies its linear production tear before its output is recorded in lifetime production statistics after output multipliers apply.
+3. Each step advances logical time and pipeline, applies passive condition wear to every constructed facility, then gives active facilities `elapsedSeconds / 60` base work in fixed order. A completed recipe cycle applies its linear production tear before its output is recorded as all-time `facility-output` resource flow after output multipliers apply; achievements and sales targeting consume those totals.
 4. Active research advances by the same foreground elapsed milliseconds; background/resume time adds none. A completed project clears the active record and applies its one-time effect atomically.
 5. Customer orders resolve only for completed foreground minutes and may be created only while below derived sales capacity; retained partial time carries between ticks. The customer catalogue is code-derived, while order and relationship state are company-owned snapshot data.
 6. Fast-forward first processes real foreground time, then simulates 60 seconds through the same path.
@@ -160,4 +161,4 @@ Offline catch-up is deferred and must use this rule path when approved.
 | Delete company | Delete the active company record and its cascaded local save/tutorial rows, then return to local company selection. |
 | Clear local data (admin) | Delete every local profile, company, save, tutorial row, and device session while retaining the empty SQLite schema. |
 
-No save compatibility layer exists: a snapshot that lacks a required current field is discarded. Achievement ledger, production statistics, research ledger, facility condition, and company-start logical time are required snapshot fields. Changes to persisted gameplay units intentionally invalidate former saves through the existing structural validation rather than introducing version tracking.
+No save compatibility layer exists: a snapshot that lacks a required current field is discarded. Achievement ledger, resource-flow ledger, facility-maintenance statistics, research ledger, facility condition, and company-start logical time are required snapshot fields. Changes to persisted gameplay units intentionally invalidate former saves through the existing structural validation rather than introducing version tracking.
