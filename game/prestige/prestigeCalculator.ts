@@ -1,7 +1,7 @@
 import type { PrestigeEvent } from './prestige';
 import { FINANCE_INITIAL_BALANCE } from '@/game/company/companyConstants';
 import { safeNonNegative } from '@/utils';
-import { PRESTIGE_CASH_WEIGHT, PRESTIGE_EVENT_MIN_AMOUNT, PRESTIGE_DECAY_PROJECTION_FOREGROUND_HOURS, PRESTIGE_FOREGROUND_HOUR_MS, PRESTIGE_ROUNDING_FACTOR } from './prestigeConstants';
+import { PRESTIGE_CASH_WEIGHT, PRESTIGE_EVENT_MIN_AMOUNT, PRESTIGE_DECAY_PROJECTION_FOREGROUND_HOURS, PRESTIGE_FOREGROUND_HOUR_MS, PRESTIGE_PRESENTATION_SCALE, PRESTIGE_ROUNDING_FACTOR } from './prestigeConstants';
 
 type CompanyCapitalInput = {
   cashBalance: number;
@@ -52,6 +52,12 @@ export function calculateSalesOrderPrestige(reward: number, premiumPercent = 0):
   // Prestige deliberately has no fixed maximum. Finite inputs keep this logarithmic
   // formula finite; a cap adds no safety and would silently limit late-game progression.
   return roundPrestige((0.1 + 0.15 * Math.log(1 + reward)) * (1 + Math.max(0, premiumPercent) / 500));
+}
+
+/** Maps unbounded positive prestige to a monotonic 0–1 presentation score. */
+export function normalizeCompanyPrestigeForPresentation(prestige: number): number {
+  const safePrestige = safeNonNegative(prestige);
+  return safePrestige / (safePrestige + PRESTIGE_PRESENTATION_SCALE);
 }
 
 /** Temporary equal-weight facility model; use total facility asset value when that metric exists. */

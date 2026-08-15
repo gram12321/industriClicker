@@ -9,7 +9,7 @@ import { getRecipe } from '@/game/recipes';
 import { MARKET_AUTOTRADE_DEFAULT_INTERVAL_MS, MARKET_AUTOTRADE_INTERVAL_OPTIONS, type Market, type MarketAutomation, type MarketTradeMultiplier } from '@/game/market';
 import { RESOURCE_GROUPS, RESOURCE_TYPES, getResource, getResourceIcon } from '@/game/resources';
 import { APP_ICONS } from '@/icons';
-import { formatCurrency, formatNumber } from '@/utils';
+import { formatCurrency, formatNumber, getColorClass } from '@/utils';
 import { colors } from '@/theme';
 import { SectionHeading } from '@/ui/dashboard/components/DashboardPrimitives';
 import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
@@ -98,7 +98,7 @@ export function InventoryView({ buyMarketResource, facilities, finance, inventor
       return <View key={resourceType}>
         <Pressable accessibilityLabel={`${resource.name}: ${formatNumber(entry.quantity, { smartDecimals: true })} units, quality ${formatNumber(entry.quality, { smartDecimals: true })}`} accessibilityRole="button" onPress={() => setSelectedResource(isSelected ? null : resourceType)} style={styles.detailRow}>
           <Text variant="bodyLarge">{`${getResourceIcon(resourceType)} ${resource.name}`}</Text>
-          <View style={styles.inventoryQualityValue}><Text style={styles.detailValue}>{`${formatNumber(entry.quantity, { smartDecimals: true })} units`}</Text><MaterialCommunityIcons color={styles.workMetricIcon.color} name={APP_ICONS.quality} size={16} /><Text style={styles.detailValue}>{formatNumber(entry.quality, { smartDecimals: true })}</Text></View>
+          <View style={styles.inventoryQualityValue}><Text style={styles.detailValue}>{`${formatNumber(entry.quantity, { smartDecimals: true })} units`}</Text><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.quality} size={16} /><Text style={[styles.detailValue, { color: getColorClass(entry.quality) }]}>{formatNumber(entry.quality, { smartDecimals: true })}</Text></View>
         </Pressable>
         {isSelected && <MarketCard buyMarketResource={buyMarketResource} finance={finance} inventory={inventory} market={market} multiplier={multiplier} openSettings={openSettings} resourceType={resourceType} sellMarketResource={sellMarketResource} setMarketAutomation={setMarketAutomation} />}
       </View>;

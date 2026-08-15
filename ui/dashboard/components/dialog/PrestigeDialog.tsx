@@ -2,9 +2,9 @@ import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Button, Dialog, Icon, Portal, Surface, Text } from 'react-native-paper';
 import type { PrestigeEventType } from '@/game/prestige';
-import { calculatePrestigeDecayDetails, type CompanyPrestigeSummary } from '@/game/prestige';
+import { calculatePrestigeDecayDetails, normalizeCompanyPrestigeForPresentation, type CompanyPrestigeSummary } from '@/game/prestige';
 import { colors } from '@/theme';
-import { formatNumber, formatSigned } from '@/utils';
+import { formatNumber, formatSigned, getColorClass, getNormalizedScoreLabel } from '@/utils';
 
 type Filter = 'all' | 'company_balance' | 'company_assets' | 'sales_order' | 'achievement';
 type PrestigeEventGroup = {
@@ -29,6 +29,7 @@ export function PrestigeDialog({ facilityConditions = [], isOpen, onClose, summa
   const [expandedEventDetails, setExpandedEventDetails] = useState<ReadonlySet<string>>(new Set());
   const { height } = useWindowDimensions();
   const eventGroups = useMemo(() => groupEvents(summary.events, filter), [filter, summary.events]);
+  const prestigeScore = normalizeCompanyPrestigeForPresentation(summary.totalPrestige);
 
   const toggleGroup = (groupId: string) => {
     setExpandedGroups((current) => toggleSetItem(current, groupId));
@@ -43,6 +44,7 @@ export function PrestigeDialog({ facilityConditions = [], isOpen, onClose, summa
     <Dialog.Content><ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator style={[styles.dialogScroll, { maxHeight: Math.max(200, height - 190) }]}>
       <Text style={styles.description}>A record of your company’s standing. Prestige has no gameplay effect yet.</Text>
       <Surface elevation={0} style={styles.totalCard}><Text style={styles.kicker}>CURRENT PRESTIGE</Text><Text style={styles.totalValue}>{formatNumber(summary.totalPrestige, { smartDecimals: true })}</Text><SummaryRow label="Company assets" value={summary.assetsPrestige} /><SummaryRow label="Cash reserves" value={summary.balancePrestige} /><SummaryRow label="Facility condition" value={summary.facilityConditionPrestige} /><SummaryRow label="Customer orders" value={summary.salesPrestige} /><SummaryRow label="Achievements" value={summary.achievementPrestige} /></Surface>
+      <Text style={styles.prestigeStanding}>{getNormalizedScoreLabel(prestigeScore)}</Text>
       <View style={styles.filters}><Button compact mode={filter === 'all' ? 'contained' : 'outlined'} onPress={() => setFilter('all')}>All</Button><Button compact mode={filter === 'company_assets' ? 'contained' : 'outlined'} onPress={() => setFilter('company_assets')}>Assets</Button><Button compact mode={filter === 'company_balance' ? 'contained' : 'outlined'} onPress={() => setFilter('company_balance')}>Cash</Button><Button compact mode={filter === 'sales_order' ? 'contained' : 'outlined'} onPress={() => setFilter('sales_order')}>Sales</Button><Button compact mode={filter === 'achievement' ? 'contained' : 'outlined'} onPress={() => setFilter('achievement')}>Achievements</Button></View>
       <Text style={styles.historyHeading} variant="titleMedium">Prestige history</Text>
       <View style={styles.eventList}>
@@ -121,5 +123,5 @@ function FacilityConditionFormula({ conditions }: { conditions: readonly number[
 }
 
 const styles = StyleSheet.create({
-  content: { gap: 12, paddingBottom: 4 }, description: { color: colors.muted, lineHeight: 21 }, detailsCard: { backgroundColor: colors.paleGreen, borderRadius: 12, marginTop: 6, padding: 12 }, dialog: { maxHeight: '88%' }, dialogScroll: { flexGrow: 0 }, emptyText: { color: colors.muted, paddingVertical: 12, textAlign: 'center' }, eventAmount: { color: colors.primary, fontWeight: '700' }, eventDecay: { color: colors.muted, fontSize: 12, marginTop: 3 }, eventDescription: { color: colors.muted, fontSize: 12, marginTop: 2 }, eventGroup: { backgroundColor: colors.surface, borderRadius: 12, padding: 8 }, eventGroupHeader: { alignItems: 'center', flexDirection: 'row', gap: 12, padding: 4 }, eventList: { gap: 8, paddingBottom: 4 }, eventRow: { alignItems: 'center', backgroundColor: colors.softBackground, borderRadius: 10, flexDirection: 'row', gap: 12, padding: 12 }, eventText: { flex: 1 }, filters: { flexDirection: 'row', gap: 8 }, groupEvents: { gap: 6, marginTop: 8 }, historyHeading: { color: colors.charcoal, marginTop: 4 }, kicker: { color: colors.primary, fontSize: 11, fontWeight: '700', letterSpacing: 1 }, penaltyAmount: { color: colors.error, fontWeight: '700' }, selectedEventRow: { backgroundColor: colors.paleGreen }, summaryLabel: { color: colors.muted, fontSize: 12 }, summaryRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }, summaryValue: { color: colors.charcoal, fontWeight: '700' }, tapHint: { color: colors.primary, fontSize: 11, fontWeight: '600', marginTop: 5 }, totalCard: { backgroundColor: colors.softBackground, borderRadius: 12, padding: 16 }, totalValue: { color: colors.charcoal, fontSize: 32, fontWeight: '700', lineHeight: 40 },
+  content: { gap: 12, paddingBottom: 4 }, description: { color: colors.muted, lineHeight: 21 }, detailsCard: { backgroundColor: colors.paleGreen, borderRadius: 12, marginTop: 6, padding: 12 }, dialog: { maxHeight: '88%' }, dialogScroll: { flexGrow: 0 }, emptyText: { color: colors.muted, paddingVertical: 12, textAlign: 'center' }, eventAmount: { color: colors.primary, fontWeight: '700' }, eventDecay: { color: colors.muted, fontSize: 12, marginTop: 3 }, eventDescription: { color: colors.muted, fontSize: 12, marginTop: 2 }, eventGroup: { backgroundColor: colors.surface, borderRadius: 12, padding: 8 }, eventGroupHeader: { alignItems: 'center', flexDirection: 'row', gap: 12, padding: 4 }, eventList: { gap: 8, paddingBottom: 4 }, eventRow: { alignItems: 'center', backgroundColor: colors.softBackground, borderRadius: 10, flexDirection: 'row', gap: 12, padding: 12 }, eventText: { flex: 1 }, filters: { flexDirection: 'row', gap: 8 }, groupEvents: { gap: 6, marginTop: 8 }, historyHeading: { color: colors.charcoal, marginTop: 4 }, kicker: { color: colors.primary, fontSize: 11, fontWeight: '700', letterSpacing: 1 }, penaltyAmount: { color: colors.error, fontWeight: '700' }, prestigeStanding: { fontSize: 13, fontWeight: '700', textAlign: 'center' }, selectedEventRow: { backgroundColor: colors.paleGreen }, summaryLabel: { color: colors.muted, fontSize: 12 }, summaryRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }, summaryValue: { color: colors.charcoal, fontWeight: '700' }, tapHint: { color: colors.primary, fontSize: 11, fontWeight: '600', marginTop: 5 }, totalCard: { backgroundColor: colors.softBackground, borderRadius: 12, padding: 16 }, totalValue: { color: colors.charcoal, fontSize: 32, fontWeight: '700', lineHeight: 40 },
 });

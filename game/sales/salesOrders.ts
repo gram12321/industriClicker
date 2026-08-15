@@ -28,13 +28,13 @@ export function calculateSalesOrderAcquisitionDetails(input: { openOrderCount: n
 export function calculateSalesOrderTargetValue(input: { baseTargetValue: number; companyPrestige: number; relationship: number }): number {
   const prestige = Math.max(0, input.companyPrestige); const prestigeProgress = prestige / (prestige + SALES_ORDER_VOLUME_SCALING.prestigeScale);
   const prestigeMultiplier = 1 + (SALES_ORDER_VOLUME_SCALING.maximumPrestigeMultiplier - 1) * prestigeProgress;
-  const relationshipMultiplier = 1 + clamp(input.relationship, 0, 100) / 100 * (SALES_ORDER_VOLUME_SCALING.maximumRelationshipMultiplier - 1);
+  const relationshipMultiplier = 1 + clamp(input.relationship, 0, 1) * (SALES_ORDER_VOLUME_SCALING.maximumRelationshipMultiplier - 1);
   return Math.max(0, input.baseTargetValue) * prestigeMultiplier * relationshipMultiplier;
 }
 export function calculateSalesOrderBundleLineCount(input: { candidateCount: number; companyPrestige: number; relationship: number; marketShare: number; bundleAppetite: number; seed: string }): number {
   if (input.candidateCount <= 1) return Math.max(0, input.candidateCount);
   const prestigeProgress = normalizeWithControlPoints01(Math.max(0, input.companyPrestige), SALES_ORDER_BUNDLE_PRESTIGE_CONTROL_POINTS);
-  const relationshipProgress = clamp(input.relationship, 0, 100) / 100;
+  const relationshipProgress = clamp(input.relationship, 0, 1);
   const shareProgress = calculateAsymmetricalScaler01(clamp(input.marketShare / 0.15, 0, 1));
   const maturity = prestigeProgress * (0.3 + relationshipProgress * 0.7) * (0.45 + shareProgress * 0.55) * clamp(input.bundleAppetite, 0, 1);
   const softMaximum = Math.max(1, Math.min(input.candidateCount, 1 + Math.ceil((input.candidateCount - 1) * maturity)));
@@ -49,7 +49,7 @@ function createOrderLine(input: { resourceType: ResourceType; targetValue: numbe
   const typeProfile = SALES_CUSTOMER_TYPE_PROFILES[input.customer.customerType];
   const positiveTail = Math.min(0.8, -Math.log(Math.max(0.0001, 1 - roll(`${input.seed}:positive-tail`))) * 0.08);
   const pressurePenalty = roll(`${input.seed}:pressure-offer`) < SALES_ORDER_PRESSURE_OFFER_CHANCE ? -(0.05 + Math.min(0.2, -Math.log(Math.max(0.0001, 1 - roll(`${input.seed}:pressure-size`))) * 0.04)) : 0;
-  const relationshipBonus = clamp(input.relationship, 0, 100) / 100 * 0.12;
+  const relationshipBonus = clamp(input.relationship, 0, 1) * 0.12;
   const prestigeBonus = normalizeWithControlPoints01(Math.max(0, input.companyPrestige), SALES_ORDER_BUNDLE_PRESTIGE_CONTROL_POINTS) * 0.08;
   const purchasingPowerBonus = (input.customer.purchasingPower - 1) * 0.12 + (input.customer.bidMultiplier - 1) * 0.2;
   const premium = clamp((typeProfile.globalPremiumBaseline + positiveTail + relationshipBonus + prestigeBonus + purchasingPowerBonus) * SALES_ECONOMY_MULTIPLIERS[input.economyPhase].bid + pressurePenalty, SALES_ORDER_MINIMUM_GLOBAL_PREMIUM, SALES_ORDER_MAXIMUM_GLOBAL_PREMIUM);

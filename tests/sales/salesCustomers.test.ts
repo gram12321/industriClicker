@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ResourceType } from '@/game/resources';
-import { SALES_CUSTOMER_DOMAINS, SALES_CUSTOMER_TYPE_PROFILES, SALES_CUSTOMER_TYPES, advanceSalesCustomerRelationship, calculateSalesCustomerRelationshipBaseline, calculateSalesCustomerRelationshipChange, calculateSalesCustomerRelationshipDetails, createSalesCustomerState, getSalesCustomerCatalogue, getSalesResourceProfile } from '@/game/sales';
+import { SALES_CUSTOMER_DOMAINS, SALES_CUSTOMER_TYPE_PROFILES, SALES_CUSTOMER_TYPES, advanceSalesCustomerRelationship, calculateSalesCustomerRelationshipBaseline, calculateSalesCustomerRelationshipChange, calculateSalesCustomerRelationshipDetails, createSalesCustomerState, getSalesCustomerCatalogue, getSalesCustomerRelationshipLabel, getSalesResourceProfile } from '@/game/sales';
 
 describe('sales customer catalogue', () => {
   it('is deterministic and generates variable customer counts that normalize market share within each domain', () => {
@@ -51,10 +51,10 @@ describe('sales customer catalogue', () => {
   it('decays company relationship toward the current prestige-derived baseline', () => {
     const customer = getSalesCustomerCatalogue().find((candidate) => candidate.domain === 'utilities')!;
     const baseline = calculateSalesCustomerRelationshipBaseline(customer, 100);
-    const state = createSalesCustomerState(customer.id, 80, 0);
+    const state = createSalesCustomerState(customer.id, 0.8, 0);
     const advanced = advanceSalesCustomerRelationship(state, customer, 100, 8 * 60 * 60 * 1_000);
 
-    expect(advanced.relationship).toBeCloseTo((80 + baseline) / 2);
+    expect(advanced.relationship).toBeCloseTo((0.8 + baseline) / 2);
   });
 
   it('uses only prestige as the relationship-baseline source and exposes the directory inputs', () => {
@@ -73,7 +73,7 @@ describe('sales customer catalogue', () => {
     const customer = getSalesCustomerCatalogue()[0];
     const smallOrderGain = calculateSalesCustomerRelationshipChange({ outcome: 'fulfilled', customer, relationship: 0, orderReferenceValue: 100 });
     const largeOrderGain = calculateSalesCustomerRelationshipChange({ outcome: 'fulfilled', customer, relationship: 0, orderReferenceValue: 1_000 });
-    const trustedCustomerGain = calculateSalesCustomerRelationshipChange({ outcome: 'fulfilled', customer, relationship: 80, orderReferenceValue: 1_000 });
+    const trustedCustomerGain = calculateSalesCustomerRelationshipChange({ outcome: 'fulfilled', customer, relationship: 0.8, orderReferenceValue: 1_000 });
 
     expect(largeOrderGain).toBeGreaterThan(smallOrderGain);
     expect(trustedCustomerGain).toBeLessThan(largeOrderGain);
@@ -82,11 +82,18 @@ describe('sales customer catalogue', () => {
   it('makes expiry harsher than rejection only for high-trust, high-value orders', () => {
     const customer = getSalesCustomerCatalogue()[0];
     const lowRelationshipLoss = calculateSalesCustomerRelationshipChange({ outcome: 'rejected', customer, relationship: 0, orderReferenceValue: 100 });
-    const highRelationshipRejection = calculateSalesCustomerRelationshipChange({ outcome: 'rejected', customer, relationship: 100, orderReferenceValue: 1_000_000_000 });
-    const highRelationshipExpiry = calculateSalesCustomerRelationshipChange({ outcome: 'expired', customer, relationship: 100, orderReferenceValue: 1_000_000_000 });
+    const highRelationshipRejection = calculateSalesCustomerRelationshipChange({ outcome: 'rejected', customer, relationship: 1, orderReferenceValue: 1_000_000_000 });
+    const highRelationshipExpiry = calculateSalesCustomerRelationshipChange({ outcome: 'expired', customer, relationship: 1, orderReferenceValue: 1_000_000_000 });
 
-    expect(lowRelationshipLoss).toBeCloseTo(-0.01);
-    expect(highRelationshipRejection).toBeCloseTo(-10, 3);
-    expect(highRelationshipExpiry).toBeCloseTo(-20, 3);
+    expect(lowRelationshipLoss).toBeCloseTo(-0.0001);
+    expect(highRelationshipRejection).toBeCloseTo(-0.1, 5);
+    expect(highRelationshipExpiry).toBeCloseTo(-0.2, 5);
+  });
+
+  it('uses readable relationship tiers at the important trust thresholds', () => {
+    expect(getSalesCustomerRelationshipLabel(0)).toBe('Cold lead');
+    expect(getSalesCustomerRelationshipLabel(0.15)).toBe('New face');
+    expect(getSalesCustomerRelationshipLabel(0.85)).toBe('First-call supplier');
+    expect(getSalesCustomerRelationshipLabel(1)).toBe('Strategic partner');
   });
 });

@@ -10,7 +10,7 @@ import { getRecipeResearchWorkSpeedMultiplier, getResearchProject, type Research
 import { type SalesOrders } from '@/game/sales';
 import { APP_ICONS, RECIPE_ICONS } from '@/icons';
 import { colors } from '@/theme';
-import { clamp, formatDuration, formatElapsedTime, formatNumber } from '@/utils';
+import { clamp, formatDuration, formatElapsedTime, formatNumber, getColorClass } from '@/utils';
 import { formatRecipeName } from '@/ui/dashboard/helpers/recipeFormatters';
 
 type ActiveProcess = { id: string; icon: string; label: string; progress: number; timing: string; title: string };
@@ -45,9 +45,9 @@ export function ActiveProcessesOverlay({ customerPipelineProgress, facilities, f
             <View style={localStyles.processHeader}>
               <MaterialCommunityIcons color={colors.primary} name={process.icon as never} size={18} />
               <View style={localStyles.processCopy}><Text numberOfLines={1} style={localStyles.processTitle}>{process.title}</Text><Text numberOfLines={1} style={localStyles.processLabel}>{process.label}</Text></View>
-              <Text style={localStyles.processTiming}>{process.timing}</Text>
+              <Text style={[localStyles.processTiming, { color: getColorClass(process.progress) }]}>{process.timing}</Text>
             </View>
-            <ProgressBar accessible accessibilityLabel={`${process.title}: ${process.timing}`} color={colors.primary} progress={process.progress} style={localStyles.progressBar} />
+            <ProgressBar accessible accessibilityLabel={`${process.title}: ${process.timing}`} color={getColorClass(process.progress)} progress={process.progress} style={localStyles.progressBar} />
             {showInstantCompletion && process.id !== 'customer-pipeline' && onCompleteProcess && <Button compact mode="outlined" onPress={() => onCompleteProcess(process.id, getRemainingProcessMilliseconds(process, facilities, finance, research))} style={localStyles.completeButton}>Complete instantly</Button>}
           </View>)}
         </ScrollView>}

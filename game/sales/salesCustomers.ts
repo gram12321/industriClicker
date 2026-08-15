@@ -1,6 +1,6 @@
 import type { ResourceType } from '@/game/resources';
 import { calculateAsymmetricalScaler01 } from '@/game/core/math/scaling';
-import { SALES_CUSTOMER_DOMAIN_PROFILES, SALES_CUSTOMER_GENERATION, SALES_CUSTOMER_TYPE_PROFILES, SALES_RESOURCE_PROFILES } from './salesConstants';
+import { SALES_CUSTOMER_BID_MULTIPLIER_RANGE, SALES_CUSTOMER_DOMAIN_PROFILES, SALES_CUSTOMER_GENERATION, SALES_CUSTOMER_PURCHASING_POWER_RANGE, SALES_CUSTOMER_TYPE_PROFILES, SALES_RESOURCE_PROFILES } from './salesConstants';
 
 export const SALES_CUSTOMER_CATALOGUE_VERSION = 2;
 export const SALES_CUSTOMER_WORLD_SEED = 'industri-clicker-local-world-v1';
@@ -11,10 +11,23 @@ export type SalesCustomerType = typeof SALES_CUSTOMER_TYPES[number];
 
 export type SalesCustomerDefinition = { id: string; name: string; domain: SalesCustomerDomain; customerType: SalesCustomerType; operatingDomains: SalesCustomerDomain[]; marketShare: number; purchasingPower: number; bidMultiplier: number };
 export type SalesResourceProfile = { domain: SalesCustomerDomain; standardOrderLot: number };
+/** Relationship is stored as a normalized 0–1 value; UI displays it as 0–100. */
 export type SalesCustomerState = { customerId: string; relationship: number; lastRelationshipUpdatedAtGameTimeMs: number; fulfilledOrderCount: number; expiredOrderCount: number };
 export type SalesCustomerRelationshipDetails = { prestigeRecognition: number; prestigeBonus: number; marketSharePenalty: number; baseline: number; decayHalfLifeHours: number; relationshipValueScale: number; maximumFulfilmentGain: number; minimumFailureLoss: number; maximumRejectionLoss: number; maximumExpiryLoss: number };
 
-export const SALES_CUSTOMER_RELATIONSHIP = { maximum: 100, foregroundDecayHalfLifeHours: 8, relationshipValueScale: 350, maximumFulfilmentGain: 10, minimumFailureLoss: 0.01, maximumRejectionLoss: 10, maximumExpiryLoss: 20 } as const;
+export const SALES_CUSTOMER_RELATIONSHIP = { maximum: 1, foregroundDecayHalfLifeHours: 8, relationshipValueScale: 350, maximumFulfilmentGain: 0.1, minimumFailureLoss: 0.0001, maximumRejectionLoss: 0.1, maximumExpiryLoss: 0.2 } as const;
+export const SALES_CUSTOMER_RELATIONSHIP_LEVELS = [
+  { minimum: 0, label: 'Cold lead' },
+  { minimum: 0.1, label: 'New face' },
+  { minimum: 0.2, label: 'Familiar name' },
+  { minimum: 0.3, label: 'Known quantity' },
+  { minimum: 0.4, label: 'Regular contact' },
+  { minimum: 0.5, label: 'Safe pair of hands' },
+  { minimum: 0.6, label: 'Go-to supplier' },
+  { minimum: 0.7, label: 'Trusted name' },
+  { minimum: 0.8, label: 'First-call supplier' },
+  { minimum: 0.9, label: 'Strategic partner' },
+] as const;
 const CUSTOMER_NAME_PREFIXES: Readonly<Record<SalesCustomerType, readonly string[]>> = {
   'private-customer': ['Aster', 'Boreal', 'Civic', 'Ember', 'Harbor', 'Lumen', 'Meadow', 'Pine', 'Quarry', 'River', 'Summit', 'Willow'],
   'retail-chain': ['Beacon', 'Cedar', 'Crown', 'Daystar', 'Evergreen', 'Marketline', 'Oak', 'Plaza', 'Redwood', 'Saffron', 'Townsend', 'Union'],
@@ -46,10 +59,11 @@ export function getSalesCustomerCatalogue(worldSeed = SALES_CUSTOMER_WORLD_SEED,
       const isLastAllowedCustomer = customerIndex === SALES_CUSTOMER_GENERATION.maximumCustomersPerDomain - 1;
       const marketShare = isLastAllowedCustomer ? remainingShare : Math.min(remainingShare, Math.max(SALES_CUSTOMER_GENERATION.minimumMarketShare, smallestDraw * SALES_CUSTOMER_DOMAIN_PROFILES[domain].marketShareMultiplier * SALES_CUSTOMER_TYPE_PROFILES[customerType].marketShareScale));
       const prefixes = CUSTOMER_NAME_PREFIXES[customerType]; const prefix = prefixes[Math.floor(unitInterval(`${seed}:prefix`) * prefixes.length)]; const suffixes = CUSTOMER_NAME_SUFFIXES[domain];
-      const purchasingPower = Math.round((0.55 + (1 - calculateAsymmetricalScaler01(1 - unitInterval(`${seed}:power`))) * 1.45) * 1_000) / 1_000;
+      const [minimumPurchasingPower, maximumPurchasingPower] = SALES_CUSTOMER_PURCHASING_POWER_RANGE;
+      const purchasingPower = Math.round((minimumPurchasingPower + (1 - calculateAsymmetricalScaler01(1 - unitInterval(`${seed}:power`))) * (maximumPurchasingPower - minimumPurchasingPower)) * 1_000) / 1_000;
       const bidRange = SALES_CUSTOMER_DOMAIN_PROFILES[domain].bidRange; const baseBid = bidRange[0] + unitInterval(`${seed}:bid`) * (bidRange[1] - bidRange[0]);
       const bidTail = 0.65 + calculateAsymmetricalScaler01(unitInterval(`${seed}:bid-tail`)) * 0.9;
-      const bidMultiplier = Math.round(Math.max(0.55, Math.min(1.8, baseBid * bidTail)) * 1_000) / 1_000;
+      const bidMultiplier = Math.round(Math.max(SALES_CUSTOMER_BID_MULTIPLIER_RANGE[0], Math.min(SALES_CUSTOMER_BID_MULTIPLIER_RANGE[1], baseBid * bidTail)) * 1_000) / 1_000;
       const baseName = `${prefix} ${suffixes[Math.floor(unitInterval(`${seed}:suffix`) * suffixes.length)]}`; const name = customers.some((customer) => customer.name === baseName) ? `${baseName} ${customerIndex + 1}` : baseName;
       customers.push({ id: `customer:${catalogueVersion}:${domain}:${customerIndex + 1}`, name, domain, customerType, operatingDomains: getOperatingDomains(domain, customerType, seed), marketShare, purchasingPower, bidMultiplier });
       remainingShare = Math.max(0, remainingShare - marketShare); customerIndex += 1;
@@ -58,9 +72,13 @@ export function getSalesCustomerCatalogue(worldSeed = SALES_CUSTOMER_WORLD_SEED,
   });
 }
 export function getSalesResourceProfile(resourceType: ResourceType): SalesResourceProfile { return SALES_RESOURCE_PROFILES[resourceType]; }
+export function getSalesCustomerRelationshipLabel(relationship: number): string {
+  const safeRelationship = Math.max(0, Math.min(SALES_CUSTOMER_RELATIONSHIP.maximum, relationship));
+  return [...SALES_CUSTOMER_RELATIONSHIP_LEVELS].reverse().find((level) => safeRelationship >= level.minimum)?.label ?? SALES_CUSTOMER_RELATIONSHIP_LEVELS[0].label;
+}
 export function calculateSalesCustomerRelationshipDetails(customer: SalesCustomerDefinition, companyPrestige: number): SalesCustomerRelationshipDetails {
   const prestigeRecognition = Math.max(0, companyPrestige) / (Math.max(0, companyPrestige) + 100);
-  const prestigeBonus = prestigeRecognition * 25;
+  const prestigeBonus = prestigeRecognition * 0.25;
   const marketSharePenalty = prestigeBonus * customer.marketShare * 0.5;
   const baseline = Math.min(SALES_CUSTOMER_RELATIONSHIP.maximum, Math.max(0, prestigeBonus - marketSharePenalty));
   return { prestigeRecognition, prestigeBonus, marketSharePenalty, baseline, decayHalfLifeHours: SALES_CUSTOMER_RELATIONSHIP.foregroundDecayHalfLifeHours, relationshipValueScale: SALES_CUSTOMER_RELATIONSHIP.relationshipValueScale, maximumFulfilmentGain: SALES_CUSTOMER_RELATIONSHIP.maximumFulfilmentGain, minimumFailureLoss: SALES_CUSTOMER_RELATIONSHIP.minimumFailureLoss, maximumRejectionLoss: SALES_CUSTOMER_RELATIONSHIP.maximumRejectionLoss, maximumExpiryLoss: SALES_CUSTOMER_RELATIONSHIP.maximumExpiryLoss };

@@ -56,7 +56,7 @@ describe('sales orders', () => {
     const baseTargetValue = 100;
     const startingCompanyValue = calculateSalesOrderTargetValue({ baseTargetValue, companyPrestige: 0, relationship: 0 });
     const establishedCompanyValue = calculateSalesOrderTargetValue({ baseTargetValue, companyPrestige: 500, relationship: 0 });
-    const loyalCustomerValue = calculateSalesOrderTargetValue({ baseTargetValue, companyPrestige: 500, relationship: 100 });
+    const loyalCustomerValue = calculateSalesOrderTargetValue({ baseTargetValue, companyPrestige: 500, relationship: 1 });
 
     expect(startingCompanyValue).toBe(baseTargetValue);
     expect(establishedCompanyValue).toBeGreaterThan(startingCompanyValue);
@@ -64,9 +64,9 @@ describe('sales orders', () => {
   });
 
   it('keeps one line common while allowing more compatible lines as customer maturity rises', () => {
-    expect(calculateSalesOrderBundleLineCount({ candidateCount: 1, companyPrestige: 300, relationship: 100, marketShare: 0.2, bundleAppetite: 1, seed: 'one' })).toBe(1);
+    expect(calculateSalesOrderBundleLineCount({ candidateCount: 1, companyPrestige: 300, relationship: 1, marketShare: 0.2, bundleAppetite: 1, seed: 'one' })).toBe(1);
     expect(calculateSalesOrderBundleLineCount({ candidateCount: 8, companyPrestige: 0, relationship: 0, marketShare: 0.001, bundleAppetite: 0.08, seed: 'early' })).toBe(1);
-    const lateLineCounts = Array.from({ length: 40 }, (_, index) => calculateSalesOrderBundleLineCount({ candidateCount: 8, companyPrestige: 300, relationship: 100, marketShare: 0.2, bundleAppetite: 1, seed: `late-${index}` }));
+    const lateLineCounts = Array.from({ length: 40 }, (_, index) => calculateSalesOrderBundleLineCount({ candidateCount: 8, companyPrestige: 300, relationship: 1, marketShare: 0.2, bundleAppetite: 1, seed: `late-${index}` }));
     expect(lateLineCounts.some((lineCount) => lineCount > 1)).toBe(true);
   });
 

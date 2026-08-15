@@ -35,6 +35,10 @@ export const SALES_ORDER_PRESSURE_OFFER_CHANCE = 0.025;
 export const SALES_ORDER_MAXIMUM_GLOBAL_PREMIUM = 1.5;
 export const SALES_ORDER_MINIMUM_GLOBAL_PREMIUM = -0.25;
 
+/** Fixed catalogue display ranges. Values outside are clamped only for score colouring. */
+export const SALES_CUSTOMER_PURCHASING_POWER_RANGE = [0.55, 2] as const;
+export const SALES_CUSTOMER_BID_MULTIPLIER_RANGE = [0.55, 1.8] as const;
+
 /** Economy affects both customer frequency and their willingness to pay. */
 export const SALES_ECONOMY_MULTIPLIERS: Readonly<Record<EconomyPhase, { acquisition: number; bid: number }>> = {
   crash: { acquisition: 0.45, bid: 0.78 },
