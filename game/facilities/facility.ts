@@ -9,6 +9,8 @@ export type FacilitySnapshot = {
   id: string;
   facilityType: FacilityType;
   activeRecipeName: RecipeName | null;
+  productionCycle: RecipeName[];
+  productionCycleIndex: number;
   isActive: boolean;
   recipeProgress: Partial<Record<RecipeName, number>>;
   speedUpgradeLevel?: number;
@@ -24,6 +26,8 @@ export type FacilityView = {
   facilityType: FacilityType;
   displayName: string;
   activeRecipeName: RecipeName | null;
+  productionCycle: readonly RecipeName[];
+  productionCycleIndex: number;
   isActive: boolean;
   recipeProgress: Readonly<Partial<Record<RecipeName, number>>>;
   speedUpgradeLevel: number;
@@ -44,6 +48,8 @@ export type FacilityView = {
 /** Player-owned state for one constructed facility. */
 export class Facility {
   private activeRecipeName: RecipeName | null = null;
+  private productionCycle: RecipeName[] = [];
+  private productionCycleIndex = 0;
   private active = false;
   private recipeProgress: Partial<Record<RecipeName, number>> = {};
   private speedUpgradeLevel = 0;
@@ -73,6 +79,8 @@ export class Facility {
       facilityType: this.facilityType,
       displayName: `${getFacilityDefinition(this.facilityType).name} #${this.id.split('-').at(-1)}`,
       activeRecipeName: this.activeRecipeName,
+      productionCycle: [...this.productionCycle],
+      productionCycleIndex: this.productionCycleIndex,
       isActive: this.active,
       recipeProgress: { ...this.recipeProgress },
       speedUpgradeLevel: this.speedUpgradeLevel,
@@ -123,17 +131,32 @@ export class Facility {
   setActiveRecipe(recipeName: RecipeName | null): boolean {
     if (recipeName === null) {
       this.activeRecipeName = null;
+      this.productionCycle = [];
+      this.productionCycleIndex = 0;
       this.active = false;
       return true;
     }
 
-    if (!getFacilityDefinition(this.facilityType).recipes.some((recipe) => recipe.name === recipeName)) {
-      return false;
-    }
+    return this.setProductionCycle([recipeName]);
+  }
 
-    this.activeRecipeName = recipeName;
-    this.active = true;
+  setProductionCycle(recipeNames: readonly RecipeName[]): boolean {
+    if (recipeNames.length === 0) return this.setActiveRecipe(null);
+    if (!recipeNames.every((recipeName) => getFacilityDefinition(this.facilityType).recipes.some((recipe) => recipe.name === recipeName))) return false;
+
+    this.productionCycle = [...recipeNames];
+    this.productionCycleIndex = 0;
+    this.activeRecipeName = this.productionCycle[0] ?? null;
+    this.active = this.activeRecipeName !== null;
     return true;
+  }
+
+  /** Internal production-state command that selects the next recipe in the configured cycle. */
+  advanceProductionCycle(): boolean {
+    if (!this.activeRecipeName || this.productionCycle.length === 0) return false;
+    this.productionCycleIndex = (this.productionCycleIndex + 1) % this.productionCycle.length;
+    this.activeRecipeName = this.productionCycle[this.productionCycleIndex] ?? null;
+    return this.activeRecipeName !== null;
   }
 
   setProductionActive(active: boolean): boolean {
@@ -178,6 +201,8 @@ export class Facility {
       id: this.id,
       facilityType: this.facilityType,
       activeRecipeName: this.activeRecipeName,
+      productionCycle: [...this.productionCycle],
+      productionCycleIndex: this.productionCycleIndex,
       isActive: this.active,
       recipeProgress: { ...this.recipeProgress },
       speedUpgradeLevel: this.speedUpgradeLevel,
@@ -197,11 +222,10 @@ export class Facility {
       return;
     }
 
-    this.setActiveRecipe(snapshot.activeRecipeName);
-
-    if (!snapshot.isActive) {
-      this.active = false;
-    }
+    this.setProductionCycle(snapshot.productionCycle);
+    this.productionCycleIndex = snapshot.productionCycleIndex;
+    this.activeRecipeName = this.productionCycle[this.productionCycleIndex] ?? null;
+    this.active = snapshot.isActive;
 
     this.recipeProgress = {};
     this.speedUpgradeLevel = isValidUpgradeLevel(snapshot.speedUpgradeLevel) ? snapshot.speedUpgradeLevel : 0;

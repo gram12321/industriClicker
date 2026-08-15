@@ -1,6 +1,6 @@
 import { Finance, LOAN_COLLECTION, buildFinanceStatementData, calculateAssets, calculateFacilityAssetValue, calculateLoanSearchEstimate, generateLoanOffers, LENDER_TYPES, refreshLoanOfferAvailability, type LoanOffer, type LoanSearchCriteria } from '@/game/finance';
 import { Inventory } from '@/game/inventory';
-import { FACILITIES, FacilityCollection, advanceAllFacilityProduction, calculateFacilityEffectiveWork, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
+import { FACILITIES, FacilityCollection, advanceAllFacilityProduction, calculateFacilityEffectiveWork, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
 import type { RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
 import { MARKET_DIFFUSION_INTERVAL_MS, MARKET_SALES_CONTRACT_PREMIUM, Market, canAutoBuyMarketResource, canBuyMarketResource, canSellMarketResource, type MarketAutomation } from '@/game/market';
@@ -57,6 +57,7 @@ type GameState = {
   buildFacility: (facilityType: FacilityType) => boolean;
   sellFacility: (facilityId: string) => boolean;
   setFacilityRecipe: (facilityId: string, recipeName: RecipeName | null) => boolean;
+  setFacilityProductionCycle: (facilityId: string, recipeNames: readonly RecipeName[]) => boolean;
   setFacilityProductionActive: (facilityId: string, active: boolean) => boolean;
   setFacilityWorkers: (facilityId: string, workerCount: number) => boolean;
   repairFacility: (facilityId: string) => boolean;
@@ -414,6 +415,17 @@ export const useGameStore = create<GameState>((set, get) => {
     set({ facilities });
     return true;
   },
+  setFacilityProductionCycle: (facilityId, recipeNames) => {
+    get().advanceRealtime(Date.now());
+    const facilities = get().facilities.clone();
+    const facility = facilities.get(facilityId);
+
+    if (!facility || (recipeNames.length > 0 && !recipeNames.every((recipeName) => get().research.hasCompleted(getRecipeResearchProjectId(recipeName))))
+      || !facility.setProductionCycle(recipeNames)) return false;
+
+    set({ facilities });
+    return true;
+  },
   setFacilityProductionActive: (facilityId, active) => {
     get().advanceRealtime(Date.now());
     const facilities = get().facilities.clone();
@@ -608,13 +620,14 @@ export const useGameStore = create<GameState>((set, get) => {
         market ??= get().market.clone();
         marketFinance ??= get().finance.clone();
         for (const facility of facilities.getAll()) {
-          for (const input of getFacilityMissingInputs(facility.getView().activeRecipeName, inventory)) {
+          for (const input of getFacilityProductionCycleInputs(facility.getView())) {
             const automation = market.getAutomation(input.resourceType);
             const completedIntervals = Math.floor(stepEndGameTimeMs / automation.autoTradeIntervalMs) - Math.floor(stepStartGameTimeMs / automation.autoTradeIntervalMs);
             const unitPrice = market.getLocalPrice(input.resourceType);
             const targetDeficit = automation.autoBuyTargetInventory - inventory.getAmount(input.resourceType);
+            const productionCycleDeficit = input.amount - inventory.getAmount(input.resourceType);
             const purchaseAmount = Math.min(
-              Math.max(input.amount, targetDeficit),
+              Math.max(productionCycleDeficit, targetDeficit),
               market.getMaximumLocalPurchaseAmountAtUnitPrice(input.resourceType, automation.autoBuyMaxUnitPrice),
             );
             if (!automation.autoBuyEnabled || completedIntervals <= 0 || !canAutoBuyMarketResource(input.resourceType)

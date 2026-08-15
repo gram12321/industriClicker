@@ -25,6 +25,20 @@ describe('market autobuy', () => {
   });
 });
 
+describe('facility production cycles', () => {
+  it('does not accept unresearched recipes in a facility cycle', () => {
+    const state = useGameStore.getState();
+    state.restoreSnapshot(createStartingGameSnapshot(0));
+    const farm = FACILITIES[FacilityType.Farm];
+    state.setAdminBalance(1_000_000);
+    state.setInventoryAmount(ResourceType.ConstructionMaterials, farm.constructionMaterialsCost);
+    state.setInventoryAmount(ResourceType.IndustrialMachines, farm.industrialMachinesCost);
+    expect(state.buildFacility(FacilityType.Farm)).toBe(true);
+
+    expect(state.setFacilityProductionCycle('farm-1', [RecipeName.GrowGrain])).toBe(false);
+  });
+});
+
 describe('facility construction inputs', () => {
   it('creates the requested standard starting resources', () => {
     const snapshot = createStartingGameSnapshot(0);

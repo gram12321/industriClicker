@@ -48,6 +48,17 @@ export function getFacilityMissingInputs(recipeName: RecipeName | null, inventor
   return getRecipe(recipeName).inputs.filter((input) => !inventory.has(input.resourceType, input.amount));
 }
 
+/** Total inputs needed to complete each recipe in a facility's configured production cycle once. */
+export function getFacilityProductionCycleInputs(facility: FacilityView): RecipeInput[] {
+  const amounts = new Map<ResourceType, number>();
+  for (const recipeName of facility.productionCycle) {
+    for (const input of getRecipe(recipeName).inputs) {
+      amounts.set(input.resourceType, (amounts.get(input.resourceType) ?? 0) + input.amount);
+    }
+  }
+  return [...amounts].map(([resourceType, amount]) => ({ resourceType, amount }));
+}
+
 export function getFacilityProductionStatus(facility: FacilityView, inventory: Inventory): FacilityProductionStatus {
   const recipeName = facility.activeRecipeName;
   if (!recipeName) return 'not-started';
@@ -72,14 +83,15 @@ export function advanceAllFacilityProduction(
       const recipeName = facilityView.activeRecipeName;
       if (!facilityView.isActive || !recipeName) continue;
 
-      const recipe = getRecipe(recipeName);
-      if (recipe.requiredWork <= 0) continue;
+      let currentRecipeName = recipeName;
+      let progress = facilityView.recipeProgress[currentRecipeName] ?? 0;
+      let remainingStepFraction = 1;
 
-      let remainingEffectiveWork = getEffectiveWork(facilityView, recipeName);
-      if (!Number.isFinite(remainingEffectiveWork) || remainingEffectiveWork <= 0) continue;
-      let progress = facilityView.recipeProgress[recipe.name] ?? 0;
-
-      while (remainingEffectiveWork > 0) {
+      while (remainingStepFraction > 0) {
+        const recipe = getRecipe(currentRecipeName);
+        if (recipe.requiredWork <= 0) break;
+        const effectiveWork = getEffectiveWork(facilityView, currentRecipeName);
+        if (!Number.isFinite(effectiveWork) || effectiveWork <= 0) break;
         if (progress === 0 && !recipe.inputs.every((input) => inventory.has(input.resourceType, input.amount))) break;
 
         if (progress === 0) {
@@ -88,9 +100,9 @@ export function advanceAllFacilityProduction(
           }
         }
 
-        const appliedWork = Math.min(remainingEffectiveWork, recipe.requiredWork - progress);
+        const appliedWork = Math.min(remainingStepFraction * effectiveWork, recipe.requiredWork - progress);
         progress += appliedWork;
-        remainingEffectiveWork -= appliedWork;
+        remainingStepFraction = Math.max(0, remainingStepFraction - appliedWork / effectiveWork);
 
         if (progress + WORK_COMPLETION_EPSILON >= recipe.requiredWork) {
           for (const output of recipe.outputs) {
@@ -100,10 +112,12 @@ export function advanceAllFacilityProduction(
           }
           facility.applyConditionLoss(getRecipeProductionConditionLoss(recipe));
           progress = 0;
+          if (!facility.advanceProductionCycle()) break;
+          currentRecipeName = facility.getView().activeRecipeName ?? currentRecipeName;
         }
       }
 
-      facility.setRecipeProgress(recipe.name, progress);
+      facility.setRecipeProgress(currentRecipeName, progress);
     }
   }
 

@@ -3,7 +3,7 @@ import { Inventory } from '@/game/inventory';
 import { getRecipe, RecipeName } from '@/game/recipes';
 import { ResourceType } from '@/game/resources';
 import { FacilityCollection } from '@/game/facilities/facilityCollection';
-import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, getRecipeProductionConditionLoss } from '@/game/facilities/facilityProduction';
+import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, getFacilityProductionCycleInputs, getRecipeProductionConditionLoss } from '@/game/facilities/facilityProduction';
 import { FacilityType } from '@/game/facilities/facilityTypes';
 
 function createActiveFacility(facilityType: FacilityType, recipeName: RecipeName) {
@@ -74,6 +74,36 @@ describe('facility condition wear', () => {
 });
 
 describe('advanceAllFacilityProduction', () => {
+  it('runs repeated recipes in a configured cycle before returning to the start', () => {
+    const { facilities, facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    facility.setProductionCycle([RecipeName.GrowGrain, RecipeName.GrowGrain, RecipeName.GrowSugar]);
+    const inventory = new Inventory();
+    inventory.add(ResourceType.Water, 5);
+    inventory.add(ResourceType.Electricity, 2);
+    inventory.add(ResourceType.Fertilizer, 0.09);
+
+    const outputs = advanceAllFacilityProduction(facilities, inventory, () => 0.24);
+
+    expect(outputs.map((output) => output.recipeName)).toEqual([RecipeName.GrowGrain, RecipeName.GrowGrain, RecipeName.GrowSugar]);
+    expect(inventory.getAmount(ResourceType.Grain)).toBeCloseTo(2.4);
+    expect(inventory.getAmount(ResourceType.Sugar)).toBeCloseTo(1.2);
+    expect(inventory.getAmount(ResourceType.Water)).toBe(0);
+    expect(inventory.getAmount(ResourceType.Electricity)).toBe(0);
+    expect(facility.getView().activeRecipeName).toBe(RecipeName.GrowGrain);
+    expect(facility.getView().productionCycleIndex).toBe(0);
+  });
+
+  it('aggregates every input across the full configured cycle for autobuy', () => {
+    const { facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    facility.setProductionCycle([RecipeName.GrowGrain, RecipeName.GrowGrain, RecipeName.GrowSugar]);
+
+    expect(getFacilityProductionCycleInputs(facility.getView())).toEqual([
+      { resourceType: ResourceType.Water, amount: 5 },
+      { resourceType: ResourceType.Electricity, amount: 2 },
+      { resourceType: ResourceType.Fertilizer, amount: 0.09 },
+    ]);
+  });
+
   it('grants and output-upgrades every configured recipe output', () => {
     const recipe = getRecipe(RecipeName.GrowGrain);
     const originalOutputs = recipe.outputs;

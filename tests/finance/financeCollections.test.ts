@@ -8,7 +8,7 @@ describe('loan collections', () => {
     const finance = new Finance();
     finance.completeLoanSearch([offer], 1, 0);
     expect(finance.acceptLoan(offer, 0)).not.toBeNull();
-    expect(finance.applyTransaction({ amount: -300, description: 'Test withdrawal', detailLines: [], kind: 'equity', source: 'admin-adjustment', occurredAtGameTimeMs: 0 })).toBe(true);
+    expect(finance.applyTransaction({ amount: -295, description: 'Test withdrawal', detailLines: [], kind: 'equity', source: 'admin-adjustment', occurredAtGameTimeMs: 0 })).toBe(true);
 
     finance.advanceLoanAndEconomy(10 * 60_000);
 

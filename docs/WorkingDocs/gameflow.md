@@ -26,7 +26,7 @@ Foreground elapsed time -> advanceGameTime -> registered timed rules
 
 ## Production and Facilities
 
-Recipes consume inputs at cycle start; if inputs are absent, the facility stalls without banking work. A completed cycle grants every configured `baseOutput × outputMultiplier`. Each constructed facility is an independent numbered instance, so multiple facilities of one type can run different recipes and upgrades.
+Recipes consume inputs at cycle start; if inputs are absent, the facility stalls without banking work. A completed cycle grants every configured `baseOutput × outputMultiplier`. A facility may run one or more researched recipes as an ordered production cycle; when a recipe completes, it starts the next entry and returns to the first after the final entry. A production cycle may repeat a recipe. Each constructed facility is an independent numbered instance, so multiple facilities of one type can run different recipes, cycles, and upgrades.
 Players may pause a selected recipe without clearing it; resuming continues its retained cycle progress. A facility also stalls automatically at a cycle boundary when its next recipe inputs are unavailable.
 
 | Recipe | Inputs | Output | Work |
@@ -111,7 +111,7 @@ The deterministic recipe-economy simulator models one fully staffed facility buy
 - `Market.getLocalRegionalDiffusionDetails(resourceType)` and `Market.getRegionalGlobalDiffusionDetails(resourceType)` expose current prices, targets, multipliers, and effective post-cap transfers for the read-only Market Flow IndustriPedia view.
 - Foreground minute completion creates price-locked sales offers. Every five foreground seconds, source-capped diffusion balances every resource first between local/regional and then regional/global reservoirs. Offline time does neither.
 - Manual buys/sells trade only with the local market. A fulfilled sales contract adds the delivered inventory and its quality directly to the global reservoir; its reward was locked at offer time from global price × 1.20.
-- Each resource has one saved autotrade interval, defaulting to 5 seconds. At every completed interval, enabled autobuy fills its target inventory and may purchase missing recipe inputs from the local market when its finite price cap, funds, supply, and access rule allow it. Autobuy buys the largest partial amount that leaves the resulting local unit price at or below its cap when the full target would exceed it; enabled autosell then sells under its existing rate, minimum inventory, and minimum-price limits. The autosell maximum remains a per-minute rate and is scaled to the interval.
+- Each resource has one saved autotrade interval, defaulting to 5 seconds. At every completed interval, enabled autobuy fills its target inventory and may purchase the combined inputs for each active facility's full production cycle from the local market when its finite price cap, funds, supply, and access rule allow it. Autobuy buys the largest partial amount that leaves the resulting local unit price at or below its cap when the full target would exceed it; enabled autosell then sells under its existing rate, minimum inventory, and minimum-price limits. The autosell maximum remains a per-minute rate and is scaled to the interval.
 
 ## Finance, Prestige, and Sales
 
