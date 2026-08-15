@@ -8,7 +8,7 @@ import type { Facility } from '@/game/facilities/facility';
 import { FacilityCollection } from '@/game/facilities/facilityCollection';
 import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, getRecipeProductionConditionLoss, type ProductionOutput } from '@/game/facilities/facilityProduction';
 import type { FacilityType } from '@/game/facilities/facilityTypes';
-import { getFacilityRepairCost, getFacilityUpgradeCost } from '@/game/facilities/facilityUpgrades';
+import { getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceInvestmentCost } from '@/game/facilities/facilityUpgrades';
 
 const BASE_WORK_PER_MINUTE = 1;
 const WORK_COMPLETION_EPSILON = 1e-9;
@@ -158,7 +158,11 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
     + definition.constructionMaterialsCost * market.getLocalPrice(ResourceType.ConstructionMaterials)
     + definition.industrialMachinesCost * market.getLocalPrice(ResourceType.IndustrialMachines);
   const upgradeInvestmentCost = getUpgradeInvestmentCost(definition.upgradeCost, speedUpgradeLevel)
-    + getUpgradeInvestmentCost(definition.upgradeCost, outputUpgradeLevel);
+    + getUpgradeInvestmentCost(definition.upgradeCost, outputUpgradeLevel)
+    + (getFacilityUpgradeResourceInvestmentCost(definition.constructionMaterialsCost, speedUpgradeLevel)
+      + getFacilityUpgradeResourceInvestmentCost(definition.constructionMaterialsCost, outputUpgradeLevel)) * market.getLocalPrice(ResourceType.ConstructionMaterials)
+    + (getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, speedUpgradeLevel)
+      + getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, outputUpgradeLevel)) * market.getLocalPrice(ResourceType.IndustrialMachines);
   const totalInvestmentCost = facilityInvestmentCost + upgradeInvestmentCost;
   let cumulativeNetProfit = 0;
   let paybackMinute: number | null = null;
@@ -223,16 +227,20 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
     }
 
     if (facility.getView().facilityCondition <= RECIPE_ECONOMY_REPAIR_THRESHOLD) {
+      const repairCashCost = getFacilityRepairCost(definition.landCost, facility.getView().facilityCondition);
       const materialAmount = getFacilityRepairCost(definition.constructionMaterialsCost, facility.getView().facilityCondition);
-      const repairTrade = market.buyFromLocal(ResourceType.ConstructionMaterials, materialAmount);
-      if (repairTrade.success && facility.repairCondition()) {
-        repairSpend += repairTrade.amount * repairTrade.unitPrice;
+      const industrialMachinesAmount = getFacilityRepairCost(definition.industrialMachinesCost, facility.getView().facilityCondition);
+      const materialTrade = market.buyFromLocal(ResourceType.ConstructionMaterials, materialAmount);
+      const industrialMachinesTrade = market.buyFromLocal(ResourceType.IndustrialMachines, industrialMachinesAmount);
+      if (materialTrade.success && industrialMachinesTrade.success && facility.repairCondition()) {
+        repairSpend += repairCashCost + materialTrade.amount * materialTrade.unitPrice + industrialMachinesTrade.amount * industrialMachinesTrade.unitPrice;
         repairCount += 1;
       }
     }
 
-    outstandingMaintenanceCost = getFacilityRepairCost(definition.constructionMaterialsCost, facility.getView().facilityCondition)
-      * market.getLocalPrice(ResourceType.ConstructionMaterials);
+    outstandingMaintenanceCost = getFacilityRepairCost(definition.landCost, facility.getView().facilityCondition)
+      + getFacilityRepairCost(definition.constructionMaterialsCost, facility.getView().facilityCondition) * market.getLocalPrice(ResourceType.ConstructionMaterials)
+      + getFacilityRepairCost(definition.industrialMachinesCost, facility.getView().facilityCondition) * market.getLocalPrice(ResourceType.IndustrialMachines);
     const minuteMaintenanceCost = repairSpend - repairSpendBefore + outstandingMaintenanceCost - maintenanceBefore;
     const minuteNetMargin = totalRevenue - revenueBefore - (totalInputCost - inputCostBefore) - minuteMaintenanceCost;
     cycleOperatingMargin += minuteNetMargin;
@@ -391,14 +399,18 @@ export function simulateRecipeEconomyChain({
     for (const facility of activeFacilities) {
       const definition = FACILITIES[facility.facilityType];
       if (facility.getView().facilityCondition > RECIPE_ECONOMY_REPAIR_THRESHOLD) continue;
+      const repairCashCost = getFacilityRepairCost(definition.landCost, facility.getView().facilityCondition);
       const materialAmount = getFacilityRepairCost(definition.constructionMaterialsCost, facility.getView().facilityCondition);
-      const repairTrade = market.buyFromLocal(ResourceType.ConstructionMaterials, materialAmount);
-      if (repairTrade.success && facility.repairCondition()) repairSpend += repairTrade.amount * repairTrade.unitPrice;
+      const industrialMachinesAmount = getFacilityRepairCost(definition.industrialMachinesCost, facility.getView().facilityCondition);
+      const materialTrade = market.buyFromLocal(ResourceType.ConstructionMaterials, materialAmount);
+      const industrialMachinesTrade = market.buyFromLocal(ResourceType.IndustrialMachines, industrialMachinesAmount);
+      if (materialTrade.success && industrialMachinesTrade.success && facility.repairCondition()) repairSpend += repairCashCost + materialTrade.amount * materialTrade.unitPrice + industrialMachinesTrade.amount * industrialMachinesTrade.unitPrice;
     }
 
     outstandingMaintenanceCost = activeFacilities.reduce((total, facility) => (
-      total + getFacilityRepairCost(FACILITIES[facility.facilityType].constructionMaterialsCost, facility.getView().facilityCondition)
-        * market.getLocalPrice(ResourceType.ConstructionMaterials)
+      total + getFacilityRepairCost(FACILITIES[facility.facilityType].landCost, facility.getView().facilityCondition)
+        + getFacilityRepairCost(FACILITIES[facility.facilityType].constructionMaterialsCost, facility.getView().facilityCondition) * market.getLocalPrice(ResourceType.ConstructionMaterials)
+        + getFacilityRepairCost(FACILITIES[facility.facilityType].industrialMachinesCost, facility.getView().facilityCondition) * market.getLocalPrice(ResourceType.IndustrialMachines)
     ), 0);
     const minuteMaintenanceCost = repairSpend - repairSpendBefore + outstandingMaintenanceCost - maintenanceBefore;
     const minuteNetMargin = totalRevenue - revenueBefore - (totalInputCost - inputCostBefore) - minuteMaintenanceCost;

@@ -34,7 +34,7 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Lender search | A paid, foreground-time finance activity. Its fee and work requirement scale with offer count and how tightly lender type, amount, and term are constrained; matching offers appear only when the work completes. |
 | Economy phase | The persistent crash, recession, stable, expansion, or boom state. It changes deterministically every 10 foreground minutes with a bias toward stable and adjusts future loan interest offers. |
 | Sales contract | A customer request for a resource and integer quantity, retained as offered, completed, or rejected. |
-| Speed upgrade / Output upgrade | Money-funded facility levels that respectively improve work speed or recipe output. |
+| Speed upgrade / Output upgrade | Facility levels that respectively improve work speed or recipe output and consume euros, Construction Materials, and Industrial Machines. |
 | Assigned workers / Required workers | The local worker count and calculated staffing target for a facility. |
 | Facility condition | A persisted 0–1 measure of a constructed facility's wear state. It begins at 1 and decreases during foreground time and completed production cycles. |
 | Recipe condition-wear multiplier | A static per-recipe balance value that scales production wear without following live market prices. |

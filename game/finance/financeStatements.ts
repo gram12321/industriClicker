@@ -1,7 +1,7 @@
 import type { AchievementLedger } from '@/game/achievements';
 import { FINANCE_INITIAL_BALANCE } from '@/game/company/companyConstants';
 import type { Facility, FacilityCollection } from '@/game/facilities';
-import { getFacilityDefinition, getFacilityUpgradeInvestmentCost } from '@/game/facilities';
+import { getFacilityDefinition, getFacilityUpgradeInvestmentCost, getFacilityUpgradeResourceInvestmentCost } from '@/game/facilities';
 import type { Inventory } from '@/game/inventory';
 import type { Market } from '@/game/market';
 import type { ResearchLedger } from '@/game/research';
@@ -52,7 +52,13 @@ export function calculateFacilityAssetValue(facility: Facility, market: Market):
     + definition.industrialMachinesCost * market.getLocalPrice(ResourceType.IndustrialMachines)
     + getFacilityUpgradeInvestmentCost(definition.upgradeCost, view.speedUpgradeLevel)
     + getFacilityUpgradeInvestmentCost(definition.upgradeCost, view.outputUpgradeLevel)
-    + getFacilityUpgradeInvestmentCost(definition.upgradeCost, view.conditionDecayUpgradeLevel);
+    + getFacilityUpgradeInvestmentCost(definition.upgradeCost, view.conditionDecayUpgradeLevel)
+    + getFacilityUpgradeResourceInvestmentCost(definition.constructionMaterialsCost, view.speedUpgradeLevel) * market.getLocalPrice(ResourceType.ConstructionMaterials)
+    + getFacilityUpgradeResourceInvestmentCost(definition.constructionMaterialsCost, view.outputUpgradeLevel) * market.getLocalPrice(ResourceType.ConstructionMaterials)
+    + getFacilityUpgradeResourceInvestmentCost(definition.constructionMaterialsCost, view.conditionDecayUpgradeLevel) * market.getLocalPrice(ResourceType.ConstructionMaterials)
+    + getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, view.speedUpgradeLevel) * market.getLocalPrice(ResourceType.IndustrialMachines)
+    + getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, view.outputUpgradeLevel) * market.getLocalPrice(ResourceType.IndustrialMachines)
+    + getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, view.conditionDecayUpgradeLevel) * market.getLocalPrice(ResourceType.IndustrialMachines);
   return replacementCost * Math.max(0.1, view.facilityCondition);
 }
 

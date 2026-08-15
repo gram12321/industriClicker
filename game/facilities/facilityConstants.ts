@@ -12,6 +12,8 @@ export const FACILITY_GROUPS: ReadonlyArray<{ id: FacilityGroup; label: string; 
   { id: 'utilities', label: 'Utilities', facilities: [FacilityType.PowerPlant, FacilityType.SmallUtilityWorks, FacilityType.WaterWell] },
 ];
 export const FACILITY_UPGRADE_COST_GROWTH = 1.5;
+/** Fraction of a facility's construction resource requirement used by its first upgrade level. */
+export const FACILITY_UPGRADE_RESOURCE_COST_RATE = 0.2;
 export const FACILITY_SPEED_MAXIMUM_BONUS = 0.8;
 export const FACILITY_SPEED_BONUS_RATE = 0.22;
 export const FACILITY_OUTPUT_MAXIMUM_BONUS = 1.5;

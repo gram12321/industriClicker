@@ -67,16 +67,17 @@ Players may pause a selected recipe without clearing it; resuming continues its 
 
 For `levels = speedLevel + outputLevel`:
 
-- Upgrade cost: `ceil(upgradeCost × 1.5^currentLevel)`.
+- Upgrade cost: `ceil(upgradeCost × 1.5^currentLevel)` euros, plus `max(1, ceil(constructionResourceCost × 0.2 × 1.5^currentLevel))` Construction Materials and Industrial Machines.
+- When an upgrade is confirmed, any missing Construction Materials or Industrial Machines are bought from the local market automatically. The button's cash cost includes those purchases and the euro upgrade cost; it remains unavailable when either market supply or total cash is insufficient.
 - Speed-upgrade work-speed multiplier: `1 + 0.8 × (1 - e^(-0.22 × speedLevel))`.
 - Output multiplier: `1 + 1.5 × (1 - e^(-0.18 × outputLevel))`.
 - Required workers: `baseWorkers + levels + ceil(baseWorkers × 1.15^levels - baseWorkers)`.
 - Staffing efficiency at or below target: `0.01 + 0.99 × ratio^1.6`; above target: `1 + 0.25 × (1 - e^(-0.7 × (ratio - 1)))`.
 - Facility condition starts at `1`, is clamped to `0–1`, and loses `1 / 1,200` per constructed facility per foreground minute. Each completed recipe cycle loses `(recipe.requiredWork / 1,200 + 0.05 / 1,200) × recipe.conditionWearMultiplier` condition. The fixed per-cycle term makes shorter cycles wear more per minute; the static per-recipe multiplier reflects machinery intensity and never follows live market prices. Both losses are multiplied by `calculateAsymmetricalScaler01(facilityCondition)`, so wear is fastest at high condition and slows toward zero.
 - Overstaffing also multiplies both condition losses by `1.5^(staffingRatio - 1)` whenever staffing exceeds the requirement. This exponential wear penalty has no ceiling.
-- Condition upgrades reduce both wear sources by `1 - 0.75 × (1 - e^(-0.18 × conditionUpgradeLevel))`; the reduction approaches 75% without reaching it, uses the same facility upgrade cost curve, and does not increase worker requirements.
+- Condition upgrades reduce both wear sources by `1 - 0.75 × (1 - e^(-0.18 × conditionUpgradeLevel))`; the reduction approaches 75% without reaching it, uses the same three-input upgrade cost curve, and does not increase worker requirements.
 - Facility efficiency: `staffingEfficiency × conditionEfficiency`, where `conditionEfficiency = 1 - calculateAsymmetricalScaler01(1 - facilityCondition)`, so each lost point of condition is increasingly costly.
-- Repairing a facility restores condition to `1` and costs only Construction Materials: `constructionMaterialsCost × 0.9 × (1 - facilityCondition)`. Missing materials are bought automatically from the local market; land cost is excluded.
+- Repairing a facility restores condition to `1` and costs cash, Construction Materials, and Industrial Machines. Each is `its construction cost × 0.9 × (1 - facilityCondition)`; cash uses land cost. Missing resource inputs are bought automatically from the local market and included in the displayed cash total.
 - Staff work: `requiredWorkers × 0.1 × (stepMs / 60,000) × staffingEfficiency` work per foreground step.
 - Effective work: `(baseWork + staffWork) × conditionEfficiency × speedUpgradeWorkSpeedMultiplier × recipeResearchWorkSpeedMultiplier`.
 
@@ -116,7 +117,7 @@ The deterministic recipe-economy simulator models one fully staffed facility buy
 
 - Construction requires land funds, Construction Materials, and Industrial Machines. It applies `newBalance = currentBalance - landCost` and consumes `constructionMaterialsCost` and `industrialMachinesCost` from inventory; neither balance nor construction input can become negative.
 - Finance records each accepted cash movement with a signed amount, a typed source and accounting kind, nested detail lines, balance after the movement, and logical foreground-game time. The Finance UI derives rolling statements for the last 1 minute, 15 minutes, 1 hour, 10 hours, 24 hours, or all time.
-- Current assets are cash plus inventory valued at live local-market prices. Fixed facility value is `(landCost + constructionMaterialsCost × localMaterialsPrice + industrialMachinesCost × localMachinesPrice + upgradeCost × upgradeLevels) × max(0.1, facilityCondition)`. Completed research is a capitalized intangible at its configured cost. Total equity is derived as assets less outstanding liabilities.
+- Current assets are cash plus inventory valued at live local-market prices. Fixed facility value includes land, facility-construction inputs, and each completed upgrade's euro, Construction Materials, and Industrial Machines investment, then multiplies the total by `max(0.1, facilityCondition)`. Completed research is a capitalized intangible at its configured cost. Total equity is derived as assets less outstanding liabilities.
 - Cash-flow rows group operating income and expenses into player-selected 1-minute or 15-minute foreground windows, retain individual investing/financing rows, and expose their recorded nested descriptions.
 - A fresh company receives a deterministic saved portfolio of generated banks, investment funds, private lenders, and quickloan lenders. Each lender has independent rate, risk tolerance, flexibility, amount/term bounds, origination fees, market capitalization, and single-borrower exposure.
 - Lender availability and each lender's policy cap are derived as `min(assetCap, ratingCap, marketCapLimit, contractLimit)`. The company borrowing ceiling is the highest policy cap among eligible lenders; available borrowing is that ceiling less outstanding debt. The mobile Finance view exposes this full per-lender breakdown.

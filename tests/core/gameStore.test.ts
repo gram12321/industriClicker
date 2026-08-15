@@ -48,6 +48,36 @@ describe('facility construction inputs', () => {
     expect(useGameStore.getState().inventory.getAmount(ResourceType.IndustrialMachines)).toBe(0);
   });
 
+  it('requires and consumes Construction Materials and Industrial Machines for facility upgrades', () => {
+    const state = useGameStore.getState();
+    state.restoreSnapshot(createStartingGameSnapshot(0));
+    const farm = FACILITIES[FacilityType.Farm];
+
+    expect(state.buildFacility(FacilityType.Farm)).toBe(true);
+    state.setAdminBalance(10_000);
+    state.setInventoryAmount(ResourceType.ConstructionMaterials, 0);
+    state.setInventoryAmount(ResourceType.IndustrialMachines, 0);
+    expect(state.upgradeFacility('farm-1', 'speed')).toBe(true);
+    expect(useGameStore.getState().inventory.getAmount(ResourceType.ConstructionMaterials)).toBe(0);
+    expect(useGameStore.getState().inventory.getAmount(ResourceType.IndustrialMachines)).toBe(0);
+  });
+
+  it('automatically buys and consumes all three repair inputs', () => {
+    const state = useGameStore.getState();
+    state.restoreSnapshot(createStartingGameSnapshot(0));
+
+    expect(state.buildFacility(FacilityType.Farm)).toBe(true);
+    useGameStore.getState().facilities.get('farm-1')!.applyConditionLoss(0.5);
+    state.setAdminBalance(10_000);
+    state.setInventoryAmount(ResourceType.ConstructionMaterials, 0);
+    state.setInventoryAmount(ResourceType.IndustrialMachines, 0);
+
+    expect(state.repairFacility('farm-1')).toBe(true);
+    expect(useGameStore.getState().facilities.get('farm-1')!.getView().facilityCondition).toBe(1);
+    expect(useGameStore.getState().inventory.getAmount(ResourceType.ConstructionMaterials)).toBe(0);
+    expect(useGameStore.getState().inventory.getAmount(ResourceType.IndustrialMachines)).toBe(0);
+  });
+
   it('makes the first facility recipe research free and ten times faster', () => {
     const state = useGameStore.getState();
     state.restoreSnapshot(createStartingGameSnapshot(0));

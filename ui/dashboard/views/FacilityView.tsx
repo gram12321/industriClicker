@@ -5,7 +5,7 @@ import { Button, Card, IconButton, List, ProgressBar, Text, TouchableRipple } fr
 import { colors } from '@/theme';
 import type { Finance } from '@/game/finance';
 import { Facility, type FacilityCollection, type FacilityUpgradeKind, type FacilityView } from '@/game/facilities';
-import { calculateFacilityEffectiveWork, FACILITY_GROUPS, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_REPAIR_MATERIAL_COST_RATE, getConditionDecayMultiplier, getFacilityDefinition, getFacilityProductionStatus, getFacilityRepairCost, getFacilityUpgradeCost, getOutputUpgradeMultiplier, getRecipeProductionConditionLoss, getSpeedUpgradeWorkSpeedMultiplier } from '@/game/facilities';
+import { calculateFacilityEffectiveWork, FACILITY_GROUPS, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_REPAIR_MATERIAL_COST_RATE, getConditionDecayMultiplier, getFacilityDefinition, getFacilityProductionStatus, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, getOutputUpgradeMultiplier, getRecipeProductionConditionLoss, getSpeedUpgradeWorkSpeedMultiplier } from '@/game/facilities';
 import { calculateAsymmetricalScaler01 } from '@/game/core/math';
 import type { Inventory } from '@/game/inventory';
 import type { Market, MarketAutomation } from '@/game/market';
@@ -73,19 +73,26 @@ export function ProductionView({
       const speedUpgradeCost = getFacilityUpgradeCost(definition.upgradeCost, speedUpgradeLevel);
       const outputUpgradeCost = getFacilityUpgradeCost(definition.upgradeCost, outputUpgradeLevel);
       const conditionDecayUpgradeCost = getFacilityUpgradeCost(definition.upgradeCost, conditionDecayUpgradeLevel);
+      const speedUpgradeConstructionMaterialsCost = getFacilityUpgradeResourceCost(definition.constructionMaterialsCost, speedUpgradeLevel);
+      const outputUpgradeConstructionMaterialsCost = getFacilityUpgradeResourceCost(definition.constructionMaterialsCost, outputUpgradeLevel);
+      const conditionDecayUpgradeConstructionMaterialsCost = getFacilityUpgradeResourceCost(definition.constructionMaterialsCost, conditionDecayUpgradeLevel);
+      const speedUpgradeIndustrialMachinesCost = getFacilityUpgradeResourceCost(definition.industrialMachinesCost, speedUpgradeLevel);
+      const outputUpgradeIndustrialMachinesCost = getFacilityUpgradeResourceCost(definition.industrialMachinesCost, outputUpgradeLevel);
+      const conditionDecayUpgradeIndustrialMachinesCost = getFacilityUpgradeResourceCost(definition.industrialMachinesCost, conditionDecayUpgradeLevel);
+      const speedUpgradePayment = getResourcePurchasePayment(finance, inventory, market, speedUpgradeCost, speedUpgradeConstructionMaterialsCost, speedUpgradeIndustrialMachinesCost);
+      const outputUpgradePayment = getResourcePurchasePayment(finance, inventory, market, outputUpgradeCost, outputUpgradeConstructionMaterialsCost, outputUpgradeIndustrialMachinesCost);
+      const conditionDecayUpgradePayment = getResourcePurchasePayment(finance, inventory, market, conditionDecayUpgradeCost, conditionDecayUpgradeConstructionMaterialsCost, conditionDecayUpgradeIndustrialMachinesCost);
       const speedNextEffect = `Next: ${formatPercent(getSpeedUpgradeWorkSpeedMultiplier(speedUpgradeLevel + 1) / speedUpgradeWorkSpeedMultiplier - 1, { decimals: 1 })} speed`;
       const outputNextEffect = `Next: ${formatPercent(getOutputUpgradeMultiplier(outputUpgradeLevel + 1) / outputMultiplier - 1, { decimals: 1 })} output`;
       const conditionNextEffect = `Next: ${formatPercent(1 - getConditionDecayMultiplier(conditionDecayUpgradeLevel + 1) / conditionDecayMultiplier, { decimals: 1 })} less decay`;
       const projectedSpeedNetGain = activeRecipe ? getProjectedUpgradeNetGainPerMinute(facility, activeRecipe, market, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds), 'speed') : undefined;
       const projectedOutputNetGain = activeRecipe ? getProjectedUpgradeNetGainPerMinute(facility, activeRecipe, market, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds), 'output') : undefined;
       const projectedConditionNetGain = activeRecipe ? getProjectedUpgradeNetGainPerMinute(facility, activeRecipe, market, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds), 'condition') : undefined;
-      const repairCost = getFacilityRepairCost(definition.constructionMaterialsCost, facilityCondition);
-      const missingRepairMaterials = Math.max(0, repairCost - inventory.getAmount(ResourceType.ConstructionMaterials));
-      const repairMaterialPrice = market.getLocalPrice(ResourceType.ConstructionMaterials);
-      const canRepair = repairCost > 0 && (missingRepairMaterials === 0 || (
-        market.getLocalEntry(ResourceType.ConstructionMaterials).supply >= missingRepairMaterials
-        && finance.canAfford(missingRepairMaterials * repairMaterialPrice)
-      ));
+      const repairEuroCost = getFacilityRepairCost(definition.landCost, facilityCondition);
+      const repairConstructionMaterialsCost = getFacilityRepairCost(definition.constructionMaterialsCost, facilityCondition);
+      const repairIndustrialMachinesCost = getFacilityRepairCost(definition.industrialMachinesCost, facilityCondition);
+      const repairPayment = getResourcePurchasePayment(finance, inventory, market, repairEuroCost, repairConstructionMaterialsCost, repairIndustrialMachinesCost);
+      const canRepair = repairPayment.canAfford && repairEuroCost + repairConstructionMaterialsCost + repairIndustrialMachinesCost > 0;
       const isExpanded = collapsedFacilities[facilityId] !== true;
       const activeDetailTab = facilityDetailTabs[facilityId] ?? 'recipe';
       const allInputsAutoBuyEnabled = Boolean(activeRecipe && activeRecipe.inputs.length > 0 && activeRecipe.inputs.every((input) => market.getAutomation(input.resourceType).autoBuyEnabled));
@@ -140,8 +147,8 @@ export function ProductionView({
               </View>
               <View style={styles.facilityEfficiencyCard}>
                 <View style={styles.facilityUpgradeHeader}><MaterialCommunityIcons color={colors.primary} name="wrench-outline" size={15} /><Text style={styles.facilityUpgradeLabel}>Repair</Text></View>
-                <Text style={styles.facilityRepairCost}>{formatConditionCost(repairCost, market)}</Text>
-                <View style={styles.facilityUpgradeAction}><Text style={styles.facilityStaffingDetail}>Restore to 100%</Text><IconButton accessibilityLabel={`Repair ${facilityName} for ${formatNumber(repairCost, { smartDecimals: true })} Construction Materials`} disabled={!canRepair} icon="wrench" mode="contained" onPress={() => repairFacility(facilityId)} size={16} /></View>
+                <Text style={styles.facilityRepairCost}>{`Cost: ${formatCurrency(repairPayment.cashCost)}\n${formatCurrency(repairEuroCost)} · ${getResourceIcon(ResourceType.ConstructionMaterials)} ${formatNumber(repairConstructionMaterialsCost, { smartDecimals: true })} · ${getResourceIcon(ResourceType.IndustrialMachines)} ${formatNumber(repairIndustrialMachinesCost, { smartDecimals: true })}`}</Text>
+                <View style={styles.facilityUpgradeAction}><Text style={styles.facilityStaffingDetail}>Restore to 100%</Text><IconButton accessibilityLabel={`Repair ${facilityName} for ${formatCurrency(repairPayment.cashCost)}, ${formatNumber(repairConstructionMaterialsCost, { smartDecimals: true })} Construction Materials, and ${formatNumber(repairIndustrialMachinesCost, { smartDecimals: true })} Industrial Machines`} disabled={!canRepair} icon="wrench" mode="contained" onPress={() => repairFacility(facilityId)} size={16} /></View>
               </View>
             </View>
             <View style={styles.facilityConditionSummary}>
@@ -151,11 +158,15 @@ export function ProductionView({
           </View>}
           {activeDetailTab === 'upgrades' && <View style={styles.facilityUpgradesSection}>
             <View style={styles.facilityUpgradeHeader}><MaterialCommunityIcons color={colors.primary} name={APP_ICONS.upgrade} size={16} /><Text style={styles.constructionYardRecipeLabel}>Upgrades</Text></View>
-            <Text style={styles.facilityUpgradeSummary}>Work speed x{formatNumber(speedUpgradeWorkSpeedMultiplier, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })} · Output x{formatNumber(outputMultiplier, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })} · Decay x{formatNumber(conditionDecayMultiplier, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })}</Text>
+            <View style={styles.facilityUpgradeSummary}>
+              <FacilityMetric icon={APP_ICONS.speed} label={`x${formatNumber(speedUpgradeWorkSpeedMultiplier, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })}`} />
+              <FacilityMetric icon={APP_ICONS.output} label={`x${formatNumber(outputMultiplier, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })}`} />
+              <FacilityMetric icon={APP_ICONS.durability} label={`x${formatNumber(conditionDecayMultiplier, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })}`} />
+            </View>
             <View style={styles.facilityUpgradeControls}>
-              <FacilityUpgradeControl canAfford={finance.canAfford(speedUpgradeCost)} cost={speedUpgradeCost} icon={APP_ICONS.speed} label="Speed" level={speedUpgradeLevel} nextEffect={speedNextEffect} nextNetGain={projectedSpeedNetGain} onPress={() => upgradeFacility(facilityId, 'speed')} />
-              <FacilityUpgradeControl canAfford={finance.canAfford(outputUpgradeCost)} cost={outputUpgradeCost} icon={APP_ICONS.output} label="Output" level={outputUpgradeLevel} nextEffect={outputNextEffect} nextNetGain={projectedOutputNetGain} onPress={() => upgradeFacility(facilityId, 'output')} />
-              <FacilityUpgradeControl canAfford={finance.canAfford(conditionDecayUpgradeCost)} cost={conditionDecayUpgradeCost} icon="shield-check-outline" label="Decay" level={conditionDecayUpgradeLevel} nextEffect={conditionNextEffect} nextNetGain={projectedConditionNetGain} onPress={() => upgradeFacility(facilityId, 'condition')} />
+              <FacilityUpgradeControl canAfford={speedUpgradePayment.canAfford} cashCost={speedUpgradePayment.cashCost} constructionMaterialsCost={speedUpgradeConstructionMaterialsCost} euroCost={speedUpgradeCost} industrialMachinesCost={speedUpgradeIndustrialMachinesCost} icon={APP_ICONS.speed} label="Speed" level={speedUpgradeLevel} nextEffect={speedNextEffect} nextNetGain={projectedSpeedNetGain} onPress={() => upgradeFacility(facilityId, 'speed')} />
+              <FacilityUpgradeControl canAfford={outputUpgradePayment.canAfford} cashCost={outputUpgradePayment.cashCost} constructionMaterialsCost={outputUpgradeConstructionMaterialsCost} euroCost={outputUpgradeCost} industrialMachinesCost={outputUpgradeIndustrialMachinesCost} icon={APP_ICONS.output} label="Output" level={outputUpgradeLevel} nextEffect={outputNextEffect} nextNetGain={projectedOutputNetGain} onPress={() => upgradeFacility(facilityId, 'output')} />
+              <FacilityUpgradeControl canAfford={conditionDecayUpgradePayment.canAfford} cashCost={conditionDecayUpgradePayment.cashCost} constructionMaterialsCost={conditionDecayUpgradeConstructionMaterialsCost} euroCost={conditionDecayUpgradeCost} industrialMachinesCost={conditionDecayUpgradeIndustrialMachinesCost} icon={APP_ICONS.durability} label="Durability" level={conditionDecayUpgradeLevel} nextEffect={conditionNextEffect} nextNetGain={projectedConditionNetGain} onPress={() => upgradeFacility(facilityId, 'condition')} />
             </View>
           </View>}
         </>}
@@ -169,8 +180,22 @@ function FacilityMetric({ icon, label }: { icon: string; label: string }) {
   return <View style={styles.facilityMetric}><MaterialCommunityIcons color={colors.primary} name={icon as never} size={13} /><Text style={styles.facilityMetricText}>{label}</Text></View>;
 }
 
-function FacilityUpgradeControl({ canAfford, cost, icon, label, level, nextEffect, nextNetGain, onPress }: { canAfford: boolean; cost: number; icon: string; label: string; level: number; nextEffect: string; nextNetGain?: number; onPress: () => void }) {
-  return <View style={styles.facilityUpgradeCard}><View style={styles.facilityUpgradeHeader}><MaterialCommunityIcons color={colors.primary} name={icon as never} size={15} /><Text style={styles.facilityUpgradeLabel}>{label}</Text></View><Text style={styles.facilityUpgradeLevel}>L{formatNumber(level)} → L{formatNumber(level + 1)}</Text><Text style={styles.facilityUpgradeEffect}>{nextEffect}</Text>{nextNetGain !== undefined && <Text style={styles.facilityUpgradeEffect}>Net gain after upgrade: {formatCurrency(nextNetGain)}/min</Text>}<View style={styles.facilityUpgradeAction}><Text style={styles.facilityUpgradeCost}>{formatCurrency(cost)}</Text><IconButton accessibilityLabel={`Upgrade ${label} to level ${level + 1}`} disabled={!canAfford} icon={APP_ICONS.add} mode="contained" onPress={onPress} size={16} /></View></View>;
+function FacilityUpgradeControl({ canAfford, cashCost, constructionMaterialsCost, euroCost, industrialMachinesCost, icon, label, level, nextEffect, nextNetGain, onPress }: { canAfford: boolean; cashCost: number; constructionMaterialsCost: number; euroCost: number; industrialMachinesCost: number; icon: string; label: string; level: number; nextEffect: string; nextNetGain?: number; onPress: () => void }) {
+  return <View style={styles.facilityUpgradeCard}><View style={styles.facilityUpgradeHeader}><MaterialCommunityIcons color={colors.primary} name={icon as never} size={15} /><Text style={styles.facilityUpgradeLabel}>{label}</Text></View><Text style={styles.facilityUpgradeLevel}>L{formatNumber(level)} → L{formatNumber(level + 1)}</Text><Text style={styles.facilityUpgradeEffect}>{nextEffect}</Text>{nextNetGain !== undefined && <Text style={styles.facilityUpgradeEffect}>Net gain after upgrade: {formatCurrency(nextNetGain)}/min</Text>}<View style={styles.facilityUpgradeAction}><Text style={styles.facilityUpgradeCost}>{`Cost: ${formatCurrency(cashCost)}\n${formatCurrency(euroCost)} · ${getResourceIcon(ResourceType.ConstructionMaterials)} ${formatNumber(constructionMaterialsCost)} · ${getResourceIcon(ResourceType.IndustrialMachines)} ${formatNumber(industrialMachinesCost)}`}</Text><IconButton accessibilityLabel={`Upgrade ${label} to level ${level + 1} for ${formatCurrency(cashCost)}`} disabled={!canAfford} icon={APP_ICONS.add} mode="contained" onPress={onPress} size={16} /></View></View>;
+}
+
+function getResourcePurchasePayment(finance: Finance, inventory: Inventory, market: Market, cashBaseCost: number, constructionMaterialsCost: number, industrialMachinesCost: number) {
+  const missingConstructionMaterials = Math.max(0, constructionMaterialsCost - inventory.getAmount(ResourceType.ConstructionMaterials));
+  const missingIndustrialMachines = Math.max(0, industrialMachinesCost - inventory.getAmount(ResourceType.IndustrialMachines));
+  const missingInputPurchaseCost = missingConstructionMaterials * market.getLocalPrice(ResourceType.ConstructionMaterials)
+    + missingIndustrialMachines * market.getLocalPrice(ResourceType.IndustrialMachines);
+  const cashCost = cashBaseCost + missingInputPurchaseCost;
+  return {
+    canAfford: market.getLocalEntry(ResourceType.ConstructionMaterials).supply >= missingConstructionMaterials
+      && market.getLocalEntry(ResourceType.IndustrialMachines).supply >= missingIndustrialMachines
+      && finance.canAfford(cashCost),
+    cashCost,
+  };
 }
 
 function RecipeOption({ canResearch, decayCostPerMinute, effectiveWorkPerMinute, freeTutorialResearch, inventory, locked, market, onPress, onResearch, outputMultiplier, recipe, selected }: { canResearch: boolean; decayCostPerMinute: number; effectiveWorkPerMinute: number; freeTutorialResearch: boolean; inventory: Inventory; locked: boolean; market: Market; onPress: () => void; onResearch: () => void; outputMultiplier: number; recipe: Recipe; selected: boolean }) {

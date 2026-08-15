@@ -1,5 +1,5 @@
 import { calculateAsymmetricalScaler01, calculateDiminishingBonus, calculatePowerPenalty, scaleExponential } from '../core/math/scaling';
-import { FACILITY_CONDITION_DECAY_MAX_REDUCTION, FACILITY_CONDITION_DECAY_REDUCTION_RATE, FACILITY_MINIMUM_STAFFING_EFFICIENCY, FACILITY_OUTPUT_BONUS_RATE, FACILITY_OUTPUT_MAXIMUM_BONUS, FACILITY_OVERSTAFFING_BONUS_RATE, FACILITY_OVERSTAFFING_CONDITION_DECAY_GROWTH, FACILITY_OVERSTAFFING_MAXIMUM_BONUS, FACILITY_REPAIR_MATERIAL_COST_RATE, FACILITY_SPEED_BONUS_RATE, FACILITY_SPEED_MAXIMUM_BONUS, FACILITY_UNDERSTAFFING_EXPONENT, FACILITY_UPGRADE_COST_GROWTH, FACILITY_WORKER_REQUIREMENT_GROWTH } from './facilityConstants';
+import { FACILITY_CONDITION_DECAY_MAX_REDUCTION, FACILITY_CONDITION_DECAY_REDUCTION_RATE, FACILITY_MINIMUM_STAFFING_EFFICIENCY, FACILITY_OUTPUT_BONUS_RATE, FACILITY_OUTPUT_MAXIMUM_BONUS, FACILITY_OVERSTAFFING_BONUS_RATE, FACILITY_OVERSTAFFING_CONDITION_DECAY_GROWTH, FACILITY_OVERSTAFFING_MAXIMUM_BONUS, FACILITY_REPAIR_MATERIAL_COST_RATE, FACILITY_SPEED_BONUS_RATE, FACILITY_SPEED_MAXIMUM_BONUS, FACILITY_UNDERSTAFFING_EXPONENT, FACILITY_UPGRADE_COST_GROWTH, FACILITY_UPGRADE_RESOURCE_COST_RATE, FACILITY_WORKER_REQUIREMENT_GROWTH } from './facilityConstants';
 
 export type FacilityUpgradeKind = 'speed' | 'output' | 'condition';
 
@@ -8,11 +8,24 @@ export function getFacilityUpgradeCost(constructionCost: number, currentLevel: n
   return Math.ceil(scaleExponential(constructionCost, currentLevel, FACILITY_UPGRADE_COST_GROWTH));
 }
 
+/** Construction Materials or Industrial Machines required for the next upgrade level. */
+export function getFacilityUpgradeResourceCost(constructionResourceCost: number, currentLevel: number): number {
+  return Math.max(1, getFacilityUpgradeCost(Math.max(0, constructionResourceCost) * FACILITY_UPGRADE_RESOURCE_COST_RATE, currentLevel));
+}
+
 /** Total paid cost for all completed levels in one facility upgrade track. */
 export function getFacilityUpgradeInvestmentCost(constructionCost: number, completedLevels: number): number {
   return Array.from(
     { length: Math.max(0, Math.floor(completedLevels)) },
     (_, currentLevel) => getFacilityUpgradeCost(constructionCost, currentLevel),
+  ).reduce((total, cost) => total + cost, 0);
+}
+
+/** Total construction resources committed to all completed levels in one upgrade track. */
+export function getFacilityUpgradeResourceInvestmentCost(constructionResourceCost: number, completedLevels: number): number {
+  return Array.from(
+    { length: Math.max(0, Math.floor(completedLevels)) },
+    (_, currentLevel) => getFacilityUpgradeResourceCost(constructionResourceCost, currentLevel),
   ).reduce((total, cost) => total + cost, 0);
 }
 
@@ -96,7 +109,8 @@ export function getFacilityConditionEfficiency(facilityCondition: number): numbe
   return 1 - calculateAsymmetricalScaler01(1 - condition);
 }
 
-export function getFacilityRepairCost(constructionMaterialsCost: number, facilityCondition: number): number {
+/** Repair cost for one construction input, proportional to the missing condition. */
+export function getFacilityRepairCost(constructionInputCost: number, facilityCondition: number): number {
   const missingCondition = Number.isFinite(facilityCondition) ? Math.min(1, Math.max(0, 1 - facilityCondition)) : 1;
-  return Math.max(0, constructionMaterialsCost) * missingCondition * FACILITY_REPAIR_MATERIAL_COST_RATE;
+  return Math.max(0, constructionInputCost) * missingCondition * FACILITY_REPAIR_MATERIAL_COST_RATE;
 }
