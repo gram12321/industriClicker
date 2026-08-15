@@ -121,6 +121,7 @@ export class ResearchLedger {
   getActiveProjects(): ActiveResearchProject[] { return this.active.map((project) => ({ ...project })); }
   getActiveProject(): ActiveResearchProject | null { return this.active[0] ? { ...this.active[0] } : null; }
   hasCompleted(projectId: string): boolean { return this.completed.some((project) => project.projectId === projectId); }
+  hasActive(projectId: string): boolean { return this.active.some((project) => project.projectId === projectId); }
 
   start(projectId: ResearchProjectId, paidCost: number, durationMs: number): boolean {
     if (this.hasCompleted(projectId) || this.active.some((project) => project.projectId === projectId) || !Number.isFinite(paidCost) || paidCost < 0 || !Number.isFinite(durationMs) || durationMs <= 0) return false;
@@ -151,10 +152,12 @@ export class ResearchLedger {
     return true;
   }
 
-  cancel(): ActiveResearchProject | null {
-    const active = this.getActiveProject();
-    this.active = this.active.filter((project) => project.projectId !== active?.projectId);
-    return active;
+  cancel(projectId: ResearchProjectId): ActiveResearchProject | null {
+    const active = this.active.find((project) => project.projectId === projectId);
+    if (!active) return null;
+
+    this.active = this.active.filter((project) => project.projectId !== projectId);
+    return { ...active };
   }
 
   clone(): ResearchLedger { return ResearchLedger.fromSnapshot(this.toSnapshot()); }

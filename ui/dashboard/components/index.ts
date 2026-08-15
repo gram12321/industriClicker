@@ -1,5 +1,5 @@
 
-export * from './cards/ContractRequestCard';
+export * from './cards/SalesOrderRequestCard';
 export * from './cards/DeleteCompanyCard';
 export * from './cards/InventoryControlCard';
 export * from './ActiveProcessesOverlay';

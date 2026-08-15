@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getResource, ResourceType, RESOURCE_TYPES } from '@/game/resources';
-import { SALES_ORDER_DURATION_MS, SalesOrders, calculateSalesOrderAcquisitionChance, calculateSalesOrderAcquisitionDetails, calculateSalesOrderBundleLineCount, calculateSalesOrderMarketVolumeMultiplier, calculateSalesOrderTargetValue } from '@/game/sales';
+import { SALES_ORDER_DURATION_MS, SalesOrders, calculateSalesOrderAcquisitionChance, calculateSalesOrderAcquisitionDetails, calculateSalesOrderBundleLineCount, calculateSalesOrderMarketVolumeMultiplier, calculateSalesOrderSelectionWeight, calculateSalesOrderTargetValue, getEligibleSalesOrderResourceTypes } from '@/game/sales';
 
 function quantities(resourceType: ResourceType, amount: number): Record<ResourceType, number> {
   return RESOURCE_TYPES.reduce((result, candidate) => { result[candidate] = candidate === resourceType ? amount : 0; return result; }, {} as Record<ResourceType, number>);
@@ -9,6 +9,18 @@ function prices(value: number): Record<ResourceType, number> { return RESOURCE_T
 function benchmarkSupplies(): Record<ResourceType, number> { return RESOURCE_TYPES.reduce((result, resourceType) => { result[resourceType] = getResource(resourceType).market.globalBenchmarkSupply; return result; }, {} as Record<ResourceType, number>); }
 
 describe('sales orders', () => {
+  it('returns defensive customer-catalogue views while retaining its generated catalogue', () => {
+    const orders = new SalesOrders();
+    const firstRead = orders.getCustomerCatalogue();
+    const originalName = firstRead[0].name;
+    firstRead[0].name = 'Changed by caller';
+
+    const secondRead = orders.getCustomerCatalogue();
+
+    expect(secondRead[0].name).toBe(originalName);
+    expect(secondRead[0].operatingDomains).not.toBe(firstRead[0].operatingDomains);
+  });
+
   it('requires a meaningful utility lot and locks bid, reference price, and premium', () => {
     const orders = new SalesOrders();
     const result = orders.advanceTime({ currentGameTimeMs: 60_000, maximumOpenOrders: 2, maximumOrderValue: 10_000, companyPrestige: 500, economyPhase: 'boom', inventoryByResource: quantities(ResourceType.Water, 1_000), globalPrices: prices(1), globalSupplies: benchmarkSupplies(), candidateResourceTypes: [ResourceType.Water], getResourceWeight: () => 1, bidResearchMultiplier: 1 });
@@ -23,12 +35,22 @@ describe('sales orders', () => {
   });
 
   it('does not acquire orders without an inventory lot and lowers chance for pending orders', () => {
-    expect(calculateSalesOrderAcquisitionChance({ openOrderCount: 0, companyPrestige: 0, economyPhase: 'stable', hasEligibleInventory: false })).toBe(0);
-    expect(calculateSalesOrderAcquisitionChance({ openOrderCount: 2, companyPrestige: 0, economyPhase: 'stable', hasEligibleInventory: true })).toBeLessThan(calculateSalesOrderAcquisitionChance({ openOrderCount: 0, companyPrestige: 0, economyPhase: 'stable', hasEligibleInventory: true }));
+    expect(calculateSalesOrderAcquisitionChance({ openOrderCount: 0, maximumOpenOrders: 3, companyPrestige: 0, economyPhase: 'stable', hasEligibleInventory: false })).toBe(0);
+    expect(calculateSalesOrderAcquisitionChance({ openOrderCount: 2, maximumOpenOrders: 3, companyPrestige: 0, economyPhase: 'stable', hasEligibleInventory: true })).toBeLessThan(calculateSalesOrderAcquisitionChance({ openOrderCount: 0, maximumOpenOrders: 3, companyPrestige: 0, economyPhase: 'stable', hasEligibleInventory: true }));
+  });
+
+  it('reports zero acquisition chance when every open-order slot is occupied', () => {
+    expect(calculateSalesOrderAcquisitionChance({
+      openOrderCount: 2,
+      maximumOpenOrders: 2,
+      companyPrestige: 0,
+      economyPhase: 'stable',
+      hasEligibleInventory: true,
+    })).toBe(0);
   });
 
   it('starts inventory-ready companies at a visible, stable-economy acquisition rate', () => {
-    const acquisition = calculateSalesOrderAcquisitionDetails({ openOrderCount: 0, companyPrestige: 0, economyPhase: 'stable', hasEligibleInventory: true });
+    const acquisition = calculateSalesOrderAcquisitionDetails({ openOrderCount: 0, maximumOpenOrders: 2, companyPrestige: 0, economyPhase: 'stable', hasEligibleInventory: true });
 
     expect(acquisition.baseChance).toBe(1);
     expect(acquisition.prestigeDiscoveryMultiplier).toBe(0.65);
@@ -43,6 +65,48 @@ describe('sales orders', () => {
 
     expect(result.ordersCreated).toBe(0);
     expect(result.acquisitionChance).toBe(0);
+  });
+
+  it('uses the same eligibility rule for acquisition display and order creation', () => {
+    expect(getEligibleSalesOrderResourceTypes({
+      candidateResourceTypes: [ResourceType.Water],
+      inventoryByResource: quantities(ResourceType.Water, 1_000),
+      globalPrices: prices(1),
+      maximumOrderValue: 100,
+    })).toEqual([]);
+  });
+
+  it('prefers customer-resource pairs with deeper stock and stronger relationships', () => {
+    const baseline = calculateSalesOrderSelectionWeight({
+      inventoryAmount: 100,
+      standardOrderLot: 100,
+      productionWeight: 1,
+      customerMarketShare: 0.1,
+      domainFrequency: 1,
+      customerTypeFrequency: 1,
+      relationship: 0,
+    });
+    const deeperStock = calculateSalesOrderSelectionWeight({
+      inventoryAmount: 1_600,
+      standardOrderLot: 100,
+      productionWeight: 1,
+      customerMarketShare: 0.1,
+      domainFrequency: 1,
+      customerTypeFrequency: 1,
+      relationship: 0,
+    });
+    const strongerRelationship = calculateSalesOrderSelectionWeight({
+      inventoryAmount: 100,
+      standardOrderLot: 100,
+      productionWeight: 1,
+      customerMarketShare: 0.1,
+      domainFrequency: 1,
+      customerTypeFrequency: 1,
+      relationship: 1,
+    });
+
+    expect(deeperStock).toBeGreaterThan(baseline);
+    expect(strongerRelationship).toBeGreaterThan(baseline);
   });
 
   it('keeps a generated order at or below the company-value cap after lot rounding', () => {

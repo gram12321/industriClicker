@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { createStartingGameSnapshot, useGameStore } from '@/game/core/stores';
 import { FACILITIES, FacilityType } from '@/game/facilities';
+import { calculateAssets } from '@/game/finance';
 import { RecipeName } from '@/game/recipes';
 import { FIRST_FACILITY_RECIPE_RESEARCH_WORK_SPEED_MULTIPLIER } from '@/game/grants';
+import { calculateCompanyAssetsPrestige, PRESTIGE_COMPANY_ASSETS_SOURCE_ID } from '@/game/prestige';
 import { getRecipeResearchProjectId, getResearchProject } from '@/game/research';
 import { ResourceType } from '@/game/resources';
 
@@ -23,6 +25,39 @@ describe('market autobuy', () => {
     expect(useGameStore.getState().inventory.getAmount(ResourceType.Grain)).toBeCloseTo(360);
     expect(useGameStore.getState().market.getLocalPrice(ResourceType.Grain)).toBeLessThanOrEqual(1.25);
     expect(useGameStore.getState().resourceFlow.getSummary(ResourceType.Grain, 5_000, 15_000)).toMatchObject({ market: 360, netChange: 360 });
+  });
+});
+
+describe('sales order fulfilment', () => {
+  it('recalculates company-assets prestige from the fulfilled order state', () => {
+    const state = useGameStore.getState();
+    state.restoreSnapshot(createStartingGameSnapshot(0));
+
+    expect(state.createSalesOrderRequest(ResourceType.Gold, 1)).toBe(true);
+    const order = useGameStore.getState().salesOrders.getOfferedOrders()[0];
+    expect(order).toBeDefined();
+    state.setInventoryAmount(ResourceType.Gold, order.lines[0].quantity);
+
+    expect(state.fulfillSalesOrder(order.id)).toBe(true);
+
+    const fulfilledState = useGameStore.getState();
+    const assets = calculateAssets({
+      finance: fulfilledState.finance,
+      inventory: fulfilledState.inventory,
+      market: fulfilledState.market,
+      facilities: fulfilledState.facilities,
+      research: fulfilledState.research,
+    });
+    const liabilities = fulfilledState.finance.getLoans()
+      .filter((loan) => loan.status !== 'repaid')
+      .reduce((total, loan) => total + loan.remainingBalance, 0);
+    const assetsEvent = fulfilledState.prestige.getEvents()
+      .find((event) => event.sourceId === PRESTIGE_COMPANY_ASSETS_SOURCE_ID);
+
+    expect(assetsEvent?.amountBase).toBe(calculateCompanyAssetsPrestige({
+      assetBookValue: assets.totalAssets,
+      liabilities,
+    }));
   });
 });
 

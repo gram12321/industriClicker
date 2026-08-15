@@ -6,11 +6,12 @@ import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
 import { MARKET_DIFFUSION_INTERVAL_MS, MARKET_SALES_ORDER_BID_MULTIPLIER, Market, canAutoBuyMarketResource, canBuyMarketResource, canSellMarketResource, type MarketAutomation } from '@/game/market';
 import type { GameSnapshot } from '@/game/core/state';
 import { BASE_WORK_PER_MINUTE, FOREGROUND_SIMULATION_STEP_MS, REALTIME_WORK_MINUTE_MS, calculateRealtimeAdvance } from '@/game/core/time';
-import { SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP, SalesOrders, calculateSalesOrderAcquisitionChance, getSalesResourceProfile } from '@/game/sales';
+import { SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP, SalesOrders, calculateSalesOrderAcquisitionChance, calculateSalesOrderAcquisitionDetails, getSalesResourceProfile, type SalesOrderAcquisitionStatus } from '@/game/sales';
 import { AchievementLedger, createAchievementEvaluationContext, evaluateAchievementUnlocks, type AchievementCategory } from '@/game/achievements';
+
 import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyAssetsPrestige, calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary, calculateFacilityConditionPrestige } from '@/game/prestige';
 import { evaluateGateRequirements, type GateContext, type GateEvaluation } from '@/game/gates';
-import { ResearchLedger, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesOrders, getMaximumSimultaneousResearchProjects, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, getSalesOrderBidMultiplier, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, getSalesOrderMaximumCompanyValueFraction, type ResearchProjectId } from '@/game/research';
+import { ResearchLedger, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesOrders, getMaximumSimultaneousResearchProjects, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, getSalesOrderBidMultiplier, getSalesOrderMaximumCompanyValueFraction, type ResearchProjectId } from '@/game/research';
 import { FIRST_FACILITY_RECIPE_RESEARCH_GRANT_ID, FIRST_FACILITY_RECIPE_RESEARCH_WORK_SPEED_MULTIPLIER, GrantLedger } from '@/game/grants';
 import type { StartingConditionId } from '@/game/company/companyTypes';
 import { STANDARD_START_CONSTRUCTION_MATERIALS, STANDARD_START_INDUSTRIAL_MACHINES } from '@/game/company/companyConstants';
@@ -24,6 +25,8 @@ export type ResearchAvailability = GateEvaluation & {
   durationMs: number;
   usesFreeGrant: boolean;
 };
+
+export type { SalesOrderAcquisitionStatus } from '@/game/sales';
 
 type GameState = {
   finance: Finance;
@@ -67,12 +70,13 @@ type GameState = {
   advanceRealtime: (nowMs: number) => number;
   fastForwardOneMinute: () => boolean;
   createSalesOrderRequest: (resourceType: ResourceType, quantity: number) => boolean;
+  getSalesOrderAcquisitionStatus: () => SalesOrderAcquisitionStatus;
   fulfillSalesOrder: (orderId: string) => boolean;
   rejectSalesOrder: (orderId: string) => boolean;
   setStartingConditionId: (startingConditionId: StartingConditionId | null) => void;
   getResearchAvailability: (projectId: ResearchProjectId) => ResearchAvailability;
   startResearch: (projectId: ResearchProjectId) => boolean;
-  cancelResearch: () => boolean;
+  cancelResearch: (projectId: ResearchProjectId) => boolean;
   acceptLoanOffer: (offer: LoanOffer) => boolean;
   removeUnavailableLoanOffers: () => number;
   removeLoanOffer: (offerId: string) => boolean;
@@ -154,6 +158,7 @@ function getResearchAvailabilityForState(input: {
   const project = getResearchProject(input.projectId);
   if (!project) return { allowed: false, startable: false, unmetReasons: ['Unknown research project.'], cost: 0, durationMs: 0, usesFreeGrant: false };
   if (input.research.hasCompleted(project.id)) return { allowed: false, startable: false, unmetReasons: ['Research already completed.'], cost: project.cost, durationMs: project.durationMs, usesFreeGrant: false };
+  if (input.research.hasActive(project.id)) return { allowed: false, startable: false, unmetReasons: ['Research is already in progress.'], cost: project.cost, durationMs: project.durationMs, usesFreeGrant: false };
   if (input.research.getActiveProjects().length >= getMaximumSimultaneousResearchProjects(input.research.getCompletedProjectIds())) return { allowed: false, startable: false, unmetReasons: ['All research slots are occupied.'], cost: project.cost, durationMs: project.durationMs, usesFreeGrant: false };
   const evaluation = evaluateGateRequirements(project.requirements, createResearchGateContext(input));
   const unmetReasons = [...evaluation.unmetReasons];
@@ -696,6 +701,7 @@ export const useGameStore = create<GameState>((set, get) => {
       const producedByResource = resourceFlow.getLifetimeFacilityOutputByResource();
       const offerChance = calculateSalesOrderAcquisitionChance({
         openOrderCount: currentSalesOrders.getOfferedOrders().length,
+        maximumOpenOrders: getMaximumOpenSalesOrders(research.getCompletedProjectIds()),
         companyPrestige: currentPrestige,
         economyPhase: (marketFinance ?? get().finance).getEconomyPhase(),
         hasEligibleInventory: getSalesOfferResourceTypes(research.getCompletedProjectIds(), producedByResource).some((resourceType) => inventory.getAmount(resourceType) >= getSalesResourceProfile(resourceType).standardOrderLot && getSalesResourceProfile(resourceType).standardOrderLot * (market ?? get().market).getGlobalPrice(resourceType) <= maximumOrderValue),
@@ -1046,11 +1052,11 @@ export const useGameStore = create<GameState>((set, get) => {
     set({ research, grants, finance, prestige });
     return true;
   },
-  cancelResearch: () => {
+  cancelResearch: (projectId) => {
     get().advanceRealtime(Date.now());
     const state = get();
     const research = state.research.clone();
-    const cancelled = research.cancel();
+    const cancelled = research.cancel(projectId);
     if (!cancelled) return false;
 
     const project = getResearchProject(cancelled.projectId);
@@ -1092,6 +1098,26 @@ export const useGameStore = create<GameState>((set, get) => {
     set({ salesOrders, customerPipelineProgress: 0 });
     return true;
   },
+  getSalesOrderAcquisitionStatus: () => {
+    const research = get().research;
+    const producedByResource = get().resourceFlow.getLifetimeFacilityOutputByResource();
+    const maximumOrderValue = Math.max(
+      SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP,
+      calculateAssets({ finance: get().finance, inventory: get().inventory, market: get().market, facilities: get().facilities, research }).totalAssets * getSalesOrderMaximumCompanyValueFraction(research.getCompletedProjectIds()),
+    );
+    const hasEligibleInventory = getSalesOfferResourceTypes(research.getCompletedProjectIds(), producedByResource).some((resourceType) => get().inventory.getAmount(resourceType) >= getSalesResourceProfile(resourceType).standardOrderLot && getSalesResourceProfile(resourceType).standardOrderLot * get().market.getGlobalPrice(resourceType) <= maximumOrderValue);
+    return {
+      ...calculateSalesOrderAcquisitionDetails({
+        openOrderCount: get().salesOrders.getOfferedOrders().length,
+        maximumOpenOrders: getMaximumOpenSalesOrders(research.getCompletedProjectIds()),
+        companyPrestige: calculateCompanyPrestigeSummary(get().prestige.getEvents(), get().lastProcessedAtMs).totalPrestige,
+        economyPhase: get().finance.getEconomyPhase(),
+        hasEligibleInventory,
+      }),
+      hasEligibleInventory,
+      maximumOrderValue,
+    };
+  },
   fulfillSalesOrder: (orderId) => {
     get().advanceRealtime(Date.now());
     const salesOrders = get().salesOrders.clone();
@@ -1121,7 +1147,7 @@ export const useGameStore = create<GameState>((set, get) => {
 
     const prestige = get().prestige.clone();
     syncCompanyBalancePrestige(prestige, finance, currentGameTimeMs);
-    syncCompanyAssetsPrestige(prestige, { finance, inventory: get().inventory, market: get().market, facilities: get().facilities, research: get().research }, currentGameTimeMs);
+    syncCompanyAssetsPrestige(prestige, { finance, inventory, market, facilities: get().facilities, research: get().research }, currentGameTimeMs);
     prestige.recordSalesOrder(order.id, order.reward, order.premiumPercent, currentGameTimeMs);
 
     const achievementResult = applyAchievementUnlocks({

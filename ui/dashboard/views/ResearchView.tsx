@@ -98,16 +98,19 @@ export function ResearchView({
   facilities: FacilityCollection;
   finance: Finance;
   getAvailability: (projectId: ResearchProjectId) => ResearchAvailability;
-  onCancel: () => boolean;
+  onCancel: (projectId: ResearchProjectId) => boolean;
   onStart: (projectId: ResearchProjectId) => boolean;
   research: ResearchLedger;
 }) {
   const [selectedGroup, setSelectedGroup] = useState<ResearchGroupId | 'all'>('all');
   const [showOnlyConstructedRecipes, setShowOnlyConstructedRecipes] = useState(true);
   const [expandedProjectIds, setExpandedProjectIds] = useState<Record<string, boolean>>({});
-  const active = research.getActiveProject();
+  const activeProjects = research.getActiveProjects().flatMap((active) => {
+    const project = RESEARCH_PROJECTS.find((candidate) => candidate.id === active.projectId);
+    return project ? [{ active, project }] : [];
+  });
+  const activeProjectIds = new Set(activeProjects.map(({ project }) => project.id));
   const completedIds = research.getCompletedProjectIds();
-  const activeProject = active ? RESEARCH_PROJECTS.find((project) => project.id === active.projectId) ?? null : null;
   const completedCount = completedIds.length;
   const completion = RESEARCH_PROJECTS.length === 0 ? 0 : completedCount / RESEARCH_PROJECTS.length;
   const visibleGroups = selectedGroup === 'all' ? RESEARCH_GROUPS : RESEARCH_GROUPS.filter((group) => group.id === selectedGroup);
@@ -131,21 +134,21 @@ export function ResearchView({
         </View>
         <ProgressBar accessible accessibilityLabel={`${completedCount} of ${RESEARCH_PROJECTS.length} research projects completed`} color={getColorClass(completion)} progress={completion} style={localStyles.overviewProgress} />
       </View>
-      {active && activeProject && (
-        <View style={localStyles.researchCard}>
+      {activeProjects.map(({ active, project }) => (
+        <View key={project.id} style={localStyles.researchCard}>
           <View style={localStyles.cardBody}>
             <Text style={dashboardStyles.cardKicker}>ACTIVE PROJECT</Text>
-            <View style={localStyles.projectNameRow}><MaterialCommunityIcons color={colors.primary} name={getProjectIcon(activeProject) as never} size={20} /><Text style={localStyles.activeTitle} variant="titleLarge">{activeProject.name}</Text></View>
+            <View style={localStyles.projectNameRow}><MaterialCommunityIcons color={colors.primary} name={getProjectIcon(project) as never} size={20} /><Text style={localStyles.activeTitle} variant="titleLarge">{project.name}</Text></View>
             <View style={localStyles.iconValueRow}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={[dashboardStyles.cardDescription, localStyles.timeLabel, { color: getColorClass(Math.min(1, active.progressMs / active.durationMs)) }]}>{`${formatElapsedTime(active.progressMs)} / ${formatElapsedTime(active.durationMs)}`}</Text></View>
             <View style={localStyles.progressTrack}>
-              <ProgressBar accessible accessibilityLabel={`${activeProject.name} progress ${formatElapsedTime(active.progressMs)} of ${formatElapsedTime(active.durationMs)}`} color={getColorClass(Math.min(1, active.progressMs / active.durationMs))} progress={Math.min(1, active.progressMs / active.durationMs)} style={localStyles.progress} />
+              <ProgressBar accessible accessibilityLabel={`${project.name} progress ${formatElapsedTime(active.progressMs)} of ${formatElapsedTime(active.durationMs)}`} color={getColorClass(Math.min(1, active.progressMs / active.durationMs))} progress={Math.min(1, active.progressMs / active.durationMs)} style={localStyles.progress} />
             </View>
             <View style={[localStyles.iconValueRow, localStyles.paidCost]}><Text style={dashboardStyles.cardDescription}>Cost paid:</Text><CurrencyValue value={active.paidCost} /></View>
-            <Button accessibilityLabel={`Cancel ${activeProject.name} and refund ${formatCurrency(active.paidCost)}`} icon="close" mode="outlined" onPress={onCancel} style={localStyles.cancelButton}>Cancel and refund <MaterialCommunityIcons color={colors.primary} name={APP_ICONS.coin} size={15} /> {formatCurrency(active.paidCost).replace(/\s*€/u, '')}</Button>
+            <Button accessibilityLabel={`Cancel ${project.name} and refund ${formatCurrency(active.paidCost)}`} icon="close" mode="outlined" onPress={() => onCancel(project.id)} style={localStyles.cancelButton}>Cancel and refund <MaterialCommunityIcons color={colors.primary} name={APP_ICONS.coin} size={15} /> {formatCurrency(active.paidCost).replace(/\s*€/u, '')}</Button>
             <Text style={localStyles.cancelNote}>Cancellation refunds the full cost and resets this project’s progress.</Text>
           </View>
         </View>
-      )}
+      ))}
       <View style={[localStyles.researchCard, localStyles.filters]}>
         <Button compact icon="view-grid-outline" mode={selectedGroup === 'all' ? 'contained' : 'outlined'} onPress={() => setSelectedGroup('all')}>{`All (${visibleSeriesCount})`}</Button>
         {RESEARCH_GROUPS.map((group) => {
@@ -156,7 +159,7 @@ export function ResearchView({
       {visibleGroups.map((group) => {
         const chainProjects = RESEARCH_PROJECTS.filter((project) => group.chainIds.includes(project.chainId) && (project.chainId !== 'recipe-unlocks' || !showOnlyConstructedRecipes || isRecipeProjectForConstructedFacility(project, facilities)));
         const displayedSeries = getResearchSeries(chainProjects, completedIds)
-          .sort((left, right) => Number(right.project.id === active?.projectId) - Number(left.project.id === active?.projectId)
+          .sort((left, right) => Number(activeProjectIds.has(right.project.id)) - Number(activeProjectIds.has(left.project.id))
             || Number(getAvailability(right.project.id).startable) - Number(getAvailability(left.project.id).startable)
             || left.project.name.localeCompare(right.project.name));
         return (
@@ -168,7 +171,7 @@ export function ResearchView({
             {displayedSeries.map((series) => (
               <View key={series.project.id} style={localStyles.projectCardWrap}>
                 <ResearchProjectCard
-                  activeProjectId={active?.projectId ?? null}
+                  activeProjectIds={activeProjectIds}
                   availability={getAvailability(series.project.id)}
                   completed={completedIds.includes(series.project.id)}
                   expanded={expandedProjectIds[series.project.id] ?? getAvailability(series.project.id).startable}
@@ -188,8 +191,8 @@ export function ResearchView({
   );
 }
 
-function ResearchProjectCard({ activeProjectId, availability, completed, expanded, onStart, onToggleExpanded, project, seriesCompletedCount, seriesProjectCount }: {
-  activeProjectId: ResearchProjectId | null;
+function ResearchProjectCard({ activeProjectIds, availability, completed, expanded, onStart, onToggleExpanded, project, seriesCompletedCount, seriesProjectCount }: {
+  activeProjectIds: ReadonlySet<ResearchProjectId>;
   availability: ResearchAvailability;
   completed: boolean;
   expanded: boolean;
@@ -199,7 +202,7 @@ function ResearchProjectCard({ activeProjectId, availability, completed, expande
   seriesCompletedCount: number;
   seriesProjectCount: number;
 }) {
-  const isActive = activeProjectId === project.id;
+  const isActive = activeProjectIds.has(project.id);
   const status = completed ? 'Completed' : isActive ? 'In progress' : availability.startable ? 'Ready to start' : 'Locked';
   const recipeTimeComparison = getRecipeTimeComparison(project);
   const requirementRows = project.requirements.map((requirement) => { const fulfilled = isRequirementFulfilled(requirement, availability); return <View key={`checked-${requirement.kind}-${getRequirementDescription(requirement)}`} style={localStyles.requirementRow}><MaterialCommunityIcons color={fulfilled ? colors.primary : colors.error} name={fulfilled ? 'check-circle-outline' : 'close-circle-outline'} size={16} /><Text style={localStyles.requirementText}>{getRequirementDescription(requirement)}</Text></View>; });

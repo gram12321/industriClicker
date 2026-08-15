@@ -30,7 +30,7 @@ export function InventoryControlCard({
         <Text style={styles.cardKicker}>INVENTORY</Text>
         <Text variant="titleLarge">Set inventory amount</Text>
         <Text style={styles.cardDescription}>Set the selected resource to any non-negative amount.</Text>
-        <View style={styles.adminContractControls}>
+        <View style={styles.adminSalesOrderControls}>
           <Menu
             anchor={(
               <Button icon={APP_ICONS.expand} mode="outlined" onPress={() => setIsResourceMenuOpen(true)}>
@@ -55,7 +55,7 @@ export function InventoryControlCard({
             label="Amount"
             mode="outlined"
             onChangeText={(value) => setAmountText(value.replace(/[^0-9.]/g, ''))}
-            style={styles.adminContractAmountInput}
+            style={styles.adminSalesOrderAmountInput}
             value={amountText}
           />
           <Button disabled={!isAmountValid} icon={APP_ICONS.pencil} mode="contained" onPress={setInventoryAmount}>

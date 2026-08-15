@@ -3,9 +3,9 @@ import { StyleSheet } from 'react-native';
 import { colors } from '@/theme';
 
 export const styles = StyleSheet.create({
-  adminContractControls: { gap: 8 },
+  adminSalesOrderControls: { gap: 8 },
   adminMoneyActions: { flexDirection: 'row', gap: 8 },
-  adminContractAmountInput: { backgroundColor: colors.surface },
+  adminSalesOrderAmountInput: { backgroundColor: colors.surface },
   adminSuccessMessage: { color: colors.primary, fontWeight: '700' },
   activeNavigationItem: { backgroundColor: colors.paleGreen },
   activeNavigationText: { color: colors.primary, fontWeight: '700' },

@@ -1,19 +1,30 @@
 import type { ResourceType } from '@/game/resources';
 import { calculateAsymmetricalScaler01 } from '@/game/core/math/scaling';
 import { SALES_CUSTOMER_BID_MULTIPLIER_RANGE, SALES_CUSTOMER_DOMAIN_PROFILES, SALES_CUSTOMER_GENERATION, SALES_CUSTOMER_PURCHASING_POWER_RANGE, SALES_CUSTOMER_TYPE_PROFILES, SALES_RESOURCE_PROFILES } from './salesConstants';
+import { getDeterministicUnitInterval, pickDeterministicWeighted } from './salesRandom';
+import {
+  SALES_CUSTOMER_DOMAINS,
+  SALES_CUSTOMER_TYPES,
+  type SalesCustomerDefinition,
+  type SalesCustomerDomain,
+  type SalesCustomerRelationshipDetails,
+  type SalesCustomerState,
+  type SalesCustomerType,
+  type SalesResourceProfile,
+} from './salesTypes';
 
 export const SALES_CUSTOMER_CATALOGUE_VERSION = 2;
 export const SALES_CUSTOMER_WORLD_SEED = 'industri-clicker-local-world-v1';
-export const SALES_CUSTOMER_DOMAINS = ['food', 'raw-materials', 'industrial-inputs', 'construction-materials', 'electronics', 'utilities'] as const;
-export type SalesCustomerDomain = typeof SALES_CUSTOMER_DOMAINS[number];
-export const SALES_CUSTOMER_TYPES = ['private-customer', 'retail-chain', 'construction-contractor', 'industrial-enterprise', 'utility-operator', 'government-procurement'] as const;
-export type SalesCustomerType = typeof SALES_CUSTOMER_TYPES[number];
-
-export type SalesCustomerDefinition = { id: string; name: string; domain: SalesCustomerDomain; customerType: SalesCustomerType; operatingDomains: SalesCustomerDomain[]; marketShare: number; purchasingPower: number; bidMultiplier: number };
-export type SalesResourceProfile = { domain: SalesCustomerDomain; standardOrderLot: number };
 /** Relationship is stored as a normalized 0–1 value; UI displays it as 0–100. */
-export type SalesCustomerState = { customerId: string; relationship: number; lastRelationshipUpdatedAtGameTimeMs: number; fulfilledOrderCount: number; expiredOrderCount: number };
-export type SalesCustomerRelationshipDetails = { prestigeRecognition: number; prestigeBonus: number; marketSharePenalty: number; baseline: number; decayHalfLifeHours: number; relationshipValueScale: number; maximumFulfilmentGain: number; minimumFailureLoss: number; maximumRejectionLoss: number; maximumExpiryLoss: number };
+export { SALES_CUSTOMER_DOMAINS, SALES_CUSTOMER_TYPES } from './salesTypes';
+export type {
+  SalesCustomerDefinition,
+  SalesCustomerDomain,
+  SalesCustomerRelationshipDetails,
+  SalesCustomerState,
+  SalesCustomerType,
+  SalesResourceProfile,
+} from './salesTypes';
 
 export const SALES_CUSTOMER_RELATIONSHIP = { maximum: 1, foregroundDecayHalfLifeHours: 8, relationshipValueScale: 350, maximumFulfilmentGain: 0.1, minimumFailureLoss: 0.0001, maximumRejectionLoss: 0.1, maximumExpiryLoss: 0.2 } as const;
 export const SALES_CUSTOMER_RELATIONSHIP_LEVELS = [
@@ -40,12 +51,9 @@ const CUSTOMER_NAME_SUFFIXES: Readonly<Record<SalesCustomerDomain, readonly stri
   food: ['Provisions', 'Foods', 'Kitchen Supply', 'Grocers', 'Pantry Group', 'Fresh Market'], 'raw-materials': ['Materials', 'Extractives', 'Resource Group', 'Ore Supply', 'Quarry Goods', 'Raw Resources'], 'industrial-inputs': ['Industrial Supply', 'Works', 'Process Goods', 'Input Systems', 'Manufacturing Supply', 'Process Partners'], 'construction-materials': ['Build Supply', 'Construction Group', 'Infrastructure', 'Project Materials', 'Civil Works', 'Site Supply'], electronics: ['Electronics', 'Systems', 'Components', 'Circuit Works', 'Device Supply', 'Technology Group'], utilities: ['Utility Network', 'Energy Supply', 'Waterworks', 'Power Services', 'Grid Services', 'Resource Utility'],
 };
 
-function hashSeed(value: string): number { let hash = 2_166_136_261; for (let index = 0; index < value.length; index += 1) { hash ^= value.charCodeAt(index); hash = Math.imul(hash, 16_777_619); } return hash >>> 0; }
-function unitInterval(value: string): number { return hashSeed(value) / 4_294_967_296; }
-function pickWeighted<T>(entries: readonly { value: T; weight: number }[], seed: string): T | null { const total = entries.reduce((sum, entry) => sum + Math.max(0, entry.weight), 0); if (total <= 0) return null; let remaining = unitInterval(seed) * total; for (const entry of entries) { remaining -= Math.max(0, entry.weight); if (remaining <= 0) return entry.value; } return entries[entries.length - 1]?.value ?? null; }
 function calculateSkewedMarketShareMultiplier(score: number): number { if (score < 0.4) return score * score * 1.5; if (score < 0.7) return 0.24 + Math.log(1 + (score - 0.4) * 3.33) * 0.3; if (score < 0.9) return 0.56 + (score - 0.7) * 1.5; if (score < 0.95) return 0.86 + (score - 0.9) * 2; if (score < 0.99) return 0.96 + (score - 0.95) * 0.8; return 0.99 + (1 - Math.exp(-(score - 0.99) * 10)) * 0.01; }
 function getMarketShareDrawCount(value: number): number { if (value >= 0.9) return 5; if (value >= 0.7) return 4; if (value >= 0.5) return 3; if (value >= 0.1) return 2; return 1; }
-function getOperatingDomains(domain: SalesCustomerDomain, customerType: SalesCustomerType, seed: string): SalesCustomerDomain[] { const profile = SALES_CUSTOMER_TYPE_PROFILES[customerType]; const operatingDomains: SalesCustomerDomain[] = [domain]; for (const candidate of profile.allowedOperatingDomains) { if (candidate !== domain && unitInterval(`${seed}:operating-domain:${candidate}`) < profile.crossDomainChance) operatingDomains.push(candidate); } return operatingDomains; }
+function getOperatingDomains(domain: SalesCustomerDomain, customerType: SalesCustomerType, seed: string): SalesCustomerDomain[] { const profile = SALES_CUSTOMER_TYPE_PROFILES[customerType]; const operatingDomains: SalesCustomerDomain[] = [domain]; for (const candidate of profile.allowedOperatingDomains) { if (candidate !== domain && getDeterministicUnitInterval(`${seed}:operating-domain:${candidate}`) < profile.crossDomainChance) operatingDomains.push(candidate); } return operatingDomains; }
 
 /** Deterministic local stand-in for the future server-owned customer catalogue. */
 export function getSalesCustomerCatalogue(worldSeed = SALES_CUSTOMER_WORLD_SEED, catalogueVersion = SALES_CUSTOMER_CATALOGUE_VERSION): SalesCustomerDefinition[] {
@@ -53,18 +61,18 @@ export function getSalesCustomerCatalogue(worldSeed = SALES_CUSTOMER_WORLD_SEED,
     const customers: SalesCustomerDefinition[] = []; let remainingShare = 1; let customerIndex = 0;
     while (remainingShare > 0 && customerIndex < SALES_CUSTOMER_GENERATION.maximumCustomersPerDomain) {
       const seed = `${worldSeed}:${catalogueVersion}:${domain}:${customerIndex}`;
-      const customerType = pickWeighted(SALES_CUSTOMER_TYPES.map((value) => ({ value, weight: SALES_CUSTOMER_DOMAIN_PROFILES[domain].customerTypeWeights[value] })), `${seed}:customer-type`) ?? 'private-customer';
-      const firstDraw = calculateSkewedMarketShareMultiplier(unitInterval(`${seed}:share:0`)); let smallestDraw = firstDraw;
-      for (let draw = 1; draw < getMarketShareDrawCount(firstDraw); draw += 1) smallestDraw = Math.min(smallestDraw, calculateSkewedMarketShareMultiplier(unitInterval(`${seed}:share:${draw}`)));
+      const customerType = pickDeterministicWeighted(SALES_CUSTOMER_TYPES.map((value) => ({ value, weight: SALES_CUSTOMER_DOMAIN_PROFILES[domain].customerTypeWeights[value] })), `${seed}:customer-type`) ?? 'private-customer';
+      const firstDraw = calculateSkewedMarketShareMultiplier(getDeterministicUnitInterval(`${seed}:share:0`)); let smallestDraw = firstDraw;
+      for (let draw = 1; draw < getMarketShareDrawCount(firstDraw); draw += 1) smallestDraw = Math.min(smallestDraw, calculateSkewedMarketShareMultiplier(getDeterministicUnitInterval(`${seed}:share:${draw}`)));
       const isLastAllowedCustomer = customerIndex === SALES_CUSTOMER_GENERATION.maximumCustomersPerDomain - 1;
       const marketShare = isLastAllowedCustomer ? remainingShare : Math.min(remainingShare, Math.max(SALES_CUSTOMER_GENERATION.minimumMarketShare, smallestDraw * SALES_CUSTOMER_DOMAIN_PROFILES[domain].marketShareMultiplier * SALES_CUSTOMER_TYPE_PROFILES[customerType].marketShareScale));
-      const prefixes = CUSTOMER_NAME_PREFIXES[customerType]; const prefix = prefixes[Math.floor(unitInterval(`${seed}:prefix`) * prefixes.length)]; const suffixes = CUSTOMER_NAME_SUFFIXES[domain];
+      const prefixes = CUSTOMER_NAME_PREFIXES[customerType]; const prefix = prefixes[Math.floor(getDeterministicUnitInterval(`${seed}:prefix`) * prefixes.length)]; const suffixes = CUSTOMER_NAME_SUFFIXES[domain];
       const [minimumPurchasingPower, maximumPurchasingPower] = SALES_CUSTOMER_PURCHASING_POWER_RANGE;
-      const purchasingPower = Math.round((minimumPurchasingPower + (1 - calculateAsymmetricalScaler01(1 - unitInterval(`${seed}:power`))) * (maximumPurchasingPower - minimumPurchasingPower)) * 1_000) / 1_000;
-      const bidRange = SALES_CUSTOMER_DOMAIN_PROFILES[domain].bidRange; const baseBid = bidRange[0] + unitInterval(`${seed}:bid`) * (bidRange[1] - bidRange[0]);
-      const bidTail = 0.65 + calculateAsymmetricalScaler01(unitInterval(`${seed}:bid-tail`)) * 0.9;
+      const purchasingPower = Math.round((minimumPurchasingPower + (1 - calculateAsymmetricalScaler01(1 - getDeterministicUnitInterval(`${seed}:power`))) * (maximumPurchasingPower - minimumPurchasingPower)) * 1_000) / 1_000;
+      const bidRange = SALES_CUSTOMER_DOMAIN_PROFILES[domain].bidRange; const baseBid = bidRange[0] + getDeterministicUnitInterval(`${seed}:bid`) * (bidRange[1] - bidRange[0]);
+      const bidTail = 0.65 + calculateAsymmetricalScaler01(getDeterministicUnitInterval(`${seed}:bid-tail`)) * 0.9;
       const bidMultiplier = Math.round(Math.max(SALES_CUSTOMER_BID_MULTIPLIER_RANGE[0], Math.min(SALES_CUSTOMER_BID_MULTIPLIER_RANGE[1], baseBid * bidTail)) * 1_000) / 1_000;
-      const baseName = `${prefix} ${suffixes[Math.floor(unitInterval(`${seed}:suffix`) * suffixes.length)]}`; const name = customers.some((customer) => customer.name === baseName) ? `${baseName} ${customerIndex + 1}` : baseName;
+      const baseName = `${prefix} ${suffixes[Math.floor(getDeterministicUnitInterval(`${seed}:suffix`) * suffixes.length)]}`; const name = customers.some((customer) => customer.name === baseName) ? `${baseName} ${customerIndex + 1}` : baseName;
       customers.push({ id: `customer:${catalogueVersion}:${domain}:${customerIndex + 1}`, name, domain, customerType, operatingDomains: getOperatingDomains(domain, customerType, seed), marketShare, purchasingPower, bidMultiplier });
       remainingShare = Math.max(0, remainingShare - marketShare); customerIndex += 1;
     }

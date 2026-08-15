@@ -369,7 +369,7 @@ flowchart LR
 | `resourceFlow.allTime.facility-output.*` | Stored | `ResourceFlowLedger` | Completed facility recipe output only | Resource-flow snapshot inside `GameSnapshot` |
 | Facility maintenance repaired-condition, largest-repair, and repair-value totals | Stored | `FacilityMaintenanceStatistics` | Successful facility repairs | Facility-maintenance snapshot inside `GameSnapshot` |
 | `prestige.events` | Stored | `PrestigeLedger` | Balance changes and fulfilled sales | `PrestigeLedgerSnapshot` |
-| `research.completed`, `.active` (including an active project's effective duration) | Stored | `ResearchLedger` | Research start, foreground advance, completion, cancellation | `ResearchLedgerSnapshot` |
+| `research.completed`, `.active[]` (including each active project's effective duration) | Stored | `ResearchLedger` | Research start, foreground advance, per-project completion and cancellation | `ResearchLedgerSnapshot` |
 | `grants.grants` | Stored | `GrantLedger` | First facility construction and free-action consumption | `GrantLedgerSnapshot` |
 | `market.local`, `.regional`, `.global`, `.automation` | Stored | `Market` | Manual local trades, contract fulfilment, and adjacent-pair diffusion | `MarketSnapshot` |
 | `startingConditionId` | Runtime | Zustand game store | Company activation/session change | No; source is the local company record |
@@ -377,7 +377,7 @@ flowchart LR
 | `lastObservedAtMs` | Runtime | Zustand game store | Foreground observation and lifecycle | No |
 | Local profile, company record, tutorial state, device session | Stored | Company domain SQLite adapters | Local player/company commands | Dedicated local tables |
 
-Derived values include facility efficiency, production work/output, customer-order reward cap and offer chance, current prestige, market diffusion amount, completed-research local market depth and local-regional diffusion rate, and UI view models.
+Derived values include facility efficiency, production work/output, customer-order reward cap, offer chance, stock/relationship-aware customer-resource selection weights, current prestige, market diffusion amount, completed-research local market depth and local-regional diffusion rate, and UI view models.
 
 ## Command Effects
 
@@ -392,7 +392,7 @@ Derived values include facility efficiency, production work/output, customer-ord
 | Completed production outputs | Recipe outputs and facility output multiplier | Inventory; all-time facility-output resource flow; production achievements; sales targeting |
 | `fulfillSalesOrder`, `rejectSalesOrder` | Customer order; inventory and finance where applicable | Customer orders/relationships; inventory, finance, and resource-flow history where applicable |
 | Achievement evaluation | Post-command domain state | Achievement unlocks; idempotent achievement prestige events |
-| `getResearchAvailability`, `startResearch`, `cancelResearch` | Code catalogue, pure gate context, finance, research ledger, progression grants | Research; grant use; finance/prestige and relevant achievements |
+| `getResearchAvailability`, `startResearch`, `cancelResearch(projectId)` | Code catalogue, pure gate context, finance, research ledger, progression grants | Research; grant use; finance/prestige and relevant achievements |
 | `createSalesOrderRequest` | Selected resource, quantity, derived capacity | Development customer order and pipeline |
 | `activateCompany` | Selected profile, outgoing snapshot, requested company snapshot | Device session; complete runtime game state |
 | `deleteActiveCompany` | Active company ID | Removes the active company and returns to local company selection |

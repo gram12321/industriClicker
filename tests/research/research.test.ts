@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ACHIEVEMENT_DEFINITIONS } from '@/game/achievements';
 import { FACILITIES } from '@/game/facilities';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
-import { BASE_MAXIMUM_OPEN_SALES_ORDERS, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesOrders, getRecipeResearchProjectId, getSalesOrderBidMultiplier, getSalesOrderMaximumCompanyValueFraction, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, RESEARCH_PROJECTS } from '@/game/research';
+import { BASE_MAXIMUM_OPEN_SALES_ORDERS, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesOrders, getRecipeResearchProjectId, getSalesOrderBidMultiplier, getSalesOrderMaximumCompanyValueFraction, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, RESEARCH_PROJECTS, ResearchLedger } from '@/game/research';
 
 function createProductionTotals(produced: readonly ResourceType[]): Record<ResourceType, number> {
   return RESOURCE_TYPES.reduce((totals, resourceType) => {
@@ -12,7 +12,7 @@ function createProductionTotals(produced: readonly ResourceType[]): Record<Resou
 }
 
 describe('sales research effects', () => {
-  it('starts with two open contract slots and raises the first researched capacity to three', () => {
+  it('starts with two open order slots and raises the first researched capacity to three', () => {
     expect(BASE_MAXIMUM_OPEN_SALES_ORDERS).toBe(2);
     expect(getMaximumOpenSalesOrders(['sales-capacity-1'])).toBe(3);
   });
@@ -44,6 +44,18 @@ describe('sales research effects', () => {
   it('caps the market diffusion network at a fourfold local-regional rate', () => {
     expect(getLocalRegionalDiffusionMultiplier([])).toBe(1);
     expect(getLocalRegionalDiffusionMultiplier(['market-diffusion-network-1', 'market-diffusion-network-10'])).toBe(4);
+  });
+});
+
+describe('simultaneous research ledger', () => {
+  it('keeps concurrent projects independently visible and cancellable by project id', () => {
+    const ledger = new ResearchLedger();
+    ledger.start('sales-capacity-1', 50, 30_000);
+    ledger.start('bid-value-1', 100, 60_000);
+
+    expect(ledger.getActiveProjects().map((project) => project.projectId)).toEqual(['sales-capacity-1', 'bid-value-1']);
+    expect(ledger.cancel('bid-value-1')).toMatchObject({ projectId: 'bid-value-1', paidCost: 100 });
+    expect(ledger.getActiveProjects().map((project) => project.projectId)).toEqual(['sales-capacity-1']);
   });
 });
 

@@ -6,10 +6,10 @@ import { SALES_ORDER_MAXIMUM_QUANTITY, SALES_ORDER_MINIMUM_QUANTITY } from '@/ga
 import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS } from '@/icons';
 
-export function ContractRequestCard({
-  onCreateContractRequest,
+export function SalesOrderRequestCard({
+  onCreateSalesOrderRequest,
 }: {
-  onCreateContractRequest: (resourceType: ResourceType, quantity: number) => boolean;
+  onCreateSalesOrderRequest: (resourceType: ResourceType, quantity: number) => boolean;
 }) {
   const [selectedResourceType, setSelectedResourceType] = useState<ResourceType>(RESOURCE_TYPES[0]);
   const [quantityText, setQuantityText] = useState(String(SALES_ORDER_MINIMUM_QUANTITY));
@@ -22,7 +22,7 @@ export function ContractRequestCard({
     && quantity <= SALES_ORDER_MAXIMUM_QUANTITY;
 
   const createRequest = () => {
-    if (isQuantityValid && onCreateContractRequest(selectedResourceType, quantity)) {
+    if (isQuantityValid && onCreateSalesOrderRequest(selectedResourceType, quantity)) {
       setCreatedResourceType(selectedResourceType);
     }
   };
@@ -35,7 +35,7 @@ export function ContractRequestCard({
         <Text style={styles.cardDescription}>
           Create a development customer order for a selected resource and amount.
         </Text>
-        <View style={styles.adminContractControls}>
+        <View style={styles.adminSalesOrderControls}>
           <Menu
             anchor={(
               <Button icon={APP_ICONS.expand} mode="outlined" onPress={() => setIsResourceMenuOpen(true)}>
@@ -64,7 +64,7 @@ export function ContractRequestCard({
             label={`Amount (${SALES_ORDER_MINIMUM_QUANTITY}–${SALES_ORDER_MAXIMUM_QUANTITY})`}
             mode="outlined"
             onChangeText={(value) => setQuantityText(value.replace(/[^0-9]/g, ''))}
-            style={styles.adminContractAmountInput}
+            style={styles.adminSalesOrderAmountInput}
             value={quantityText}
           />
           <Button disabled={!isQuantityValid} icon={APP_ICONS.add} mode="contained" onPress={createRequest}>

@@ -5,23 +5,23 @@ import { Button, Card, Dialog, Portal, Text, TextInput } from 'react-native-pape
 import { APP_ICONS } from '@/icons';
 import type { ResourceType } from '@/game/resources';
 import { colors } from '@/theme';
-import { ContractRequestCard } from '@/ui/dashboard/components/cards/ContractRequestCard';
+import { SalesOrderRequestCard } from '@/ui/dashboard/components/cards/SalesOrderRequestCard';
 import { DeleteCompanyCard } from '@/ui/dashboard/components/cards/DeleteCompanyCard';
 import { InventoryControlCard } from '@/ui/dashboard/components/cards/InventoryControlCard';
 import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 
-export function AdminDashboard({ isTutorialEnabled, onAddFunds, onClearAllLocalData, onCreateContractRequest, onDeleteCompany, onDisableTutorial, onEnableTutorial, onSetBalance, onSetInventoryAmount }: {
+export function AdminDashboard({ isTutorialEnabled, onAddFunds, onClearAllLocalData, onCreateSalesOrderRequest, onDeleteCompany, onDisableTutorial, onEnableTutorial, onSetBalance, onSetInventoryAmount }: {
   isTutorialEnabled: boolean;
   onAddFunds: (amount: number) => boolean;
   onClearAllLocalData: () => Promise<boolean>;
-  onCreateContractRequest: (resourceType: ResourceType, quantity: number) => boolean;
+  onCreateSalesOrderRequest: (resourceType: ResourceType, quantity: number) => boolean;
   onDeleteCompany: () => Promise<boolean>;
   onDisableTutorial: () => Promise<void>;
   onEnableTutorial: () => Promise<void>;
   onSetBalance: (amount: number) => boolean;
   onSetInventoryAmount: (resourceType: ResourceType, amount: number) => boolean;
 }) {
-  return <><View style={styles.sectionHeading}><Text style={styles.sectionEyebrow}>DEVELOPMENT</Text><Text variant="headlineSmall">Admin Dashboard</Text><Text style={styles.sectionSubtitle}>Development tools are available only from a local browser connection.</Text></View><TutorialControlCard isTutorialEnabled={isTutorialEnabled} onDisableTutorial={onDisableTutorial} onEnableTutorial={onEnableTutorial} /><MoneyControlCard onAddFunds={onAddFunds} onSetBalance={onSetBalance} /><ContractRequestCard onCreateContractRequest={onCreateContractRequest} /><InventoryControlCard onSetInventoryAmount={onSetInventoryAmount} /><DeleteCompanyCard onDeleteCompany={onDeleteCompany} /><ClearLocalDataCard onClearAllLocalData={onClearAllLocalData} /></>;
+  return <><View style={styles.sectionHeading}><Text style={styles.sectionEyebrow}>DEVELOPMENT</Text><Text variant="headlineSmall">Admin Dashboard</Text><Text style={styles.sectionSubtitle}>Development tools are available only from a local browser connection.</Text></View><TutorialControlCard isTutorialEnabled={isTutorialEnabled} onDisableTutorial={onDisableTutorial} onEnableTutorial={onEnableTutorial} /><MoneyControlCard onAddFunds={onAddFunds} onSetBalance={onSetBalance} /><SalesOrderRequestCard onCreateSalesOrderRequest={onCreateSalesOrderRequest} /><InventoryControlCard onSetInventoryAmount={onSetInventoryAmount} /><DeleteCompanyCard onDeleteCompany={onDeleteCompany} /><ClearLocalDataCard onClearAllLocalData={onClearAllLocalData} /></>;
 }
 
 function MoneyControlCard({ onAddFunds, onSetBalance }: { onAddFunds: (amount: number) => boolean; onSetBalance: (amount: number) => boolean }) {
@@ -34,7 +34,7 @@ function MoneyControlCard({ onAddFunds, onSetBalance }: { onAddFunds: (amount: n
     const wasUpdated = action === 'add' ? onAddFunds(amount) : onSetBalance(amount);
     setMessage(wasUpdated ? (action === 'add' ? `Added €${amount.toLocaleString()}.` : `Set balance to €${amount.toLocaleString()}.`) : 'Balance could not be updated.');
   };
-  return <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text style={styles.cardKicker}>FINANCE</Text><Text variant="titleLarge">Adjust company money</Text><Text style={styles.cardDescription}>Changes are recorded as normal finance transactions.</Text><TextInput accessibilityLabel="Company money amount" dense keyboardType="decimal-pad" label="Euro amount" mode="outlined" onChangeText={(value) => setAmountText(value.replace(/[^0-9.]/g, ''))} style={styles.adminContractAmountInput} value={amountText} /><View style={styles.adminMoneyActions}><Button disabled={!isValidAmount || amount === 0} mode="contained" onPress={() => updateBalance('add')}>Add money</Button><Button disabled={!isValidAmount} mode="outlined" onPress={() => updateBalance('set')}>Set balance</Button></View>{message && <Text style={styles.adminSuccessMessage}>{message}</Text>}</Card.Content></Card>;
+  return <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text style={styles.cardKicker}>FINANCE</Text><Text variant="titleLarge">Adjust company money</Text><Text style={styles.cardDescription}>Changes are recorded as normal finance transactions.</Text><TextInput accessibilityLabel="Company money amount" dense keyboardType="decimal-pad" label="Euro amount" mode="outlined" onChangeText={(value) => setAmountText(value.replace(/[^0-9.]/g, ''))} style={styles.adminSalesOrderAmountInput} value={amountText} /><View style={styles.adminMoneyActions}><Button disabled={!isValidAmount || amount === 0} mode="contained" onPress={() => updateBalance('add')}>Add money</Button><Button disabled={!isValidAmount} mode="outlined" onPress={() => updateBalance('set')}>Set balance</Button></View>{message && <Text style={styles.adminSuccessMessage}>{message}</Text>}</Card.Content></Card>;
 }
 
 function TutorialControlCard({ isTutorialEnabled, onDisableTutorial, onEnableTutorial }: { isTutorialEnabled: boolean; onDisableTutorial: () => Promise<void>; onEnableTutorial: () => Promise<void> }) {

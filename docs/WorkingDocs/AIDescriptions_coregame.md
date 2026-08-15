@@ -1,36 +1,45 @@
 # Core Game Mechanics
 
-This is the concise, code-verified status guide. Use `CONTEXT.md` for vocabulary, `design.md` for direction, `gameflow.md` for system flow, and `../../VariableRelationshipMap.md` for detailed variable relationships.
+This is the concise, code-verified status guide. Use `CONTEXT.md` for vocabulary, `design.md` for product direction, `gameflow.md` for rules and lifecycle, and [VariableRelationshipMap.md](VariableRelationshipMap.md) for state-level relationships.
 
 ## Runtime and Player Surfaces
 
-Planned. Record the actual Android surfaces and runtime loop after implementation.
+The Expo Router app presents a local company-selection screen and a mobile dashboard with Company, Inventory, Facilities, Finance, Sales, Research, Achievements, Profile, Settings, Leaderboard placeholder, and IndustriPedia views. React Native Paper provides the touch-first UI; Zustand owns active runtime state; Expo SQLite stores company-keyed snapshots.
 
 ## Implemented Behavior
 
-None yet.
-
 ### Production and Progression
 
-Planned.
+- Typed resource, recipe, facility, research, grant, achievement, prestige, and sales catalogues own deterministic configuration.
+- Facility production runs only in foreground time. It supports staffing, condition wear and repair, upgrades, researched recipe cycles, multi-output recipes, and local-market autobuy/autosell.
+- Research projects have typed gates and effects. Research capacity determines how many independent projects can run at once; every active project remains visible and can be cancelled by its own project ID for a full refund of its recorded cost.
+- Customer orders use a deterministic local catalogue, relationships, multi-line fulfilment, company-asset order caps, and research-controlled targeting, capacity, and bid effects.
 
 ### Economy and Persistence
 
-Planned. Runtime state will use Zustand and durable local saves will use Expo SQLite.
+- Finance records typed transactions, loans, lender searches, economy phases, debt collection, and prestige-relevant events.
+- Local, regional, and global market pools have deterministic price, trade, and diffusion rules.
+- A valid current `GameSnapshot` is saved per company. There is intentionally no backwards-compatibility or migration layer: incompatible pre-alpha saves may be discarded.
 
 ### UI and Mobile Experience
 
-Planned. Use React Native Paper and native React Native components for touch-first Android UI.
+- Dashboard views derive display-only status from domain services rather than duplicating simulation formulas.
+- The tutorial currently guides the standard start through a small mutually exclusive stage flow; it remains intentionally incomplete.
+- Active processes list foreground production, research, sales, and lender-search progress.
 
 ## Deferred or Partial Areas
 
-- Supabase, accounts, cloud backup, and cross-device sync are deferred.
-- iOS and web release targets are deferred.
+- Supabase, accounts beyond local profiles, cloud backup, and cross-device sync are deferred.
+- Offline catch-up, iOS release, web release, broader workforce systems, and the complete tutorial are deferred.
 
 ## File Map
 
-Planned. Add actual engine, state, persistence, UI, and test locations after scaffolding.
+- `game/`: domain catalogues, deterministic rules, state snapshots, time, and persistence adapters.
+- `game/core/stores/gameStore.ts`: Zustand command boundary and foreground-time orchestration.
+- `game/facilities/`, `game/sales/`, `game/research/`, `game/market/`, and `game/finance/`: domain-specific services and models.
+- `ui/`: React Native views and presentation helpers.
+- `tests/`: deterministic Vitest coverage for game rules and economy balance.
 
 ## Update Rules
 
-Do not list a system as implemented until code and relevant verification exist. Move obsolete status to version history.
+Only record behaviour here once code and relevant verification exist. Move historical implementation detail to `versionlog.md` after a corresponding commit exists.
