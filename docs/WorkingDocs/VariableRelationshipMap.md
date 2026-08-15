@@ -382,10 +382,10 @@ Derived values include facility efficiency, production work/output, contract rew
 | Command | Reads | Writes |
 |---|---|---|
 | `setInventoryAmount` | Resource and amount | Inventory |
-| `buyMissingConstructionMaterials` | Facility definition; local Construction Materials price/supply; balance; inventory | Market; Finance; Inventory |
+| `buyMissingConstructionInputs` | Facility definition; local Construction Materials and Industrial Machines prices/supply; balance; inventory | Market; Finance; Inventory |
 | `acceptLoanOffer` | Derived credit rating and selected deterministic lender offer | Finance loan/transaction state, prestige, finance achievements |
 | `startLoanSearch`, `makeExtraLoanPayment`, `repayLoanInFull` | Selected criteria or active loan, lender policy caps, balance | Search activity/fee or finance transactions, loans, payment history, and derived credit rating |
-| `buildFacility`, `destroyFacility`, `repairFacility`, `setFacilityRecipe`, `setFacilityWorkers`, `upgradeFacility` | Facility definition; balance and Construction Materials where applicable | Facilities; Finance; Inventory where applicable |
+| `buildFacility`, `destroyFacility`, `repairFacility`, `setFacilityRecipe`, `setFacilityWorkers`, `upgradeFacility` | Facility definition; balance, Construction Materials, and Industrial Machines where applicable | Facilities; Finance; Inventory where applicable |
 | `advanceRealtime`, `advanceGameTime`, `fastForwardOneMinute` | Time anchors and all timed state | Game time, pipeline, facility condition, inventory, sales contracts, local/regional/global market, active research, active lender searches, due loan payments |
 | Completed production outputs | Recipe outputs and facility output multiplier | Inventory; production statistics; production achievements |
 | `fulfillSalesContract`, `rejectSalesContract` | Contract; inventory and finance where applicable | Sales contracts; inventory and finance where applicable |

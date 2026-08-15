@@ -16,8 +16,8 @@ Industri Clicker is a single-player, mobile-first industrial clicker for native 
 ## Current Decisions
 
 - The first content foundation uses the resources and facilities named in [CONTEXT.md](CONTEXT.md). Quality has no player-visible effect yet.
-- Facilities require a euro land purchase and Construction Materials. Farms are land-heavy, while mines and quarries use relatively less land and more materials for machinery. A player may sell a facility for 70% of its condition-adjusted book value.
-- The construction confirmation can buy exactly the missing Construction Materials from the local market, but reserves enough funds to complete the land purchase.
+- Facilities require a euro land purchase, Construction Materials for the site shell and infrastructure, and Industrial Machines for production equipment. Farms are land-heavy, while mines and quarries use relatively less land and more operating equipment. A player may sell a facility for 70% of its condition-adjusted book value.
+- The construction confirmation can buy exactly the missing Construction Materials and Industrial Machines from the local market, but reserves enough funds to complete the land purchase.
 - Sales contracts let players exchange available inventory for money. They remain available until fulfilled or rejected, and their retained history remains visible.
 - Company prestige is informational only in this version.
 - Finance is a primary mobile-first reporting area with rolling foreground-time filters (1 minute, 15 minutes, 1 hour, 10 hours, 24 hours, and all time), rather than an invented game calendar. It provides an income statement, balance-sheet summary, assets, liabilities and equity, grouped cash flow with expandable details, and funding.

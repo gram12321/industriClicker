@@ -48,6 +48,7 @@ export function calculateFacilityAssetValue(facility: Facility, market: Market):
   const definition = getFacilityDefinition(view.facilityType);
   const replacementCost = definition.landCost
     + definition.constructionMaterialsCost * market.getLocalPrice(ResourceType.ConstructionMaterials)
+    + definition.industrialMachinesCost * market.getLocalPrice(ResourceType.IndustrialMachines)
     + getFacilityUpgradeInvestmentCost(definition.upgradeCost, view.speedUpgradeLevel)
     + getFacilityUpgradeInvestmentCost(definition.upgradeCost, view.outputUpgradeLevel)
     + getFacilityUpgradeInvestmentCost(definition.upgradeCost, view.conditionDecayUpgradeLevel);

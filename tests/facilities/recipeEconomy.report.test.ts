@@ -137,7 +137,7 @@ const CHAIN_SCENARIOS: ReadonlyArray<{ label: string; scenario: RecipeEconomyCha
         ResourceType.ReinforcedConcrete,
         ResourceType.ConstructionMaterials,
       ],
-      includeConstructionMaterialsDemand: true,
+      includeConstructionInputsDemand: true,
     },
   },
   {
@@ -309,6 +309,8 @@ describe('recipe economy report', () => {
         recipeResearchCost: money(result.recipeResearchInvestmentCost),
         constructionMaterialsDemand: money(result.constructionMaterialsDemand),
         constructionDemandFulfilled: money(result.fulfilledConstructionMaterialsDemand),
+        industrialMachinesDemand: money(result.industrialMachinesDemand),
+        machinesDemandFulfilled: money(result.fulfilledIndustrialMachinesDemand),
         margin180m: money(result.netMarginPerMinute),
         finalPrimaryUnitPrice: money(result.finalSoldUnitPrices[primarySoldResource] ?? 0),
         payback: minute(result.paybackMinute),
@@ -320,7 +322,7 @@ describe('recipe economy report', () => {
     reportSections.push(
       '## Connected-chain economy (180 minutes)',
       '',
-      'Each row runs all listed facilities in one shared market. Upstream production is available to downstream facilities before the listed surplus outputs are sold. Payback includes facility construction and each distinct recipe-unlock research cost. Construction Materials demand consumes the total material requirement for every participating facility evenly through the scenario; it represents external building demand, not a player expense.',
+      'Each row runs all listed facilities in one shared market. Upstream production is available to downstream facilities before the listed surplus outputs are sold. Payback includes land, Construction Materials, Industrial Machines, and each distinct recipe-unlock research cost. Construction-input demand consumes the total material and machine requirement for every participating facility evenly through the scenario; it represents external building demand, not a player expense.',
       '',
       markdownTable(chainRows),
       '',
