@@ -10,6 +10,7 @@ import { MARKET_AUTOTRADE_INTERVAL_OPTIONS } from '../../market/marketConstants'
 import { RESOURCE_TYPES } from '../../resources/resourceConstants';
 import { isResearchLedgerSnapshot, type ResearchLedgerSnapshot } from '../../research/research';
 import { isGrantLedgerSnapshot, type GrantLedgerSnapshot } from '../../grants/grant';
+import { RecipeName } from '../../recipes/recipeTypes';
 
 export type GameTimeSnapshot = {
   /** Logical foreground time when the current company began. */
@@ -109,6 +110,12 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
     && RESOURCE_TYPES.every((resourceType) => isMarketAutomationSnapshot(marketAutomation[resourceType]))
     && Array.isArray(value.facilities.facilities)
     && value.facilities.facilities.every((facility) => isRecord(facility)
+      && Array.isArray(facility.productionCycle)
+      && facility.productionCycle.every((recipeName) => Object.values(RecipeName).includes(recipeName as RecipeName))
+      && typeof facility.productionCycleIndex === 'number'
+      && Number.isInteger(facility.productionCycleIndex)
+      && facility.productionCycleIndex >= 0
+      && (facility.productionCycle.length === 0 ? facility.productionCycleIndex === 0 : facility.productionCycleIndex < facility.productionCycle.length)
       && typeof facility.facilityCondition === 'number'
       && Number.isFinite(facility.facilityCondition)
       && facility.facilityCondition >= 0

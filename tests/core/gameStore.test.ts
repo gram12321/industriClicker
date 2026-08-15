@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createStartingGameSnapshot, useGameStore } from '@/game/core/stores';
+import { FacilityType } from '@/game/facilities';
+import { RecipeName } from '@/game/recipes';
 import { ResourceType } from '@/game/resources';
 
 describe('market autobuy', () => {
@@ -18,5 +20,17 @@ describe('market autobuy', () => {
 
     expect(useGameStore.getState().inventory.getAmount(ResourceType.Grain)).toBeCloseTo(360);
     expect(useGameStore.getState().market.getLocalPrice(ResourceType.Grain)).toBeLessThanOrEqual(1.25);
+  });
+});
+
+describe('facility production cycles', () => {
+  it('does not accept unresearched recipes in a facility cycle', () => {
+    const state = useGameStore.getState();
+    state.restoreSnapshot(createStartingGameSnapshot(0));
+    state.setAdminBalance(1_000_000);
+    state.setInventoryAmount(ResourceType.ConstructionMaterials, 1_000);
+    expect(state.buildFacility(FacilityType.Farm)).toBe(true);
+
+    expect(state.setFacilityProductionCycle('farm-1', [RecipeName.GrowGrain])).toBe(false);
   });
 });

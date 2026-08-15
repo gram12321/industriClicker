@@ -306,7 +306,7 @@ flowchart LR
 |---|---|---|---|---|
 | `inventory.entries.*.quantity`, `.quality` | Stored | `Inventory` | Resource commands and production | `InventorySnapshot` |
 | `finance.balance`, `.transactions`, `.loans`, `.lenders`, `.activeLoanSearch`, `.loanSearchOffers`, economy phase, loan-payment history | Stored | `Finance` | Accepted transactions, timed lender searches, loan actions, economy transitions, and foreground repayment attempts | `FinanceSnapshot` |
-| Numbered facility instances and recipe progress | Stored | `FacilityCollection` | Construction, setup, upgrades, and production | Facility snapshot |
+| Numbered facility instances, production-cycle recipe order/current position, and recipe progress | Stored | `FacilityCollection` | Construction, cycle setup, upgrades, and production | Facility snapshot |
 | Facility upgrade levels, assigned workers, and 0–1 condition | Stored | `Facility` | Upgrade/staffing commands and foreground wear/production tear | Facility snapshot |
 | `salesContracts.offered`, `.completed`, `.nextCustomerNumber` | Stored | `SalesContracts` | Offers and contract actions | `SalesContractsSnapshot` |
 | `achievements.unlocks` | Stored | `AchievementLedger` | Post-command achievement evaluation | `AchievementLedgerSnapshot` |
@@ -330,7 +330,7 @@ Derived values include facility efficiency, production work/output, contract rew
 | `buyMissingConstructionMaterials` | Facility definition; local Construction Materials price/supply; balance; inventory | Market; Finance; Inventory |
 | `acceptLoanOffer` | Derived credit rating and selected deterministic lender offer | Finance loan/transaction state, prestige, finance achievements |
 | `startLoanSearch`, `makeExtraLoanPayment`, `repayLoanInFull` | Selected criteria or active loan, lender policy caps, balance | Search activity/fee or finance transactions, loans, payment history, and derived credit rating |
-| `buildFacility`, `destroyFacility`, `repairFacility`, `setFacilityRecipe`, `setFacilityWorkers`, `upgradeFacility` | Facility definition; balance and Construction Materials where applicable | Facilities; Finance; Inventory where applicable |
+| `buildFacility`, `destroyFacility`, `repairFacility`, `setFacilityRecipe`, `setFacilityProductionCycle`, `setFacilityWorkers`, `upgradeFacility` | Facility definition, researched recipes, balance, and Construction Materials where applicable | Facilities; Finance; Inventory where applicable |
 | `advanceRealtime`, `advanceGameTime`, `fastForwardOneMinute` | Time anchors and all timed state | Game time, pipeline, facility condition, inventory, sales contracts, local/regional/global market, active research, active lender searches, due loan payments |
 | Completed production output | Facility output and output multiplier | Production statistics; production achievements |
 | `fulfillSalesContract`, `rejectSalesContract` | Contract; inventory and finance where applicable | Sales contracts; inventory and finance where applicable |

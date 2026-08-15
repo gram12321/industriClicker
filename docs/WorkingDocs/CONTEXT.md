@@ -20,6 +20,7 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Autotrade interval | The per-resource foreground cadence for both enabled autobuy and autosell; it defaults to five seconds. |
 | Market-flow diagnostics | Read-only price, balance-target, rate, and multiplier details for one resource's local/regional and regional/global diffusion, shown in IndustriPedia. |
 | Recipe | A named production transformation with inputs, output, and required work. |
+| Production cycle | An ordered, repeatable per-facility sequence of researched recipes. It may contain the same recipe more than once. |
 | Facility | A player-owned production unit. Several of the same type may be constructed; each is numbered by type, such as Mine #1 and Mine #2. Current types are Farm, Bakery, Small Utility Works, Mine, Quarry, Industrial Processing Factory, Chemical Plant, Electronics Factory, Assembly Plant, Construction Factory, Water Well, and Power Plant. |
 | Euro (€) | The company currency. |
 | Finance | Company balance, classified append-only ledger, debt, credit history, and derived financial statements. |
