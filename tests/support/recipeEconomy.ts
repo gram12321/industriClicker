@@ -2,7 +2,8 @@ import { Inventory } from '@/game/inventory';
 import { MARKET_DIFFUSION_INTERVAL_MS, Market } from '@/game/market';
 import { getRecipe, type RecipeName } from '@/game/recipes';
 import { getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getRecipeResearchProjectId, getResearchProject } from '@/game/research';
-import { ResourceType } from '@/game/resources';
+import { getResource, RESOURCE_TYPES, ResourceType } from '@/game/resources';
+import { getSalesResourceProfile, SalesOrders } from '@/game/sales';
 import { FACILITIES, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_PRODUCTION_ORDER, FACILITY_REPAIR_MATERIAL_COST_RATE } from '@/game/facilities/facilityConstants';
 import type { Facility } from '@/game/facilities/facility';
 import { FacilityCollection } from '@/game/facilities/facilityCollection';
@@ -29,6 +30,8 @@ export type RecipeEconomyScenario = {
   electricityPriceCapMultiplier?: number;
   /** Completed market research applied before the facility begins production. */
   completedResearchProjectIds?: readonly string[];
+  /** Maximum final-output volume routed through generated customer orders. */
+  customerOrderSalesShare?: number;
 };
 
 export type RecipeEconomyResult = {
@@ -46,6 +49,10 @@ export type RecipeEconomyResult = {
   finalOutputUnitPrice: number;
   averageCondition: number;
   repairCount: number;
+  customerOrderRevenue: number;
+  fulfilledCustomerOrderCount: number;
+  customerOrderDeliveredAmount: number;
+  customerOrderEligibleOutputAmount: number;
   breakEvenMinute: number | null;
   stalledMinutes: number;
 };
@@ -64,6 +71,8 @@ export type RecipeEconomyChainScenario = {
   /** Test-only cap, relative to the initial local electricity price. */
   electricityPriceCapMultiplier?: number;
   completedResearchProjectIds?: readonly string[];
+  /** Maximum primary-output volume routed through generated customer orders. */
+  customerOrderSalesShare?: number;
   /**
    * Consumes the construction inputs needed to build all participating
    * facilities evenly across the scenario. This is an external construction
@@ -87,6 +96,10 @@ export type RecipeEconomyChainResult = {
   fulfilledIndustrialMachinesDemand: number;
   constructionDemandCost: number;
   fulfilledConstructionDemandCost: number;
+  customerOrderRevenue: number;
+  fulfilledCustomerOrderCount: number;
+  customerOrderDeliveredAmount: number;
+  customerOrderEligibleOutputAmount: number;
   breakEvenMinute: number | null;
   stalledFacilityMinutes: number;
 };
@@ -147,6 +160,84 @@ function buyRecipeInput(
   return market.buyFromLocal(resourceType, amount);
 }
 
+type CustomerOrderSalesTracker = {
+  salesOrders: SalesOrders;
+  eligibleOutputByResource: Record<ResourceType, number>;
+  deliveredByResource: Record<ResourceType, number>;
+  revenue: number;
+};
+
+function createCustomerOrderSalesTracker(): CustomerOrderSalesTracker {
+  const emptyAmounts = () => Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, 0])) as Record<ResourceType, number>;
+  return { salesOrders: new SalesOrders(), eligibleOutputByResource: emptyAmounts(), deliveredByResource: emptyAmounts(), revenue: 0 };
+}
+
+function customerOrderShareReserve(tracker: CustomerOrderSalesTracker, resourceType: ResourceType, salesShare: number): number {
+  return Math.max(0, tracker.eligibleOutputByResource[resourceType] * salesShare - tracker.deliveredByResource[resourceType]);
+}
+
+function recordCustomerOrderEligibleOutput(tracker: CustomerOrderSalesTracker, outputs: readonly ProductionOutput[], eligibleResourceTypes: ReadonlySet<ResourceType>): void {
+  for (const output of outputs) {
+    if (eligibleResourceTypes.has(output.resourceType)) tracker.eligibleOutputByResource[output.resourceType] += output.amount;
+  }
+}
+
+function processCustomerOrderSales(
+  tracker: CustomerOrderSalesTracker,
+  inventory: Inventory,
+  market: Market,
+  currentGameTimeMs: number,
+  eligibleResourceTypes: readonly ResourceType[],
+  salesShare: number,
+): void {
+  if (salesShare <= 0 || eligibleResourceTypes.length === 0) return;
+  const inventoryByResource = Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, inventory.getAmount(resourceType)])) as Record<ResourceType, number>;
+  const globalPrices = Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, market.getGlobalPrice(resourceType)])) as Record<ResourceType, number>;
+  const globalSupplies = Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, market.getGlobalEntry(resourceType).supply])) as Record<ResourceType, number>;
+  const candidateResourceTypes = eligibleResourceTypes.filter((resourceType) => {
+    const lot = getSalesResourceProfile(resourceType).standardOrderLot;
+    return inventoryByResource[resourceType] >= lot && customerOrderShareReserve(tracker, resourceType, salesShare) >= lot;
+  });
+  const maximumOrderValue = Math.max(100, eligibleResourceTypes.reduce((total, resourceType) => (
+    total + customerOrderShareReserve(tracker, resourceType, salesShare) * globalPrices[resourceType]
+  ), 0));
+  tracker.salesOrders.advanceTime({
+    currentGameTimeMs,
+    maximumOpenOrders: 2,
+    maximumOrderValue,
+    companyPrestige: 0,
+    economyPhase: 'stable',
+    inventoryByResource,
+    globalPrices,
+    globalSupplies,
+    candidateResourceTypes,
+    getResourceWeight: (resourceType) => customerOrderShareReserve(tracker, resourceType, salesShare),
+    bidResearchMultiplier: 1,
+  });
+  for (const order of tracker.salesOrders.getOfferedOrders()) {
+    const canFulfil = order.lines.every((line) => (
+      inventory.has(line.resourceType, line.quantity)
+      && line.quantity <= customerOrderShareReserve(tracker, line.resourceType, salesShare)
+    ));
+    if (!canFulfil) continue;
+    for (const line of order.lines) {
+      const quality = inventory.getQuality(line.resourceType);
+      if (!inventory.remove(line.resourceType, line.quantity) || !market.addToGlobal(line.resourceType, line.quantity, quality)) {
+        throw new Error(`Generated customer order ${order.id} could not be fulfilled.`);
+      }
+      tracker.deliveredByResource[line.resourceType] += line.quantity;
+    }
+    if (!tracker.salesOrders.fulfill(order.id, currentGameTimeMs, 0)) {
+      throw new Error(`Generated customer order ${order.id} could not be completed.`);
+    }
+    tracker.revenue += order.reward;
+  }
+}
+
+function totalCustomerOrderAmount(amounts: Record<ResourceType, number>): number {
+  return RESOURCE_TYPES.reduce((total, resourceType) => total + amounts[resourceType], 0);
+}
+
 /**
  * Simulates one fully staffed facility buying recipe inputs and selling its
  * output on the local market once per foreground minute while applying normal
@@ -156,7 +247,7 @@ function buyRecipeInput(
  * Maintenance is charged as realised repair spend plus the outstanding repair
  * liability.
  */
-export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgradeLevel = 0, outputUpgradeLevel = 0, electricityPriceCapMultiplier, completedResearchProjectIds = [] }: RecipeEconomyScenario): RecipeEconomyResult {
+export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgradeLevel = 0, outputUpgradeLevel = 0, electricityPriceCapMultiplier, completedResearchProjectIds = [], customerOrderSalesShare = 0 }: RecipeEconomyScenario): RecipeEconomyResult {
   const recipe = getRecipe(recipeName);
   const facilityType = getRecipeFacilityType(recipeName);
   const definition = FACILITIES[facilityType];
@@ -178,6 +269,9 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
   let stalledMinutes = 0;
   const initialOutputUnitPrice = market.getLocalPrice(recipe.outputs[0].resourceType);
   let outstandingMaintenanceCost = 0;
+  const customerOrderSalesTracker = createCustomerOrderSalesTracker();
+  const customerOrderOutputTypes = new Set(recipe.outputs.map((output) => output.resourceType));
+  const safeCustomerOrderSalesShare = Math.max(0, Math.min(1, customerOrderSalesShare));
   const facilityInvestmentCost = definition.landCost
     + definition.constructionMaterialsCost * market.getLocalPrice(ResourceType.ConstructionMaterials)
     + definition.industrialMachinesCost * market.getLocalPrice(ResourceType.IndustrialMachines);
@@ -214,6 +308,7 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
 
   for (let minute = 1; minute <= minutes; minute += 1) {
     const revenueBefore = totalRevenue;
+    const customerOrderRevenueBefore = customerOrderSalesTracker.revenue;
     const inputCostBefore = totalInputCost;
     const repairSpendBefore = repairSpend;
     const maintenanceBefore = outstandingMaintenanceCost;
@@ -244,10 +339,21 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
         inventory,
         (facilityView) => calculateFacilityEffectiveWork(facilityView, BASE_WORK_PER_MINUTE),
       );
-      for (const output of outputs) {
-        const trade = market.sellToLocal(output.resourceType, output.amount, inventory.getQuality(output.resourceType));
+      recordCustomerOrderEligibleOutput(customerOrderSalesTracker, outputs, customerOrderOutputTypes);
+      processCustomerOrderSales(
+        customerOrderSalesTracker,
+        inventory,
+        market,
+        minute * 60_000,
+        [...customerOrderOutputTypes],
+        safeCustomerOrderSalesShare,
+      );
+      for (const resourceType of customerOrderOutputTypes) {
+        const amount = Math.max(0, inventory.getAmount(resourceType) - customerOrderShareReserve(customerOrderSalesTracker, resourceType, safeCustomerOrderSalesShare));
+        if (amount <= 0) continue;
+        const trade = market.sellToLocal(resourceType, amount, inventory.getQuality(resourceType));
         if (!trade.success) continue;
-        inventory.remove(output.resourceType, output.amount);
+        inventory.remove(resourceType, trade.amount);
         totalRevenue += trade.amount * trade.unitPrice;
         completedOutput = true;
       }
@@ -271,7 +377,7 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
       + getFacilityRepairCost(definition.constructionMaterialsCost, facility.getView().facilityCondition) * market.getLocalPrice(ResourceType.ConstructionMaterials)
       + getFacilityRepairCost(definition.industrialMachinesCost, facility.getView().facilityCondition) * market.getLocalPrice(ResourceType.IndustrialMachines);
     const minuteMaintenanceCost = repairSpend - repairSpendBefore + outstandingMaintenanceCost - maintenanceBefore;
-    const minuteNetMargin = totalRevenue - revenueBefore - (totalInputCost - inputCostBefore) - minuteMaintenanceCost;
+    const minuteNetMargin = totalRevenue - revenueBefore + customerOrderSalesTracker.revenue - customerOrderRevenueBefore - (totalInputCost - inputCostBefore) - minuteMaintenanceCost;
     cycleOperatingMargin += minuteNetMargin;
     if (completedOutput) {
       if (breakEvenMinute === null && cycleOperatingMargin <= 0) breakEvenMinute = minute;
@@ -290,7 +396,7 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
     recipeName,
     durationMinutes: minutes,
     initialNetMarginPerMinute,
-    netMarginPerMinute: (totalRevenue - totalInputCost - totalMaintenanceCost) / minutes,
+    netMarginPerMinute: (totalRevenue + customerOrderSalesTracker.revenue - totalInputCost - totalMaintenanceCost) / minutes,
     totalRevenue,
     totalInputCost,
     totalMaintenanceCost,
@@ -301,6 +407,10 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
     finalOutputUnitPrice: market.getLocalPrice(recipe.outputs[0].resourceType),
     averageCondition: totalCondition / minutes,
     repairCount,
+    customerOrderRevenue: customerOrderSalesTracker.revenue,
+    fulfilledCustomerOrderCount: customerOrderSalesTracker.salesOrders.getCompletedOrders().filter((order) => order.status === 'fulfilled').length,
+    customerOrderDeliveredAmount: totalCustomerOrderAmount(customerOrderSalesTracker.deliveredByResource),
+    customerOrderEligibleOutputAmount: totalCustomerOrderAmount(customerOrderSalesTracker.eligibleOutputByResource),
     breakEvenMinute,
     stalledMinutes,
   };
@@ -316,9 +426,10 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
 export function simulateRecipeEconomyChain({
   facilities: chainFacilities,
   durationMinutes,
-  primaryOutputResourceTypes: _primaryOutputResourceTypes,
+  primaryOutputResourceTypes,
   electricityPriceCapMultiplier,
   completedResearchProjectIds = [],
+  customerOrderSalesShare = 0,
   includeConstructionInputsDemand = false,
 }: RecipeEconomyChainScenario): RecipeEconomyChainResult {
   const minutes = Math.max(1, Math.floor(durationMinutes));
@@ -370,6 +481,9 @@ export function simulateRecipeEconomyChain({
       + industrialMachinesDemand * market.getLocalPrice(ResourceType.IndustrialMachines)
     : 0;
   let fulfilledConstructionDemandCost = 0;
+  const customerOrderSalesTracker = createCustomerOrderSalesTracker();
+  const customerOrderOutputTypes = new Set(primaryOutputResourceTypes);
+  const safeCustomerOrderSalesShare = Math.max(0, Math.min(1, customerOrderSalesShare));
   let cumulativeNetProfit = 0;
   let paybackMinute: number | null = null;
   let breakEvenMinute: number | null = null;
@@ -377,10 +491,12 @@ export function simulateRecipeEconomyChain({
 
   for (let minute = 1; minute <= minutes; minute += 1) {
     const revenueBefore = totalRevenue;
+    const customerOrderRevenueBefore = customerOrderSalesTracker.revenue;
     const inputCostBefore = totalInputCost;
     const repairSpendBefore = repairSpend;
     const maintenanceBefore = outstandingMaintenanceCost;
     facilities.applyPassiveConditionLoss(FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE);
+    const currentGameTimeMs = minute * 60_000;
     const outputs: ProductionOutput[] = [];
 
     for (const facilityType of FACILITY_PRODUCTION_ORDER) {
@@ -412,6 +528,15 @@ export function simulateRecipeEconomyChain({
         outputs.push(...advanceFacilityProduction(facility, inventory));
       }
     }
+    recordCustomerOrderEligibleOutput(customerOrderSalesTracker, outputs, customerOrderOutputTypes);
+    processCustomerOrderSales(
+      customerOrderSalesTracker,
+      inventory,
+      market,
+      currentGameTimeMs,
+      primaryOutputResourceTypes,
+      safeCustomerOrderSalesShare,
+    );
 
     const nextMinuteInputDemand = activeFacilities.reduce((demand, facility) => {
       const recipeName = facility.getView().activeRecipeName;
@@ -426,7 +551,9 @@ export function simulateRecipeEconomyChain({
       return demand;
     }, {} as Partial<Record<ResourceType, number>>);
     for (const resourceType of producedResourceTypes) {
-      const surplus = Math.max(0, inventory.getAmount(resourceType) - (nextMinuteInputDemand[resourceType] ?? 0));
+      const retainedAmount = (nextMinuteInputDemand[resourceType] ?? 0)
+        + customerOrderShareReserve(customerOrderSalesTracker, resourceType, safeCustomerOrderSalesShare);
+      const surplus = Math.max(0, inventory.getAmount(resourceType) - retainedAmount);
       if (surplus <= 0) continue;
       const trade = market.sellToLocal(resourceType, surplus, inventory.getQuality(resourceType));
       if (!trade.success) continue;
@@ -452,7 +579,6 @@ export function simulateRecipeEconomyChain({
         fulfilledConstructionDemandCost += trade.amount * trade.unitPrice;
       }
     }
-
     for (const facility of activeFacilities) {
       const definition = FACILITIES[facility.facilityType];
       if (facility.getView().facilityCondition > RECIPE_ECONOMY_REPAIR_THRESHOLD) continue;
@@ -470,7 +596,7 @@ export function simulateRecipeEconomyChain({
         + getFacilityRepairCost(FACILITIES[facility.facilityType].industrialMachinesCost, facility.getView().facilityCondition) * market.getLocalPrice(ResourceType.IndustrialMachines)
     ), 0);
     const minuteMaintenanceCost = repairSpend - repairSpendBefore + outstandingMaintenanceCost - maintenanceBefore;
-    const minuteNetMargin = totalRevenue - revenueBefore - (totalInputCost - inputCostBefore) - minuteMaintenanceCost;
+    const minuteNetMargin = totalRevenue - revenueBefore + customerOrderSalesTracker.revenue - customerOrderRevenueBefore - (totalInputCost - inputCostBefore) - minuteMaintenanceCost;
     if (breakEvenMinute === null && outputs.length > 0 && minuteNetMargin <= 0) breakEvenMinute = minute;
     cumulativeNetProfit += minuteNetMargin;
     if (paybackMinute === null && cumulativeNetProfit >= facilityInvestmentCost + recipeResearchInvestmentCost) paybackMinute = minute;
@@ -488,7 +614,7 @@ export function simulateRecipeEconomyChain({
     totalMaintenanceCost,
     facilityInvestmentCost,
     recipeResearchInvestmentCost,
-    netMarginPerMinute: (totalRevenue - totalInputCost - totalMaintenanceCost) / minutes,
+    netMarginPerMinute: (totalRevenue + customerOrderSalesTracker.revenue - totalInputCost - totalMaintenanceCost) / minutes,
     paybackMinute,
     constructionMaterialsDemand: includeConstructionInputsDemand ? constructionMaterialsDemand : 0,
     fulfilledConstructionMaterialsDemand,
@@ -496,6 +622,10 @@ export function simulateRecipeEconomyChain({
     fulfilledIndustrialMachinesDemand,
     constructionDemandCost,
     fulfilledConstructionDemandCost,
+    customerOrderRevenue: customerOrderSalesTracker.revenue,
+    fulfilledCustomerOrderCount: customerOrderSalesTracker.salesOrders.getCompletedOrders().filter((order) => order.status === 'fulfilled').length,
+    customerOrderDeliveredAmount: totalCustomerOrderAmount(customerOrderSalesTracker.deliveredByResource),
+    customerOrderEligibleOutputAmount: totalCustomerOrderAmount(customerOrderSalesTracker.eligibleOutputByResource),
     breakEvenMinute,
     stalledFacilityMinutes,
   };

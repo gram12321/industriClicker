@@ -127,11 +127,11 @@ export const RESOURCES: Readonly<Record<ResourceType, { name: string; icon: stri
   },
   [ResourceType.Fertilizer]: {
     name: 'Fertilizer', icon: '🌿',
-    market: { localBenchmarkSupply: 1_000, localInitialSupply: 100, regionalBenchmarkSupply: 20_000, regionalInitialSupply: 2_000, globalBenchmarkSupply: 200_000, globalInitialSupply: 20_000, logisticsMultiplier: 0.65, valueDensityMultiplier: 0.9 },
+    market: { localBenchmarkSupply: 1_500, localInitialSupply: 150, regionalBenchmarkSupply: 20_000, regionalInitialSupply: 2_000, globalBenchmarkSupply: 200_000, globalInitialSupply: 20_000, logisticsMultiplier: 0.65, valueDensityMultiplier: 0.9 },
   },
   [ResourceType.Plastic]: {
     name: 'Plastic', icon: '♻️',
-    market: { localBenchmarkSupply: 1_500, localInitialSupply: 100, regionalBenchmarkSupply: 30_000, regionalInitialSupply: 2_000, globalBenchmarkSupply: 300_000, globalInitialSupply: 20_000, logisticsMultiplier: 0.75, valueDensityMultiplier: 1 },
+    market: { localBenchmarkSupply: 2_250, localInitialSupply: 150, regionalBenchmarkSupply: 30_000, regionalInitialSupply: 2_000, globalBenchmarkSupply: 300_000, globalInitialSupply: 20_000, logisticsMultiplier: 0.75, valueDensityMultiplier: 1 },
   },
   [ResourceType.Silicon]: {
     name: 'Silicon', icon: '💎',

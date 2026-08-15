@@ -211,6 +211,20 @@ describe('recipe economy simulation', () => {
     expect(result.fulfilledConstructionDemandCost).toBeGreaterThan(0);
   });
 
+  it('routes a capped share of final output through generated customer orders', () => {
+    const result = simulateRecipeEconomyChain({
+      facilities: [{ recipeName: RecipeName.ProduceWater }],
+      durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
+      primaryOutputResourceTypes: [ResourceType.Water],
+      customerOrderSalesShare: 0.25,
+    });
+
+    expect(result.fulfilledCustomerOrderCount).toBeGreaterThan(0);
+    expect(result.customerOrderRevenue).toBeGreaterThan(0);
+    expect(result.customerOrderDeliveredAmount).toBeGreaterThan(0);
+    expect(result.customerOrderDeliveredAmount).toBeLessThanOrEqual(result.customerOrderEligibleOutputAmount * 0.25);
+  });
+
   it.each(UPGRADE_LEVELS)('reports the grain economy at upgrade level %i', (speedUpgradeLevel) => {
     const result = simulateRecipeEconomy({ recipeName: RecipeName.GrowGrain, durationMinutes: RECIPE_ECONOMY_SHORT_WINDOW_MINUTES, speedUpgradeLevel });
 

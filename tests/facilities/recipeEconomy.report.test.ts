@@ -19,6 +19,7 @@ const RECIPE_WINDOW_SCENARIOS = [
   { label: 'Base market', localDepthLevel: 0, diffusionLevel: 0 },
   { label: 'Network III', localDepthLevel: 3, diffusionLevel: 3 },
 ] as const;
+const CUSTOMER_ORDER_SALES_SHARE = 0.25;
 const CHAIN_SCENARIOS: ReadonlyArray<{ label: string; scenario: RecipeEconomyChainScenario }> = [
   {
     label: 'Staples: utilities -> Farm',
@@ -259,6 +260,7 @@ const CHAIN_SCENARIOS: ReadonlyArray<{ label: string; scenario: RecipeEconomyCha
     },
   },
 ];
+
 function money(value: number): string {
   return value.toFixed(2);
 }
@@ -279,6 +281,14 @@ function marginWindowsWithElectricityCap(
   return base.every((value, index) => Math.abs(value - comparison[index]!) < 0.005)
     ? baseMargin
     : `${baseMargin}<br>Electricity max 1.5x: ${marginWindows(...comparison)}`;
+}
+
+function marginWindowsWithCustomerOrders(
+  base: readonly [number, number, number],
+  electricityCapped: readonly [number, number, number],
+  customerOrders: readonly [number, number, number],
+): string {
+  return `${marginWindowsWithElectricityCap(base, electricityCapped)}<br>Generated orders max ${CUSTOMER_ORDER_SALES_SHARE * 100}%: ${marginWindows(...customerOrders)}`;
 }
 
 function marketResearchProjectIds(localDepthLevel: number, diffusionLevel: number): string[] {
@@ -340,11 +350,11 @@ describe('recipe economy report', () => {
     const reportSections: string[] = [
       '# Recipe Economy Report',
       '',
-      'One fully staffed facility, local input purchases, local output sales, normal market diffusion, and repairs at 70% condition. Initial margin is a full-cycle initial-market rate including expected maintenance; it does not treat input purchase timing as a loss.',
+      'One fully staffed facility, local input purchases, normal market diffusion, and repairs at 70% condition. Initial margin is a full-cycle initial-market rate including expected maintenance; it does not treat input purchase timing as a loss.',
       '',
       '## Recipe windows',
       '',
-      'Each recipe is assessed in a base market and a Network III market with Local Market Network III and Market Diffusion Network III already owned. The Network III scenario measures recipe resilience; its research is pre-owned and is not charged to facility payback. When electricity max 1.5x changes a margin, its value is shown on a second line in the same margin column; electricity bought above 1.5 times its initial local price is supplied externally at that cap, without changing runtime market rules. The 15/60/180-minute margins are cumulative averages; window till unprofitable is the first completed output cycle with a non-positive margin, so a later recovery remains possible.',
+      'Each recipe is assessed in a base market and a Network III market with Local Market Network III and Market Diffusion Network III already owned. The Network III scenario measures recipe resilience; its research is pre-owned and is not charged to facility payback. Every margin cell also shows Generated orders max 25%: a comparison that uses the live deterministic customer catalogue, generated bids, and standard lots, but fulfils no more than 25% of each recipe output. It is not guaranteed demand. When electricity max 1.5x changes a local-sale margin, its value is shown on a second line in the same margin column; electricity bought above 1.5 times its initial local price is supplied externally at that cap, without changing runtime market rules. The 15/60/180-minute margins are cumulative averages; window till unprofitable is the first completed output cycle with a non-positive margin, so a later recovery remains possible.',
       '',
     ];
     const entries = recipeEntries();
@@ -361,17 +371,21 @@ describe('recipe economy report', () => {
           electricityCappedShortRun: simulateRecipeEconomy({ recipeName, durationMinutes: RECIPE_ECONOMY_SHORT_WINDOW_MINUTES, electricityPriceCapMultiplier: 1.5, completedResearchProjectIds }),
           electricityCappedLongRun: simulateRecipeEconomy({ recipeName, durationMinutes: RECIPE_ECONOMY_LONG_WINDOW_MINUTES, electricityPriceCapMultiplier: 1.5, completedResearchProjectIds }),
           electricityCappedExtendedRun: simulateRecipeEconomy({ recipeName, durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES, electricityPriceCapMultiplier: 1.5, completedResearchProjectIds }),
+          customerOrderShortRun: simulateRecipeEconomy({ recipeName, durationMinutes: RECIPE_ECONOMY_SHORT_WINDOW_MINUTES, completedResearchProjectIds, customerOrderSalesShare: CUSTOMER_ORDER_SALES_SHARE }),
+          customerOrderLongRun: simulateRecipeEconomy({ recipeName, durationMinutes: RECIPE_ECONOMY_LONG_WINDOW_MINUTES, completedResearchProjectIds, customerOrderSalesShare: CUSTOMER_ORDER_SALES_SHARE }),
+          customerOrderExtendedRun: simulateRecipeEconomy({ recipeName, durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES, completedResearchProjectIds, customerOrderSalesShare: CUSTOMER_ORDER_SALES_SHARE }),
           horizon: simulateRecipeEconomy({ recipeName, durationMinutes: RECIPE_ECONOMY_BREAK_EVEN_HORIZON_MINUTES, completedResearchProjectIds }),
         };
       });
-      return scenarioResults.map(({ scenario, initial, shortRun, longRun, extendedRun, electricityCappedShortRun, electricityCappedLongRun, electricityCappedExtendedRun, horizon }) => ({
+      return scenarioResults.map(({ scenario, initial, shortRun, longRun, extendedRun, electricityCappedShortRun, electricityCappedLongRun, electricityCappedExtendedRun, customerOrderShortRun, customerOrderLongRun, customerOrderExtendedRun, horizon }) => ({
         recipe: entry.recipe,
         scenario: scenario.label,
         'Facility/recipe cost (EUR)': `${money(initial.facilityInvestmentCost)}/${money(getResearchProject(getRecipeResearchProjectId(recipeName))?.cost ?? 0)}`,
         'initial margin': money(initial.initialNetMarginPerMinute),
-        'margin 15m/60m/180m': marginWindowsWithElectricityCap(
+        'margin 15m/60m/180m': marginWindowsWithCustomerOrders(
           [shortRun.netMarginPerMinute, longRun.netMarginPerMinute, extendedRun.netMarginPerMinute],
           [electricityCappedShortRun.netMarginPerMinute, electricityCappedLongRun.netMarginPerMinute, electricityCappedExtendedRun.netMarginPerMinute],
+          [customerOrderShortRun.netMarginPerMinute, customerOrderLongRun.netMarginPerMinute, customerOrderExtendedRun.netMarginPerMinute],
         ),
         'output price drop at 180m EUR/percent': `${money(initial.initialOutputUnitPrice - extendedRun.finalOutputUnitPrice)}/${initial.initialOutputUnitPrice > 0
           ? `${(((initial.initialOutputUnitPrice - extendedRun.finalOutputUnitPrice) / initial.initialOutputUnitPrice) * 100).toFixed(1)}%`
@@ -396,6 +410,9 @@ describe('recipe economy report', () => {
       const electricityCappedShortRun = simulateRecipeEconomyChain({ ...scenario, durationMinutes: RECIPE_ECONOMY_SHORT_WINDOW_MINUTES, electricityPriceCapMultiplier: 1.5 });
       const electricityCappedLongRun = simulateRecipeEconomyChain({ ...scenario, durationMinutes: RECIPE_ECONOMY_LONG_WINDOW_MINUTES, electricityPriceCapMultiplier: 1.5 });
       const electricityCappedExtendedRun = simulateRecipeEconomyChain({ ...scenario, electricityPriceCapMultiplier: 1.5 });
+      const customerOrderShortRun = simulateRecipeEconomyChain({ ...scenario, durationMinutes: RECIPE_ECONOMY_SHORT_WINDOW_MINUTES, customerOrderSalesShare: CUSTOMER_ORDER_SALES_SHARE });
+      const customerOrderLongRun = simulateRecipeEconomyChain({ ...scenario, durationMinutes: RECIPE_ECONOMY_LONG_WINDOW_MINUTES, customerOrderSalesShare: CUSTOMER_ORDER_SALES_SHARE });
+      const customerOrderExtendedRun = simulateRecipeEconomyChain({ ...scenario, customerOrderSalesShare: CUSTOMER_ORDER_SALES_SHARE });
       const horizon = simulateRecipeEconomyChain({ ...scenario, durationMinutes: RECIPE_ECONOMY_BREAK_EVEN_HORIZON_MINUTES });
       const stalledFacilityMinutes = shortRun.stalledFacilityMinutes
         + longRun.stalledFacilityMinutes
@@ -411,9 +428,10 @@ describe('recipe economy report', () => {
         facilities: chainFacilitiesSummary(scenario.facilities),
         'setup cost (EUR)': money(extendedRun.facilityInvestmentCost + extendedRun.recipeResearchInvestmentCost),
         'market input cost (EUR)': money(extendedRun.totalInputCost),
-        'margin 15m/60m/180m': marginWindowsWithElectricityCap(
+        'margin 15m/60m/180m': marginWindowsWithCustomerOrders(
           [shortRun.netMarginPerMinute, longRun.netMarginPerMinute, extendedRun.netMarginPerMinute],
           [electricityCappedShortRun.netMarginPerMinute, electricityCappedLongRun.netMarginPerMinute, electricityCappedExtendedRun.netMarginPerMinute],
+          [customerOrderShortRun.netMarginPerMinute, customerOrderLongRun.netMarginPerMinute, customerOrderExtendedRun.netMarginPerMinute],
         ),
         'window till unprofitable': minute(horizon.breakEvenMinute),
         'facility payback': minute(horizon.paybackMinute),
@@ -424,7 +442,7 @@ describe('recipe economy report', () => {
     reportSections.push(
       '## Connected-chain economy (180 minutes)',
       '',
-      'Each row runs all listed facilities in one shared base market. Upstream production is available to downstream facilities before each minute ends; the chain retains the following minute\'s required inputs and sells every other produced good. When electricity max 1.5x changes a margin, its value is shown on a second line in the same margin column; electricity bought above 1.5 times its initial local price is supplied externally at that cap, without changing runtime market rules. The 15/60/180-minute margins are cumulative averages; window till unprofitable is the first output minute with a non-positive margin, so a later recovery remains possible. Setup cost includes land, Construction Materials, Industrial Machines, and each distinct recipe-unlock research cost. Construction demand consumes the participating facilities\' total Construction Materials and Industrial Machines requirement evenly through the 180-minute scenario; it is external demand, not a player expense. A scenario that stalls a facility is treated as an invalid report scenario.',
+      'Each row runs all listed facilities in one shared base market. Upstream production is available to downstream facilities before each minute ends; the chain retains the following minute\'s required inputs and sells every other produced good. Every margin cell also shows Generated orders max 25%: real generated customer orders may fulfil only from the chain\'s named primary outputs, up to 25% of their produced volume. Bids and lot sizes use live sales rules, so the realised share can be lower. When electricity max 1.5x changes a local-sale margin, its value is shown on a second line in the same margin column; electricity bought above 1.5 times its initial local price is supplied externally at that cap, without changing runtime market rules. The 15/60/180-minute margins are cumulative averages; window till unprofitable is the first output minute with a non-positive margin, so a later recovery remains possible. Setup cost includes land, Construction Materials, Industrial Machines, and each distinct recipe-unlock research cost. Construction demand consumes the participating facilities\' total Construction Materials and Industrial Machines requirement evenly through the 180-minute scenario; it is external demand, not a player expense. A scenario that stalls a facility is treated as an invalid report scenario.',
       '',
       markdownTable(chainRows),
       '',
