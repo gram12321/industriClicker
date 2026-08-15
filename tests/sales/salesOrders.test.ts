@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getResource, ResourceType, RESOURCE_TYPES } from '@/game/resources';
-import { SALES_ORDER_DURATION_MS, SalesOrders, calculateSalesOrderAcquisitionChance, calculateSalesOrderAcquisitionDetails, calculateSalesOrderBundleLineCount, calculateSalesOrderMarketVolumeMultiplier, calculateSalesOrderTargetValue } from '@/game/sales';
+import { SALES_ORDER_DURATION_MS, SalesOrders, calculateSalesOrderAcquisitionChance, calculateSalesOrderAcquisitionDetails, calculateSalesOrderBundleLineCount, calculateSalesOrderMarketVolumeMultiplier, calculateSalesOrderTargetValue, getEligibleSalesOrderResourceTypes } from '@/game/sales';
 
 function quantities(resourceType: ResourceType, amount: number): Record<ResourceType, number> {
   return RESOURCE_TYPES.reduce((result, candidate) => { result[candidate] = candidate === resourceType ? amount : 0; return result; }, {} as Record<ResourceType, number>);
@@ -55,6 +55,15 @@ describe('sales orders', () => {
 
     expect(result.ordersCreated).toBe(0);
     expect(result.acquisitionChance).toBe(0);
+  });
+
+  it('uses the same eligibility rule for acquisition display and order creation', () => {
+    expect(getEligibleSalesOrderResourceTypes({
+      candidateResourceTypes: [ResourceType.Water],
+      inventoryByResource: quantities(ResourceType.Water, 1_000),
+      globalPrices: prices(1),
+      maximumOrderValue: 100,
+    })).toEqual([]);
   });
 
   it('keeps a generated order at or below the company-value cap after lot rounding', () => {

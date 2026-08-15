@@ -74,13 +74,12 @@ function getActiveProcesses({ customerPipelineProgress, facilities, finance, inv
     return [{ id: facilityView.id, icon: RECIPE_ICONS[recipe.name], label: formatRecipeName(recipe), progress, timing: `${formatNumber(progress * 100, { decimals: 0 })}% · ${formatDuration(minutesRemaining)} left`, title: facilityView.displayName }];
   });
 
-  const activeResearch = research.getActiveProject();
-  const researchProcess = activeResearch ? (() => {
+  const researchProcesses = research.getActiveProjects().flatMap((activeResearch) => {
     const project = getResearchProject(activeResearch.projectId);
     if (!project) return [];
     const progress = clamp(activeResearch.progressMs / activeResearch.durationMs, 0, 1);
     return [{ id: `research-${project.id}`, icon: APP_ICONS.research, label: 'Research', progress, timing: `${formatElapsedTime(Math.max(0, activeResearch.durationMs - activeResearch.progressMs))} left`, title: project.name }];
-  })() : [];
+  });
 
   const activeLoanSearch = finance.getActiveLoanSearch();
   const lenderSearchProcess = activeLoanSearch ? [{
@@ -103,7 +102,7 @@ function getActiveProcesses({ customerPipelineProgress, facilities, finance, inv
     title: 'Customer acquisition',
   }] : [];
 
-  return [...researchProcess, ...lenderSearchProcess, ...production, ...pipelineProcess];
+  return [...researchProcesses, ...lenderSearchProcess, ...production, ...pipelineProcess];
 }
 
 function getRemainingProcessMilliseconds(process: ActiveProcess, facilities: FacilityCollection, finance: Finance, research: ResearchLedger): number {
@@ -113,7 +112,8 @@ function getRemainingProcessMilliseconds(process: ActiveProcess, facilities: Fac
   }
 
   if (process.id.startsWith('research-')) {
-    const activeResearch = research.getActiveProject();
+    const projectId = process.id.slice('research-'.length);
+    const activeResearch = research.getActiveProjects().find((project) => project.projectId === projectId);
     const project = activeResearch ? getResearchProject(activeResearch.projectId) : null;
     return project ? Math.max(1, activeResearch!.durationMs - activeResearch!.progressMs) : 1;
   }

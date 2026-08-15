@@ -4,18 +4,18 @@ Verified repository facts for Industri Clicker. Product choices belong in [desig
 
 ## Current Status
 
-- Stage: foundation.
+- Stage: pre-alpha foundation.
 - Product: single-player, mobile-first industrial clicker for Android.
 - Implemented foundation: dashboard shell, local player/company selection, company-keyed local saves, standard-start onboarding, tutorial-guide placeholder, inventory, local/regional/global market, facilities, classified finance statements and rolling cash flow, local loans and credit ratings, customer orders and relationships, foreground production with multi-output recipes, tiered company achievements, company prestige, local-first progression gates and grants, foreground research, IndustriPedia, and local saves.
 - Deferred: offline catch-up, broader workforce systems and maintenance interactions, and cloud services.
 
 ## Code Size
 
-Measured from the current working tree on 2026-07-31:
+Measured from the current working tree on 2026-08-15:
 
-- Application source: 4,281 non-empty TypeScript lines across 58 `.ts` and `.tsx` files.
+- Application and test source: 13,421 non-empty TypeScript lines across 123 `.ts` and `.tsx` files.
 - Project configuration: 96 non-empty lines across `metro.config.js`, `app.json`, `package.json`, and `tsconfig.json`.
-- Combined: 4,377 non-empty lines, excluding documentation, skills, lockfiles, and generated output.
+- Combined: 13,517 non-empty lines, excluding documentation, skills, lockfiles, and generated output.
 
 ## Stack
 
@@ -32,7 +32,7 @@ Public import barrels are `game/core/index.ts`, `game/index.ts`, and `ui/index.t
 app/                  Expo Router screens and providers
 ui/dashboard/         Dashboard views, components, and UI helpers
 game/                 Game rules, catalogues, time, math, and persistence
-stores/               Zustand runtime state
+game/core/stores/     Zustand runtime state and command boundary
 docs/WorkingDocs/     Canonical working documentation
 theme.ts              Shared Paper theme and visual tokens
 ```

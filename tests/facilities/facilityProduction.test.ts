@@ -3,7 +3,13 @@ import { Inventory } from '@/game/inventory';
 import { getRecipe, RecipeName } from '@/game/recipes';
 import { ResourceType } from '@/game/resources';
 import { FacilityCollection } from '@/game/facilities/facilityCollection';
+import {
+  calculateFacilityDecayMaterialCostPerMinute,
+  calculateFacilityNetGainPerMinute,
+  calculateRecipeValuePerMinute,
+} from '@/game/facilities/facilityEconomics';
 import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, getFacilityProductionCycleInputs, getRecipeProductionConditionLoss } from '@/game/facilities/facilityProduction';
+import { Market } from '@/game/market';
 import { FacilityType } from '@/game/facilities/facilityTypes';
 
 function createActiveFacility(facilityType: FacilityType, recipeName: RecipeName) {
@@ -70,6 +76,19 @@ describe('facility condition wear', () => {
 
     expect(grainWearPerMinute).toBeGreaterThan(sugarWearPerMinute);
     expect(getRecipeProductionConditionLoss(getRecipe(RecipeName.ProduceConstructionMaterials))).toBeGreaterThan(getRecipeProductionConditionLoss(grain));
+  });
+});
+
+describe('facility economics', () => {
+  it('keeps displayed net gain aligned with recipe value and repair-material decay', () => {
+    const market = new Market();
+    const recipe = getRecipe(RecipeName.GrowGrain);
+    const valuePerMinute = calculateRecipeValuePerMinute(recipe, market, 1, 1.2);
+    const decayMaterialCost = calculateFacilityDecayMaterialCostPerMinute(100, 1, 1, 1.2, recipe);
+
+    expect(valuePerMinute).toBeGreaterThan(0);
+    expect(decayMaterialCost).toBeGreaterThan(0);
+    expect(calculateFacilityNetGainPerMinute(valuePerMinute, decayMaterialCost, market)).toBeLessThan(valuePerMinute);
   });
 });
 

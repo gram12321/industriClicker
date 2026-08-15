@@ -367,7 +367,7 @@ flowchart LR
 | `achievements.unlocks` | Stored | `AchievementLedger` | Post-command achievement evaluation | `AchievementLedgerSnapshot` |
 | `productionStatistics.producedByResource` | Stored | `ProductionStatistics` | Completed facility recipe output only | `ProductionStatisticsSnapshot` |
 | `prestige.events` | Stored | `PrestigeLedger` | Balance changes and fulfilled sales | `PrestigeLedgerSnapshot` |
-| `research.completed`, `.active` (including an active project's effective duration) | Stored | `ResearchLedger` | Research start, foreground advance, completion, cancellation | `ResearchLedgerSnapshot` |
+| `research.completed`, `.active[]` (including each active project's effective duration) | Stored | `ResearchLedger` | Research start, foreground advance, per-project completion and cancellation | `ResearchLedgerSnapshot` |
 | `grants.grants` | Stored | `GrantLedger` | First facility construction and free-action consumption | `GrantLedgerSnapshot` |
 | `market.local`, `.regional`, `.global`, `.automation` | Stored | `Market` | Manual local trades, contract fulfilment, and adjacent-pair diffusion | `MarketSnapshot` |
 | `startingConditionId` | Runtime | Zustand game store | Company activation/session change | No; source is the local company record |
@@ -390,7 +390,7 @@ Derived values include facility efficiency, production work/output, customer-ord
 | Completed production outputs | Recipe outputs and facility output multiplier | Inventory; production statistics; production achievements |
 | `fulfillSalesOrder`, `rejectSalesOrder` | Customer order; inventory and finance where applicable | Customer orders/relationships; inventory and finance where applicable |
 | Achievement evaluation | Post-command domain state | Achievement unlocks; idempotent achievement prestige events |
-| `getResearchAvailability`, `startResearch`, `cancelResearch` | Code catalogue, pure gate context, finance, research ledger, progression grants | Research; grant use; finance/prestige and relevant achievements |
+| `getResearchAvailability`, `startResearch`, `cancelResearch(projectId)` | Code catalogue, pure gate context, finance, research ledger, progression grants | Research; grant use; finance/prestige and relevant achievements |
 | `createSalesOrderRequest` | Selected resource, quantity, derived capacity | Development customer order and pipeline |
 | `activateCompany` | Selected profile, outgoing snapshot, requested company snapshot | Device session; complete runtime game state |
 | `deleteActiveCompany` | Active company ID | Removes the active company and returns to local company selection |

@@ -1,6 +1,6 @@
 import type { EconomyPhase } from '@/game/finance';
 import type { ResourceType } from '@/game/resources';
-import type { SalesCustomerDomain, SalesCustomerType } from './salesCustomers';
+import type { SalesCustomerDomain, SalesCustomerType } from './salesTypes';
 
 export const SALES_ORDER_DURATION_MS = 20 * 60 * 1_000;
 export const SALES_ORDER_MINIMUM_QUANTITY = 1;

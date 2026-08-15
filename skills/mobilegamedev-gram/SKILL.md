@@ -70,7 +70,7 @@ Before a change, extended research is normally required. Read at least the follo
 3. `docs/WorkingDocs/design.md` for product or mechanic direction.
 4. `docs/WorkingDocs/PROJECT_INFO.md` for the selected stack, repository map, commands, and current implementation facts.
 5. `docs/WorkingDocs/gameflow.md` for a change to mechanics, economy, tick order, state flow, or persistence.
-6. `docs/WorkingDocs/version-log.md` for the last change to the relevant files. (Most recent commit is often sufficient context)
+6. `docs/WorkingDocs/versionlog.md` for the last change to the relevant files. (Most recent commit is often sufficient context)
 7. `docs/WorkingDocs/VariableRelationshipMap.md` For a overview of all variable and parameters and thier relationships.
 8. `docs/WorkingDocs/AIDescriptions_coregame.md` for the current AI description of the core game.
 

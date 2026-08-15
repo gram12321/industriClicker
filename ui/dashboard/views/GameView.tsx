@@ -9,7 +9,7 @@ import type { Market, MarketAutomation } from '@/game/market';
 import type { ResourceType } from '@/game/resources/resourceTypes';
 import type { Recipe } from '@/game/recipes/recipeTypes';
 import type { ResearchLedger, ResearchProjectId } from '@/game/research';
-import type { ResearchAvailability } from '@/game/core/stores';
+import type { ResearchAvailability, SalesOrderAcquisitionStatus } from '@/game/core/stores';
 import type { SalesOrders } from '@/game/sales';
 import { CompanyView } from './CompanyView';
 import { FinanceView } from './FinanceView';
@@ -53,6 +53,7 @@ export function GameViewContent({
   research,
   getResearchAvailability,
   requestFacilityDestruction,
+  salesOrderAcquisition,
   salesOrders,
   setFacilityProductionCycle,
   setFacilityProductionActive,
@@ -94,6 +95,7 @@ export function GameViewContent({
   research: ResearchLedger;
   getResearchAvailability: (projectId: ResearchProjectId) => ResearchAvailability;
   requestFacilityDestruction: (facilityId: string) => void;
+  salesOrderAcquisition: SalesOrderAcquisitionStatus;
   salesOrders: SalesOrders;
   setFacilityProductionCycle: (facilityId: string, recipeNames: readonly Recipe['name'][]) => boolean;
   setFacilityProductionActive: (facilityId: string, active: boolean) => boolean;
@@ -107,7 +109,7 @@ export function GameViewContent({
     case 'inventory':
     case 'market': return <InventoryView buyMarketResource={buyMarketResource} facilities={facilities} finance={finance} inventory={inventory} market={market} onlyInStock={onlyInStock} showActiveRecipeInputs={showActiveRecipeInputs} sellMarketResource={sellMarketResource} setMarketAutomation={setMarketAutomation} setOnlyInStock={setOnlyInStock} setShowActiveRecipeInputs={setShowActiveRecipeInputs} />;
     case 'production': return <ProductionView buyMarketResource={buyMarketResource} facilities={facilities} finance={finance} getResearchAvailability={getResearchAvailability} inventory={inventory} market={market} research={research} startResearch={startResearch} isBuildFacilityTutorial={isBuildFacilityTutorial} onBuildFacilityLayout={onBuildFacilityLayout} openConstructionYard={openConstructionYard} repairFacility={repairFacility} requestFacilityDestruction={requestFacilityDestruction} setFacilityProductionActive={setFacilityProductionActive} setFacilityProductionCycle={setFacilityProductionCycle} setFacilityWorkers={setFacilityWorkers} setMarketAutomation={setMarketAutomation} upgradeFacility={upgradeFacility} />;
-    case 'sales': return <SalesView companyPrestige={companyPrestige} customerPipelineProgress={customerPipelineProgress} currentGameTimeMs={currentGameTimeMs} economyPhase={finance.getEconomyPhase()} fulfillSalesOrder={fulfillSalesOrder} getResearchAvailability={getResearchAvailability} inventory={inventory} market={market} maximumOpenOrders={maximumOpenOrders} rejectSalesOrder={rejectSalesOrder} research={research} salesOrders={salesOrders} startResearch={startResearch} />;
+    case 'sales': return <SalesView companyPrestige={companyPrestige} customerPipelineProgress={customerPipelineProgress} currentGameTimeMs={currentGameTimeMs} economyPhase={finance.getEconomyPhase()} fulfillSalesOrder={fulfillSalesOrder} getResearchAvailability={getResearchAvailability} inventory={inventory} market={market} maximumOpenOrders={maximumOpenOrders} rejectSalesOrder={rejectSalesOrder} research={research} salesOrderAcquisition={salesOrderAcquisition} salesOrders={salesOrders} startResearch={startResearch} />;
     case 'finance': return <FinanceView achievements={achievements} companyStartedAtGameTimeMs={companyStartedAtGameTimeMs} currentGameTimeMs={currentGameTimeMs} facilities={facilities} finance={finance} inventory={inventory} market={market} onAcceptLoanOffer={onAcceptLoanOffer} onExtraPayment={onExtraLoanPayment} onRemoveLoanOffer={onRemoveLoanOffer} onRemoveUnavailableLoanOffers={onRemoveUnavailableLoanOffers} onRepayInFull={onRepayLoanInFull} onStartLoanSearch={onStartLoanSearch} research={research} />;
   }
 }

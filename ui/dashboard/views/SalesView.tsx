@@ -7,8 +7,8 @@ import type { Inventory } from '@/game/inventory';
 import type { Market } from '@/game/market';
 import { ECONOMY_PHASE_SCORES } from '@/game/finance';
 import { RESEARCH_PROJECTS, type ResearchChainId, type ResearchLedger, type ResearchProjectDefinition, type ResearchProjectId } from '@/game/research';
-import type { ResearchAvailability } from '@/game/core/stores';
-import { calculateSalesOrderAcquisitionDetails, calculateSalesOrderEstimatedWaitMinutes, calculateSalesOrderMarketComparison, getSalesCustomerRelationshipLabel, getSalesResourceProfile, SALES_CUSTOMER_DOMAIN_PROFILES, SALES_CUSTOMER_TYPE_PROFILES, SALES_ORDER_MAXIMUM_GLOBAL_PREMIUM, SALES_ORDER_MINIMUM_GLOBAL_PREMIUM, type SalesOrders } from '@/game/sales';
+import type { ResearchAvailability, SalesOrderAcquisitionStatus } from '@/game/core/stores';
+import { calculateSalesOrderEstimatedWaitMinutes, calculateSalesOrderMarketComparison, getSalesCustomerRelationshipLabel, SALES_CUSTOMER_DOMAIN_PROFILES, SALES_CUSTOMER_TYPE_PROFILES, SALES_ORDER_MAXIMUM_GLOBAL_PREMIUM, SALES_ORDER_MINIMUM_GLOBAL_PREMIUM, type SalesOrders } from '@/game/sales';
 import { calculateSalesOrderPrestige } from '@/game/prestige';
 import { getResourceIcon } from '@/game/resources';
 import { formatCurrency, formatNumber, getColorClass, normalizeToUnitInterval } from '@/utils';
@@ -18,15 +18,15 @@ import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 
 const SALES_RESEARCH_CHAINS: readonly ResearchChainId[] = ['sales-capacity', 'sales-order-value-limit', 'sales-targeting', 'bid-value', 'local-market-network', 'market-diffusion-network'];
 
-export function SalesView({ companyPrestige, customerPipelineProgress, currentGameTimeMs, economyPhase, fulfillSalesOrder, getResearchAvailability, inventory, market, maximumOpenOrders, rejectSalesOrder, research, salesOrders, startResearch }: { companyPrestige: number; customerPipelineProgress: number; currentGameTimeMs: number; economyPhase: 'crash' | 'recession' | 'stable' | 'expansion' | 'boom'; fulfillSalesOrder: (id: string) => boolean; getResearchAvailability: (projectId: ResearchProjectId) => ResearchAvailability; inventory: Inventory; market: Market; maximumOpenOrders: number; rejectSalesOrder: (id: string) => boolean; research: ResearchLedger; salesOrders: SalesOrders; startResearch: (projectId: ResearchProjectId) => boolean }) {
+export function SalesView({ companyPrestige, customerPipelineProgress, currentGameTimeMs, economyPhase, fulfillSalesOrder, getResearchAvailability, inventory, market, maximumOpenOrders, rejectSalesOrder, research, salesOrderAcquisition, salesOrders, startResearch }: { companyPrestige: number; customerPipelineProgress: number; currentGameTimeMs: number; economyPhase: 'crash' | 'recession' | 'stable' | 'expansion' | 'boom'; fulfillSalesOrder: (id: string) => boolean; getResearchAvailability: (projectId: ResearchProjectId) => ResearchAvailability; inventory: Inventory; market: Market; maximumOpenOrders: number; rejectSalesOrder: (id: string) => boolean; research: ResearchLedger; salesOrderAcquisition: SalesOrderAcquisitionStatus; salesOrders: SalesOrders; startResearch: (projectId: ResearchProjectId) => boolean }) {
   const [salesList, setSalesList] = useState<'open' | 'closed'>('open');
   const [closedFilter, setClosedFilter] = useState<'fulfilled' | 'rejected' | 'expired'>('fulfilled');
   const [salesResearchExpanded, setSalesResearchExpanded] = useState(false);
   const openOrders = salesOrders.getOfferedOrders();
   const closedOrders = salesOrders.getCompletedOrders();
   const count = openOrders.length;
-  const hasEligibleInventory = Object.entries(inventory.toSnapshot().entries).some(([resourceType, entry]) => entry.quantity >= getSalesResourceProfile(resourceType as import('@/game/resources').ResourceType).standardOrderLot);
-  const acquisition = calculateSalesOrderAcquisitionDetails({ openOrderCount: count, companyPrestige, economyPhase, hasEligibleInventory });
+  const { hasEligibleInventory } = salesOrderAcquisition;
+  const acquisition = salesOrderAcquisition;
   const hasPipelineOverflow = customerPipelineProgress > 1;
   const pipelineOverflowProgress = customerPipelineProgress % 1;
   const orders = salesList === 'open' ? openOrders : closedOrders.filter((order) => order.status === closedFilter);
