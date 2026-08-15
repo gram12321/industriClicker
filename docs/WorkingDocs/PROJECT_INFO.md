@@ -59,4 +59,5 @@ theme.ts              Shared Paper theme and visual tokens
 - [design.md](design.md): player-facing direction.
 - [gameflow.md](gameflow.md): system rules and lifecycle.
 - [VariableRelationshipMap.md](VariableRelationshipMap.md): variable relationships.
+- [handoffs/economy-balance.md](handoffs/economy-balance.md): canonical economy-report reading guide, balance workflow, and current tuning recommendations.
 - [AIpromt_docs.md](AIpromt_docs.md): documentation ownership rules.

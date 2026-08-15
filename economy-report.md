@@ -51,10 +51,10 @@ Network III applies pre-owned Local Market Network III and Market Diffusion Netw
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Produce Chemicals | Base market | 4240.00/198.00 | 28.93 | 20.83/12.39/7.34 | 5.74/57.4% | 370.02 | not reached | not reached |
 | Produce Chemicals | Network III | 4240.00/198.00 | 28.93 | 23.23/15.99/10.67 | 4.88/48.8% | 370.02 | not reached | not reached |
-| Produce Plastic | Base market | 4240.00/234.00 | 51.54 | 20.17/-8.63/-22.45 | 10.23/68.2% | 340.12 | 17 | not reached |
-| Produce Plastic | Network III | 4240.00/234.00 | 51.54 | 30.77/7.91/-8.51 | 9.13/60.9% | 340.12 | 36 | not reached |
-| Synthesize Fertilizer | Base market | 4240.00/239.00 | 35.23 | 16.66/1.58/-6.71 | 7.05/70.5% | 356.67 | 24 | not reached |
-| Synthesize Fertilizer | Network III | 4240.00/239.00 | 35.23 | 22.51/9.44/0.11 | 6.32/63.2% | 356.67 | 59 | not reached |
+| Produce Plastic | Base market | 4240.00/235.00 | 28.65 | 9.73/-9.94/-19.89 | 9.16/61.1% | 340.83 | 15 | not reached |
+| Produce Plastic | Network III | 4240.00/235.00 | 28.65 | 16.68/2.08/-9.25 | 7.95/53.0% | 340.83 | 29 | not reached |
+| Synthesize Fertilizer | Base market | 4240.00/240.00 | 20.87 | 9.74/-0.55/-6.66 | 6.43/64.3% | 356.99 | 21 | not reached |
+| Synthesize Fertilizer | Network III | 4240.00/240.00 | 20.87 | 13.56/5.07/-1.46 | 5.62/56.2% | 356.99 | 48 | not reached |
 
 ## Construction Factory
 
@@ -90,10 +90,10 @@ Network III applies pre-owned Local Market Network III and Market Diffusion Netw
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Grow Fruit | Base market | 295.00/124.00 | 9.50 | 8.11/6.65/5.40 | 0.12/13.4% | 14.15 | not reached | 43 |
 | Grow Fruit | Network III | 295.00/124.00 | 9.50 | 8.59/7.36/5.98 | 0.09/10.1% | 14.15 | not reached | 38 |
-| Grow Grain | Base market | 295.00/108.00 | 6.31 | 2.32/0.16/-0.32 | 0.16/19.9% | 16.33 | 19 | not reached |
-| Grow Grain | Network III | 295.00/108.00 | 6.31 | 3.80/1.94/1.17 | 0.12/15.0% | 16.33 | 183 | not reached |
-| Grow Sugar | Base market | 295.00/104.00 | 2.54 | 1.18/0.08/-0.20 | 0.06/8.6% | 14.72 | 21 | not reached |
-| Grow Sugar | Network III | 295.00/104.00 | 2.54 | 1.73/0.87/0.47 | 0.05/6.5% | 14.72 | 200 | not reached |
+| Grow Grain | Base market | 295.00/108.00 | 2.81 | 0.03/-1.45/-1.57 | 0.13/15.7% | 15.96 | 7 | not reached |
+| Grow Grain | Network III | 295.00/108.00 | 2.81 | 1.10/-0.13/-0.47 | 0.09/11.6% | 15.96 | 17 | not reached |
+| Grow Sugar | Base market | 295.00/104.00 | 1.02 | 0.04/-0.77/-0.87 | 0.05/6.9% | 14.50 | 9 | not reached |
+| Grow Sugar | Network III | 295.00/104.00 | 1.02 | 0.44/-0.15/-0.34 | 0.04/5.2% | 14.50 | 18 | not reached |
 
 ## Industrial Processing Factory
 
@@ -103,8 +103,8 @@ Network III applies pre-owned Local Market Network III and Market Diffusion Netw
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Produce Electric Circuits | Base market | 2130.00/219.00 | 95.73 | 69.39/38.86/19.17 | 6.16/24.6% | 173.28 | 230 | 49 |
 | Produce Electric Circuits | Network III | 2130.00/219.00 | 95.73 | 77.67/56.00/36.99 | 4.80/19.2% | 173.28 | not reached | 31 |
-| Produce Steel | Base market | 2130.00/171.00 | 54.20 | 27.35/3.90/-8.30 | 5.41/77.3% | 159.35 | 27 | not reached |
-| Produce Steel | Network III | 2130.00/171.00 | 54.20 | 36.55/15.81/1.41 | 4.88/69.7% | 159.35 | 62 | not reached |
+| Produce Steel | Base market | 2130.00/172.00 | 35.02 | 18.12/1.92/-7.27 | 5.03/71.8% | 159.36 | 25 | not reached |
+| Produce Steel | Network III | 2130.00/172.00 | 35.02 | 23.81/10.63/0.26 | 4.42/63.2% | 159.36 | 61 | not reached |
 
 ## Mine
 
@@ -175,18 +175,18 @@ Each row runs all listed facilities in one shared base market. Upstream producti
 
 | chain | primary output | facilities | setup cost (EUR) | market input cost (EUR) | margin 15m/60m/180m | window till unprofitable | facility payback |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Staples: utilities -> Farm | Grain, Sugar | Small Utility Works x2, Farm x2 | 2199.00 | 2052.67 | 14.62/10.73/8.13 | not reached | not reached |
+| Staples: utilities -> Farm | Grain, Sugar | Small Utility Works x2, Farm x2 | 2199.00 | 1751.10 | 10.50/8.10/6.10 | not reached | not reached |
 | Extraction: utilities -> Mine | Coal, Iron, Copper | Small Utility Works x2, Mine x3 | 3860.00 | 8226.56 | 40.86/13.66/-1.54<br>Electricity max 1.5x: 41.63/14.72/0.47 | 46 | not reached |
-| Fertilizer bridge: quarry -> Grain and Sugar | Grain, Sugar | Small Utility Works x2, Quarry x1, Chemical Plant x2, Farm x2 | 12565.00 | 2497.43 | 54.15/3.60/-81.88 | 45 | not reached |
-| Fertilizer bridge: market inputs -> Grain and Sugar | Grain, Sugar | Small Utility Works x2, Chemical Plant x1, Farm x2 | 6678.00 | 3889.72 | 10.17/-3.53/0.26 | 62 | not reached |
-| Fertilizer: quarry -> Fertilizer | Fertilizer | Small Utility Works x2, Quarry x1, Chemical Plant x2 | 11763.00 | 375.04 | 48.79/-10.61/-73.42 | 41 | not reached |
-| Plastic: quarry -> Plastic | Plastic | Small Utility Works x2, Quarry x1, Chemical Plant x2 | 11758.00 | 466.93 | 57.32/-3.26/-67.41 | 41 | not reached |
-| Steel: mines -> Steel | Steel | Small Utility Works x2, Mine x2, Industrial Processing Factory x1 | 5311.00 | 4764.07 | 62.95/32.42/14.35<br>Electricity max 1.5x: 62.95/32.42/14.73 | 123 | not reached |
-| Poultry -> Cake | Cake | Small Utility Works x2, Quarry x1, Chemical Plant x2, Farm x1, Animal Farm x1, Bakery x1 | 16313.00 | 2865.27 | 123.39/67.09/-265.32 | 41 | not reached |
-| Cattle -> Meat Pie | Meat Pie | Small Utility Works x2, Quarry x1, Chemical Plant x2, Farm x1, Animal Farm x1, Bakery x1 | 16316.00 | 4027.45 | 85.47/38.78/-293.31 | 35 | not reached |
-| Animal farm and bakery: inputs -> Cake, Premium Cake, and Meat Pie | Cake, Premium Cake, Meat Pie | Small Utility Works x2, Quarry x1, Chemical Plant x2, Farm x2, Animal Farm x3, Bakery x3 | 25080.00 | 5159.75 | 248.05/162.56/-119.06<br>Electricity max 1.5x: 248.58/163.32/-118.42 | 31 | not reached |
-| Construction: inputs -> Construction Materials | Construction Materials | Water Well x1, Power Plant x1, Mine x2, Quarry x3, Industrial Processing Factory x1, Construction Factory x4 | 25334.00 | 16314.11 | 247.79/236.24/134.37<br>Electricity max 1.5x: 264.92/255.37/155.12 | 1 | not reached |
-| Industrial Machines: inputs -> Industrial Machines | Industrial Machines | Water Well x1, Power Plant x1, Quarry x2, Chemical Plant x2, Mine x4, Electronics Factory x2, Industrial Processing Factory x2, Assembly Plant x1 | 42175.00 | 26550.42 | 622.74/385.39/-82.97<br>Electricity max 1.5x: 660.90/424.94/-39.15 | 1 | not reached |
+| Fertilizer bridge: quarry -> Grain and Sugar | Grain, Sugar | Small Utility Works x2, Quarry x1, Chemical Plant x2, Farm x2 | 12566.00 | 2239.89 | 42.70/-3.76/-86.86 | 40 | not reached |
+| Fertilizer bridge: market inputs -> Grain and Sugar | Grain, Sugar | Small Utility Works x2, Chemical Plant x1, Farm x2 | 6679.00 | 3163.32 | -2.02/-9.70/-3.05 | 68 | not reached |
+| Fertilizer: quarry -> Fertilizer | Fertilizer | Small Utility Works x2, Quarry x1, Chemical Plant x2 | 11764.00 | 355.25 | 41.61/-14.45/-75.33 | 40 | not reached |
+| Plastic: quarry -> Plastic | Plastic | Small Utility Works x2, Quarry x1, Chemical Plant x2 | 11759.00 | 480.34 | 46.45/-9.20/-70.50 | 41 | not reached |
+| Steel: mines -> Steel | Steel | Small Utility Works x2, Mine x2, Industrial Processing Factory x1 | 5312.00 | 4617.15 | 51.92/28.26/12.63<br>Electricity max 1.5x: 51.92/28.26/12.95 | 123 | not reached |
+| Poultry -> Cake | Cake | Small Utility Works x2, Quarry x1, Chemical Plant x2, Farm x1, Animal Farm x1, Bakery x1 | 16314.00 | 2639.81 | 113.40/60.95/-270.14 | 40 | not reached |
+| Cattle -> Meat Pie | Meat Pie | Small Utility Works x2, Quarry x1, Chemical Plant x2, Farm x1, Animal Farm x1, Bakery x1 | 16317.00 | 3808.89 | 75.43/32.57/-298.21 | 34 | not reached |
+| Animal farm and bakery: inputs -> Cake, Premium Cake, and Meat Pie | Cake, Premium Cake, Meat Pie | Small Utility Works x2, Quarry x1, Chemical Plant x2, Farm x2, Animal Farm x3, Bakery x3 | 25081.00 | 5354.63 | 239.00/156.06/-135.03<br>Electricity max 1.5x: 239.40/156.69/-134.59 | 26 | not reached |
+| Construction: inputs -> Construction Materials | Construction Materials | Water Well x1, Power Plant x1, Mine x2, Quarry x3, Industrial Processing Factory x1, Construction Factory x4 | 25335.00 | 16041.04 | 235.85/231.56/132.52<br>Electricity max 1.5x: 252.22/250.03/152.49 | 1 | not reached |
+| Industrial Machines: inputs -> Industrial Machines | Industrial Machines | Water Well x1, Power Plant x1, Quarry x2, Chemical Plant x2, Mine x4, Electronics Factory x2, Industrial Processing Factory x2, Assembly Plant x1 | 42177.00 | 25971.85 | 597.30/374.91/-85.05<br>Electricity max 1.5x: 633.67/412.85/-43.19 | 1 | not reached |
 | Construction Materials: market inputs -> Construction Materials | Construction Materials | Water Well x1, Power Plant x1, Construction Factory x1 | 6575.00 | 4559.16 | 219.02/24.29/-0.62 | 1 | not reached |
 | Industrial Machines: market inputs -> Industrial Machines | Industrial Machines | Water Well x1, Power Plant x1, Assembly Plant x1 | 11269.00 | 21738.16 | 98.36/-565.37/19.35 | 1 | 192 |
 
