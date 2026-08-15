@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ResourceType } from '@/game/resources';
-import { SALES_CUSTOMER_DOMAINS, SALES_CUSTOMER_TYPE_PROFILES, SALES_CUSTOMER_TYPES, advanceSalesCustomerRelationship, calculateSalesCustomerRelationshipBaseline, createSalesCustomerState, getSalesCustomerCatalogue, getSalesResourceProfile } from '@/game/sales';
+import { SALES_CUSTOMER_DOMAINS, SALES_CUSTOMER_TYPE_PROFILES, SALES_CUSTOMER_TYPES, advanceSalesCustomerRelationship, calculateSalesCustomerRelationshipBaseline, calculateSalesCustomerRelationshipChange, calculateSalesCustomerRelationshipDetails, createSalesCustomerState, getSalesCustomerCatalogue, getSalesResourceProfile } from '@/game/sales';
 
 describe('sales customer catalogue', () => {
   it('is deterministic and generates variable customer counts that normalize market share within each domain', () => {
@@ -32,6 +32,13 @@ describe('sales customer catalogue', () => {
     }
   });
 
+  it('keeps purchasing power broad and independently distributed from bid profile', () => {
+    const catalogue = getSalesCustomerCatalogue();
+    expect(Math.max(...catalogue.map((customer) => customer.purchasingPower))).toBeGreaterThan(1.5);
+    expect(Math.min(...catalogue.map((customer) => customer.purchasingPower))).toBeLessThan(0.7);
+    expect(new Set(catalogue.map((customer) => `${customer.purchasingPower}:${customer.bidMultiplier}`)).size).toBeGreaterThan(catalogue.length * 0.7);
+  });
+
   it('decays company relationship toward the current prestige-derived baseline', () => {
     const customer = getSalesCustomerCatalogue().find((candidate) => candidate.domain === 'utilities')!;
     const baseline = calculateSalesCustomerRelationshipBaseline(customer, 100);
@@ -39,5 +46,38 @@ describe('sales customer catalogue', () => {
     const advanced = advanceSalesCustomerRelationship(state, customer, 100, 8 * 60 * 60 * 1_000);
 
     expect(advanced.relationship).toBeCloseTo((80 + baseline) / 2);
+  });
+
+  it('uses only prestige as the relationship-baseline source and exposes the directory inputs', () => {
+    const customer = getSalesCustomerCatalogue()[0];
+    const details = calculateSalesCustomerRelationshipDetails(customer, 100);
+    const zeroPrestige = calculateSalesCustomerRelationshipDetails(customer, 0);
+
+    expect(details.prestigeBonus).toBeGreaterThan(0);
+    expect(details.maximumFulfilmentGain).toBeGreaterThan(0);
+    expect(details.maximumRejectionLoss).toBeGreaterThan(details.minimumFailureLoss);
+    expect(details.maximumExpiryLoss).toBeGreaterThan(details.maximumRejectionLoss);
+    expect(zeroPrestige.baseline).toBe(0);
+  });
+
+  it('scales fulfilment gains with value and slows them as relationship rises', () => {
+    const customer = getSalesCustomerCatalogue()[0];
+    const smallOrderGain = calculateSalesCustomerRelationshipChange({ outcome: 'fulfilled', customer, relationship: 0, orderReferenceValue: 100 });
+    const largeOrderGain = calculateSalesCustomerRelationshipChange({ outcome: 'fulfilled', customer, relationship: 0, orderReferenceValue: 1_000 });
+    const trustedCustomerGain = calculateSalesCustomerRelationshipChange({ outcome: 'fulfilled', customer, relationship: 80, orderReferenceValue: 1_000 });
+
+    expect(largeOrderGain).toBeGreaterThan(smallOrderGain);
+    expect(trustedCustomerGain).toBeLessThan(largeOrderGain);
+  });
+
+  it('makes expiry harsher than rejection only for high-trust, high-value orders', () => {
+    const customer = getSalesCustomerCatalogue()[0];
+    const lowRelationshipLoss = calculateSalesCustomerRelationshipChange({ outcome: 'rejected', customer, relationship: 0, orderReferenceValue: 100 });
+    const highRelationshipRejection = calculateSalesCustomerRelationshipChange({ outcome: 'rejected', customer, relationship: 100, orderReferenceValue: 1_000_000_000 });
+    const highRelationshipExpiry = calculateSalesCustomerRelationshipChange({ outcome: 'expired', customer, relationship: 100, orderReferenceValue: 1_000_000_000 });
+
+    expect(lowRelationshipLoss).toBeCloseTo(-0.01);
+    expect(highRelationshipRejection).toBeCloseTo(-10, 3);
+    expect(highRelationshipExpiry).toBeCloseTo(-20, 3);
   });
 });

@@ -70,14 +70,18 @@ describe('sales orders', () => {
     expect(lateLineCounts.some((lineCount) => lineCount > 1)).toBe(true);
   });
 
-  it('changes relationship for fulfilment and expiry', () => {
+  it('changes relationship for fulfilment, rejection, and expiry', () => {
     const orders = new SalesOrders();
     orders.advanceTime({ currentGameTimeMs: 60_000, maximumOpenOrders: 2, maximumOrderValue: 10_000, companyPrestige: 500, economyPhase: 'boom', inventoryByResource: quantities(ResourceType.Water, 1_000), globalPrices: prices(1), candidateResourceTypes: [ResourceType.Water], getResourceWeight: () => 1, bidResearchMultiplier: 1 });
     const order = orders.getOfferedOrders()[0]; const before = orders.getCustomerState(order.customerId, 60_000, 500).relationship;
     orders.fulfill(order.id, 61_000, 500);
     expect(orders.getCustomerState(order.customerId, 61_000, 500).relationship).toBeGreaterThan(before);
     orders.createDevelopmentOrderForResource(ResourceType.Water, 500, 1, 2, 62_000, 500);
-    const expiring = orders.getOfferedOrders()[0]; const beforeExpiry = orders.getCustomerState(expiring.customerId, 62_000, 500).relationship;
+    const rejected = orders.getOfferedOrders()[0]; const beforeRejection = orders.getCustomerState(rejected.customerId, 62_000, 500).relationship;
+    orders.reject(rejected.id, 62_500, 500);
+    expect(orders.getCustomerState(rejected.customerId, 62_500, 500).relationship).toBeLessThan(beforeRejection);
+    orders.createDevelopmentOrderForResource(ResourceType.Water, 500, 1, 2, 63_000, 500);
+    const expiring = orders.getOfferedOrders()[0]; const beforeExpiry = orders.getCustomerState(expiring.customerId, 63_000, 500).relationship;
     orders.advanceTime({ currentGameTimeMs: expiring.expiresAtGameTimeMs + SALES_ORDER_DURATION_MS, maximumOpenOrders: 2, maximumOrderValue: 10_000, companyPrestige: 500, economyPhase: 'boom', inventoryByResource: quantities(ResourceType.Water, 1_000), globalPrices: prices(1), candidateResourceTypes: [ResourceType.Water], getResourceWeight: () => 1, bidResearchMultiplier: 1 });
     expect(orders.getCompletedOrders().some((candidate) => candidate.status === 'expired')).toBe(true);
     expect(orders.getCustomerState(expiring.customerId, expiring.expiresAtGameTimeMs + SALES_ORDER_DURATION_MS, 500).relationship).toBeLessThan(beforeExpiry);

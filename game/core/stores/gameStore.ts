@@ -1091,7 +1091,7 @@ export const useGameStore = create<GameState>((set, get) => {
   },
   rejectSalesOrder: (orderId) => {
     const salesOrders = get().salesOrders.clone();
-    const rejected = salesOrders.reject(orderId, get().lastProcessedAtMs);
+    const rejected = salesOrders.reject(orderId, get().lastProcessedAtMs, calculateCompanyPrestigeSummary(get().prestige.getEvents(), get().lastProcessedAtMs).totalPrestige);
 
     if (!rejected) {
       return false;
