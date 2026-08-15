@@ -10,7 +10,7 @@ import type { ResourceType } from '@/game/resources/resourceTypes';
 import type { Recipe } from '@/game/recipes/recipeTypes';
 import type { ResearchLedger, ResearchProjectId } from '@/game/research';
 import type { ResearchAvailability } from '@/game/core/stores';
-import type { SalesContracts } from '@/game/sales';
+import type { SalesOrders } from '@/game/sales';
 import { CompanyView } from './CompanyView';
 import { FinanceView } from './FinanceView';
 import { InventoryView } from './InventoryView';
@@ -23,12 +23,13 @@ export function GameViewContent({
   activeTab,
   achievements,
   companyStartedAtGameTimeMs,
+  companyPrestige,
   currentGameTimeMs,
   companyName,
   customerPipelineProgress,
   facilities,
   finance,
-  fulfillSalesContract,
+  fulfillSalesOrder,
   inventory,
   market,
   onAcceptLoanOffer,
@@ -48,11 +49,11 @@ export function GameViewContent({
   openConstructionYard,
   isBuildFacilityTutorial,
   onBuildFacilityLayout,
-  rejectSalesContract,
+  rejectSalesOrder,
   research,
   getResearchAvailability,
   requestFacilityDestruction,
-  salesContracts,
+  salesOrders,
   setFacilityProductionCycle,
   setFacilityProductionActive,
   setFacilityWorkers,
@@ -63,12 +64,13 @@ export function GameViewContent({
   activeTab: Exclude<GameViewId, 'research'>;
   achievements: AchievementLedger;
   companyStartedAtGameTimeMs: number;
+  companyPrestige: number;
   currentGameTimeMs: number;
   companyName: string;
   customerPipelineProgress: number;
   facilities: FacilityCollection;
   finance: Finance;
-  fulfillSalesContract: (contractId: string) => boolean;
+  fulfillSalesOrder: (orderId: string) => boolean;
   inventory: Inventory;
   market: Market;
   onAcceptLoanOffer: (offer: LoanOffer) => boolean;
@@ -88,11 +90,11 @@ export function GameViewContent({
   openConstructionYard: () => void;
   isBuildFacilityTutorial?: boolean;
   onBuildFacilityLayout?: (layout: { height: number; width: number; x: number; y: number }) => void;
-  rejectSalesContract: (contractId: string) => boolean;
+  rejectSalesOrder: (orderId: string) => boolean;
   research: ResearchLedger;
   getResearchAvailability: (projectId: ResearchProjectId) => ResearchAvailability;
   requestFacilityDestruction: (facilityId: string) => void;
-  salesContracts: SalesContracts;
+  salesOrders: SalesOrders;
   setFacilityProductionCycle: (facilityId: string, recipeNames: readonly Recipe['name'][]) => boolean;
   setFacilityProductionActive: (facilityId: string, active: boolean) => boolean;
   setFacilityWorkers: (facilityId: string, workerCount: number) => boolean;
@@ -105,7 +107,7 @@ export function GameViewContent({
     case 'inventory':
     case 'market': return <InventoryView buyMarketResource={buyMarketResource} facilities={facilities} finance={finance} inventory={inventory} market={market} onlyInStock={onlyInStock} showActiveRecipeInputs={showActiveRecipeInputs} sellMarketResource={sellMarketResource} setMarketAutomation={setMarketAutomation} setOnlyInStock={setOnlyInStock} setShowActiveRecipeInputs={setShowActiveRecipeInputs} />;
     case 'production': return <ProductionView buyMarketResource={buyMarketResource} facilities={facilities} finance={finance} getResearchAvailability={getResearchAvailability} inventory={inventory} market={market} research={research} startResearch={startResearch} isBuildFacilityTutorial={isBuildFacilityTutorial} onBuildFacilityLayout={onBuildFacilityLayout} openConstructionYard={openConstructionYard} repairFacility={repairFacility} requestFacilityDestruction={requestFacilityDestruction} setFacilityProductionActive={setFacilityProductionActive} setFacilityProductionCycle={setFacilityProductionCycle} setFacilityWorkers={setFacilityWorkers} setMarketAutomation={setMarketAutomation} upgradeFacility={upgradeFacility} />;
-    case 'sales': return <SalesView customerPipelineProgress={customerPipelineProgress} fulfillSalesContract={fulfillSalesContract} getResearchAvailability={getResearchAvailability} inventory={inventory} market={market} maximumOpenContracts={maximumOpenContracts} rejectSalesContract={rejectSalesContract} research={research} salesContracts={salesContracts} />;
+    case 'sales': return <SalesView companyPrestige={companyPrestige} customerPipelineProgress={customerPipelineProgress} currentGameTimeMs={currentGameTimeMs} economyPhase={finance.getEconomyPhase()} fulfillSalesOrder={fulfillSalesOrder} getResearchAvailability={getResearchAvailability} inventory={inventory} market={market} maximumOpenOrders={maximumOpenContracts} rejectSalesOrder={rejectSalesOrder} research={research} salesOrders={salesOrders} startResearch={startResearch} />;
     case 'finance': return <FinanceView achievements={achievements} companyStartedAtGameTimeMs={companyStartedAtGameTimeMs} currentGameTimeMs={currentGameTimeMs} facilities={facilities} finance={finance} inventory={inventory} market={market} onAcceptLoanOffer={onAcceptLoanOffer} onExtraPayment={onExtraLoanPayment} onRemoveLoanOffer={onRemoveLoanOffer} onRemoveUnavailableLoanOffers={onRemoveUnavailableLoanOffers} onRepayInFull={onRepayLoanInFull} onStartLoanSearch={onStartLoanSearch} research={research} />;
   }
 }

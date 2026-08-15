@@ -7,15 +7,15 @@ import { BASE_WORK_PER_MINUTE } from '@/game/core/time';
 import type { Finance } from '@/game/finance';
 import type { Inventory } from '@/game/inventory';
 import { getRecipeResearchWorkSpeedMultiplier, getResearchProject, type ResearchLedger } from '@/game/research';
-import { calculateSalesContractEstimatedWaitMinutes, calculateSalesContractOfferChance, type SalesContracts } from '@/game/sales';
+import { type SalesOrders } from '@/game/sales';
 import { APP_ICONS, RECIPE_ICONS } from '@/icons';
 import { colors } from '@/theme';
-import { clamp, formatDuration, formatElapsedTime, formatNumber } from '@/utils';
+import { clamp, formatDuration, formatElapsedTime, formatNumber, getColorClass } from '@/utils';
 import { formatRecipeName } from '@/ui/dashboard/helpers/recipeFormatters';
 
 type ActiveProcess = { id: string; icon: string; label: string; progress: number; timing: string; title: string };
 
-export function ActiveProcessesOverlay({ customerPipelineProgress, facilities, finance, inventory, maximumOpenContracts, onCompleteProcess, research, salesContracts, showInstantCompletion }: {
+export function ActiveProcessesOverlay({ customerPipelineProgress, facilities, finance, inventory, maximumOpenContracts, onCompleteProcess, research, salesOrders, showInstantCompletion }: {
   customerPipelineProgress: number;
   facilities: FacilityCollection;
   finance: Finance;
@@ -23,11 +23,11 @@ export function ActiveProcessesOverlay({ customerPipelineProgress, facilities, f
   maximumOpenContracts: number;
   onCompleteProcess?: (processId: string, remainingMs: number) => void;
   research: ResearchLedger;
-  salesContracts: SalesContracts;
+  salesOrders: SalesOrders;
   showInstantCompletion?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const processes = getActiveProcesses({ customerPipelineProgress, facilities, finance, inventory, maximumOpenContracts, research, salesContracts });
+  const processes = getActiveProcesses({ customerPipelineProgress, facilities, finance, inventory, maximumOpenContracts, research, salesOrders });
   const processCountLabel = processes.length === 1 ? '1 active process' : `${processes.length} active processes`;
 
   return <View pointerEvents="box-none" style={localStyles.container}>
@@ -45,9 +45,9 @@ export function ActiveProcessesOverlay({ customerPipelineProgress, facilities, f
             <View style={localStyles.processHeader}>
               <MaterialCommunityIcons color={colors.primary} name={process.icon as never} size={18} />
               <View style={localStyles.processCopy}><Text numberOfLines={1} style={localStyles.processTitle}>{process.title}</Text><Text numberOfLines={1} style={localStyles.processLabel}>{process.label}</Text></View>
-              <Text style={localStyles.processTiming}>{process.timing}</Text>
+              <Text style={[localStyles.processTiming, { color: getColorClass(process.progress) }]}>{process.timing}</Text>
             </View>
-            <ProgressBar accessible accessibilityLabel={`${process.title}: ${process.timing}`} color={colors.primary} progress={process.progress} style={localStyles.progressBar} />
+            <ProgressBar accessible accessibilityLabel={`${process.title}: ${process.timing}`} color={getColorClass(process.progress)} progress={process.progress} style={localStyles.progressBar} />
             {showInstantCompletion && process.id !== 'customer-pipeline' && onCompleteProcess && <Button compact mode="outlined" onPress={() => onCompleteProcess(process.id, getRemainingProcessMilliseconds(process, facilities, finance, research))} style={localStyles.completeButton}>Complete instantly</Button>}
           </View>)}
         </ScrollView>}
@@ -59,7 +59,7 @@ export function ActiveProcessesOverlay({ customerPipelineProgress, facilities, f
   </View>;
 }
 
-function getActiveProcesses({ customerPipelineProgress, facilities, finance, inventory, maximumOpenContracts, research, salesContracts }: Parameters<typeof ActiveProcessesOverlay>[0]): ActiveProcess[] {
+function getActiveProcesses({ customerPipelineProgress, facilities, finance, inventory, maximumOpenContracts, research, salesOrders }: Parameters<typeof ActiveProcessesOverlay>[0]): ActiveProcess[] {
   const production = facilities.getAll().flatMap((facility) => {
     const facilityView = facility.getView();
     if (getFacilityProductionStatus(facilityView, inventory) !== 'producing') return [];
@@ -92,17 +92,15 @@ function getActiveProcesses({ customerPipelineProgress, facilities, finance, inv
     title: 'Lender search',
   }] : [];
 
-  const unfulfilledContracts = salesContracts.getOfferedContracts().length;
-  const offerChance = calculateSalesContractOfferChance(unfulfilledContracts);
-  const expectedWaitMinutes = calculateSalesContractEstimatedWaitMinutes(unfulfilledContracts);
+  const openOrders = salesOrders.getOfferedOrders().length;
   const pipelineProgress = Math.max(0, customerPipelineProgress);
-  const pipelineProcess = unfulfilledContracts < maximumOpenContracts && offerChance > 0 ? [{
+  const pipelineProcess = openOrders < maximumOpenContracts ? [{
     id: 'customer-pipeline',
     icon: APP_ICONS.contracts,
-    label: `${formatNumber(unfulfilledContracts)} of ${formatNumber(maximumOpenContracts)} contract slots filled`,
+    label: `${formatNumber(openOrders)} of ${formatNumber(maximumOpenContracts)} order slots filled`,
     progress: clamp(pipelineProgress, 0, 1),
-    timing: pipelineProgress >= 1 ? 'Past estimate' : `${formatDuration(Math.max(0, expectedWaitMinutes * (1 - pipelineProgress)))} estimated`,
-    title: 'Customer pipeline',
+    timing: pipelineProgress >= 1 ? 'New customer expected' : `${formatNumber(pipelineProgress * 100, { decimals: 0 })}% toward next check`,
+    title: 'Customer acquisition',
   }] : [];
 
   return [...researchProcess, ...lenderSearchProcess, ...production, ...pipelineProcess];

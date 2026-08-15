@@ -11,7 +11,7 @@ export type FinanceReportPeriod = (typeof FINANCE_REPORT_PERIODS)[number]['id'];
 
 export const FINANCE_TRANSACTION_SOURCES = [
   'admin-adjustment', 'market-purchase', 'market-sale', 'facility-construction', 'facility-upgrade', 'facility-repair',
-  'research-investment', 'research-refund', 'research-grant', 'contract-sale', 'loan-proceeds', 'loan-payment',
+  'research-investment', 'research-refund', 'research-grant', 'order-sale', 'loan-proceeds', 'loan-payment',
   'loan-origination-fee', 'loan-search-fee', 'loan-extra-payment-fee', 'loan-prepayment-penalty', 'loan-late-fee',
   'facility-sale', 'forced-asset-liquidation', 'loan-restructure',
 ] as const;
@@ -115,6 +115,8 @@ export const LENDER_SEARCH_CONFIG = {
 } as const;
 export const ECONOMY_PHASES = ['crash', 'recession', 'stable', 'expansion', 'boom'] as const;
 export type EconomyPhase = (typeof ECONOMY_PHASES)[number];
+/** Ordered, normalized presentation score for the named economy phases. */
+export const ECONOMY_PHASE_SCORES: Readonly<Record<EconomyPhase, number>> = { crash: 0, recession: 0.25, stable: 0.5, expansion: 0.75, boom: 1 };
 export const ECONOMY_INTEREST_MULTIPLIERS: Readonly<Record<EconomyPhase, number>> = { crash: 1.35, recession: 1.16, stable: 1, expansion: 0.93, boom: 0.86 };
 /** Ten-minute deterministic economy transitions favour returning to Stable. */
 export const ECONOMY_TRANSITION = {

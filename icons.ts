@@ -1,5 +1,7 @@
 import { RecipeName } from '@/game/recipes/recipeTypes';
 import { ResourceType } from '@/game/resources/resourceTypes';
+import type { EconomyPhase } from '@/game/finance';
+import type { SalesCustomerDomain } from '@/game/sales/salesCustomers';
 
 /** Shared Material Community icon names used by the app UI. */
 export const APP_ICONS = {
@@ -8,10 +10,18 @@ export const APP_ICONS = {
   achievements: 'trophy-outline',
   back: 'chevron-left',
   bank: 'bank-outline',
+  bid: 'gavel',
+  marketShare: 'chart-pie',
+  purchasingPower: 'cash-multiple',
+  fulfilled: 'check-circle-outline',
+  rejected: 'close-circle-outline',
+  expired: 'timer-off-outline',
   building: 'factory',
   collapse: 'chevron-up',
   coin: 'circle-multiple-outline',
   contracts: 'handshake-outline',
+  relationship: 'handshake-outline',
+  openOrders: 'format-list-numbered',
   currency: 'cash-multiple',
   delete: 'delete-outline',
   destroy: 'trash-can-outline',
@@ -67,6 +77,32 @@ export const APP_ICONS = {
   resume: 'play',
   work: 'progress-clock',
 } as const;
+
+export const ECONOMY_PHASE_ICONS: Readonly<Record<EconomyPhase, string>> = {
+  crash: 'weather-lightning-rainy',
+  recession: 'weather-rainy',
+  stable: 'weather-partly-cloudy',
+  expansion: 'weather-sunny',
+  boom: 'weather-sunny-alert',
+};
+
+export const SALES_CUSTOMER_TYPE_ICONS = {
+  'private-customer': 'account-outline',
+  'retail-chain': 'storefront-outline',
+  'construction-contractor': 'hammer-wrench',
+  'industrial-enterprise': 'factory',
+  'utility-operator': 'transmission-tower',
+  'government-procurement': 'bank-outline',
+} as const;
+
+export const SALES_CUSTOMER_DOMAIN_ICONS: Readonly<Record<SalesCustomerDomain, string>> = {
+  food: 'food-apple-outline',
+  'raw-materials': 'pickaxe',
+  'industrial-inputs': 'factory',
+  'construction-materials': 'crane',
+  electronics: 'chip',
+  utilities: 'transmission-tower',
+};
 
 /** Shared Material Community icon names for recipe presentation. */
 export const RECIPE_ICONS: Readonly<Record<RecipeName, string>> = {

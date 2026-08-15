@@ -30,7 +30,7 @@ const SOURCE_LABELS: Record<FinanceTransaction['source'], string> = {
   'research-investment': 'Research investment',
   'research-refund': 'Research refunds',
   'research-grant': 'Research grants',
-  'contract-sale': 'Contract sales',
+  'order-sale': 'Customer orders',
   'loan-proceeds': 'Loan proceeds',
   'loan-payment': 'Loan costs',
   'loan-origination-fee': 'Loan costs',

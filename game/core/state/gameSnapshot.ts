@@ -1,7 +1,7 @@
 import { type FinanceSnapshot } from '../../finance/finance';
 import { type InventorySnapshot } from '../../inventory/inventory';
 import { type FacilityCollectionSnapshot } from '../../facilities/facilityCollection';
-import { type SalesContractsSnapshot } from '../../sales/salesContracts';
+import { type SalesOrdersSnapshot } from '../../sales/salesOrders';
 import { isAchievementLedgerSnapshot, type AchievementLedgerSnapshot } from '../../achievements/achievement';
 import { isProductionStatisticsSnapshot, type ProductionStatisticsSnapshot } from '../../achievements/productionStatistics';
 import { isPrestigeLedgerSnapshot, type PrestigeLedgerSnapshot } from '../../prestige/prestige';
@@ -32,7 +32,7 @@ export type GameSnapshot = {
   inventory: InventorySnapshot;
   market: MarketSnapshot;
   facilities: FacilityCollectionSnapshot;
-  salesContracts: SalesContractsSnapshot;
+  salesOrders: SalesOrdersSnapshot;
   achievements: AchievementLedgerSnapshot;
   productionStatistics: ProductionStatisticsSnapshot;
   prestige: PrestigeLedgerSnapshot;
@@ -75,7 +75,7 @@ function isMarketAutomationSnapshot(value: unknown): boolean {
 /** Structural guard used by the company-scoped SQLite save adapter. */
 export function isGameSnapshot(value: unknown): value is GameSnapshot {
   if (!isRecord(value) || !isRecord(value.finance) || !isRecord(value.inventory)
-    || !isRecord(value.market) || !isRecord(value.facilities) || !isRecord(value.salesContracts)
+    || !isRecord(value.market) || !isRecord(value.facilities) || !isRecord(value.salesOrders)
     || !isRecord(value.achievements) || !isRecord(value.productionStatistics)
     || !isRecord(value.prestige) || !isResearchLedgerSnapshot(value.research) || !isGrantLedgerSnapshot(value.grants) || !isGameTimeSnapshot(value.time)) {
     return false;
@@ -120,9 +120,20 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
       && Number.isFinite(facility.facilityCondition)
       && facility.facilityCondition >= 0
       && facility.facilityCondition <= 1)
-    && Array.isArray(value.salesContracts.offered)
-    && Array.isArray(value.salesContracts.completed)
-    && typeof value.salesContracts.nextCustomerNumber === 'number'
+    && Array.isArray(value.salesOrders.offered)
+    && Array.isArray(value.salesOrders.completed)
+    && value.salesOrders.offered.every((order) => isRecord(order) && Array.isArray(order.lines))
+    && value.salesOrders.completed.every((order) => isRecord(order) && Array.isArray(order.lines))
+    && Array.isArray(value.salesOrders.customerStates)
+    && value.salesOrders.customerStates.every((state) => isRecord(state)
+      && typeof state.customerId === 'string'
+      && typeof state.relationship === 'number'
+      && Number.isFinite(state.relationship)
+      && state.relationship >= 0
+      && state.relationship <= 1)
+    && typeof value.salesOrders.nextOrderNumber === 'number'
+    && typeof value.salesOrders.worldSeed === 'string'
+    && typeof value.salesOrders.catalogueVersion === 'number'
     && isAchievementLedgerSnapshot(value.achievements)
     && isProductionStatisticsSnapshot(value.productionStatistics)
     && isPrestigeLedgerSnapshot(value.prestige);

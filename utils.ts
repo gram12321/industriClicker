@@ -69,12 +69,31 @@ const RATING_COLORS = [
   '#1B5E20',
 ] as const;
 
+const NORMALIZED_SCORE_LABELS = [
+  'Critical',
+  'Fragile',
+  'Shaky',
+  'Uneven',
+  'Fair',
+  'Healthy',
+  'Strong',
+  'Excellent',
+  'Outstanding',
+  'Exceptional',
+] as const;
+
 export function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value));
 }
 
 export function clamp01(value: number): number {
   return clamp(value, 0, 1);
+}
+
+/** Normalizes a finite value into an inclusive 0–1 display range. */
+export function normalizeToUnitInterval(value: number, minimum: number, maximum: number): number {
+  if (!Number.isFinite(value) || !Number.isFinite(minimum) || !Number.isFinite(maximum) || maximum <= minimum) return 0;
+  return clamp01((value - minimum) / (maximum - minimum));
 }
 
 export function safeNonNegative(value: number): number {
@@ -268,6 +287,12 @@ export function getColorClass(value: number): string {
   if (!Number.isFinite(value)) return '#61716B';
   const index = Math.min(RATING_COLORS.length - 1, Math.floor(clamp01(value) * RATING_COLORS.length));
   return RATING_COLORS[index];
+}
+
+/** Returns one of ten player-facing names for an increasing 0–1 score. */
+export function getNormalizedScoreLabel(value: number): string {
+  const index = Math.min(NORMALIZED_SCORE_LABELS.length - 1, Math.floor(clamp01(value) * NORMALIZED_SCORE_LABELS.length));
+  return NORMALIZED_SCORE_LABELS[index];
 }
 
 function getSmartFractionDigits(absoluteValue: number, defaultDigits: number, adaptiveNearOne: boolean): number {

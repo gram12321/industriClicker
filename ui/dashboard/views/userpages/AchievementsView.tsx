@@ -6,9 +6,9 @@ import { ACHIEVEMENT_CATEGORIES, createAchievementEvaluationContext, filterAchie
 import type { FacilityCollection } from '@/game/facilities';
 import type { Finance } from '@/game/finance';
 import type { PrestigeLedger } from '@/game/prestige';
-import type { SalesContracts } from '@/game/sales';
+import type { SalesOrders } from '@/game/sales';
 import { colors } from '@/theme';
-import { formatNumber, getAchievementMasteryName } from '@/utils';
+import { formatNumber, getAchievementMasteryName, getColorClass } from '@/utils';
 import { SectionHeading } from '@/ui/dashboard/components/DashboardPrimitives';
 import { styles as dashboardStyles } from '@/ui/dashboard/helpers/dashboard.styles';
 
@@ -38,7 +38,7 @@ export function AchievementsView({
   finance,
   prestige,
   productionStatistics,
-  salesContracts,
+  salesOrders,
 }: {
   achievements: AchievementLedger;
   companyStartedAtGameTimeMs: number;
@@ -47,14 +47,14 @@ export function AchievementsView({
   finance: Finance;
   prestige: PrestigeLedger;
   productionStatistics: ProductionStatistics;
-  salesContracts: SalesContracts;
+  salesOrders: SalesOrders;
 }) {
   const [selectedCategory, setSelectedCategory] = useState<AchievementCategory | 'all'>('all');
   const [showCompletedTiers, setShowCompletedTiers] = useState(false);
   const context = createAchievementEvaluationContext({
     facilities,
     finance,
-    salesContracts,
+    salesOrders,
     prestige,
     productionStatistics,
     companyStartedAtGameTimeMs,
@@ -79,11 +79,11 @@ export function AchievementsView({
               <Text variant="titleLarge">{`${formatNumber(unlockedCount)} of ${formatNumber(allAchievements.length)} unlocked`}</Text>
             </View>
             <View>
-              <Text style={localStyles.completionPercent}>{`${formatNumber(completion * 100, { decimals: 0 })}%`}</Text>
+              <Text style={[localStyles.completionPercent, { color: getColorClass(completion) }]}>{`${formatNumber(completion * 100, { decimals: 0 })}%`}</Text>
               <Text style={localStyles.completionLabel}>Complete</Text>
             </View>
           </View>
-          <ProgressBar accessible accessibilityLabel={`${formatNumber(unlockedCount)} of ${formatNumber(allAchievements.length)} achievements unlocked`} color={colors.primary} progress={completion} style={localStyles.overviewProgress} />
+          <ProgressBar accessible accessibilityLabel={`${formatNumber(unlockedCount)} of ${formatNumber(allAchievements.length)} achievements unlocked`} color={getColorClass(completion)} progress={completion} style={localStyles.overviewProgress} />
         </Card.Content>
       </Card>
       <Card mode="contained" style={dashboardStyles.featureCard}>
@@ -107,6 +107,7 @@ export function AchievementsView({
             {categoryAchievements.map((achievement) => {
               const progress = Math.max(0, Math.min(1, achievement.currentValue / achievement.threshold));
               const masteryName = getAchievementMasteryName(achievement.tier);
+              const progressColor = getColorClass(progress);
               return (
                 <Card key={achievement.id} mode="contained" style={dashboardStyles.featureCard}>
                   <Card.Content style={dashboardStyles.cardContent}>
@@ -121,8 +122,8 @@ export function AchievementsView({
                     </View>
                     <Text style={dashboardStyles.cardDescription}>{achievement.description}</Text>
                     <Text style={localStyles.reward}>{`Reward: ${formatNumber(achievement.prestigeAmount, { smartDecimals: true })} prestige`}</Text>
-                    <View style={localStyles.progressHeader}><Text style={dashboardStyles.cardKicker}>PROGRESS</Text><Text style={dashboardStyles.cardKicker}>{`${formatNumber(Math.min(achievement.currentValue, achievement.threshold), { smartDecimals: true })} / ${formatNumber(achievement.threshold)}`}</Text></View>
-                    <ProgressBar accessible accessibilityLabel={`Progress toward ${achievement.name}`} color={achievement.isUnlocked ? colors.primary : colors.muted} progress={progress} style={localStyles.progress} />
+                    <View style={localStyles.progressHeader}><Text style={dashboardStyles.cardKicker}>PROGRESS</Text><Text style={[dashboardStyles.cardKicker, { color: progressColor }]}>{`${formatNumber(Math.min(achievement.currentValue, achievement.threshold), { smartDecimals: true })} / ${formatNumber(achievement.threshold)}`}</Text></View>
+                    <ProgressBar accessible accessibilityLabel={`Progress toward ${achievement.name}`} color={progressColor} progress={progress} style={localStyles.progress} />
                   </Card.Content>
                 </Card>
               );

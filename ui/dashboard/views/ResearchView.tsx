@@ -11,15 +11,16 @@ import type { GateRequirement } from '@/game/gates';
 import type { ResearchAvailability } from '@/game/core/stores';
 import { colors } from '@/theme';
 import { APP_ICONS, RECIPE_ICONS } from '@/icons';
-import { formatCurrency as formatCurrencyWithSymbol, formatDuration, formatElapsedTime } from '@/utils';
+import { formatCurrency as formatCurrencyWithSymbol, formatDuration, formatElapsedTime, getColorClass } from '@/utils';
 import { SectionHeading } from '@/ui/dashboard/components/DashboardPrimitives';
 import { styles as dashboardStyles } from '@/ui/dashboard/helpers/dashboard.styles';
 
 const CHAIN_DETAILS: Record<ResearchChainId, { eyebrow: string; icon: string; title: string; subtitle: string }> = {
   'capital-grants': { eyebrow: 'CAPITAL', icon: 'bank-outline', title: 'Capital grants', subtitle: 'Fund staged company investment with one-time research grants.' },
-  'sales-capacity': { eyebrow: 'SALES', icon: 'handshake-outline', title: 'Sales capacity', subtitle: 'Increase the number of customer contracts your company may keep open.' },
+  'sales-capacity': { eyebrow: 'SALES', icon: 'handshake-outline', title: 'Sales capacity', subtitle: 'Increase the number of customer orders your company may keep open.' },
+  'sales-order-value-limit': { eyebrow: 'SALES', icon: 'scale-balance', title: 'Order scope', subtitle: 'Raise the share of company assets a customer order may request.' },
   'sales-targeting': { eyebrow: 'SALES', icon: 'bullseye-arrow', title: 'Sales targeting', subtitle: 'Focus customer offers on goods your company has produced.' },
-  'contract-value': { eyebrow: 'SALES', icon: 'cash-multiple', title: 'Contract value', subtitle: 'Increase the premium paid by customer contracts.' },
+  'bid-value': { eyebrow: 'SALES', icon: 'cash-multiple', title: 'Bid value', subtitle: 'Increase the premium paid by customer orders.' },
   'local-market-network': { eyebrow: 'MARKET', icon: 'storefront-outline', title: 'Local market network', subtitle: 'Expand local market depth so each trade shifts prices less.' },
   'market-diffusion-network': { eyebrow: 'MARKET', icon: 'transit-connection-variant', title: 'Market diffusion network', subtitle: 'Increase the rate at which local and regional markets rebalance.' },
   'research-capacity': { eyebrow: 'RESEARCH', icon: 'flask-plus-outline', title: 'Research capacity', subtitle: 'Unlock additional research slots so projects can run simultaneously.' },
@@ -31,7 +32,7 @@ type ResearchGroup = { eyebrow: string; icon: string; id: ResearchGroupId; title
 
 const RESEARCH_GROUPS: readonly ResearchGroup[] = [
   { id: 'capital-grants', chainIds: ['capital-grants'], eyebrow: 'CAPITAL', icon: 'bank-outline', title: 'Capital grants', subtitle: 'Fund staged company investment with one-time research grants.' },
-  { id: 'sales', chainIds: ['sales-capacity', 'sales-targeting', 'contract-value', 'market-diffusion-network', 'local-market-network'], eyebrow: 'SALES', icon: 'handshake-outline', title: 'Sales research', subtitle: 'Grow your customer pipeline, target better offers, increase contract value, and improve market reach.' },
+  { id: 'sales', chainIds: ['sales-capacity', 'sales-order-value-limit', 'sales-targeting', 'bid-value', 'market-diffusion-network', 'local-market-network'], eyebrow: 'SALES', icon: 'handshake-outline', title: 'Sales research', subtitle: 'Grow your customer pipeline, target better orders, improve bids, and improve market reach.' },
   { id: 'research-capacity', chainIds: ['research-capacity'], eyebrow: 'RESEARCH', icon: 'flask-plus-outline', title: 'Research capacity', subtitle: 'Unlock additional research slots so projects can run simultaneously.' },
   { id: 'recipe-unlocks', chainIds: ['recipe-unlocks'], eyebrow: 'RECIPES', icon: 'flask-outline', title: 'Recipe research', subtitle: 'Unlock production recipes for your facilities.' },
 ];
@@ -124,20 +125,20 @@ export function ResearchView({
             <Text variant="titleLarge">{`${completedCount} of ${RESEARCH_PROJECTS.length} completed`}</Text>
           </View>
           <View>
-            <Text style={localStyles.completionPercent}>{`${Math.round(completion * 100)}%`}</Text>
+            <Text style={[localStyles.completionPercent, { color: getColorClass(completion) }]}>{`${Math.round(completion * 100)}%`}</Text>
             <Text style={localStyles.completionLabel}>Complete</Text>
           </View>
         </View>
-        <ProgressBar accessible accessibilityLabel={`${completedCount} of ${RESEARCH_PROJECTS.length} research projects completed`} color={colors.primary} progress={completion} style={localStyles.overviewProgress} />
+        <ProgressBar accessible accessibilityLabel={`${completedCount} of ${RESEARCH_PROJECTS.length} research projects completed`} color={getColorClass(completion)} progress={completion} style={localStyles.overviewProgress} />
       </View>
       {active && activeProject && (
         <View style={localStyles.researchCard}>
           <View style={localStyles.cardBody}>
             <Text style={dashboardStyles.cardKicker}>ACTIVE PROJECT</Text>
             <View style={localStyles.projectNameRow}><MaterialCommunityIcons color={colors.primary} name={getProjectIcon(activeProject) as never} size={20} /><Text style={localStyles.activeTitle} variant="titleLarge">{activeProject.name}</Text></View>
-            <View style={localStyles.iconValueRow}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={[dashboardStyles.cardDescription, localStyles.timeLabel]}>{`${formatElapsedTime(active.progressMs)} / ${formatElapsedTime(active.durationMs)}`}</Text></View>
+            <View style={localStyles.iconValueRow}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={[dashboardStyles.cardDescription, localStyles.timeLabel, { color: getColorClass(Math.min(1, active.progressMs / active.durationMs)) }]}>{`${formatElapsedTime(active.progressMs)} / ${formatElapsedTime(active.durationMs)}`}</Text></View>
             <View style={localStyles.progressTrack}>
-              <ProgressBar accessible accessibilityLabel={`${activeProject.name} progress ${formatElapsedTime(active.progressMs)} of ${formatElapsedTime(active.durationMs)}`} color={colors.primary} progress={Math.min(1, active.progressMs / active.durationMs)} style={localStyles.progress} />
+              <ProgressBar accessible accessibilityLabel={`${activeProject.name} progress ${formatElapsedTime(active.progressMs)} of ${formatElapsedTime(active.durationMs)}`} color={getColorClass(Math.min(1, active.progressMs / active.durationMs))} progress={Math.min(1, active.progressMs / active.durationMs)} style={localStyles.progress} />
             </View>
             <View style={[localStyles.iconValueRow, localStyles.paidCost]}><Text style={dashboardStyles.cardDescription}>Cost paid:</Text><CurrencyValue value={active.paidCost} /></View>
             <Button accessibilityLabel={`Cancel ${activeProject.name} and refund ${formatCurrency(active.paidCost)}`} icon="close" mode="outlined" onPress={onCancel} style={localStyles.cancelButton}>Cancel and refund <MaterialCommunityIcons color={colors.primary} name={APP_ICONS.coin} size={15} /> {formatCurrency(active.paidCost).replace(/\s*€/u, '')}</Button>
@@ -207,7 +208,7 @@ function ResearchProjectCard({ activeProjectId, availability, completed, expande
       <View style={localStyles.cardBody}>
         <View style={localStyles.projectHeader}><View style={localStyles.projectTitle}><View style={localStyles.projectNameRow}><MaterialCommunityIcons color={colors.primary} name={getProjectIcon(project) as never} size={20} /><Text variant="titleMedium">{project.name}</Text></View><View style={localStyles.iconValueRow}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.coin} size={15} /><Text style={dashboardStyles.cardDescription}>{availability.usesFreeGrant ? 'Free tutorial grant · 10× faster' : formatCurrency(availability.cost)}</Text><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={dashboardStyles.cardDescription}>{formatElapsedTime(availability.durationMs)}</Text></View></View><Text style={[localStyles.status, completed ? localStyles.completedStatus : availability.startable ? localStyles.readyStatus : localStyles.lockedStatus]}>{status}</Text></View>
         <View style={localStyles.seriesProgressHeader}><Text style={dashboardStyles.cardKicker}>RESEARCH CHAIN</Text><Text style={dashboardStyles.cardKicker}>{`${seriesCompletedCount} / ${seriesProjectCount}`}</Text></View>
-        <View style={localStyles.seriesProgressTrack}><ProgressBar accessible accessibilityLabel={`${seriesCompletedCount} of ${seriesProjectCount} research projects completed in this chain`} color={colors.primary} progress={seriesProjectCount === 0 ? 0 : seriesCompletedCount / seriesProjectCount} style={localStyles.seriesProgress} /></View>
+        <View style={localStyles.seriesProgressTrack}><ProgressBar accessible accessibilityLabel={`${seriesCompletedCount} of ${seriesProjectCount} research projects completed in this chain`} color={getColorClass(seriesProjectCount === 0 ? 0 : seriesCompletedCount / seriesProjectCount)} progress={seriesProjectCount === 0 ? 0 : seriesCompletedCount / seriesProjectCount} style={localStyles.seriesProgress} /></View>
         {recipeTimeComparison && <View style={localStyles.recipeTimeComparison}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={dashboardStyles.cardDescription}>Recipe time: {recipeTimeComparison.before} → {recipeTimeComparison.after}</Text></View>}
         {!expanded ? <Button compact onPress={onToggleExpanded}>Show details</Button> : <><Text style={[dashboardStyles.cardDescription, localStyles.reward]}>{`Completion reward: ${describeResearchEffect(project.effect)}`}</Text><Text style={[dashboardStyles.cardKicker, localStyles.requirementsHeading]}>REQUIREMENTS</Text>{requirementRows}{!completed && !isActive && !availability.startable && availability.unmetReasons.map((reason) => <Text accessibilityLabel={`Locked condition: ${reason}`} key={reason} style={localStyles.unmetRequirement}>{reason}</Text>)}{completed && <Text style={localStyles.completedStatus}>Reward applied permanently.</Text>}{!completed && !isActive && <Button accessibilityLabel={`Start ${project.name}`} disabled={!availability.startable} mode="contained" onPress={() => onStart(project.id)} style={localStyles.startButton}>Start research</Button>}<Button compact onPress={onToggleExpanded}>Hide details</Button></>}
       </View>

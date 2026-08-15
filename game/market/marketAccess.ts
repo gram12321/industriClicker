@@ -5,4 +5,4 @@ export function canBuyMarketResource(_resourceType: ResourceType): boolean { ret
 export function canSellMarketResource(_resourceType: ResourceType): boolean { return true; }
 export function canAutoBuyMarketResource(_resourceType: ResourceType): boolean { return true; }
 export function canAutoSellMarketResource(_resourceType: ResourceType): boolean { return true; }
-export function canOfferSalesContractForResource(_resourceType: ResourceType): boolean { return true; }
+export function canOfferSalesOrderForResource(_resourceType: ResourceType): boolean { return true; }

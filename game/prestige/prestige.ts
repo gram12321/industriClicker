@@ -1,5 +1,5 @@
 import { PRESTIGE_COMPANY_ASSETS_SOURCE_ID, PRESTIGE_COMPANY_BALANCE_SOURCE_ID, PRESTIGE_FACILITY_CONDITION_SOURCE_ID, PRESTIGE_EVENT_MIN_AMOUNT, PRESTIGE_EVENT_TYPES, PRESTIGE_FINANCE_PENALTY_HALF_LIFE_FOREGROUND_HOURS, PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS } from './prestigeConstants';
-import { calculateCurrentPrestigeAmount, calculateSalesContractPrestige } from './prestigeCalculator';
+import { calculateCurrentPrestigeAmount, calculateSalesOrderPrestige } from './prestigeCalculator';
 
 export type PrestigeEventType = typeof PRESTIGE_EVENT_TYPES[number];
 
@@ -109,19 +109,19 @@ export class PrestigeLedger {
     this.upsert({ type: 'facility_condition', amountBase, createdAtGameTimeMs, decayHalfLifeForegroundHours: null, sourceId: PRESTIGE_FACILITY_CONDITION_SOURCE_ID, description: 'Facility condition' });
   }
 
-  recordSalesContract(contractId: string, reward: number, createdAtGameTimeMs: number): void {
-    const amountBase = calculateSalesContractPrestige(reward);
+  recordSalesOrder(orderId: string, reward: number, premiumPercent: number, createdAtGameTimeMs: number): void {
+    const amountBase = calculateSalesOrderPrestige(reward, premiumPercent);
     if (amountBase <= 0) {
       return;
     }
 
     this.recordIfAbsent({
-      type: 'sales_contract',
+      type: 'sales_order',
       amountBase,
       createdAtGameTimeMs,
       decayHalfLifeForegroundHours: PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS,
-      sourceId: `contract:${contractId}`,
-      description: 'Customer contract fulfilled',
+      sourceId: `order:${orderId}`,
+      description: 'Customer order fulfilled',
     });
   }
 

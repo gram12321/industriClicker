@@ -13,9 +13,11 @@ import type { AchievementLedger } from "@/game/achievements";
 import type { FacilityCollection } from "@/game/facilities";
 import {
   ECONOMY_INTEREST_MULTIPLIERS,
+  ECONOMY_PHASE_SCORES,
   FINANCE_REPORT_PERIODS,
   LENDER_TYPE_LABELS,
   LENDER_TYPES,
+  LOAN_TERMS,
   type Finance,
   type LoanOffer,
   type LoanSearchCriteria,
@@ -31,7 +33,7 @@ import type { Inventory } from "@/game/inventory";
 import type { Market } from "@/game/market";
 import type { ResearchLedger } from "@/game/research";
 import { colors } from "@/theme";
-import { formatCurrency, formatElapsedTime, formatNumber } from "@/utils";
+import { formatCurrency, formatElapsedTime, formatNumber, getColorClass, normalizeToUnitInterval } from "@/utils";
 import { SectionHeading } from "@/ui/dashboard/components/DashboardPrimitives";
 
 type Page = "summary" | "assets" | "liabilities" | "cash-flow" | "funding";
@@ -261,21 +263,29 @@ function Row({
   value,
   negative = false,
   strong = false,
+  valueColor,
 }: {
   label: string;
   value: string;
   negative?: boolean;
   strong?: boolean;
+  valueColor?: string;
 }) {
   return (
     <View style={s.row}>
       <Text style={strong ? s.strong : undefined}>{label}</Text>
-      <Text style={[strong ? s.strong : s.value, negative && s.negative]}>
+      <Text style={[strong ? s.strong : s.value, negative && s.negative, valueColor ? { color: valueColor } : undefined]}>
         {value}
       </Text>
     </View>
   );
 }
+
+/** Lower borrowing rates are better, so this inverts the normalized rate score. */
+function getLoanRateColor(periodicRate: number): string {
+  return getColorClass(1 - normalizeToUnitInterval(periodicRate, LOAN_TERMS.minAnnualRate / 52, LOAN_TERMS.maxAnnualRate / 52));
+}
+
 function Panel({
   children,
   title,
@@ -467,6 +477,7 @@ function Liabilities({
                     percent: true,
                     decimals: 3,
                   })}
+                  valueColor={getLoanRateColor(loan.periodicInterestRate)}
                 />
                 <Row
                   label="Payment per cycle"
@@ -529,6 +540,7 @@ function Liabilities({
         <Row
           label="Asset strength"
           value={formatNumber(b.assetHealth.score, { percent: true })}
+          valueColor={getColorClass(b.assetHealth.score)}
         />
         <Row
           label="Debt to assets"
@@ -543,6 +555,7 @@ function Liabilities({
         <Row
           label="Payment history"
           value={formatNumber(b.paymentHistory.score, { percent: true })}
+          valueColor={getColorClass(b.paymentHistory.score)}
         />
         <Row
           label="On-time / missed"
@@ -551,6 +564,7 @@ function Liabilities({
         <Row
           label="Company stability"
           value={formatNumber(b.companyStability.score, { percent: true })}
+          valueColor={getColorClass(b.companyStability.score)}
         />
         <Row
           label="Age / consistency / efficiency"
@@ -560,14 +574,15 @@ function Liabilities({
           label="Final rating"
           strong
           value={`${creditRating.grade} (${formatNumber(creditRating.score, { percent: true })})`}
+          valueColor={getColorClass(creditRating.score)}
         />
       </Panel>
       <LenderAvailability breakdown={loanLimitBreakdown} />
     </View>
   );
 }
-function Badge({ label }: { label: string }) {
-  return <Text style={s.badge}>{label}</Text>;
+function Badge({ color = colors.primary, label }: { color?: string; label: string }) {
+  return <Text style={[s.badge, { color }]}>{label}</Text>;
 }
 function LenderAvailability({
   breakdown,
@@ -1107,6 +1122,7 @@ function Funding({
                   percent: true,
                   decimals: 3,
                 })}
+                valueColor={getLoanRateColor(offer.periodicInterestRate)}
               />
               <Text style={s.hint}>
                 Rate includes this company’s credit and the current{" "}

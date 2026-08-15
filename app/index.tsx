@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Avatar, Divider, IconButton, Menu, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { APP_ICONS } from '@/icons';
-import { calculateCompanyPrestigeSummary, getMaximumOpenSalesContracts, type FacilityType, useCompanySessionStore, useGameStore } from '@/game';
+import { APP_ICONS, ECONOMY_PHASE_ICONS } from '@/icons';
+import { calculateCompanyPrestigeSummary, getMaximumOpenSalesOrders, type FacilityType, useCompanySessionStore, useGameStore } from '@/game';
 import { colors } from '@/theme';
 import { ActiveProcessesOverlay, AdminDashboard, AchievementsView, CollectionDialog, ConstructionTutorialDialog, FirstFacilityTutorialDialog, GameViewContent, FacilityConstructionDialog, BuildFacilityTutorialDialog, IndustriPediaView, isDevAdminSurfaceAvailable, LeaderboardScreen, PrestigeDialog, ProfileScreen, ResearchView, SettingsScreen, styles, ProductionTutorialDialog, TutorialGuideDialog, LoginView, type GameViewId } from '@/ui';
 import { formatCurrency, formatElapsedTime, formatNumber } from '@/utils';
@@ -51,7 +51,7 @@ function GameShell({ companyName }: { companyName: string }) {
   const market = useGameStore((state) => state.market);
   const facilities = useGameStore((state) => state.facilities);
   const finance = useGameStore((state) => state.finance);
-  const salesContracts = useGameStore((state) => state.salesContracts);
+  const salesOrders = useGameStore((state) => state.salesOrders);
   const achievements = useGameStore((state) => state.achievements);
   const productionStatistics = useGameStore((state) => state.productionStatistics);
   const prestige = useGameStore((state) => state.prestige);
@@ -72,15 +72,15 @@ function GameShell({ companyName }: { companyName: string }) {
   const fastForwardOneMinute = useGameStore((state) => state.fastForwardOneMinute);
   const advanceGameTime = useGameStore((state) => state.advanceGameTime);
   const advanceRealtime = useGameStore((state) => state.advanceRealtime);
-  const createSalesContractRequest = useGameStore((state) => state.createSalesContractRequest);
+  const createSalesOrderRequest = useGameStore((state) => state.createSalesOrderRequest);
   const setInventoryAmount = useGameStore((state) => state.setInventoryAmount);
   const addAdminFunds = useGameStore((state) => state.addAdminFunds);
   const setAdminBalance = useGameStore((state) => state.setAdminBalance);
   const buyMarketResource = useGameStore((state) => state.buyMarketResource);
   const sellMarketResource = useGameStore((state) => state.sellMarketResource);
   const setMarketAutomation = useGameStore((state) => state.setMarketAutomation);
-  const fulfillSalesContract = useGameStore((state) => state.fulfillSalesContract);
-  const rejectSalesContract = useGameStore((state) => state.rejectSalesContract);
+  const fulfillSalesOrder = useGameStore((state) => state.fulfillSalesOrder);
+  const rejectSalesOrder = useGameStore((state) => state.rejectSalesOrder);
   const getResearchAvailability = useGameStore((state) => state.getResearchAvailability);
   const startResearch = useGameStore((state) => state.startResearch);
   const cancelResearch = useGameStore((state) => state.cancelResearch);
@@ -100,7 +100,9 @@ function GameShell({ companyName }: { companyName: string }) {
   const isAdminDashboardAvailable = isDevAdminSurfaceAvailable();
   const prestigeSummary = calculateCompanyPrestigeSummary(prestige.getEvents(), lastProcessedAtMs);
   const elapsedForegroundTimeMs = Math.max(0, lastProcessedAtMs - companyStartedAtGameTimeMs);
-  const maximumOpenContracts = getMaximumOpenSalesContracts(research.getCompletedProjectIds());
+  const maximumOpenContracts = getMaximumOpenSalesOrders(research.getCompletedProjectIds());
+  const economyPhase = finance.getEconomyPhase();
+  const economyPhaseColor = economyPhase === 'crash' || economyPhase === 'recession' ? colors.error : economyPhase === 'stable' ? colors.onDark : colors.paleGreen;
   const completeActivityInstantly = (_processId: string, remainingMs: number) => {
     advanceRealtime(Date.now());
     advanceGameTime(remainingMs);
@@ -139,6 +141,7 @@ function GameShell({ companyName }: { companyName: string }) {
             {tutorial.completedWelcome && <Pressable accessibilityLabel="Open company prestige" accessibilityRole="button" onPress={() => setIsPrestigeOpen(true)} style={styles.prestigeInline}><MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.achievements} size={17} /><Text style={styles.prestigeInlineValue}>{formatNumber(prestigeSummary.totalPrestige, { smartDecimals: true })}</Text></Pressable>}
           </View>
           <View style={styles.headerActions}>
+            <View accessibilityLabel={`Economy: ${economyPhase}`} style={styles.headerElapsedTime}><MaterialCommunityIcons color={economyPhaseColor} name={ECONOMY_PHASE_ICONS[economyPhase] as never} size={18} /></View>
             {tutorial.completedWelcome && <Pressable accessibilityLabel={`Open IndustriPedia economy phase: ${finance.getEconomyPhase()}`} accessibilityRole="button" onPress={() => { setPediaInitialSection('economy'); setActiveView('pedia'); }} style={styles.economyPhaseButton}><MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.economyPhase} size={21} /></Pressable>}
             {tutorial.completedWelcome && <IconButton accessibilityLabel="Fast-forward one minute" icon={APP_ICONS.fastForward} iconColor={colors.onDark} onPress={fastForwardOneMinute} />}
             <View accessibilityLabel={isTutorialOpen && tutorialStep === 3 ? 'Tutorial highlighted company time' : `Time ${formatElapsedTime(elapsedForegroundTimeMs)}`} style={styles.headerElapsedTime}><MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.elapsedTime} size={17} /><Text style={styles.headerElapsedTimeValue}>{formatElapsedTime(elapsedForegroundTimeMs)}</Text></View>
@@ -155,16 +158,16 @@ function GameShell({ companyName }: { companyName: string }) {
           </View>
         </View></View>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          {activeView === 'admin' && isAdminDashboardAvailable ? <AdminDashboard isTutorialEnabled={!tutorial.completedWelcome} onAddFunds={addAdminFunds} onClearAllLocalData={clearAllLocalData} onCreateContractRequest={createSalesContractRequest} onDeleteCompany={deleteActiveCompany} onDisableTutorial={completeWelcomeTutorial} onEnableTutorial={reopenWelcomeTutorial} onSetBalance={setAdminBalance} onSetInventoryAmount={setInventoryAmount} />
-            : activeView === 'achievements' ? <AchievementsView achievements={achievements} companyStartedAtGameTimeMs={companyStartedAtGameTimeMs} currentGameTimeMs={lastProcessedAtMs} facilities={facilities} finance={finance} prestige={prestige} productionStatistics={productionStatistics} salesContracts={salesContracts} />
+          {activeView === 'admin' && isAdminDashboardAvailable ? <AdminDashboard isTutorialEnabled={!tutorial.completedWelcome} onAddFunds={addAdminFunds} onClearAllLocalData={clearAllLocalData} onCreateContractRequest={createSalesOrderRequest} onDeleteCompany={deleteActiveCompany} onDisableTutorial={completeWelcomeTutorial} onEnableTutorial={reopenWelcomeTutorial} onSetBalance={setAdminBalance} onSetInventoryAmount={setInventoryAmount} />
+            : activeView === 'achievements' ? <AchievementsView achievements={achievements} companyStartedAtGameTimeMs={companyStartedAtGameTimeMs} currentGameTimeMs={lastProcessedAtMs} facilities={facilities} finance={finance} prestige={prestige} productionStatistics={productionStatistics} salesOrders={salesOrders} />
                 : activeView === 'profile' ? <ProfileScreen companyName={companyName} onDeleteCompany={deleteActiveCompany} onManageCompanies={logout} onReplayTutorial={reopenWelcomeTutorial} playerName={playerName} />
                 : activeView === 'research' ? <ResearchView facilities={facilities} finance={finance} getAvailability={getResearchAvailability} onCancel={cancelResearch} onStart={startResearch} research={research} />
                 : activeView === 'settings' ? <SettingsScreen onLogout={logout} />
                   : activeView === 'leaderboard' ? <LeaderboardScreen />
-                    : activeView === 'pedia' ? <IndustriPediaView initialSection={pediaInitialSection} market={market} />
-                    : <GameViewContent achievements={achievements} activeTab={activeView === 'admin' ? 'company' : activeView} buyMarketResource={buyMarketResource} companyName={companyName} companyStartedAtGameTimeMs={companyStartedAtGameTimeMs} currentGameTimeMs={lastProcessedAtMs} customerPipelineProgress={customerPipelineProgress} facilities={facilities} finance={finance} fulfillSalesContract={fulfillSalesContract} getResearchAvailability={getResearchAvailability} inventory={inventory} isBuildFacilityTutorial={isBuildFacilityTutorialOpen} market={market} maximumOpenContracts={maximumOpenContracts} onAcceptLoanOffer={acceptLoanOffer} onBuildFacilityLayout={setBuildFacilityButtonLayout} onExtraLoanPayment={makeExtraLoanPayment} onRemoveLoanOffer={removeLoanOffer} onRemoveUnavailableLoanOffers={removeUnavailableLoanOffers} onRepayLoanInFull={repayLoanInFull} onStartLoanSearch={startLoanSearch} onlyInStock={onlyInStock} openConstructionYard={() => { if (isBuildFacilityTutorialOpen) setIsBuildFacilityTutorialOpen(false); setIsConstructionYardOpen(true); if (isBuildFacilityTutorialOpen) setIsConstructionTutorialOpen(true); }} rejectSalesContract={rejectSalesContract} repairFacility={repairFacility} requestFacilityDestruction={setPendingDestruction} research={research} salesContracts={salesContracts} sellMarketResource={sellMarketResource} setFacilityProductionActive={setFacilityProductionActive} setFacilityProductionCycle={setFacilityProductionCycle} setFacilityWorkers={setFacilityWorkers} setMarketAutomation={setMarketAutomation} setOnlyInStock={setOnlyInStock} setShowActiveRecipeInputs={setShowActiveRecipeInputs} showActiveRecipeInputs={showActiveRecipeInputs} startResearch={startResearch} upgradeFacility={upgradeFacility} />}
+                    : activeView === 'pedia' ? <IndustriPediaView companyPrestige={prestigeSummary.totalPrestige} currentGameTimeMs={lastProcessedAtMs} initialSection={pediaInitialSection} market={market} salesOrders={salesOrders} />
+                    : <GameViewContent achievements={achievements} activeTab={activeView === 'admin' ? 'company' : activeView} buyMarketResource={buyMarketResource} companyName={companyName} companyPrestige={prestigeSummary.totalPrestige} companyStartedAtGameTimeMs={companyStartedAtGameTimeMs} currentGameTimeMs={lastProcessedAtMs} customerPipelineProgress={customerPipelineProgress} facilities={facilities} finance={finance} fulfillSalesOrder={fulfillSalesOrder} getResearchAvailability={getResearchAvailability} inventory={inventory} isBuildFacilityTutorial={isBuildFacilityTutorialOpen} market={market} maximumOpenContracts={maximumOpenContracts} onAcceptLoanOffer={acceptLoanOffer} onBuildFacilityLayout={setBuildFacilityButtonLayout} onExtraLoanPayment={makeExtraLoanPayment} onRemoveLoanOffer={removeLoanOffer} onRemoveUnavailableLoanOffers={removeUnavailableLoanOffers} onRepayLoanInFull={repayLoanInFull} onStartLoanSearch={startLoanSearch} onlyInStock={onlyInStock} openConstructionYard={() => { if (isBuildFacilityTutorialOpen) setIsBuildFacilityTutorialOpen(false); setIsConstructionYardOpen(true); if (isBuildFacilityTutorialOpen) setIsConstructionTutorialOpen(true); }} rejectSalesOrder={rejectSalesOrder} repairFacility={repairFacility} requestFacilityDestruction={setPendingDestruction} research={research} salesOrders={salesOrders} sellMarketResource={sellMarketResource} setFacilityProductionActive={setFacilityProductionActive} setFacilityProductionCycle={setFacilityProductionCycle} setFacilityWorkers={setFacilityWorkers} setMarketAutomation={setMarketAutomation} setOnlyInStock={setOnlyInStock} setShowActiveRecipeInputs={setShowActiveRecipeInputs} showActiveRecipeInputs={showActiveRecipeInputs} startResearch={startResearch} upgradeFacility={upgradeFacility} />}
         </ScrollView>
-        {tutorial.completedWelcome && <ActiveProcessesOverlay customerPipelineProgress={customerPipelineProgress} facilities={facilities} finance={finance} inventory={inventory} maximumOpenContracts={maximumOpenContracts} onCompleteProcess={completeActivityInstantly} research={research} salesContracts={salesContracts} showInstantCompletion={isAdminDashboardAvailable} />}
+        {tutorial.completedWelcome && <ActiveProcessesOverlay customerPipelineProgress={customerPipelineProgress} facilities={facilities} finance={finance} inventory={inventory} maximumOpenContracts={maximumOpenContracts} onCompleteProcess={completeActivityInstantly} research={research} salesOrders={salesOrders} showInstantCompletion={isAdminDashboardAvailable} />}
         <View style={styles.bottomNavigation}>{(tutorial.completedWelcome ? [...tabs.slice(0, 3), salesTab, researchTab, ...tabs.slice(3)] : tutorialStep === 5 ? [tabs[0], tabs[2]] : [tabs[0]]).map((tab) => <BottomNavigationItem active={activeView === tab.key} highlight={tutorialStep === 5 && activeView !== 'production' && tab.key === 'production'} icon={tab.icon} key={tab.key} label={tab.label} onPress={() => { setActiveView(tab.key); if (tutorial.completedWelcome) return; if (tab.key === 'company') { setIsProductionTutorialOpen(false); setIsBuildFacilityTutorialOpen(false); setIsTutorialOpen(true); } if (tab.key === 'production') { setIsTutorialOpen(false); hasProductionTutorialStarted ? setIsBuildFacilityTutorialOpen(true) : setIsProductionTutorialOpen(true); } }} symbol={tab.symbol} />)}</View>
       </View>
       <FacilityConstructionDialog facilities={facilities} finance={finance} inventory={inventory} isConstructionYardOpen={isConstructionYardOpen} market={market} onBuyMissingConstructionInputs={() => { if (pendingConstruction) buyMissingConstructionInputs(pendingConstruction); }} onCloseConstructionYard={() => setIsConstructionYardOpen(false)} onConfirmConstruction={() => { if (pendingConstruction && buildFacility(pendingConstruction)) { if (facilities.getAll().length === 0 && !tutorial.completedWelcome) { setFirstBuiltFacilityType(pendingConstruction); setIsFirstFacilityTutorialOpen(true); } setPendingConstruction(null); } }} onConfirmDestruction={() => { if (pendingDestruction && sellFacility(pendingDestruction)) setPendingDestruction(null); }} onDismissConstruction={() => setPendingConstruction(null)} onDismissDestruction={() => setPendingDestruction(null)} onSelectFacility={(facilityType) => { setIsConstructionYardOpen(false); setPendingConstruction(facilityType); }} pendingConstruction={pendingConstruction} pendingDestruction={pendingDestruction} />

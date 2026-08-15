@@ -34,13 +34,16 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Lender availability | A per-lender eligibility and borrowing-cap calculation derived from the company's assets, credit score, outstanding debt, lender market exposure, and lender contract cap. |
 | Lender search | A paid, foreground-time finance activity. Its fee and work requirement scale with offer count and how tightly lender type, amount, and term are constrained; matching offers appear only when the work completes. |
 | Economy phase | The persistent crash, recession, stable, expansion, or boom state. It changes deterministically every 10 foreground minutes with a bias toward stable and adjusts future loan interest offers. |
-| Sales contract | A customer request for a resource and integer quantity, retained as offered, completed, or rejected. |
+| Customer order | A customer-specific, atomic bundle of one or more inventory-ready resource lines, with locked global reference prices, bids, premiums, lot-sized quantities, expiry, and full-fulfilment requirement. The domain target value scales with company prestige and receives a modest relationship volume bonus, but its reward cannot exceed the derived company-value cap. An order is not a future contract. |
+| Customer catalogue | A deterministic local stand-in for the future shared customer registry. Each domain generates a variable number of buyers until its market share reaches 100%, using a skewed, domain-scaled market-share draw. Definitions include a home domain, customer type, generated operating domains, market share, purchasing power, and bid profile. Company-specific relationship and order history remain in the company snapshot. |
+| Customer type | A buyer-behaviour profile separate from a home domain. Private Customer, Retail Chain, Construction Contractor, Industrial Enterprise, Utility Operator, and Government Procurement control frequency, target-value tendency, global premium tendency, bundle appetite, market-share tendency, and allowed operating domains. |
+| Customer relationship | A normalized 0–1 company-specific score, displayed to players as 0–100. Its Reputation baseline comes from prestige recognition minus a larger-account adjustment for customer market share. The remaining difference is retained order history: fulfilments add to it; rejections and expiries remove from it; foreground-time decay pulls it back toward Reputation. |
 | Speed upgrade / Output upgrade | Facility levels that respectively improve work speed or recipe output and consume euros, Construction Materials, and Industrial Machines. |
 | Assigned workers / Required workers | The local worker count and calculated staffing target for a facility. |
 | Facility condition | A persisted 0–1 measure of a constructed facility's wear state. It begins at 1 and decreases during foreground time and completed production cycles. |
 | Recipe condition-wear multiplier | A static per-recipe balance value that scales production wear without following live market prices. |
 | Facility efficiency | The production-speed multiplier formed from staffing efficiency and facility condition. |
-| Company prestige | An informational company-standing value derived from prestige events. |
+| Company prestige | A company-standing value derived from prestige events. It improves customer discovery, bid quality, relationship baselines, and customer-order target value. |
 | Local player profile | A device-local, non-authenticated profile that groups one or more companies. |
 | Active company | The selected company whose snapshot is restored into runtime state and may advance foreground game time. |
 | Device session | The persisted local selection of a player profile and active company; logging out clears this selection only. |
@@ -52,9 +55,10 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Progression gate | A pure all-of requirement check over achievements, current prestige, completed research, and a starting condition. |
 | Research project | A code-defined, one-time company project with an up-front cost, foreground duration, requirements, and completion effect. Recipe research durations are three times their base duration. |
 | Active research | The one paid research project currently accumulating foreground milliseconds for its company, with its effective duration retained when it starts. |
-| Sales capacity | The derived maximum number of open customer contracts. It starts at two and is raised by completed Sales Capacity research. |
+| Sales capacity | The derived maximum number of open customer orders. It starts at two and is raised by completed Sales Capacity research. |
+| Order scope | Research-controlled maximum reward for one new customer order, expressed as a share of current company assets. It starts at 50%, has a €100 practical floor, and rises through completed Order Scope research. |
 | Sales targeting | Research that first favors, then exclusively selects, resources with recorded company production when creating customer offers. |
-| Contract value | Research that increases the premium paid by customer contracts; it does not change ordinary market-sale prices. |
+| Bid value | Research that increases the premium paid by customer orders; it does not change ordinary market-sale prices. |
 | Progression grant | A durable, one-use entitlement that can make one specific player action free or faster. The first-facility recipe grant makes that facility's first recipe research free and ten times faster. |
 
 ## Time, State, and Persistence

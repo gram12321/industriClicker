@@ -2,12 +2,13 @@ import { getRecipeResearchLevelProjectId, getResearchProject, RESEARCH_PROJECT_I
 import type { RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, type ResourceType } from '@/game/resources';
 import { calculateDiminishingBonus } from '@/game/core/math/scaling';
+import { SALES_ORDER_BASE_COMPANY_VALUE_FRACTION } from '@/game/sales/salesConstants';
 
 export type CompletedResearchProject = { projectId: ResearchProjectId; completedAtGameTimeMs: number };
 export type ActiveResearchProject = { projectId: ResearchProjectId; progressMs: number; durationMs: number; paidCost: number };
 export type ResearchLedgerSnapshot = { completed: CompletedResearchProject[]; active: ActiveResearchProject[] };
 
-export const BASE_MAXIMUM_OPEN_SALES_CONTRACTS = 2;
+export const BASE_MAXIMUM_OPEN_SALES_ORDERS = 2;
 export const BASE_SIMULTANEOUS_RESEARCH_PROJECTS = 1;
 
 export function getMaximumSimultaneousResearchProjects(completedProjectIds: readonly string[]): number {
@@ -17,11 +18,18 @@ export function getMaximumSimultaneousResearchProjects(completedProjectIds: read
   }, BASE_SIMULTANEOUS_RESEARCH_PROJECTS);
 }
 
-export function getMaximumOpenSalesContracts(completedProjectIds: readonly string[]): number {
+export function getMaximumOpenSalesOrders(completedProjectIds: readonly string[]): number {
   return completedProjectIds.reduce((maximum, projectId) => {
     const effect = getResearchProject(projectId)?.effect;
-    return effect?.kind === 'max-open-sales-contracts' ? Math.max(maximum, effect.maximum) : maximum;
-  }, BASE_MAXIMUM_OPEN_SALES_CONTRACTS);
+    return effect?.kind === 'max-open-sales-orders' ? Math.max(maximum, effect.maximum) : maximum;
+  }, BASE_MAXIMUM_OPEN_SALES_ORDERS);
+}
+
+export function getSalesOrderMaximumCompanyValueFraction(completedProjectIds: readonly string[]): number {
+  return completedProjectIds.reduce((maximum, projectId) => {
+    const effect = getResearchProject(projectId)?.effect;
+    return effect?.kind === 'sales-order-value-cap' ? Math.max(maximum, effect.maximumCompanyValueFraction) : maximum;
+  }, SALES_ORDER_BASE_COMPANY_VALUE_FRACTION);
 }
 
 export function getRecipeResearchWorkSpeedMultiplier(recipeName: RecipeName, completedProjectIds: readonly string[]): number {
@@ -42,10 +50,10 @@ export function getSalesOfferProducedResourceWeight(completedProjectIds: readonl
   }, 1);
 }
 
-export function getSalesContractPremiumMultiplier(completedProjectIds: readonly string[], baseMultiplier: number): number {
+export function getSalesOrderBidMultiplier(completedProjectIds: readonly string[], baseMultiplier: number): number {
   return completedProjectIds.reduce((multiplier, projectId) => {
     const effect = getResearchProject(projectId)?.effect;
-    return effect?.kind === 'sales-contract-premium' ? Math.max(multiplier, effect.multiplier) : multiplier;
+    return effect?.kind === 'sales-order-bid-multiplier' ? Math.max(multiplier, effect.multiplier) : multiplier;
   }, baseMultiplier);
 }
 
