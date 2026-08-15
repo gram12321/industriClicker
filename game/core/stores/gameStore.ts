@@ -1050,16 +1050,17 @@ export const useGameStore = create<GameState>((set, get) => {
     const finance = get().finance.clone();
     const market = get().market.clone();
 
-    if (!inventory.has(order.resourceType, order.quantity)) {
+    if (!order.lines.every((line) => inventory.has(line.resourceType, line.quantity))) {
       return false;
     }
 
-    const quality = inventory.getQuality(order.resourceType);
     const currentGameTimeMs = get().lastProcessedAtMs;
-    if (!inventory.remove(order.resourceType, order.quantity)
-      || !finance.applyTransaction({ amount: order.reward, description: `Customer order fulfilled: ${order.customerName}`, detailLines: [`Delivered ${order.quantity} ${order.resourceType}`], kind: 'operating', source: 'order-sale', occurredAtGameTimeMs: currentGameTimeMs })
-      || !salesOrders.fulfill(order.id, currentGameTimeMs, calculateCompanyPrestigeSummary(get().prestige.getEvents(), currentGameTimeMs).totalPrestige)
-      || !market.addToGlobal(order.resourceType, order.quantity, quality)) {
+    for (const line of order.lines) {
+      const quality = inventory.getQuality(line.resourceType);
+      if (!inventory.remove(line.resourceType, line.quantity) || !market.addToGlobal(line.resourceType, line.quantity, quality)) return false;
+    }
+    if (!finance.applyTransaction({ amount: order.reward, description: `Customer order fulfilled: ${order.customerName}`, detailLines: order.lines.map((line) => `Delivered ${line.quantity} ${line.resourceType}`), kind: 'operating', source: 'order-sale', occurredAtGameTimeMs: currentGameTimeMs })
+      || !salesOrders.fulfill(order.id, currentGameTimeMs, calculateCompanyPrestigeSummary(get().prestige.getEvents(), currentGameTimeMs).totalPrestige)) {
       return false;
     }
 

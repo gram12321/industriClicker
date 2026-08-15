@@ -122,6 +122,8 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
       && facility.facilityCondition <= 1)
     && Array.isArray(value.salesOrders.offered)
     && Array.isArray(value.salesOrders.completed)
+    && value.salesOrders.offered.every((order) => isRecord(order) && Array.isArray(order.lines))
+    && value.salesOrders.completed.every((order) => isRecord(order) && Array.isArray(order.lines))
     && Array.isArray(value.salesOrders.customerStates)
     && typeof value.salesOrders.nextOrderNumber === 'number'
     && typeof value.salesOrders.worldSeed === 'string'

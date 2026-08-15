@@ -363,7 +363,7 @@ flowchart LR
 | `finance.balance`, `.transactions`, `.loans`, `.lenders`, `.activeLoanSearch`, `.loanSearchOffers`, economy phase, loan-payment history | Stored | `Finance` | Accepted transactions, timed lender searches, loan actions, economy transitions, and foreground repayment attempts | `FinanceSnapshot` |
 | Numbered facility instances, production-cycle recipe order/current position, and recipe progress | Stored | `FacilityCollection` | Construction, cycle setup, upgrades, and production | Facility snapshot |
 | Facility upgrade levels, assigned workers, and 0–1 condition | Stored | `Facility` | Upgrade/staffing commands and foreground wear/production tear | Facility snapshot |
-| `salesOrders.offered`, `.completed`, `.customerStates`, `.nextOrderNumber` | Stored | `SalesOrders` | Customer orders, expiry, and relationship actions | `SalesOrdersSnapshot` |
+| `salesOrders.offered`/`.completed` atomic order lines, `.customerStates`, `.nextOrderNumber` | Stored | `SalesOrders` | Customer-order bundle creation, expiry, fulfilment, and relationship actions | `SalesOrdersSnapshot` |
 | `achievements.unlocks` | Stored | `AchievementLedger` | Post-command achievement evaluation | `AchievementLedgerSnapshot` |
 | `productionStatistics.producedByResource` | Stored | `ProductionStatistics` | Completed facility recipe output only | `ProductionStatisticsSnapshot` |
 | `prestige.events` | Stored | `PrestigeLedger` | Balance changes and fulfilled sales | `PrestigeLedgerSnapshot` |

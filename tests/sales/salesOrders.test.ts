@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ResourceType, RESOURCE_TYPES } from '@/game/resources';
-import { SALES_ORDER_DURATION_MS, SalesOrders, calculateSalesOrderAcquisitionChance } from '@/game/sales';
+import { SALES_ORDER_DURATION_MS, SalesOrders, calculateSalesOrderAcquisitionChance, calculateSalesOrderBundleLineCount, calculateSalesOrderTargetValue } from '@/game/sales';
 
 function quantities(resourceType: ResourceType, amount: number): Record<ResourceType, number> {
   return RESOURCE_TYPES.reduce((result, candidate) => { result[candidate] = candidate === resourceType ? amount : 0; return result; }, {} as Record<ResourceType, number>);
@@ -13,16 +13,35 @@ describe('sales orders', () => {
     const result = orders.advanceTime({ currentGameTimeMs: 60_000, maximumOpenOrders: 2, companyPrestige: 500, economyPhase: 'boom', inventoryByResource: quantities(ResourceType.Water, 1_000), globalPrices: prices(1), candidateResourceTypes: [ResourceType.Water], getResourceWeight: () => 1, bidResearchMultiplier: 1 });
     expect(result.ordersCreated).toBe(1);
     const order = orders.getOfferedOrders()[0];
-    expect(order.resourceType).toBe(ResourceType.Water);
-    expect(order.quantity % 500).toBe(0);
-    expect(order.globalReferenceUnitPrice).toBe(1);
-    expect(order.bidUnitPrice).toBeGreaterThan(0);
-    expect(order.reward).toBe(order.quantity * order.bidUnitPrice);
+    expect(order.lines).toHaveLength(1);
+    expect(order.lines[0].resourceType).toBe(ResourceType.Water);
+    expect(order.lines[0].quantity % 500).toBe(0);
+    expect(order.lines[0].globalReferenceUnitPrice).toBe(1);
+    expect(order.lines[0].bidUnitPrice).toBeGreaterThan(0);
+    expect(order.reward).toBe(order.lines[0].quantity * order.lines[0].bidUnitPrice);
   });
 
   it('does not acquire orders without an inventory lot and lowers chance for pending orders', () => {
     expect(calculateSalesOrderAcquisitionChance({ openOrderCount: 0, companyPrestige: 0, economyPhase: 'stable', hasEligibleInventory: false })).toBe(0);
     expect(calculateSalesOrderAcquisitionChance({ openOrderCount: 2, companyPrestige: 0, economyPhase: 'stable', hasEligibleInventory: true })).toBeLessThan(calculateSalesOrderAcquisitionChance({ openOrderCount: 0, companyPrestige: 0, economyPhase: 'stable', hasEligibleInventory: true }));
+  });
+
+  it('scales target offer value with prestige and gives a modest repeat-customer volume bonus', () => {
+    const baseTargetValue = 100;
+    const startingCompanyValue = calculateSalesOrderTargetValue({ baseTargetValue, companyPrestige: 0, relationship: 0 });
+    const establishedCompanyValue = calculateSalesOrderTargetValue({ baseTargetValue, companyPrestige: 500, relationship: 0 });
+    const loyalCustomerValue = calculateSalesOrderTargetValue({ baseTargetValue, companyPrestige: 500, relationship: 100 });
+
+    expect(startingCompanyValue).toBe(baseTargetValue);
+    expect(establishedCompanyValue).toBeGreaterThan(startingCompanyValue);
+    expect(loyalCustomerValue).toBeCloseTo(establishedCompanyValue * 1.2);
+  });
+
+  it('keeps one line common while allowing more compatible lines as customer maturity rises', () => {
+    expect(calculateSalesOrderBundleLineCount({ candidateCount: 1, companyPrestige: 300, relationship: 100, marketShare: 0.2, bundleAppetite: 1, seed: 'one' })).toBe(1);
+    expect(calculateSalesOrderBundleLineCount({ candidateCount: 8, companyPrestige: 0, relationship: 0, marketShare: 0.001, bundleAppetite: 0.08, seed: 'early' })).toBe(1);
+    const lateLineCounts = Array.from({ length: 40 }, (_, index) => calculateSalesOrderBundleLineCount({ candidateCount: 8, companyPrestige: 300, relationship: 100, marketShare: 0.2, bundleAppetite: 1, seed: `late-${index}` }));
+    expect(lateLineCounts.some((lineCount) => lineCount > 1)).toBe(true);
   });
 
   it('changes relationship for fulfilment and expiry', () => {

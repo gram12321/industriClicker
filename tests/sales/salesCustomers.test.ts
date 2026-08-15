@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ResourceType } from '@/game/resources';
-import { SALES_CUSTOMER_DOMAINS, advanceSalesCustomerRelationship, calculateSalesCustomerRelationshipBaseline, createSalesCustomerState, getSalesCustomerCatalogue, getSalesResourceProfile } from '@/game/sales';
+import { SALES_CUSTOMER_DOMAINS, SALES_CUSTOMER_TYPE_PROFILES, SALES_CUSTOMER_TYPES, advanceSalesCustomerRelationship, calculateSalesCustomerRelationshipBaseline, createSalesCustomerState, getSalesCustomerCatalogue, getSalesResourceProfile } from '@/game/sales';
 
 describe('sales customer catalogue', () => {
   it('is deterministic and generates variable customer counts that normalize market share within each domain', () => {
@@ -21,6 +21,15 @@ describe('sales customer catalogue', () => {
   it('places water and electricity in the utilities domain with meaningful delivery lots', () => {
     expect(getSalesResourceProfile(ResourceType.Water)).toEqual({ domain: 'utilities', standardOrderLot: 500 });
     expect(getSalesResourceProfile(ResourceType.Electricity)).toEqual({ domain: 'utilities', standardOrderLot: 250 });
+  });
+
+  it('gives customers an independent type and deterministic operating-domain scope', () => {
+    const catalogue = getSalesCustomerCatalogue();
+    expect(SALES_CUSTOMER_TYPES.every((customerType) => catalogue.some((customer) => customer.customerType === customerType))).toBe(true);
+    for (const customer of catalogue) {
+      expect(customer.operatingDomains).toContain(customer.domain);
+      expect(customer.operatingDomains.every((domain) => SALES_CUSTOMER_TYPE_PROFILES[customer.customerType].allowedOperatingDomains.includes(domain))).toBe(true);
+    }
   });
 
   it('decays company relationship toward the current prestige-derived baseline', () => {

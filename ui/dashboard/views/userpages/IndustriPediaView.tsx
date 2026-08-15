@@ -13,7 +13,7 @@ import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS, RECIPE_ICONS } from '@/icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '@/theme';
-import { SALES_CUSTOMER_DOMAIN_PROFILES, SALES_CUSTOMER_DOMAINS, getSalesCustomerCatalogue, getSalesResourceProfile, type SalesCustomerDomain, type SalesOrders } from '@/game/sales';
+import { SALES_CUSTOMER_DOMAIN_PROFILES, SALES_CUSTOMER_DOMAINS, SALES_CUSTOMER_TYPE_PROFILES, SALES_CUSTOMER_TYPES, getSalesCustomerCatalogue, getSalesResourceProfile, type SalesCustomerDomain, type SalesOrders } from '@/game/sales';
 
 export function IndustriPediaView({ companyPrestige, currentGameTimeMs, market, salesOrders }: { companyPrestige: number; currentGameTimeMs: number; market: Market; salesOrders: SalesOrders }) {
   const [activeSection, setActiveSection] = useState<IndustriPediaSection>('resources');
@@ -35,11 +35,12 @@ export function IndustriPediaView({ companyPrestige, currentGameTimeMs, market, 
     {activeSection === 'prestige' && <PrestigeSection />}
     {activeSection === 'achievements' && <AchievementsSection />}
     {activeSection === 'customer-domains' && <CustomerDomainsSection />}
+    {activeSection === 'customer-types' && <CustomerTypesSection />}
     {activeSection === 'customers' && <CustomersSection companyPrestige={companyPrestige} currentGameTimeMs={currentGameTimeMs} salesOrders={salesOrders} />}
   </>;
 }
 
-type IndustriPediaSection = 'resources' | 'facilities' | 'recipes' | 'market-flow' | 'finance' | 'prestige' | 'achievements' | 'customer-domains' | 'customers';
+type IndustriPediaSection = 'resources' | 'facilities' | 'recipes' | 'market-flow' | 'finance' | 'prestige' | 'achievements' | 'customer-domains' | 'customer-types' | 'customers';
 
 const INDUSTRIPEDIA_SECTIONS: ReadonlyArray<{ id: IndustriPediaSection; label: string }> = [
   { id: 'resources', label: 'Resources' },
@@ -50,13 +51,22 @@ const INDUSTRIPEDIA_SECTIONS: ReadonlyArray<{ id: IndustriPediaSection; label: s
   { id: 'prestige', label: 'Prestige' },
   { id: 'achievements', label: 'Achievements' },
   { id: 'customer-domains', label: 'Customer domains' },
+  { id: 'customer-types', label: 'Customer types' },
   { id: 'customers', label: 'Customers' },
 ];
 
 function CustomerDomainsSection() {
   return <>
-    <SectionHeading eyebrow="CUSTOMER DOMAINS" title="Who buys your goods" subtitle="Domains replace Winemaker countries and customer types: each controls buyer scale, bidding, order value, and frequency." />
-    {SALES_CUSTOMER_DOMAINS.map((domain) => { const profile = SALES_CUSTOMER_DOMAIN_PROFILES[domain]; const resources = RESOURCE_TYPES.filter((resourceType) => getSalesResourceProfile(resourceType).domain === domain); return <Card key={domain} mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text variant="titleMedium">{profile.label}</Text><Text style={styles.cardDescription}>{`Bid range: ${formatNumber(profile.bidRange[0] * 100, { decimals: 0 })}%–${formatNumber(profile.bidRange[1] * 100, { decimals: 0 })}% of reference before buyer, relationship, prestige, and economy effects.`}</Text><Text style={styles.salesAvailability}>{`Target order value: ${formatCurrency(profile.targetOrderValue[0])}–${formatCurrency(profile.targetOrderValue[1])} · Frequency: ${formatNumber(profile.frequency, { smartDecimals: true })}×`}</Text><Text style={styles.salesAvailability}>{`Share scale: ${formatNumber(profile.marketShareMultiplier, { smartDecimals: true })}× · Relationship gain: ${formatNumber(profile.relationshipGainMultiplier, { smartDecimals: true })}×`}</Text><Text style={styles.cardDescription}>{`Resources: ${resources.map((resourceType) => `${getResourceIcon(resourceType)} ${getResource(resourceType).name} (lot ${formatNumber(getSalesResourceProfile(resourceType).standardOrderLot)})`).join(', ')}`}</Text></Card.Content></Card>; })}
+    <SectionHeading eyebrow="CUSTOMER DOMAINS" title="Who buys your goods" subtitle="Domains replace Winemaker countries. Customer types separately control buying behaviour, scope, and bundle appetite." />
+    {SALES_CUSTOMER_DOMAINS.map((domain) => { const profile = SALES_CUSTOMER_DOMAIN_PROFILES[domain]; const resources = RESOURCE_TYPES.filter((resourceType) => getSalesResourceProfile(resourceType).domain === domain); return <Card key={domain} mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text variant="titleMedium">{profile.label}</Text><Text style={styles.cardDescription}>{`Bid range: ${formatNumber(profile.bidRange[0] * 100, { decimals: 0 })}%–${formatNumber(profile.bidRange[1] * 100, { decimals: 0 })}% of reference before buyer, relationship, prestige, and economy effects.`}</Text><Text style={styles.salesAvailability}>{`Base target value: ${formatCurrency(profile.targetOrderValue[0])}–${formatCurrency(profile.targetOrderValue[1])} · Frequency: ${formatNumber(profile.frequency, { smartDecimals: true })}×`}</Text><Text style={styles.salesAvailability}>Target value then scales up to 4× with prestige and up to 1.2× with relationship.</Text><Text style={styles.salesAvailability}>{`Share scale: ${formatNumber(profile.marketShareMultiplier, { smartDecimals: true })}× · Relationship gain: ${formatNumber(profile.relationshipGainMultiplier, { smartDecimals: true })}×`}</Text><Text style={styles.cardDescription}>{`Resources: ${resources.map((resourceType) => `${getResourceIcon(resourceType)} ${getResource(resourceType).name} (lot ${formatNumber(getSalesResourceProfile(resourceType).standardOrderLot)})`).join(', ')}`}</Text></Card.Content></Card>; })}
+  </>;
+}
+
+function CustomerTypesSection() {
+  return <>
+    <SectionHeading eyebrow="CUSTOMER TYPES" title="How customers buy" subtitle="Types control buyer behaviour and operating-domain scope; they are not a progression ladder." />
+    {SALES_CUSTOMER_TYPES.map((customerType) => { const profile = SALES_CUSTOMER_TYPE_PROFILES[customerType]; return <Card key={customerType} mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text variant="titleMedium">{profile.label}</Text><Text style={styles.cardDescription}>{profile.description}</Text><Text style={styles.salesAvailability}>{`Operating domains: ${profile.allowedOperatingDomains.map((domain) => SALES_CUSTOMER_DOMAIN_PROFILES[domain].label).join(', ')}`}</Text><Text style={styles.salesAvailability}>{`Cross-domain tendency: ${formatNumber(profile.crossDomainChance * 100, { decimals: 0 })}% · Bundle appetite: ${formatNumber(profile.bundleAppetite * 100, { decimals: 0 })}%`}</Text><Text style={styles.salesAvailability}>{`Target value tendency: ${formatNumber(profile.targetValueMultiplier[0], { smartDecimals: true })}×–${formatNumber(profile.targetValueMultiplier[1], { smartDecimals: true })}× · Baseline global premium: +${formatNumber(profile.globalPremiumBaseline * 100, { smartDecimals: true })}%`}</Text></Card.Content></Card>; })}
+    <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text style={styles.cardKicker}>BUNDLE RULE</Text><Text style={styles.cardDescription}>Every line must already be available in meaningful inventory lots. Prestige, relationship, market share, and type appetite create a skewed breadth: one line is common, wide bundles are rare, and only the extreme late-game tail reaches all compatible resources.</Text></Card.Content></Card>
   </>;
 }
 
@@ -319,7 +329,7 @@ function FinanceSection() {
 function PrestigeSection() {
   return <>
     <SectionHeading eyebrow="PRESTIGE" title="Company standing" subtitle="How company standing is recorded and fades over time." />
-    <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text style={styles.cardKicker}>WHAT IT IS</Text><Text style={styles.cardDescription}>Prestige improves customer discovery, bid quality, and the relationship baseline. It does not change production or ordinary market prices.</Text></Card.Content></Card>
+    <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text style={styles.cardKicker}>WHAT IT IS</Text><Text style={styles.cardDescription}>Prestige improves customer discovery, bid quality, relationship baseline, and target order value. It does not change production or ordinary market prices.</Text></Card.Content></Card>
     <Card mode="contained" style={styles.featureCard}><Card.Content><List.Item description="A permanent, recalculated source based on current company cash." left={(props) => <List.Icon {...props} icon={APP_ICONS.bank} />} title="Company balance" /><List.Item description="A permanent source based on average facility condition. 50% condition is neutral; higher condition grants prestige and lower condition applies a penalty. Facilities currently have equal weight; future asset-value metrics can make larger facilities count more." left={(props) => <List.Icon {...props} icon="factory" />} title="Facility condition" /><List.Item description={`Each fulfilled customer order creates a fading event. Its half-life is ${formatNumber(PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS, { smartDecimals: true })} active hours.`} left={(props) => <List.Icon {...props} icon={APP_ICONS.contracts} />} title="Customer orders" /></Card.Content></Card>
     <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text style={styles.cardKicker}>DECAY</Text><Text style={styles.cardDescription}>Prestige decay uses active game time. Background time does not decay prestige; Fast-forward does.</Text><Text style={styles.cardDescription}>For a fading event: current = original × 0.5^(active hours ÷ half-life). Select an event in the Prestige dialog to see its original value, current value, hourly decay, and projections.</Text></Card.Content></Card>
   </>;

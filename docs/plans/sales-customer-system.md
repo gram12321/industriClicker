@@ -202,3 +202,26 @@ So the updated recommendation is:
 - When the catalogue needs non-deterministic or globally evolving customers, introduce a separate world-level customer registry—not a replacement for company saves.
 
 This gives you the right temporary implementation without baking in the wrong ownership model.
+
+## Approved customer-type, bundle, and premium extension
+
+Customer **domain** replaces Winemaker's country and remains the customer catalogue's market-share partition. Customer **type** is a separate buying-behaviour profile; it must not be a progression chain where each successive type simply unlocks more domains.
+
+Every deterministic customer definition has a home domain, one of these five types, and one or more generated operating domains:
+
+- Private Customer: present in every domain but uncommon in Raw Materials and Industrial Inputs; strongly prefers a small, single-domain, usually single-resource purchase.
+- Retail Chain: concentrated in Food and Electronics and possible in Construction Materials; most are single-domain specialists, while a minority are general retailers spanning two generated retail domains.
+- Construction Contractor: concentrated in Construction Materials, Raw Materials, and Industrial Inputs; construction-led procurement may also operate in Industrial Inputs or Utilities.
+- Industrial Enterprise: concentrated in Raw Materials, Industrial Inputs, Electronics, Utilities, and sometimes Construction Materials; it may operate across several compatible industrial domains, but excludes Food by default.
+- Utility Operator: Utilities and Industrial Inputs only; it may buy from either or both but not Food, Raw Materials, or Construction Materials.
+- Government Procurement: rare in every domain; it may receive any compatible operating-domain combination and is the only type intended to span otherwise unrelated domains freely. Individual offers are called Government Orders.
+
+Customer-type profiles own frequency, target-value tendency, global-bid tendency, bundle appetite, and cross-domain policy. Domain profiles own the resource catalogue, domain economy, and customer-type generation weights. A customer's generated operating domains are the maximum scope of its future orders.
+
+Orders remain immediate sales opportunities: every selected order line must have a meaningful lot available in company inventory when the offer is generated. Bundles are atomic: all locked lines are fulfilled together, paid together, deposited into the global reservoir together, and otherwise expire as one order.
+
+Bundle count has no arbitrary fixed line limit. It is bounded only by currently inventory-eligible resources in the customer's operating domains. A deterministic skewed maturity calculation combines normalized prestige, 0-100 relationship, market share, and type appetite. It determines a soft breadth; a strongly lower-skewed draw means one line is usual, broad bundles are rare, and the full compatible resource range is only an extreme late-game possibility. Cross-domain resources enter through the customer's operating-domain policy, not by a universal line-count unlock.
+
+Prestige is normalized with control points that match the current prestige economy rather than hard 150/450 gates: 0, 1, 5, 20, 60, 150, and 300+ prestige map to progressively stronger bundle maturity. Relationship stays stored and displayed as 0-100, then is normalized internally for formulas.
+
+Global-market premium is deliberately sampled, not allowed to become negative accidentally through multiplying independent discounts. Customer/type baseline plus a bounded exponential-style positive tail makes modest positive global premiums common and unusually high premiums possible but rare. A separate, small pressure-offer probability allows below-global bids; it is capped and remains exceptional. The local-market comparison stays independent, so an offer can be positive against global while below a player-inflated local price.
