@@ -1,4 +1,4 @@
-import { getRecipeResearchLevelProjectId, getResearchProject, RESEARCH_PROJECT_IDS, type ResearchProjectId } from './researchConstants';
+import { getRecipeResearchLevelProjectId, getResearchProject, type ResearchProjectId } from './researchConstants';
 import type { RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, type ResourceType } from '@/game/resources';
 import { calculateDiminishingBonus } from '@/game/core/math/scaling';
@@ -35,6 +35,25 @@ export function getSalesOrderMaximumCompanyValueFraction(completedProjectIds: re
 export function getRecipeResearchWorkSpeedMultiplier(recipeName: RecipeName, completedProjectIds: readonly string[]): number {
   const level = Array.from({ length: 10 }, (_, index) => index + 1).filter((candidate) => completedProjectIds.includes(getRecipeResearchLevelProjectId(recipeName, candidate))).length;
   return 1 + calculateDiminishingBonus(level, 0.75, 0.35);
+}
+
+/** Highest completed quality research controls every new facility output of this resource. */
+export function getResourceProductionQuality(resourceType: ResourceType, completedProjectIds: readonly string[]): number {
+  return completedProjectIds.reduce((quality, projectId) => {
+    const effect = getResearchProject(projectId)?.effect;
+    return effect?.kind === 'resource-production-quality' && effect.resourceType === resourceType
+      ? Math.max(quality, effect.quality)
+      : quality;
+  }, 1);
+}
+
+export function getResourceProductionQualityLevel(resourceType: ResourceType, completedProjectIds: readonly string[]): number {
+  return completedProjectIds.reduce((level, projectId) => {
+    const effect = getResearchProject(projectId)?.effect;
+    return effect?.kind === 'resource-production-quality' && effect.resourceType === resourceType
+      ? Math.max(level, effect.level)
+      : level;
+  }, 0);
 }
 
 export function getSalesOfferResourceTypes(completedProjectIds: readonly string[], producedByResource: Readonly<Record<ResourceType, number>>): readonly ResourceType[] {
@@ -114,7 +133,7 @@ export function getLocalRegionalDiffusionMultiplier(completedProjectIds: readonl
 }
 
 function isProjectId(value: unknown): value is ResearchProjectId {
-  return typeof value === 'string' && (RESEARCH_PROJECT_IDS as readonly string[]).includes(value);
+  return typeof value === 'string' && getResearchProject(value) !== null;
 }
 
 function isCompletedProject(value: unknown): value is CompletedResearchProject {

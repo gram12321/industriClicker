@@ -210,4 +210,21 @@ describe('advanceAllFacilityProduction', () => {
     expect(inventory.getAmount(ResourceType.Grain)).toBeCloseTo(getRecipe(RecipeName.GrowGrain).outputs[0].amount * facility.getView().outputMultiplier);
   });
 
+  it('adds completed recipe output at the supplied production quality', () => {
+    const { facilities } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    const inventory = new Inventory();
+    addRecipeInputs(inventory, RecipeName.GrowGrain, 1);
+
+    const outputs = advanceAllFacilityProduction(
+      facilities,
+      inventory,
+      () => getRecipe(RecipeName.GrowGrain).requiredWork,
+      undefined,
+      () => 2,
+    );
+
+    expect(outputs[0]!.quality).toBe(2);
+    expect(inventory.getQuality(ResourceType.Grain)).toBe(2);
+  });
+
 });

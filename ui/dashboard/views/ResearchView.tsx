@@ -6,7 +6,8 @@ import type { Finance } from '@/game/finance';
 import { FACILITIES, type FacilityCollection } from '@/game/facilities';
 import { getRecipe } from '@/game/recipes';
 import { calculateDiminishingBonus } from '@/game/core/math/scaling';
-import { RESEARCH_PROJECTS, describeResearchEffect, type ResearchChainId, type ResearchLedger, type ResearchProjectDefinition, type ResearchProjectId } from '@/game/research';
+import { RESEARCH_PROJECTS, describeResearchEffect, getResearchProject, getResourceProductionQualityLevel, getResourceQualityResearchProjectId, type ResearchChainId, type ResearchLedger, type ResearchProjectDefinition, type ResearchProjectId } from '@/game/research';
+import { RESOURCE_TYPES } from '@/game/resources';
 import type { GateRequirement } from '@/game/gates';
 import type { ResearchAvailability } from '@/game/core/stores';
 import { colors } from '@/theme';
@@ -27,9 +28,10 @@ const CHAIN_DETAILS: Record<ResearchChainId, { eyebrow: string; icon: string; ti
   'market-diffusion-network': { eyebrow: 'MARKET', icon: 'transit-connection-variant', title: 'Market diffusion network', subtitle: 'Increase the rate at which local and regional markets rebalance.' },
   'research-capacity': { eyebrow: 'RESEARCH', icon: 'flask-plus-outline', title: 'Research capacity', subtitle: 'Unlock additional research slots so projects can run simultaneously.' },
   'recipe-unlocks': { eyebrow: 'RECIPES', icon: 'flask-outline', title: 'Recipe research', subtitle: 'Unlock production recipes for your facilities.' },
+  'resource-quality': { eyebrow: 'QUALITY', icon: APP_ICONS.quality, title: 'Resource quality', subtitle: 'Raise each resource’s produced quality through an unlimited research chain.' },
 };
 
-type ResearchGroupId = 'capital-grants' | 'sales' | 'research-capacity' | 'recipe-unlocks';
+type ResearchGroupId = 'capital-grants' | 'sales' | 'research-capacity' | 'recipe-unlocks' | 'resource-quality';
 type ResearchGroup = { eyebrow: string; icon: string; id: ResearchGroupId; title: string; subtitle: string; chainIds: readonly ResearchChainId[] };
 
 const RESEARCH_GROUPS: readonly ResearchGroup[] = [
@@ -37,9 +39,10 @@ const RESEARCH_GROUPS: readonly ResearchGroup[] = [
   { id: 'sales', chainIds: ['sales-capacity', 'sales-order-value-limit', 'sales-targeting', 'bid-value', 'relationship-management', 'sales-intelligence', 'market-diffusion-network', 'local-market-network'], eyebrow: 'SALES', icon: 'handshake-outline', title: 'Sales research', subtitle: 'Grow your pipeline, improve trust outcomes, sharpen offers, and improve market reach.' },
   { id: 'research-capacity', chainIds: ['research-capacity'], eyebrow: 'RESEARCH', icon: 'flask-plus-outline', title: 'Research capacity', subtitle: 'Unlock additional research slots so projects can run simultaneously.' },
   { id: 'recipe-unlocks', chainIds: ['recipe-unlocks'], eyebrow: 'RECIPES', icon: 'flask-outline', title: 'Recipe research', subtitle: 'Unlock production recipes for your facilities.' },
+  { id: 'resource-quality', chainIds: ['resource-quality'], eyebrow: 'QUALITY', icon: APP_ICONS.quality, title: 'Resource quality', subtitle: 'Raise each resource’s produced quality through an unlimited research chain.' },
 ];
 
-type ResearchSeries = { completedCount: number; project: ResearchProjectDefinition; projects: readonly ResearchProjectDefinition[] };
+type ResearchSeries = { completedCount: number; project: ResearchProjectDefinition; projects: readonly ResearchProjectDefinition[]; unlimited: boolean };
 
 const formatCurrency = (value: number) => formatCurrencyWithSymbol(value).replace(/\s*€/u, '');
 
@@ -72,14 +75,31 @@ function getResearchSeries(projects: readonly ResearchProjectDefinition[], compl
   for (const project of projects) {
     const seriesId = project.effect.kind === 'recipe-unlock' || project.effect.kind === 'recipe-work-speed-bonus'
       ? project.effect.recipeName
+      : project.effect.kind === 'resource-production-quality'
+        ? project.effect.resourceType
       : project.chainId;
     projectsBySeries.set(seriesId, [...(projectsBySeries.get(seriesId) ?? []), project]);
   }
 
   return Array.from(projectsBySeries.values()).map((seriesProjects) => {
     const orderedProjects = [...seriesProjects].sort((left, right) => left.tier - right.tier);
+    const resourceQuality = orderedProjects[0]?.effect.kind === 'resource-production-quality' ? orderedProjects[0].effect : null;
+    if (resourceQuality) {
+      return { completedCount: getResourceProductionQualityLevel(resourceQuality.resourceType, completedIds), project: orderedProjects[0], projects: orderedProjects, unlimited: true };
+    }
     const completedCount = orderedProjects.filter((project) => completedIds.includes(project.id)).length;
-    return { completedCount, project: orderedProjects.find((project) => !completedIds.includes(project.id)) ?? orderedProjects[orderedProjects.length - 1], projects: orderedProjects };
+    return { completedCount, project: orderedProjects.find((project) => !completedIds.includes(project.id)) ?? orderedProjects[orderedProjects.length - 1], projects: orderedProjects, unlimited: false };
+  });
+}
+
+function getProjectsForGroup(group: ResearchGroup, completedIds: readonly string[], facilities: FacilityCollection, showOnlyConstructedRecipes: boolean): ResearchProjectDefinition[] {
+  const fixedProjects = RESEARCH_PROJECTS.filter((project) => group.chainIds.includes(project.chainId)
+    && (project.chainId !== 'recipe-unlocks' || !showOnlyConstructedRecipes || isRecipeProjectForConstructedFacility(project, facilities)));
+  if (!group.chainIds.includes('resource-quality')) return fixedProjects;
+  return RESOURCE_TYPES.flatMap((resourceType) => {
+    const nextLevel = getResourceProductionQualityLevel(resourceType, completedIds) + 1;
+    const project = getResearchProject(getResourceQualityResearchProjectId(resourceType, nextLevel));
+    return project ? [project] : [];
   });
 }
 
@@ -113,15 +133,16 @@ export function ResearchView({
   const [showOnlyConstructedRecipes, setShowOnlyConstructedRecipes] = useState(true);
   const [expandedProjectIds, setExpandedProjectIds] = useState<Record<string, boolean>>({});
   const activeProjects = research.getActiveProjects().flatMap((active) => {
-    const project = RESEARCH_PROJECTS.find((candidate) => candidate.id === active.projectId);
+    const project = getResearchProject(active.projectId);
     return project ? [{ active, project }] : [];
   });
   const activeProjectIds = new Set(activeProjects.map(({ project }) => project.id));
   const completedIds = research.getCompletedProjectIds();
   const completedCount = completedIds.length;
-  const completion = RESEARCH_PROJECTS.length === 0 ? 0 : completedCount / RESEARCH_PROJECTS.length;
+  const finiteCompletedCount = completedIds.filter((projectId) => RESEARCH_PROJECTS.some((project) => project.id === projectId)).length;
+  const completion = RESEARCH_PROJECTS.length === 0 ? 0 : finiteCompletedCount / RESEARCH_PROJECTS.length;
   const visibleGroups = selectedGroup === 'all' ? RESEARCH_GROUPS : RESEARCH_GROUPS.filter((group) => group.id === selectedGroup);
-  const visibleSeriesCount = getResearchSeries(RESEARCH_PROJECTS, completedIds).length;
+  const visibleSeriesCount = RESEARCH_GROUPS.reduce((count, group) => count + getResearchSeries(getProjectsForGroup(group, completedIds, facilities, showOnlyConstructedRecipes), completedIds).length, 0);
 
   return (
     <View style={localStyles.layout}>
@@ -132,14 +153,14 @@ export function ResearchView({
         <View style={localStyles.overviewHeader}>
           <View style={localStyles.overviewTitle}>
             <Text style={dashboardStyles.cardKicker}>PROGRESS OVERVIEW</Text>
-            <Text variant="titleLarge">{`${completedCount} of ${RESEARCH_PROJECTS.length} completed`}</Text>
+            <Text variant="titleLarge">{`${completedCount} completed · quality research is unlimited`}</Text>
           </View>
           <View>
             <Text style={[localStyles.completionPercent, { color: getColorClass(completion) }]}>{`${Math.round(completion * 100)}%`}</Text>
             <Text style={localStyles.completionLabel}>Complete</Text>
           </View>
         </View>
-        <ProgressBar accessible accessibilityLabel={`${completedCount} of ${RESEARCH_PROJECTS.length} research projects completed`} color={getColorClass(completion)} progress={completion} style={localStyles.overviewProgress} />
+        <ProgressBar accessible accessibilityLabel={`${finiteCompletedCount} of ${RESEARCH_PROJECTS.length} finite research projects completed`} color={getColorClass(completion)} progress={completion} style={localStyles.overviewProgress} />
       </View>
       {activeProjects.map(({ active, project }) => (
         <View key={project.id} style={localStyles.researchCard}>
@@ -159,12 +180,12 @@ export function ResearchView({
       <View style={[localStyles.researchCard, localStyles.filters]}>
         <Button compact icon="view-grid-outline" mode={selectedGroup === 'all' ? 'contained' : 'outlined'} onPress={() => setSelectedGroup('all')}>{`All (${visibleSeriesCount})`}</Button>
         {RESEARCH_GROUPS.map((group) => {
-          const seriesCount = getResearchSeries(RESEARCH_PROJECTS.filter((project) => group.chainIds.includes(project.chainId)), completedIds).length;
+          const seriesCount = getResearchSeries(getProjectsForGroup(group, completedIds, facilities, showOnlyConstructedRecipes), completedIds).length;
           return <Button compact icon={group.icon} key={group.id} mode={selectedGroup === group.id ? 'contained' : 'outlined'} onPress={() => setSelectedGroup(group.id)}>{`${group.title} (${seriesCount})`}</Button>;
         })}
       </View>
       {visibleGroups.map((group) => {
-        const chainProjects = RESEARCH_PROJECTS.filter((project) => group.chainIds.includes(project.chainId) && (project.chainId !== 'recipe-unlocks' || !showOnlyConstructedRecipes || isRecipeProjectForConstructedFacility(project, facilities)));
+        const chainProjects = getProjectsForGroup(group, completedIds, facilities, showOnlyConstructedRecipes);
         const displayedSeries = getResearchSeries(chainProjects, completedIds)
           .sort((left, right) => Number(activeProjectIds.has(right.project.id)) - Number(activeProjectIds.has(left.project.id))
             || Number(getAvailability(right.project.id).startable) - Number(getAvailability(left.project.id).startable)
@@ -187,6 +208,7 @@ export function ResearchView({
                   project={series.project}
                   seriesCompletedCount={series.completedCount}
                   seriesProjectCount={series.projects.length}
+                  seriesUnlimited={series.unlimited}
                 />
               </View>
             ))}
@@ -198,7 +220,7 @@ export function ResearchView({
   );
 }
 
-function ResearchProjectCard({ activeProjectIds, availability, completed, expanded, onStart, onToggleExpanded, project, seriesCompletedCount, seriesProjectCount }: {
+function ResearchProjectCard({ activeProjectIds, availability, completed, expanded, onStart, onToggleExpanded, project, seriesCompletedCount, seriesProjectCount, seriesUnlimited }: {
   activeProjectIds: ReadonlySet<ResearchProjectId>;
   availability: ResearchAvailability;
   completed: boolean;
@@ -208,6 +230,7 @@ function ResearchProjectCard({ activeProjectIds, availability, completed, expand
   project: ResearchProjectDefinition;
   seriesCompletedCount: number;
   seriesProjectCount: number;
+  seriesUnlimited: boolean;
 }) {
   const isActive = activeProjectIds.has(project.id);
   const status = completed ? 'Completed' : isActive ? 'In progress' : availability.startable ? 'Ready to start' : 'Locked';
@@ -217,8 +240,8 @@ function ResearchProjectCard({ activeProjectIds, availability, completed, expand
     <View style={[localStyles.researchCard, !completed && !isActive && !availability.startable && localStyles.lockedCard]}>
       <View style={localStyles.cardBody}>
         <View style={localStyles.projectHeader}><View style={localStyles.projectTitle}><View style={localStyles.projectNameRow}><ProjectIcon project={project} /><Text variant="titleMedium">{project.name}</Text></View><View style={localStyles.iconValueRow}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.coin} size={15} /><Text style={dashboardStyles.cardDescription}>{availability.usesFreeGrant ? 'Free tutorial grant · 10× faster' : formatCurrency(availability.cost)}</Text><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={dashboardStyles.cardDescription}>{formatElapsedTime(availability.durationMs)}</Text></View></View><Text style={[localStyles.status, completed ? localStyles.completedStatus : availability.startable ? localStyles.readyStatus : localStyles.lockedStatus]}>{status}</Text></View>
-        <View style={localStyles.seriesProgressHeader}><Text style={dashboardStyles.cardKicker}>RESEARCH CHAIN</Text><Text style={dashboardStyles.cardKicker}>{`${seriesCompletedCount} / ${seriesProjectCount}`}</Text></View>
-        <View style={localStyles.seriesProgressTrack}><ProgressBar accessible accessibilityLabel={`${seriesCompletedCount} of ${seriesProjectCount} research projects completed in this chain`} color={getColorClass(seriesProjectCount === 0 ? 0 : seriesCompletedCount / seriesProjectCount)} progress={seriesProjectCount === 0 ? 0 : seriesCompletedCount / seriesProjectCount} style={localStyles.seriesProgress} /></View>
+        <View style={localStyles.seriesProgressHeader}><Text style={dashboardStyles.cardKicker}>RESEARCH CHAIN</Text><Text style={dashboardStyles.cardKicker}>{seriesUnlimited ? `Level ${seriesCompletedCount}` : `${seriesCompletedCount} / ${seriesProjectCount}`}</Text></View>
+        {seriesUnlimited ? <Text style={dashboardStyles.cardDescription}>No final level. Each completed level unlocks the next.</Text> : <View style={localStyles.seriesProgressTrack}><ProgressBar accessible accessibilityLabel={`${seriesCompletedCount} of ${seriesProjectCount} research projects completed in this chain`} color={getColorClass(seriesProjectCount === 0 ? 0 : seriesCompletedCount / seriesProjectCount)} progress={seriesProjectCount === 0 ? 0 : seriesCompletedCount / seriesProjectCount} style={localStyles.seriesProgress} /></View>}
         {recipeTimeComparison && <View style={localStyles.recipeTimeComparison}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={dashboardStyles.cardDescription}>Recipe time: {recipeTimeComparison.before} → {recipeTimeComparison.after}</Text></View>}
         {!expanded ? <Button compact onPress={onToggleExpanded}>Show details</Button> : <><Text style={[dashboardStyles.cardDescription, localStyles.reward]}>{`Completion reward: ${describeResearchEffect(project.effect)}`}</Text><Text style={[dashboardStyles.cardKicker, localStyles.requirementsHeading]}>REQUIREMENTS</Text>{requirementRows}{!completed && !isActive && !availability.startable && availability.unmetReasons.map((reason) => <Text accessibilityLabel={`Locked condition: ${reason}`} key={reason} style={localStyles.unmetRequirement}>{reason}</Text>)}{completed && <Text style={localStyles.completedStatus}>Reward applied permanently.</Text>}{!completed && !isActive && <Button accessibilityLabel={`Start ${project.name}`} disabled={!availability.startable} mode="contained" onPress={() => onStart(project.id)} style={localStyles.startButton}>Start research</Button>}<Button compact onPress={onToggleExpanded}>Hide details</Button></>}
       </View>

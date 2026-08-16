@@ -131,9 +131,12 @@ describe('Market regional tier', () => {
     snapshot.regional[ResourceType.Grain] = { supply: 200_000, quality: 2 };
     const market = Market.fromSnapshot(snapshot);
 
+    const details = market.getLocalRegionalDiffusionDetails(ResourceType.Grain);
     market.diffuse();
 
     expect(market.getLocalEntry(ResourceType.Grain).quality).toBeGreaterThan(1);
+    expect(details.equilibriumQuality).toBeGreaterThan(1);
+    expect(details.lowerQualityChangePerMinute).toBeGreaterThan(0);
   });
 
 });

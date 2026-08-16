@@ -247,11 +247,11 @@ function MarketFlowSection({ market }: { market: Market }) {
     </View>
     <Card mode="contained" style={styles.featureCard}><Card.Content style={localStyles.flowCardContent}>
       <Text accessibilityLabel={resource.name} variant="titleMedium" style={localStyles.flowTitle}>{getResourceIcon(selectedResource)} {resource.name}</Text>
-      <MarketPool label="Global market" price={regionalGlobalDetails.higherPrice} supply={global.supply} />
+      <MarketPool label="Global market" price={regionalGlobalDetails.higherPrice} quality={global.quality} supply={global.supply} />
       <MarketFlowConnector details={regionalGlobalDetails} />
-      <MarketPool label="Regional market" price={details.higherPrice} supply={regional.supply} />
+      <MarketPool label="Regional market" price={details.higherPrice} quality={regional.quality} supply={regional.supply} />
       <MarketFlowConnector details={details} />
-      <MarketPool label="Local market" price={details.lowerPrice} supply={local.supply} />
+      <MarketPool label="Local market" price={details.lowerPrice} quality={local.quality} supply={local.supply} />
     </Card.Content></Card>
     <Card mode="contained" style={styles.featureCard}><Card.Content style={localStyles.flowCardContent}>
       <Text style={styles.cardKicker}>BALANCE</Text>
@@ -260,11 +260,17 @@ function MarketFlowSection({ market }: { market: Market }) {
       <BalanceRow label="Regional target" value={formatNumber(details.higherTargetSupply, { smartDecimals: true })} />
       <BalanceRow label="Local adjustment remaining" value={`${formatSigned(localBalanceDelta, { smartDecimals: true })} units`} />
       <BalanceRow label="Next correction" value={details.direction === 'none' ? 'None needed' : `${formatNumber(details.amount, { smartDecimals: true })} units`} />
+      <BalanceRow label="Expected mixed quality" value={`Q${formatNumber(details.equilibriumQuality, { decimals: 3, forceDecimals: true })}`} />
+      <BalanceRow label="Local quality diffusion" value={`${formatSigned(details.lowerQualityChangePerMinute, { decimals: 5, forceDecimals: true })} Q/min`} />
+      <BalanceRow label="Regional quality diffusion" value={`${formatSigned(details.higherQualityChangePerMinute, { decimals: 5, forceDecimals: true })} Q/min`} />
       <Text style={localStyles.balancePairHeading}>REGIONAL ↔ GLOBAL</Text>
       <BalanceRow label="Regional target" value={formatNumber(regionalGlobalDetails.lowerTargetSupply, { smartDecimals: true })} />
       <BalanceRow label="Global target" value={formatNumber(regionalGlobalDetails.higherTargetSupply, { smartDecimals: true })} />
       <BalanceRow label="Regional adjustment remaining" value={`${formatSigned(regionalBalanceDelta, { smartDecimals: true })} units`} />
       <BalanceRow label="Next correction" value={regionalGlobalDetails.direction === 'none' ? 'None needed' : `${formatNumber(regionalGlobalDetails.amount, { smartDecimals: true })} units`} />
+      <BalanceRow label="Expected mixed quality" value={`Q${formatNumber(regionalGlobalDetails.equilibriumQuality, { decimals: 3, forceDecimals: true })}`} />
+      <BalanceRow label="Regional quality diffusion" value={`${formatSigned(regionalGlobalDetails.lowerQualityChangePerMinute, { decimals: 5, forceDecimals: true })} Q/min`} />
+      <BalanceRow label="Global quality diffusion" value={`${formatSigned(regionalGlobalDetails.higherQualityChangePerMinute, { decimals: 5, forceDecimals: true })} Q/min`} />
     </Card.Content></Card>
     <Card mode="contained" style={styles.featureCard}><Card.Content style={localStyles.accordionCardContent}>
       <List.Accordion left={(props) => <List.Icon {...props} icon={APP_ICONS.help} />} title="Why is it moving?">
@@ -296,10 +302,11 @@ function MarketFlowSection({ market }: { market: Market }) {
   </>;
 }
 
-function MarketPool({ label, price, supply }: { label: string; price: number; supply: number }) {
+function MarketPool({ label, price, quality, supply }: { label: string; price: number; quality: number; supply: number }) {
   return <View style={localStyles.marketPool}>
     <Text style={localStyles.marketPoolLabel}>{label}</Text>
     <Text style={localStyles.marketPoolSupply}>{formatNumber(supply, { smartDecimals: true })}</Text>
+    <Text style={localStyles.marketPoolSupply}>{`Q${formatNumber(quality, { decimals: 2, forceDecimals: true })}`}</Text>
     <CurrencyValue value={price} style={localStyles.marketPoolPrice} />
   </View>;
 }
@@ -357,7 +364,7 @@ function ResourcesSection() {
         const initialPrice = resource.market.localBenchmarkSupply / resource.market.localInitialSupply;
         return <List.Item description={<View><Text style={styles.cardDescription}>{getResourceSummary(resourceType)}</Text><View style={localStyles.iconValue}><Text style={localStyles.resourceMarketSeed}>Initial price</Text><CurrencyValue value={initialPrice} style={localStyles.resourceMarketSeed} /><Text style={localStyles.resourceMarketSeed}>· Initial local supply: {formatNumber(resource.market.localInitialSupply, { smartDecimals: true })}</Text></View></View>} key={resourceType} left={() => <Text>{getResourceIcon(resourceType)}</Text>} title={<Text accessibilityLabel={resource.name} style={localStyles.resourceTitle}>{resource.name}</Text>} />;
       })}</View>)}
-      <List.Item description="Quality belongs to each inventory entry. Its value is currently a placeholder until quality rules are designed." left={(props) => <List.Icon {...props} icon={APP_ICONS.quality} />} title="Resource quality" />
+      <List.Item description="Inventory and market reservoirs begin at Q1. Quality research raises new facility output; quantities mix quality by amount, and a sale uses the inventory quality as its price multiplier." left={(props) => <List.Icon {...props} icon={APP_ICONS.quality} />} title="Resource quality" />
     </List.Section></Card.Content></Card>
   </>;
 }

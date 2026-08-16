@@ -3,6 +3,7 @@
  *
  * Consumers:
  * - `game/facilities/facilityUpgrades.ts` for upgrade costs and worker requirements.
+ * - `game/research/researchConstants.ts` for resource-quality research cost and duration.
  *
  * Maintenance note: Future coding AIs adding a consumer must register it in
  * this comment and keep the consumer list current.
@@ -22,6 +23,7 @@ export function scaleExponential(baseValue: number, level: number, growthFactor:
  *
  * Consumers:
  * - `game/facilities/facilityUpgrades.ts` for speed, output, and staffing bonuses.
+ * - `game/research/research.ts` for resource production quality.
  *
  * Maintenance note: Future coding AIs adding a consumer must register it in
  * this comment and keep the consumer list current.

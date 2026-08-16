@@ -14,6 +14,7 @@ export type ProductionOutput = {
   recipeName: RecipeName;
   resourceType: ResourceType;
   amount: number;
+  quality: number;
 };
 
 /** Deterministic production wear for one completed recipe cycle. */
@@ -75,6 +76,7 @@ export function advanceAllFacilityProduction(
   inventory: Inventory,
   getEffectiveWork: (facility: FacilityView, recipeName: RecipeName) => number,
   onInputConsumed?: (input: RecipeInput) => void,
+  getOutputQuality?: (resourceType: ResourceType) => number,
 ): ProductionOutput[] {
   const outputs: ProductionOutput[] = [];
 
@@ -108,8 +110,9 @@ export function advanceAllFacilityProduction(
         if (progress + WORK_COMPLETION_EPSILON >= recipe.requiredWork) {
           for (const output of recipe.outputs) {
             const amount = output.amount * facilityView.outputMultiplier;
-            inventory.add(output.resourceType, amount);
-            outputs.push({ facilityType: facilityView.facilityType, recipeName: recipe.name, resourceType: output.resourceType, amount });
+            const quality = getOutputQuality?.(output.resourceType) ?? 1;
+            inventory.add(output.resourceType, amount, quality);
+            outputs.push({ facilityType: facilityView.facilityType, recipeName: recipe.name, resourceType: output.resourceType, amount, quality });
           }
           facility.applyConditionLoss(getRecipeProductionConditionLoss(recipe));
           progress = 0;

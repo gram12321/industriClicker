@@ -1,4 +1,5 @@
 import { getRecipeDisplayName, type RecipeName } from '@/game/recipes';
+import { getResource, type ResourceType } from '@/game/resources';
 
 export type ResearchEffect =
   | { kind: 'grant'; amount: number }
@@ -17,7 +18,8 @@ export type ResearchEffect =
   | { kind: 'local-regional-diffusion'; multiplier: number }
   | { kind: 'research-capacity'; additionalSlots: number }
   | { kind: 'recipe-unlock'; recipeName: RecipeName }
-  | { kind: 'recipe-work-speed-bonus'; recipeName: RecipeName; level: number };
+  | { kind: 'recipe-work-speed-bonus'; recipeName: RecipeName; level: number }
+  | { kind: 'resource-production-quality'; resourceType: ResourceType; level: number; quality: number };
 
 export function describeResearchEffect(effect: ResearchEffect): string {
   switch (effect.kind) {
@@ -38,5 +40,6 @@ export function describeResearchEffect(effect: ResearchEffect): string {
     case 'research-capacity': return `Additional simultaneous research projects: ${effect.additionalSlots}`;
     case 'recipe-unlock': return `Unlock recipe: ${getRecipeDisplayName(effect.recipeName)}`;
     case 'recipe-work-speed-bonus': return `Recipe work speed bonus: ${getRecipeDisplayName(effect.recipeName)} level ${effect.level}`;
+    case 'resource-production-quality': return `${getResource(effect.resourceType).name} production quality: Q${effect.quality.toFixed(2)}`;
   }
 }
