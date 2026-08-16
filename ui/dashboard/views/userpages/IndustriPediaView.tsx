@@ -89,7 +89,7 @@ function CustomerDomainsSection() {
       const resources = RESOURCE_TYPES.filter((resourceType) => getSalesResourceProfile(resourceType).domain === domain);
       return <Card key={domain} mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
         <View style={localStyles.customerTypeHeading}><MaterialCommunityIcons color={colors.primary} name={SALES_CUSTOMER_DOMAIN_ICONS[domain] as never} size={20} /><Text variant="titleMedium">{profile.label}</Text></View>
-        <View style={localStyles.customerDomainResources}>{resources.map((resourceType) => <Text accessibilityLabel={getResource(resourceType).name + ', standard lot ' + formatNumber(getSalesResourceProfile(resourceType).standardOrderLot)} key={resourceType} style={localStyles.customerDomainResource}>{getResourceIcon(resourceType)} {formatNumber(getSalesResourceProfile(resourceType).standardOrderLot)}</Text>)}</View>
+        <View style={localStyles.customerDomainResources}>{resources.map((resourceType) => <Text accessibilityLabel={getResource(resourceType).name + ', standard lot ' + formatNumber(getSalesResourceProfile(resourceType).standardOrderLot)} key={resourceType} style={localStyles.customerDomainResource}><MaterialCommunityIcons name={getResourceIcon(resourceType) as never} size={14} /> {formatNumber(getSalesResourceProfile(resourceType).standardOrderLot)}</Text>)}</View>
         <View style={localStyles.customerTypeMetrics}>
           <CustomerTypeMetric icon={CUSTOMER_DOMAIN_METRIC_ICONS.bidRange} label="Bid range" value={formatNumber(profile.bidRange[0] * 100, { decimals: 0 }) + '%–' + formatNumber(profile.bidRange[1] * 100, { decimals: 0 }) + '%'} />
           <CustomerTypeMetric icon={CUSTOMER_DOMAIN_METRIC_ICONS.targetValue} label="Base target value" value={formatCurrency(profile.targetOrderValue[0]) + '–' + formatCurrency(profile.targetOrderValue[1])} />
@@ -241,12 +241,12 @@ function MarketFlowSection({ market }: { market: Market }) {
   return <>
     <SectionHeading eyebrow="MARKET FLOW" title="Follow market balancing" subtitle="Prices guide resources through local, regional, and global reservoirs every five foreground seconds." />
     <View style={localStyles.resourceTabs}>
-      {RESOURCE_GROUPS.map((group) => <View key={group.id} style={localStyles.resourceGroupTabs}><Text style={styles.cardKicker}>{group.label}</Text><View style={localStyles.resourceGroupButtons}>{group.resources.map((resourceType) => <Button accessibilityLabel={getResource(resourceType).name} compact key={resourceType} mode={selectedResource === resourceType ? 'contained' : 'outlined'} onPress={() => setSelectedResource(resourceType)}>
-        {`${getResourceIcon(resourceType)} ${getResource(resourceType).name}`}
+      {RESOURCE_GROUPS.map((group) => <View key={group.id} style={localStyles.resourceGroupTabs}><Text style={styles.cardKicker}>{group.label}</Text><View style={localStyles.resourceGroupButtons}>{group.resources.map((resourceType) => <Button accessibilityLabel={getResource(resourceType).name} compact icon={getResourceIcon(resourceType)} key={resourceType} mode={selectedResource === resourceType ? 'contained' : 'outlined'} onPress={() => setSelectedResource(resourceType)}>
+        {getResource(resourceType).name}
       </Button>)}</View></View>)}
     </View>
     <Card mode="contained" style={styles.featureCard}><Card.Content style={localStyles.flowCardContent}>
-      <Text accessibilityLabel={resource.name} variant="titleMedium" style={localStyles.flowTitle}>{`${getResourceIcon(selectedResource)} ${resource.name}`}</Text>
+      <Text accessibilityLabel={resource.name} variant="titleMedium" style={localStyles.flowTitle}><MaterialCommunityIcons name={getResourceIcon(selectedResource) as never} size={18} /> {resource.name}</Text>
       <MarketPool label="Global market" price={regionalGlobalDetails.higherPrice} supply={global.supply} />
       <MarketFlowConnector details={regionalGlobalDetails} />
       <MarketPool label="Regional market" price={details.higherPrice} supply={regional.supply} />
@@ -355,7 +355,7 @@ function ResourcesSection() {
       {RESOURCE_GROUPS.map((group) => <View key={group.id}><Text style={styles.cardKicker}>{group.label}</Text>{group.resources.map((resourceType) => {
         const resource = getResource(resourceType);
         const initialPrice = resource.market.localBenchmarkSupply / resource.market.localInitialSupply;
-        return <List.Item description={<View><Text style={styles.cardDescription}>{getResourceSummary(resourceType)}</Text><View style={localStyles.iconValue}><Text style={localStyles.resourceMarketSeed}>Initial price</Text><CurrencyValue value={initialPrice} style={localStyles.resourceMarketSeed} /><Text style={localStyles.resourceMarketSeed}>· Initial local supply: {formatNumber(resource.market.localInitialSupply, { smartDecimals: true })}</Text></View></View>} key={resourceType} left={(props) => <List.Icon {...props} icon={APP_ICONS.package} />} title={<Text accessibilityLabel={resource.name} style={localStyles.resourceTitle}>{getResourceIcon(resourceType)} {resource.name}</Text>} />;
+        return <List.Item description={<View><Text style={styles.cardDescription}>{getResourceSummary(resourceType)}</Text><View style={localStyles.iconValue}><Text style={localStyles.resourceMarketSeed}>Initial price</Text><CurrencyValue value={initialPrice} style={localStyles.resourceMarketSeed} /><Text style={localStyles.resourceMarketSeed}>· Initial local supply: {formatNumber(resource.market.localInitialSupply, { smartDecimals: true })}</Text></View></View>} key={resourceType} left={(props) => <List.Icon {...props} icon={getResourceIcon(resourceType)} />} title={<Text accessibilityLabel={resource.name} style={localStyles.resourceTitle}>{resource.name}</Text>} />;
       })}</View>)}
       <List.Item description="Quality belongs to each inventory entry. Its value is currently a placeholder until quality rules are designed." left={(props) => <List.Icon {...props} icon={APP_ICONS.quality} />} title="Resource quality" />
     </List.Section></Card.Content></Card>
@@ -370,7 +370,7 @@ function FacilitiesSection() {
     {FACILITY_GROUPS.map((group) => <View key={group.id} style={localStyles.catalogueGroup}><Text style={styles.cardKicker}>{group.label}</Text>{group.facilities.map((facilityType) => {
       const facility = getFacilityDefinition(facilityType);
       return <Card key={facilityType} mode="contained" style={styles.featureCard}><Card.Content><List.Item
-        description={<View style={localStyles.facilityCostSummary}><View style={localStyles.iconValue}><Text style={styles.cardDescription}>Land:</Text><CurrencyValue value={facility.landCost} style={styles.cardDescription} /></View><View style={localStyles.iconValue}><Text style={styles.cardDescription}>Materials:</Text><Text style={styles.cardDescription}>{getResourceIcon(ResourceType.ConstructionMaterials)} {formatNumber(facility.constructionMaterialsCost)}</Text><Text style={styles.cardDescription}>· {facility.baseWorkers} base workers</Text></View></View>}
+        description={<View style={localStyles.facilityCostSummary}><View style={localStyles.iconValue}><Text style={styles.cardDescription}>Land:</Text><CurrencyValue value={facility.landCost} style={styles.cardDescription} /></View><View style={localStyles.iconValue}><Text style={styles.cardDescription}>Materials:</Text><Text style={styles.cardDescription}><MaterialCommunityIcons name={getResourceIcon(ResourceType.ConstructionMaterials) as never} size={14} /> {formatNumber(facility.constructionMaterialsCost)}</Text><Text style={styles.cardDescription}>· {facility.baseWorkers} base workers</Text></View></View>}
         left={(props) => <List.Icon {...props} icon={facility.icon} />}
         title={facility.name}
       />
@@ -387,7 +387,7 @@ function FacilityConditionReference() {
     <Text style={styles.cardDescription}>Wear is fastest at high condition and slows as a facility approaches zero. One 1.00-work production cycle has almost the same base wear as one foreground minute. Excess staffing increases both wear sources exponentially.</Text>
     <Text style={localStyles.formula}>Staff efficiency: 0.01 + 0.99 × ratio^1.6 when understaffed; 1 + 0.25 × (1 − e^(−0.7 × (ratio − 1))) when overstaffed.</Text>
     <Text style={localStyles.formula}>Facility efficiency: staff efficiency × (1 − condition curve(1 − facility condition)); damage becomes increasingly costly.</Text>
-    <Text style={localStyles.formula}>Repair cost: {getResourceIcon(ResourceType.ConstructionMaterials)} construction-material cost × 0.9 × (1 − facility condition).</Text>
+    <Text style={localStyles.formula}>Repair cost: <MaterialCommunityIcons name={getResourceIcon(ResourceType.ConstructionMaterials) as never} size={14} /> construction-material cost × 0.9 × (1 − facility condition).</Text>
     <View style={localStyles.conditionTableRow}>
       <Text style={[localStyles.conditionTableCell, localStyles.conditionTableHeader]}>Time</Text>
       <Text style={[localStyles.conditionTableCell, localStyles.conditionTableHeader]}>1.00 cycles</Text>
@@ -509,7 +509,7 @@ function PrestigeSection() {
 
 function ResourceMention({ resourceType }: { resourceType: string }) {
   const typedResource = resourceType as ResourceType;
-  return <Text accessibilityLabel={getResource(typedResource).name}>{getResourceIcon(typedResource)}</Text>;
+  return <Text accessibilityLabel={getResource(typedResource).name}><MaterialCommunityIcons name={getResourceIcon(typedResource) as never} size={14} /></Text>;
 }
 
 function AchievementsSection() {

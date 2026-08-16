@@ -9,7 +9,7 @@ import { FACILITY_GROUPS, getFacilityDefinition } from '@/game/facilities';
 import type { Inventory } from '@/game/inventory';
 import type { Market } from '@/game/market';
 import type { Recipe } from '@/game/recipes/recipeTypes';
-import { ResourceType, getResourceIcon } from '@/game/resources';
+import { ResourceType, getResource } from '@/game/resources';
 import { clamp, formatCurrency, formatNumber } from '@/utils';
 import { WorkMetric } from '@/ui/dashboard/components/DashboardPrimitives';
 import { formatRecipeName } from '@/ui/dashboard/helpers/recipeFormatters';
@@ -22,11 +22,11 @@ function CurrencyValue({ value }: { value: number }) {
 
 function formatRecipeInputs(recipe: Recipe): string {
   if (recipe.inputs.length === 0) return '';
-  return recipe.inputs.map(({ resourceType, amount }) => `${getResourceIcon(resourceType)} ×${formatNumber(amount, { smartDecimals: true })}`).join(' + ');
+  return recipe.inputs.map(({ resourceType, amount }) => `${getResource(resourceType).name} ×${formatNumber(amount, { smartDecimals: true })}`).join(' + ');
 }
 
 function formatRecipeOutput(recipe: Recipe): string {
-  return recipe.outputs.map(({ resourceType, amount }) => `${getResourceIcon(resourceType)} ×${formatNumber(amount, { smartDecimals: true })}`).join(' + ');
+  return recipe.outputs.map(({ resourceType, amount }) => `${getResource(resourceType).name} ×${formatNumber(amount, { smartDecimals: true })}`).join(' + ');
 }
 
 export function FacilityConstructionDialog(props: {
@@ -119,7 +119,7 @@ function BuildFacilityDialog({
                 >
                   <Card.Content>
                     <List.Item
-                      description={<View style={styles.currencyDescription}><Text>Land:</Text><CurrencyValue value={definition.landCost} /><Text>{` · Materials: ${getResourceIcon(ResourceType.ConstructionMaterials)} ${formatNumber(definition.constructionMaterialsCost)} · Machines: ${getResourceIcon(ResourceType.IndustrialMachines)} ${formatNumber(definition.industrialMachinesCost)}`}</Text></View>}
+                      description={<View style={styles.currencyDescription}><Text>Land:</Text><CurrencyValue value={definition.landCost} /><Text>{` · Materials: ${formatNumber(definition.constructionMaterialsCost)} · Machines: ${formatNumber(definition.industrialMachinesCost)}`}</Text></View>}
                       left={(props) => <List.Icon {...props} icon={definition.icon} />}
                       title={definition.name}
                       titleStyle={styles.facilityTitle}
@@ -191,8 +191,8 @@ function ConfirmConstrution({
           </Text>
           <Card mode="contained" style={styles.dialogSummaryCard}>
             <Card.Content style={styles.dialogSummaryContent}>
-              <View style={styles.dialogSummaryRow}><Text>Construction cost</Text><View style={styles.currencyDescription}><CurrencyValue value={definition.landCost} /><Text style={styles.detailValue}>{` · ${getResourceIcon(ResourceType.ConstructionMaterials)} ${formatNumber(definition.constructionMaterialsCost)} · ${getResourceIcon(ResourceType.IndustrialMachines)} ${formatNumber(definition.industrialMachinesCost)}`}</Text></View></View>
-              <View style={styles.dialogSummaryRow}><Text>Resources after purchase</Text><View style={styles.currencyDescription}><CurrencyValue value={balanceAfterConstruction} /><Text style={styles.detailValue}>{` · ${getResourceIcon(ResourceType.ConstructionMaterials)} ${formatNumber(materialsAfterConstruction)} · ${getResourceIcon(ResourceType.IndustrialMachines)} ${formatNumber(industrialMachinesAfterConstruction)}`}</Text></View></View>
+              <View style={styles.dialogSummaryRow}><Text>Construction cost</Text><View style={styles.currencyDescription}><CurrencyValue value={definition.landCost} /><Text style={styles.detailValue}>{` · Materials: ${formatNumber(definition.constructionMaterialsCost)} · Machines: ${formatNumber(definition.industrialMachinesCost)}`}</Text></View></View>
+              <View style={styles.dialogSummaryRow}><Text>Resources after purchase</Text><View style={styles.currencyDescription}><CurrencyValue value={balanceAfterConstruction} /><Text style={styles.detailValue}>{` · Materials: ${formatNumber(materialsAfterConstruction)} · Machines: ${formatNumber(industrialMachinesAfterConstruction)}`}</Text></View></View>
             </Card.Content>
           </Card>
           <Text variant="titleMedium" style={styles.dialogSectionHeading}>Available recipes</Text>

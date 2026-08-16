@@ -126,10 +126,11 @@ function cashFlowHeading(kind: FinanceTransaction['kind'], amount: number): stri
 }
 
 function parseMarketTransaction(description: string): { description: string; quantity: number } | null {
-  const match = /^(Autobought|Autosold|Bought|Sold) ([\d.,]+) (.+?)( for production| from local market| to local market)$/.exec(description);
+  const match = /^(Autobought|Autosold|Bought|Sold) ([\d.,]+) (.+?)(?: (for production|from local market|to local market))?$/.exec(description);
   if (!match) return null;
   const quantity = Number(match[2].replace(',', '.'));
-  return Number.isFinite(quantity) && quantity > 0 ? { description: `${match[1]} ${match[3]}${match[4]}`, quantity } : null;
+  const suffix = match[4] ? ` ${match[4]}` : '';
+  return Number.isFinite(quantity) && quantity > 0 ? { description: `${match[1]} ${match[3]}${suffix}`, quantity } : null;
 }
 
 function buildCashFlowRows(transactions: FinanceTransaction[], groupDurationMs = 60_000, bucketOriginGameTimeMs = 0): CashFlowRow[] {

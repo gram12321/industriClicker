@@ -17,14 +17,14 @@ export function DetailRow({ label, value }: { label: string; value: string }) {
 
 export function TransactionRow({ transaction }: { transaction: FinanceTransaction }) {
   const isCost = transaction.amount < 0;
-  const resourceIcon = getTransactionResourceIcon(transaction.description);
-  return <Surface elevation={0} style={styles.detailRow}><View style={[styles.transactionIcon, isCost ? styles.transactionIconCost : styles.transactionIconIncome]}><MaterialCommunityIcons color={isCost ? styles.transactionCost.color : styles.transactionIncome.color} name={getTransactionIcon(transaction.description) as never} size={20} /></View><View style={styles.transactionDetails}><Text variant="bodyLarge">{`${resourceIcon ? `${resourceIcon} ` : ''}${transaction.description}`}</Text><Text style={styles.detailValue}>{formatDate(new Date(transaction.occurredAtGameTimeMs), true)}</Text></View><Text style={isCost ? styles.transactionCost : styles.transactionIncome}>{formatCurrency(transaction.amount)}</Text></Surface>;
+  const resourceType = getTransactionResourceType(transaction.description);
+  return <Surface elevation={0} style={styles.detailRow}><View style={[styles.transactionIcon, isCost ? styles.transactionIconCost : styles.transactionIconIncome]}><MaterialCommunityIcons color={isCost ? styles.transactionCost.color : styles.transactionIncome.color} name={getTransactionIcon(transaction.description) as never} size={20} /></View><View style={styles.transactionDetails}><Text variant="bodyLarge">{resourceType && <MaterialCommunityIcons name={getResourceIcon(resourceType) as never} size={16} />} {transaction.description}</Text><Text style={styles.detailValue}>{formatDate(new Date(transaction.occurredAtGameTimeMs), true)}</Text></View><Text style={isCost ? styles.transactionCost : styles.transactionIncome}>{formatCurrency(transaction.amount)}</Text></Surface>;
 }
 
-function getTransactionResourceIcon(description: string): string | null {
+function getTransactionResourceType(description: string): (typeof RESOURCE_TYPES)[number] | null {
   const normalizedDescription = description.toLowerCase();
   const resourceType = RESOURCE_TYPES.find((candidate) => normalizedDescription.includes(getResource(candidate).name.toLowerCase()));
-  return resourceType ? getResourceIcon(resourceType) : null;
+  return resourceType ?? null;
 }
 
 function getTransactionIcon(description: string): string {

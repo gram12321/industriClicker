@@ -1,4 +1,4 @@
-import { RESOURCES, RESOURCE_TYPES, ResourceType } from '@/game/resources';
+import { getResourceIcon, RESOURCES, RESOURCE_TYPES, ResourceType } from '@/game/resources';
 
 export const ACHIEVEMENT_CATEGORIES = [
   'facilities',
@@ -99,7 +99,7 @@ export const ACHIEVEMENT_DEFINITIONS: readonly AchievementDefinition[] = [
   ...[
     { tier: 1, count: 1, efficiency: 0.5 }, { tier: 2, count: 3, efficiency: 0.75 }, { tier: 3, count: 6, efficiency: 0.9 }, { tier: 4, count: 10, efficiency: 1 }, { tier: 5, count: 15, efficiency: 1.1 },
   ].map(({ tier, count, efficiency }) => ({ id: `facility_efficiency_tier_${tier}`, seriesId: 'facility_efficiency', category: 'facilities' as const, tier, name: `Operational Excellence ${tier}`, description: `Have ${count} facilities at ${Math.round(efficiency * 100)}% efficiency or higher at once.`, icon: 'gauge', metric: 'facility-efficiency-count' as const, threshold: count, facilityEfficiencyThreshold: efficiency, prestigeAmount: ACHIEVEMENT_TIER_PRESTIGE[Math.min(tier - 1, ACHIEVEMENT_TIER_PRESTIGE.length - 1)].amount, prestigeHalfLifeForegroundHours: ACHIEVEMENT_TIER_PRESTIGE[Math.min(tier - 1, ACHIEVEMENT_TIER_PRESTIGE.length - 1)].halfLifeForegroundHours })),
-  ...RESOURCE_TYPES.flatMap((resourceType) => createResourceProductionAchievements(resourceType, RESOURCES[resourceType].name, RESOURCES[resourceType].icon)),
+  ...RESOURCE_TYPES.flatMap((resourceType) => createResourceProductionAchievements(resourceType, RESOURCES[resourceType].name, getResourceIcon(resourceType))),
   ...createTieredAchievements({ seriesId: 'total_production', category: 'production', name: 'Production Line', description: 'Complete {threshold} total output.', icon: 'package-variant', metric: 'total-produced', thresholds: [1, 100, 1_000] }),
   ...createTieredAchievements({ seriesId: 'fulfilled_orders', category: 'sales', name: 'Order Closer', description: 'Fulfil {threshold} customer orders.', icon: 'handshake-outline', metric: 'fulfilled-order-count', thresholds: [1, 10, 50] }),
   ...createTieredAchievements({ seriesId: 'fulfilled_quantity', category: 'sales', name: 'Reliable Supplier', description: 'Deliver {threshold} order units.', icon: 'truck-delivery-outline', metric: 'fulfilled-order-quantity', thresholds: [10, 100, 1_000] }),

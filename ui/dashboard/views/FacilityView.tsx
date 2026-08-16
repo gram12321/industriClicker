@@ -30,7 +30,7 @@ import type { Market, MarketAutomation } from '@/game/market';
 import { getRecipe, type Recipe } from '@/game/recipes';
 import { getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, type ResearchLedger, type ResearchProjectId } from '@/game/research';
 import { BASE_WORK_PER_MINUTE } from '@/game/core/time';
-import { getResource, getResourceIcon, ResourceType } from '@/game/resources';
+import { getResource, ResourceType } from '@/game/resources';
 import { clamp, formatCurrency, formatDuration, formatNumber, formatPercent, getColorClass } from '@/utils';
 import { DetailRow, SectionHeading, WorkMetric } from '@/ui/dashboard/components/DashboardPrimitives';
 import { formatRecipeName } from '@/ui/dashboard/helpers/recipeFormatters';
@@ -182,7 +182,7 @@ export function ProductionView({
               </View>
               <View style={styles.facilityEfficiencyCard}>
                 <View style={styles.facilityUpgradeHeader}><MaterialCommunityIcons color={colors.primary} name="wrench-outline" size={15} /><Text style={styles.facilityUpgradeLabel}>Repair</Text></View>
-                <Text style={styles.facilityRepairCost}>{`Cost: ${formatCurrency(repairPayment.cashCost)}\n${formatCurrency(repairEuroCost)} · ${getResourceIcon(ResourceType.ConstructionMaterials)} ${formatNumber(repairConstructionMaterialsCost, { smartDecimals: true })} · ${getResourceIcon(ResourceType.IndustrialMachines)} ${formatNumber(repairIndustrialMachinesCost, { smartDecimals: true })}`}</Text>
+                <Text style={styles.facilityRepairCost}>{`Cost: ${formatCurrency(repairPayment.cashCost)}\n${formatCurrency(repairEuroCost)} · Materials: ${formatNumber(repairConstructionMaterialsCost, { smartDecimals: true })} · Machines: ${formatNumber(repairIndustrialMachinesCost, { smartDecimals: true })}`}</Text>
                 <View style={styles.facilityUpgradeAction}><Text style={styles.facilityStaffingDetail}>Restore to 100%</Text><IconButton accessibilityLabel={`Repair ${facilityName} for ${formatCurrency(repairPayment.cashCost)}, ${formatNumber(repairConstructionMaterialsCost, { smartDecimals: true })} Construction Materials, and ${formatNumber(repairIndustrialMachinesCost, { smartDecimals: true })} Industrial Machines`} disabled={!canRepair} icon="wrench" mode="contained" onPress={() => repairFacility(facilityId)} size={16} /></View>
               </View>
             </View>
@@ -216,11 +216,11 @@ function FacilityMetric({ color = colors.primary, icon, label, value }: { color?
 }
 
 function FacilityUpgradeControl({ canAfford, cashCost, constructionMaterialsCost, euroCost, industrialMachinesCost, icon, label, level, nextEffect, nextNetGain, onPress }: { canAfford: boolean; cashCost: number; constructionMaterialsCost: number; euroCost: number; industrialMachinesCost: number; icon: string; label: string; level: number; nextEffect: string; nextNetGain?: number; onPress: () => void }) {
-  return <View style={styles.facilityUpgradeCard}><View style={styles.facilityUpgradeHeader}><MaterialCommunityIcons color={colors.primary} name={icon as never} size={15} /><Text style={styles.facilityUpgradeLabel}>{label}</Text></View><Text style={styles.facilityUpgradeLevel}>L{formatNumber(level)} → L{formatNumber(level + 1)}</Text><Text style={styles.facilityUpgradeEffect}>{nextEffect}</Text>{nextNetGain !== undefined && <Text style={styles.facilityUpgradeEffect}>Net gain after upgrade: {formatCurrency(nextNetGain)}/min</Text>}<View style={styles.facilityUpgradeAction}><Text style={styles.facilityUpgradeCost}>{`Cost: ${formatCurrency(cashCost)}\n${formatCurrency(euroCost)} · ${getResourceIcon(ResourceType.ConstructionMaterials)} ${formatNumber(constructionMaterialsCost, { smartDecimals: true })} · ${getResourceIcon(ResourceType.IndustrialMachines)} ${formatNumber(industrialMachinesCost, { smartDecimals: true })}`}</Text><IconButton accessibilityLabel={`Upgrade ${label} to level ${level + 1} for ${formatCurrency(cashCost)}`} disabled={!canAfford} icon={APP_ICONS.add} mode="contained" onPress={onPress} size={16} /></View></View>;
+  return <View style={styles.facilityUpgradeCard}><View style={styles.facilityUpgradeHeader}><MaterialCommunityIcons color={colors.primary} name={icon as never} size={15} /><Text style={styles.facilityUpgradeLabel}>{label}</Text></View><Text style={styles.facilityUpgradeLevel}>L{formatNumber(level)} → L{formatNumber(level + 1)}</Text><Text style={styles.facilityUpgradeEffect}>{nextEffect}</Text>{nextNetGain !== undefined && <Text style={styles.facilityUpgradeEffect}>Net gain after upgrade: {formatCurrency(nextNetGain)}/min</Text>}<View style={styles.facilityUpgradeAction}><Text style={styles.facilityUpgradeCost}>{`Cost: ${formatCurrency(cashCost)}\n${formatCurrency(euroCost)} · Materials: ${formatNumber(constructionMaterialsCost, { smartDecimals: true })} · Machines: ${formatNumber(industrialMachinesCost, { smartDecimals: true })}`}</Text><IconButton accessibilityLabel={`Upgrade ${label} to level ${level + 1} for ${formatCurrency(cashCost)} plus Construction Materials and Industrial Machines`} disabled={!canAfford} icon={APP_ICONS.add} mode="contained" onPress={onPress} size={16} /></View></View>;
 }
 
 function RecipeOption({ canResearch, decayCostPerMinute, effectiveWorkPerMinute, freeTutorialResearch, inventory, locked, market, onPress, onResearch, outputMultiplier, recipe, selected }: { canResearch: boolean; decayCostPerMinute: number; effectiveWorkPerMinute: number; freeTutorialResearch: boolean; inventory: Inventory; locked: boolean; market: Market; onPress: () => void; onResearch: () => void; outputMultiplier: number; recipe: Recipe; selected: boolean }) {
-  const inputSummary = recipe.inputs.length === 0 ? 'No inputs' : recipe.inputs.map((input) => `${getResourceIcon(input.resourceType)} ${formatNumber(input.amount, { smartDecimals: true })}/${formatNumber(inventory.getAmount(input.resourceType), { smartDecimals: true })}`).join('  ');
+  const inputSummary = recipe.inputs.length === 0 ? 'No inputs' : recipe.inputs.map((input) => `${getResource(input.resourceType).name}: ${formatNumber(input.amount, { smartDecimals: true })}/${formatNumber(inventory.getAmount(input.resourceType), { smartDecimals: true })}`).join('  ');
   const hasMissingInputs = recipe.inputs.some((input) => !inventory.has(input.resourceType, input.amount));
   const valuePerMinute = calculateRecipeValuePerMinute(recipe, market, outputMultiplier, effectiveWorkPerMinute);
   const netGainPerMinute = calculateFacilityNetGainPerMinute(valuePerMinute, decayCostPerMinute, market);
@@ -229,9 +229,9 @@ function RecipeOption({ canResearch, decayCostPerMinute, effectiveWorkPerMinute,
 
 function FacilityResourceSummary({ outputMultiplier, recipe }: { outputMultiplier: number; recipe: Recipe }) {
   return <View style={styles.facilityResourceSummary}>
-    <View style={styles.facilityResourceGroup}><Text style={styles.facilityResourceLabel}>Input</Text><View style={styles.facilityResourceItems}>{recipe.inputs.length === 0 ? <Text style={styles.facilityResourceEmpty}>—</Text> : recipe.inputs.map((input) => <Text key={input.resourceType} accessibilityLabel={`${getResource(input.resourceType).name} ${formatNumber(input.amount, { smartDecimals: true })}`} style={styles.facilityResourceValue}>{getResourceIcon(input.resourceType)} {formatNumber(input.amount, { smartDecimals: true })}</Text>)}</View></View>
+    <View style={styles.facilityResourceGroup}><Text style={styles.facilityResourceLabel}>Input</Text><View style={styles.facilityResourceItems}>{recipe.inputs.length === 0 ? <Text style={styles.facilityResourceEmpty}>—</Text> : recipe.inputs.map((input) => <Text key={input.resourceType} accessibilityLabel={`${getResource(input.resourceType).name} ${formatNumber(input.amount, { smartDecimals: true })}`} style={styles.facilityResourceValue}><MaterialCommunityIcons name={getResource(input.resourceType).icon as never} size={14} /> {formatNumber(input.amount, { smartDecimals: true })}</Text>)}</View></View>
     <Text style={styles.facilityResourceArrow}>→</Text>
-    <View style={styles.facilityResourceGroup}><Text style={styles.facilityResourceLabel}>Output</Text><View style={styles.facilityResourceItems}>{recipe.outputs.map((output) => <Text key={output.resourceType} accessibilityLabel={`${getResource(output.resourceType).name} ${formatNumber(output.amount * outputMultiplier, { smartDecimals: true })}`} style={[styles.facilityResourceValue, styles.facilityResourceOutput]}>{getResourceIcon(output.resourceType)} {formatNumber(output.amount * outputMultiplier, { smartDecimals: true })}</Text>)}</View></View>
+    <View style={styles.facilityResourceGroup}><Text style={styles.facilityResourceLabel}>Output</Text><View style={styles.facilityResourceItems}>{recipe.outputs.map((output) => <Text key={output.resourceType} accessibilityLabel={`${getResource(output.resourceType).name} ${formatNumber(output.amount * outputMultiplier, { smartDecimals: true })}`} style={[styles.facilityResourceValue, styles.facilityResourceOutput]}><MaterialCommunityIcons name={getResource(output.resourceType).icon as never} size={14} /> {formatNumber(output.amount * outputMultiplier, { smartDecimals: true })}</Text>)}</View></View>
   </View>;
 }
 
@@ -263,10 +263,10 @@ function formatProductionRate(recipe: Recipe, outputMultiplier: number, effectiv
   }));
   const useSeconds = minutesRemaining < 1;
   const unit = useSeconds ? 'sec' : 'min';
-  return `Production/${unit}: ${outputsPerMinute.map(({ resourceType, amount }) => `${getResourceIcon(resourceType)} ${formatNumber(useSeconds ? amount / 60 : amount, { smartDecimals: true })}`).join(' + ')}`;
+  return `Production/${unit}: ${outputsPerMinute.map(({ resourceType, amount }) => `${getResource(resourceType).name} ${formatNumber(useSeconds ? amount / 60 : amount, { smartDecimals: true })}`).join(' + ')}`;
 }
 
 function formatConditionCost(materialAmount: number, market: Market): string {
   const currencyCost = materialAmount * market.getLocalPrice(ResourceType.ConstructionMaterials);
-  return `${formatNumber(materialAmount, { smartDecimals: true })}/${formatCurrency(currencyCost)} ${getResourceIcon(ResourceType.ConstructionMaterials)}`;
+  return `${formatNumber(materialAmount, { smartDecimals: true })}/${formatCurrency(currencyCost)} Construction Materials`;
 }
