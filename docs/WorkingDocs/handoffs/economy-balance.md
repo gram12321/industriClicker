@@ -15,6 +15,18 @@ This handoff is for analysis and proposals first. Do not change balance numbers 
 - Local Market Network and Market Diffusion Network are progression tools that extend market resilience. They are not the primary fix for an intrinsically unprofitable recipe.
 - Construction Materials and Industrial Machines are genuine construction/upgrade/repair inputs. Do not add a synthetic permanent demand sink just to make a report result positive.
 
+## How to read the economy report
+
+This is the canonical guidance for any agent using [economy-report.md](../../../economy-report.md).
+
+- Primary signal: recipe-window profitability is the key balance gate. A recipe that remains healthy in its standalone window is more important than a chain row that looks weak in a combined 180-minute scenario.
+- Secondary signal: chain totals are a yellow warning layer for bottlenecks, network friction, and supply-chain fragility. They are not the first-pass verdict on a recipe.
+- Report scope: the simulator does not include Customer sales, market pricing beyond the local static model, upgrade effects, or runtime prestige/relationship boosts. Treat it as a conservative base-case economy test.
+- Upgrade nuance: output and reliability upgrades can make the player’s real result better than the test suggests. Speed upgrades can make the real-game case worse, because faster cycles increase output and accelerate saturation.
+- Interpretation rule: a chain can be acceptable even when its combined 180-minute run is weak, if its component recipes remain viable and the chain is mainly a staging or convenience route. The reverse is also true: a chain can look red while the underlying individual recipes are still responsible and useful.
+
+When a balance question comes up, read this file first and then the report. Do not treat chain totals as the decisive signal when recipe windows are the more direct evidence.
+
 ## Current Economy Model
 
 Read [gameflow.md](../gameflow.md), [design.md](../design.md), and the current constants before proposing changes. The high-impact model is currently:

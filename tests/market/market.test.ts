@@ -102,4 +102,13 @@ describe('Market regional tier', () => {
     expect(market.getLocalPrice(ResourceType.Grain)).toBeCloseTo(priceBefore);
   });
 
+  it('starts Plastic and Fertilizer with deeper local markets at their existing prices', () => {
+    const market = new Market();
+
+    expect(market.getLocalEntry(ResourceType.Plastic).supply).toBe(150);
+    expect(market.getLocalPrice(ResourceType.Plastic)).toBeCloseTo(15);
+    expect(market.getLocalEntry(ResourceType.Fertilizer).supply).toBe(150);
+    expect(market.getLocalPrice(ResourceType.Fertilizer)).toBeCloseTo(10);
+  });
+
 });
