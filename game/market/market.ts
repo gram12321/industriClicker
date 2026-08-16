@@ -77,6 +77,15 @@ export class Market {
     return calculateMarketPrice(definition.localBenchmarkSupply * this.localMarketDepthMultiplier, this.local[resourceType]);
   }
 
+  /** Quotes a local sale using the quality of the inventory being sold. */
+  getLocalSalePrice(resourceType: ResourceType, inventoryQuality: number): number {
+    const definition = RESOURCES[resourceType].market;
+    return calculateMarketPrice(definition.localBenchmarkSupply * this.localMarketDepthMultiplier, {
+      supply: this.local[resourceType].supply,
+      quality: inventoryQuality,
+    });
+  }
+
   /** Returns the largest local purchase that keeps the resulting unit price within the cap. */
   getMaximumLocalPurchaseAmountAtUnitPrice(resourceType: ResourceType, maxUnitPrice: number): number {
     if (!isPositiveFinite(maxUnitPrice)) return 0;
@@ -165,7 +174,7 @@ export class Market {
   }
 
   sellToLocal(resourceType: ResourceType, amount: number, quality: number): MarketTradeResult {
-    const unitPrice = this.getLocalPrice(resourceType);
+    const unitPrice = this.getLocalSalePrice(resourceType, quality);
     if (!isPositiveFinite(amount) || !isPositiveFinite(quality)) return { success: false, amount: 0, unitPrice, quality };
     const entry = this.local[resourceType];
     entry.quality = mixQuality(entry, amount, quality);

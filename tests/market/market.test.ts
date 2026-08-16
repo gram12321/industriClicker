@@ -111,4 +111,29 @@ describe('Market regional tier', () => {
     expect(market.getLocalPrice(ResourceType.Fertilizer)).toBeCloseTo(10);
   });
 
+  it('pays the sold inventory quality and mixes it into the local market', () => {
+    const market = new Market();
+    const initialLocal = market.getLocalEntry(ResourceType.Grain);
+    const initialUnitPrice = market.getLocalPrice(ResourceType.Grain);
+
+    const trade = market.sellToLocal(ResourceType.Grain, 10, 2);
+
+    expect(trade).toMatchObject({ success: true, amount: 10, quality: 2 });
+    expect(trade.unitPrice).toBeCloseTo(initialUnitPrice * 2);
+    expect(market.getLocalEntry(ResourceType.Grain).quality).toBeCloseTo(
+      (initialLocal.supply * initialLocal.quality + 10 * 2) / (initialLocal.supply + 10),
+    );
+  });
+
+  it('mixes source quality into the receiving pool during diffusion', () => {
+    const snapshot = new Market().toSnapshot();
+    snapshot.local[ResourceType.Grain] = { supply: 100, quality: 1 };
+    snapshot.regional[ResourceType.Grain] = { supply: 200_000, quality: 2 };
+    const market = Market.fromSnapshot(snapshot);
+
+    market.diffuse();
+
+    expect(market.getLocalEntry(ResourceType.Grain).quality).toBeGreaterThan(1);
+  });
+
 });

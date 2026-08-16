@@ -715,7 +715,8 @@ export const useGameStore = create<GameState>((set, get) => {
         const automation = activeMarket.getAutomation(resourceType);
         const completedIntervals = Math.floor(stepEndGameTimeMs / automation.autoTradeIntervalMs) - Math.floor(stepStartGameTimeMs / automation.autoTradeIntervalMs);
         if (!automation.autoSellEnabled || completedIntervals <= 0) continue;
-        const currentPrice = activeMarket.getLocalPrice(resourceType);
+        const inventoryQuality = inventory.getQuality(resourceType);
+        const currentPrice = activeMarket.getLocalSalePrice(resourceType, inventoryQuality);
         const amount = Math.min(
           automation.autoSellMaxPerMinute * automation.autoTradeIntervalMs * completedIntervals / REALTIME_WORK_MINUTE_MS,
           Math.max(0, inventory.getAmount(resourceType) - automation.autoSellMinKeep),
@@ -724,7 +725,7 @@ export const useGameStore = create<GameState>((set, get) => {
         market ??= activeMarket.clone();
         marketFinance ??= get().finance.clone();
         if (inventory === get().inventory) inventory = inventory.clone();
-        const trade = market.sellToLocal(resourceType, amount, inventory.getQuality(resourceType));
+        const trade = market.sellToLocal(resourceType, amount, inventoryQuality);
         if (trade.success && inventory.remove(resourceType, amount)) {
           marketFinance.applyTransaction({ amount: trade.unitPrice * trade.amount, description: `Autosold ${trade.amount} ${resourceType} to local market`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-sale', occurredAtGameTimeMs: stepEndGameTimeMs });
           recordResourceFlow('market-sell', resourceType, -trade.amount, stepEndGameTimeMs);
@@ -799,7 +800,7 @@ export const useGameStore = create<GameState>((set, get) => {
         market ??= get().market.clone();
         for (const resourceType of RESOURCE_TYPES) {
           const available = inventory.getAmount(resourceType);
-          const unitRecovery = market.getLocalPrice(resourceType) * LOAN_COLLECTION.forcedInventoryRecoveryRate;
+          const unitRecovery = market.getLocalSalePrice(resourceType, inventory.getQuality(resourceType)) * LOAN_COLLECTION.forcedInventoryRecoveryRate;
           const amount = unitRecovery > 0 ? Math.min(available, (maximumRecovery - recovered) / unitRecovery) : 0;
           if (amount <= 0) continue;
           const trade = market.sellToLocal(resourceType, amount, inventory.getQuality(resourceType));

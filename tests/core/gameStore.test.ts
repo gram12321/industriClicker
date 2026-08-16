@@ -28,6 +28,36 @@ describe('market autobuy', () => {
   });
 });
 
+describe('market sales', () => {
+  it('pays a higher-quality inventory at its own quality-adjusted price', () => {
+    const state = useGameStore.getState();
+    const snapshot = createStartingGameSnapshot(Date.now());
+    snapshot.inventory.entries[ResourceType.Grain] = { quantity: 10, quality: 1.5 };
+    state.restoreSnapshot(snapshot);
+    const balanceBefore = useGameStore.getState().finance.getBalance();
+    const initialUnitPrice = useGameStore.getState().market.getLocalPrice(ResourceType.Grain);
+
+    expect(state.sellMarketResource(ResourceType.Grain, 10)).toBe(true);
+    expect(useGameStore.getState().finance.getBalance()).toBeCloseTo(balanceBefore + 10 * initialUnitPrice * 1.5);
+  });
+
+  it('allows autosell when its inventory-quality price meets the threshold', () => {
+    const state = useGameStore.getState();
+    const snapshot = createStartingGameSnapshot(Date.now());
+    snapshot.inventory.entries[ResourceType.Grain] = { quantity: 100, quality: 2 };
+    state.restoreSnapshot(snapshot);
+    state.setMarketAutomation(ResourceType.Grain, {
+      autoSellEnabled: true,
+      autoSellMaxPerMinute: 60,
+      autoSellMinUnitPrice: 1.5,
+    });
+
+    state.advanceGameTime(5_000);
+
+    expect(useGameStore.getState().inventory.getAmount(ResourceType.Grain)).toBeLessThan(100);
+  });
+});
+
 describe('sales order fulfilment', () => {
   it('recalculates company-assets prestige from the fulfilled order state', () => {
     const state = useGameStore.getState();
