@@ -14,13 +14,16 @@ import { RESOURCE_TYPES, type ResourceType } from '@/game/resources';
 import {
   SalesOrders,
   calculateSalesOrderAcquisitionDetails,
+  calculateSalesOrderInventoryReadiness,
   getEligibleSalesOrderResourceTypes,
   type SalesOrderAcquisitionDetails,
 } from './salesOrders';
+import { getSalesResourceProfile } from './salesCustomers';
 import { SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP } from './salesConstants';
 
 export type SalesOrderAcquisitionStatus = SalesOrderAcquisitionDetails & {
   hasEligibleInventory: boolean;
+  inventoryReadinessMultiplier: number;
   maximumOrderValue: number;
 };
 
@@ -56,14 +59,23 @@ export function getSalesOrderAcquisitionStatus(
     }).totalAssets * getSalesOrderMaximumCompanyValueFraction(completedResearchProjectIds),
   );
   const producedByResource = input.productionStatistics.toSnapshot().producedByResource;
+  const candidateResourceTypes = getSalesOfferResourceTypes(
+    completedResearchProjectIds,
+    producedByResource,
+  );
+  const inventoryByResource = Object.fromEntries(
+    RESOURCE_TYPES.map((resourceType) => [resourceType, input.inventory.getAmount(resourceType)]),
+  ) as Record<ResourceType, number>;
+  const inventoryReadinessMultiplier = Math.max(
+    0,
+    ...candidateResourceTypes.map((resourceType) => calculateSalesOrderInventoryReadiness(
+      inventoryByResource[resourceType],
+      getSalesResourceProfile(resourceType).standardOrderLot,
+    )),
+  );
   const eligibleResources = getEligibleSalesOrderResourceTypes({
-    candidateResourceTypes: getSalesOfferResourceTypes(
-      completedResearchProjectIds,
-      producedByResource,
-    ),
-    inventoryByResource: Object.fromEntries(
-      RESOURCE_TYPES.map((resourceType) => [resourceType, input.inventory.getAmount(resourceType)]),
-    ) as Record<ResourceType, number>,
+    candidateResourceTypes,
+    inventoryByResource,
     globalPrices: Object.fromEntries(
       RESOURCE_TYPES.map((resourceType) => [resourceType, input.market.getGlobalPrice(resourceType)]),
     ) as Record<ResourceType, number>,
@@ -80,8 +92,10 @@ export function getSalesOrderAcquisitionStatus(
       ).totalPrestige,
       economyPhase: input.finance.getEconomyPhase(),
       hasEligibleInventory: eligibleResources.length > 0,
+      inventoryReadinessMultiplier,
     }),
     hasEligibleInventory: eligibleResources.length > 0,
+    inventoryReadinessMultiplier,
     maximumOrderValue,
   };
 }

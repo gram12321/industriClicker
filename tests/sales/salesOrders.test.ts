@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getResource, ResourceType, RESOURCE_TYPES } from '@/game/resources';
-import { SALES_CUSTOMER_DOMAIN_PROFILES, SALES_ORDER_DURATION_MS, SalesOrders, calculateSalesCustomerAccessibility, calculateSalesOrderAcquisitionChance, calculateSalesOrderAcquisitionDetails, calculateSalesOrderBundleLineCount, calculateSalesOrderCustomerTypeMaturity, calculateSalesOrderMarketVolumeMultiplier, calculateSalesOrderSelectionWeight, calculateSalesOrderTargetValue, getEligibleSalesOrderResourceTypes } from '@/game/sales';
+import { SALES_CUSTOMER_DOMAIN_PROFILES, SALES_ORDER_DURATION_MS, SalesOrders, calculateSalesCustomerAccessibility, calculateSalesOrderAcquisitionChance, calculateSalesOrderAcquisitionDetails, calculateSalesOrderBaseTargetValue, calculateSalesOrderBundleLineCount, calculateSalesOrderCustomerTypeMaturity, calculateSalesOrderInventoryReadiness, calculateSalesOrderMarketVolumeMultiplier, calculateSalesOrderSelectionWeight, calculateSalesOrderTargetValue, getEligibleSalesOrderResourceTypes } from '@/game/sales';
 
 function quantities(resourceType: ResourceType, amount: number): Record<ResourceType, number> {
   return RESOURCE_TYPES.reduce((result, candidate) => { result[candidate] = candidate === resourceType ? amount : 0; return result; }, {} as Record<ResourceType, number>);
@@ -85,6 +85,20 @@ describe('sales orders', () => {
     })).toEqual([]);
   });
 
+  it('allows below-lot inventory above the near-empty safety floor', () => {
+    expect(getEligibleSalesOrderResourceTypes({ candidateResourceTypes: [ResourceType.Water], inventoryByResource: quantities(ResourceType.Water, 1), globalPrices: prices(1), maximumOrderValue: 10_000 })).toEqual([]);
+    expect(getEligibleSalesOrderResourceTypes({ candidateResourceTypes: [ResourceType.Water], inventoryByResource: quantities(ResourceType.Water, 10), globalPrices: prices(1), maximumOrderValue: 10_000 })).toEqual([ResourceType.Water]);
+    expect(calculateSalesOrderInventoryReadiness(10, 500)).toBeCloseTo(Math.sqrt(0.02));
+  });
+
+  it('reduces acquisition chance when inventory is only a fraction of a standard lot', () => {
+    const fullLotChance = calculateSalesOrderAcquisitionChance({ openOrderCount: 0, maximumOpenOrders: 2, companyPrestige: 0, economyPhase: 'stable', hasEligibleInventory: true, inventoryReadinessMultiplier: 1 });
+    const partialLotChance = calculateSalesOrderAcquisitionChance({ openOrderCount: 0, maximumOpenOrders: 2, companyPrestige: 0, economyPhase: 'stable', hasEligibleInventory: true, inventoryReadinessMultiplier: Math.sqrt(0.02) });
+
+    expect(partialLotChance).toBeLessThan(fullLotChance);
+    expect(partialLotChance).toBeGreaterThan(0);
+  });
+
   it('prefers customer-resource pairs with deeper stock and stronger relationships', () => {
     const baseline = calculateSalesOrderSelectionWeight({
       inventoryAmount: 100,
@@ -165,6 +179,30 @@ describe('sales orders', () => {
     expect(lateMaturity).toBeGreaterThan(0.5);
     expect(earlyValue).toBeLessThan(130);
     expect(lateValue).toBeGreaterThan(250);
+  });
+
+  it('allows private-customer discounts to reduce mature order targets', () => {
+    const discountedValue = calculateSalesOrderTargetValue({ baseTargetValue: 154.716157913208, companyPrestige: 10.330655, relationship: 0.04027785574815941, customerType: 'private-customer', customerTypeMultiplier: 0.345517685089726 });
+    const undiscountedValue = calculateSalesOrderTargetValue({ baseTargetValue: 154.716157913208, companyPrestige: 10.330655, relationship: 0.04027785574815941 });
+
+    expect(discountedValue).toBeLessThan(undiscountedValue * 0.6);
+  });
+
+  it('biases early base rolls low while preserving their high-value tail', () => {
+    const lowPrestigeRoll = calculateSalesOrderBaseTargetValue({ baseRange: [20, 240], companyPrestige: 0, randomValue: 0.75 });
+    const latePrestigeRoll = calculateSalesOrderBaseTargetValue({ baseRange: [20, 240], companyPrestige: 1_000, randomValue: 0.75 });
+
+    expect(lowPrestigeRoll).toBeLessThan(100);
+    expect(latePrestigeRoll).toBeCloseTo(184.293, 3);
+    expect(calculateSalesOrderBaseTargetValue({ baseRange: [20, 240], companyPrestige: 0, randomValue: 1 })).toBe(240);
+  });
+
+  it('softens target values for companies with smaller asset bases', () => {
+    const earlyValue = calculateSalesOrderTargetValue({ baseTargetValue: 180, companyAssets: 1_000, companyPrestige: 0, relationship: 0 });
+    const lateValue = calculateSalesOrderTargetValue({ baseTargetValue: 180, companyAssets: 10_000, companyPrestige: 0, relationship: 0 });
+
+    expect(earlyValue).toBeLessThan(120);
+    expect(lateValue).toBeGreaterThan(earlyValue);
   });
 
   it('keeps global supply pressure bounded while allowing both shortage and oversupply to request more lots', () => {

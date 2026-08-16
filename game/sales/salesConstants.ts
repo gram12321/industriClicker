@@ -8,6 +8,7 @@ export const SALES_ORDER_MAXIMUM_QUANTITY = 1_000_000;
 export const SALES_ORDER_BASE_ACQUISITION_CHANCE_PER_MINUTE = 1;
 export const SALES_ORDER_PENDING_PENALTY_PER_OPEN_ORDER = 0.13;
 export const SALES_ORDER_SELECTION_STOCK_COVERAGE_CAP = 64;
+export const SALES_ORDER_MINIMUM_INVENTORY_LOT_FRACTION = 0.01;
 export const SALES_ORDER_SELECTION_MAX_RELATIONSHIP_MULTIPLIER = 2;
 export const SALES_ORDER_PRESTIGE_DISCOVERY_SCALE = 120;
 export const SALES_ORDER_PRESTIGE_DISCOVERY_BASE = 0.65;
@@ -20,6 +21,10 @@ export const SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP = 100;
 export const SALES_ORDER_VOLUME_SCALING = {
   prestigeScale: 250,
   maximumPrestigeMultiplier: 4,
+  baseRollPrestigeScale: 5,
+  maximumBaseRollExponent: 4,
+  companyValueScale: 1_000,
+  minimumCompanyValueMultiplier: 0.25,
   maximumRelationshipMultiplier: 1.2,
 } as const;
 

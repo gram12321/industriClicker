@@ -6,7 +6,7 @@ import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
 import { MARKET_DIFFUSION_INTERVAL_MS, MARKET_SALES_ORDER_BID_MULTIPLIER, Market, canAutoBuyMarketResource, canBuyMarketResource, canSellMarketResource, type MarketAutomation } from '@/game/market';
 import type { GameSnapshot } from '@/game/core/state';
 import { BASE_WORK_PER_MINUTE, FOREGROUND_SIMULATION_STEP_MS, REALTIME_WORK_MINUTE_MS, calculateRealtimeAdvance } from '@/game/core/time';
-import { SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP, SalesOrders, calculateSalesOrderAcquisitionChance, calculateSalesOrderAcquisitionDetails, getSalesResourceProfile, type SalesOrderAcquisitionStatus } from '@/game/sales';
+import { SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP, SalesOrders, calculateSalesOrderAcquisitionChance, calculateSalesOrderAcquisitionDetails, calculateSalesOrderInventoryReadiness, getSalesResourceProfile, type SalesOrderAcquisitionStatus } from '@/game/sales';
 import { AchievementLedger, createAchievementEvaluationContext, evaluateAchievementUnlocks, type AchievementCategory } from '@/game/achievements';
 
 import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyAssetsPrestige, calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary, calculateFacilityConditionPrestige } from '@/game/prestige';
@@ -694,9 +694,10 @@ export const useGameStore = create<GameState>((set, get) => {
 
       const currentSalesOrders = salesOrders ?? get().salesOrders;
       const currentPrestige = calculateCompanyPrestigeSummary(get().prestige.getEvents(), stepEndGameTimeMs).totalPrestige;
+      const companyAssets = calculateAssets({ finance: marketFinance ?? get().finance, inventory, market: market ?? get().market, facilities, research }).totalAssets;
       const maximumOrderValue = Math.max(
         SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP,
-        calculateAssets({ finance: marketFinance ?? get().finance, inventory, market: market ?? get().market, facilities, research }).totalAssets * getSalesOrderMaximumCompanyValueFraction(research.getCompletedProjectIds()),
+        companyAssets * getSalesOrderMaximumCompanyValueFraction(research.getCompletedProjectIds()),
       );
       const producedByResource = resourceFlow.getLifetimeFacilityOutputByResource();
       const offerChance = calculateSalesOrderAcquisitionChance({
@@ -704,7 +705,8 @@ export const useGameStore = create<GameState>((set, get) => {
         maximumOpenOrders: getMaximumOpenSalesOrders(research.getCompletedProjectIds()),
         companyPrestige: currentPrestige,
         economyPhase: (marketFinance ?? get().finance).getEconomyPhase(),
-        hasEligibleInventory: getSalesOfferResourceTypes(research.getCompletedProjectIds(), producedByResource).some((resourceType) => inventory.getAmount(resourceType) >= getSalesResourceProfile(resourceType).standardOrderLot && getSalesResourceProfile(resourceType).standardOrderLot * (market ?? get().market).getGlobalPrice(resourceType) <= maximumOrderValue),
+        hasEligibleInventory: getSalesOfferResourceTypes(research.getCompletedProjectIds(), producedByResource).some((resourceType) => calculateSalesOrderInventoryReadiness(inventory.getAmount(resourceType), getSalesResourceProfile(resourceType).standardOrderLot) > 0 && getSalesResourceProfile(resourceType).standardOrderLot * (market ?? get().market).getGlobalPrice(resourceType) <= maximumOrderValue),
+        inventoryReadinessMultiplier: Math.max(0, ...getSalesOfferResourceTypes(research.getCompletedProjectIds(), producedByResource).map((resourceType) => calculateSalesOrderInventoryReadiness(inventory.getAmount(resourceType), getSalesResourceProfile(resourceType).standardOrderLot))),
       });
       customerPipelineProgress += (stepMs / 1_000) * offerChance / 60;
 
@@ -752,6 +754,8 @@ export const useGameStore = create<GameState>((set, get) => {
             currentGameTimeMs: stepEndGameTimeMs - (completedSalesMinutes - minute - 1) * REALTIME_WORK_MINUTE_MS,
             maximumOpenOrders: getMaximumOpenSalesOrders(completedResearchProjectIds),
             maximumOrderValue,
+            companyAssets,
+            inventoryReadinessMultiplier: Math.max(0, ...getSalesOfferResourceTypes(research.getCompletedProjectIds(), producedByResource).map((resourceType) => calculateSalesOrderInventoryReadiness(inventory.getAmount(resourceType), getSalesResourceProfile(resourceType).standardOrderLot))),
             companyPrestige: calculateCompanyPrestigeSummary(get().prestige.getEvents(), stepEndGameTimeMs).totalPrestige,
             economyPhase: (marketFinance ?? get().finance).getEconomyPhase(),
             inventoryByResource: Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, inventory.getAmount(resourceType)])) as Record<ResourceType, number>,
@@ -1112,7 +1116,8 @@ export const useGameStore = create<GameState>((set, get) => {
       SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP,
       calculateAssets({ finance: get().finance, inventory: get().inventory, market: get().market, facilities: get().facilities, research }).totalAssets * getSalesOrderMaximumCompanyValueFraction(research.getCompletedProjectIds()),
     );
-    const hasEligibleInventory = getSalesOfferResourceTypes(research.getCompletedProjectIds(), producedByResource).some((resourceType) => get().inventory.getAmount(resourceType) >= getSalesResourceProfile(resourceType).standardOrderLot && getSalesResourceProfile(resourceType).standardOrderLot * get().market.getGlobalPrice(resourceType) <= maximumOrderValue);
+    const hasEligibleInventory = getSalesOfferResourceTypes(research.getCompletedProjectIds(), producedByResource).some((resourceType) => calculateSalesOrderInventoryReadiness(get().inventory.getAmount(resourceType), getSalesResourceProfile(resourceType).standardOrderLot) > 0 && getSalesResourceProfile(resourceType).standardOrderLot * get().market.getGlobalPrice(resourceType) <= maximumOrderValue);
+    const inventoryReadinessMultiplier = Math.max(0, ...getSalesOfferResourceTypes(research.getCompletedProjectIds(), producedByResource).map((resourceType) => calculateSalesOrderInventoryReadiness(get().inventory.getAmount(resourceType), getSalesResourceProfile(resourceType).standardOrderLot)));
     return {
       ...calculateSalesOrderAcquisitionDetails({
         openOrderCount: get().salesOrders.getOfferedOrders().length,
@@ -1120,8 +1125,10 @@ export const useGameStore = create<GameState>((set, get) => {
         companyPrestige: calculateCompanyPrestigeSummary(get().prestige.getEvents(), get().lastProcessedAtMs).totalPrestige,
         economyPhase: get().finance.getEconomyPhase(),
         hasEligibleInventory,
+        inventoryReadinessMultiplier,
       }),
       hasEligibleInventory,
+      inventoryReadinessMultiplier,
       maximumOrderValue,
     };
   },

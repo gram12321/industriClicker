@@ -1,7 +1,7 @@
 import { calculateAsymmetricalScaler01, normalizeWithControlPoints01 } from '@/game/core/math/scaling';
 import type { EconomyPhase } from '@/game/finance';
 import { getResource, type ResourceType } from '@/game/resources';
-import { SALES_CUSTOMER_DOMAIN_PROFILES, SALES_CUSTOMER_TYPE_PROFILES, SALES_ECONOMY_MULTIPLIERS, SALES_ORDER_BASE_ACQUISITION_CHANCE_PER_MINUTE, SALES_ORDER_BUNDLE_PRESTIGE_CONTROL_POINTS, SALES_ORDER_DURATION_MS, SALES_ORDER_MARKET_VOLUME_SCALING, SALES_ORDER_MAXIMUM_QUANTITY, SALES_ORDER_MAXIMUM_GLOBAL_PREMIUM, SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP, SALES_ORDER_MINIMUM_GLOBAL_PREMIUM, SALES_ORDER_MINIMUM_QUANTITY, SALES_ORDER_PENDING_PENALTY_PER_OPEN_ORDER, SALES_ORDER_PRESTIGE_DISCOVERY_BASE, SALES_ORDER_PRESTIGE_DISCOVERY_SCALE, SALES_ORDER_PRESSURE_OFFER_CHANCE, SALES_ORDER_SELECTION_MAX_RELATIONSHIP_MULTIPLIER, SALES_ORDER_SELECTION_STOCK_COVERAGE_CAP, SALES_ORDER_VOLUME_SCALING } from './salesConstants';
+import { SALES_CUSTOMER_DOMAIN_PROFILES, SALES_CUSTOMER_TYPE_PROFILES, SALES_ECONOMY_MULTIPLIERS, SALES_ORDER_BASE_ACQUISITION_CHANCE_PER_MINUTE, SALES_ORDER_BUNDLE_PRESTIGE_CONTROL_POINTS, SALES_ORDER_DURATION_MS, SALES_ORDER_MARKET_VOLUME_SCALING, SALES_ORDER_MAXIMUM_QUANTITY, SALES_ORDER_MAXIMUM_GLOBAL_PREMIUM, SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP, SALES_ORDER_MINIMUM_GLOBAL_PREMIUM, SALES_ORDER_MINIMUM_INVENTORY_LOT_FRACTION, SALES_ORDER_MINIMUM_QUANTITY, SALES_ORDER_PENDING_PENALTY_PER_OPEN_ORDER, SALES_ORDER_PRESTIGE_DISCOVERY_BASE, SALES_ORDER_PRESTIGE_DISCOVERY_SCALE, SALES_ORDER_PRESSURE_OFFER_CHANCE, SALES_ORDER_SELECTION_MAX_RELATIONSHIP_MULTIPLIER, SALES_ORDER_SELECTION_STOCK_COVERAGE_CAP, SALES_ORDER_VOLUME_SCALING } from './salesConstants';
 import { SALES_CUSTOMER_CATALOGUE_VERSION, SALES_CUSTOMER_RELATIONSHIP, SALES_CUSTOMER_WORLD_SEED, advanceSalesCustomerRelationship, calculateSalesCustomerRelationshipBaseline, calculateSalesCustomerRelationshipChange, createSalesCustomerState, getSalesCustomerCatalogue, getSalesResourceProfile, type SalesCustomerDefinition, type SalesCustomerState, type SalesCustomerType } from './salesCustomers';
 import { getDeterministicUnitInterval, pickDeterministicWeighted } from './salesRandom';
 
@@ -9,9 +9,9 @@ export type SalesOrderStatus = 'offered' | 'fulfilled' | 'rejected' | 'expired';
 export type SalesOrderLine = { resourceType: ResourceType; quantity: number; globalReferenceUnitPrice: number; bidUnitPrice: number; premiumPercent: number; marketVolumeMultiplier: number; reward: number };
 export type SalesOrder = { id: string; status: SalesOrderStatus; customerId: string; customerName: string; customerDomain: SalesCustomerDefinition['domain']; customerType: SalesCustomerDefinition['customerType']; lines: SalesOrderLine[]; globalReferenceValue: number; premiumPercent: number; reward: number; offeredAtGameTimeMs: number; expiresAtGameTimeMs: number; fulfilledAtGameTimeMs?: number; rejectedAtGameTimeMs?: number; expiredAtGameTimeMs?: number };
 export type SalesOrdersSnapshot = { offered: SalesOrder[]; completed: SalesOrder[]; customerStates: SalesCustomerState[]; nextOrderNumber: number; worldSeed: string; catalogueVersion: number };
-export type SalesOrderGenerationInput = { currentGameTimeMs: number; maximumOpenOrders: number; maximumOrderValue: number; companyPrestige: number; economyPhase: EconomyPhase; inventoryByResource: Readonly<Record<ResourceType, number>>; globalPrices: Readonly<Record<ResourceType, number>>; globalSupplies: Readonly<Record<ResourceType, number>>; candidateResourceTypes: readonly ResourceType[]; getResourceWeight: (resourceType: ResourceType) => number; bidResearchMultiplier: number; relationshipDecayHalfLifeMultiplier?: number; relationshipFulfilmentGainMultiplier?: number; relationshipFailureLossMultiplier?: number; pressureOfferChanceMultiplier?: number; bundleMaturityMultiplier?: number; minimumPremiumBonus?: number };
+export type SalesOrderGenerationInput = { currentGameTimeMs: number; maximumOpenOrders: number; maximumOrderValue: number; companyAssets?: number; companyPrestige: number; economyPhase: EconomyPhase; inventoryByResource: Readonly<Record<ResourceType, number>>; globalPrices: Readonly<Record<ResourceType, number>>; globalSupplies: Readonly<Record<ResourceType, number>>; candidateResourceTypes: readonly ResourceType[]; getResourceWeight: (resourceType: ResourceType) => number; bidResearchMultiplier: number; inventoryReadinessMultiplier?: number; relationshipDecayHalfLifeMultiplier?: number; relationshipFulfilmentGainMultiplier?: number; relationshipFailureLossMultiplier?: number; pressureOfferChanceMultiplier?: number; bundleMaturityMultiplier?: number; minimumPremiumBonus?: number };
 export type SalesOrderAcquisitionDetails = { baseChance: number; prestigeDiscoveryMultiplier: number; pendingMultiplier: number; economyMultiplier: number; chance: number };
-export type SalesOrderAcquisitionInput = { openOrderCount: number; maximumOpenOrders: number; companyPrestige: number; economyPhase: EconomyPhase; hasEligibleInventory: boolean };
+export type SalesOrderAcquisitionInput = { openOrderCount: number; maximumOpenOrders: number; companyPrestige: number; economyPhase: EconomyPhase; hasEligibleInventory: boolean; inventoryReadinessMultiplier?: number };
 export type SalesOrderEligibilityInput = Pick<SalesOrderGenerationInput, 'candidateResourceTypes' | 'inventoryByResource' | 'globalPrices' | 'maximumOrderValue'>;
 export type SalesOrderSelectionWeightInput = {
   inventoryAmount: number;
@@ -25,6 +25,9 @@ export type SalesOrderSelectionWeightInput = {
 };
 
 const clamp = (value: number, minimum: number, maximum: number): number => Math.max(minimum, Math.min(maximum, value));
+const SALES_ORDER_DIAGNOSTICS_FLAG = '__INDUSTRI_SALES_ORDER_DIAGNOSTICS__';
+function salesOrderDiagnosticsEnabled(): boolean { return typeof globalThis !== 'undefined' && (globalThis as typeof globalThis & { [SALES_ORDER_DIAGNOSTICS_FLAG]?: boolean })[SALES_ORDER_DIAGNOSTICS_FLAG] === true; }
+function salesOrderDiagnostic(label: string, details: unknown): void { if (salesOrderDiagnosticsEnabled() && typeof console !== 'undefined') console.info(`[sales-order] ${label}`, details); }
 function cloneOrder(order: SalesOrder): SalesOrder { return { ...order, lines: order.lines.map((line) => ({ ...line })) }; }
 function cloneState(state: SalesCustomerState): SalesCustomerState { return { ...state }; }
 function cloneCustomer(customer: SalesCustomerDefinition): SalesCustomerDefinition { return { ...customer, operatingDomains: [...customer.operatingDomains] }; }
@@ -38,18 +41,25 @@ export function calculateSalesOrderAcquisitionDetails(input: SalesOrderAcquisiti
     ? 0
     : Math.max(0.08, 1 - input.openOrderCount * SALES_ORDER_PENDING_PENALTY_PER_OPEN_ORDER);
   const economyMultiplier = SALES_ECONOMY_MULTIPLIERS[input.economyPhase].acquisition;
-  return { baseChance: SALES_ORDER_BASE_ACQUISITION_CHANCE_PER_MINUTE, prestigeDiscoveryMultiplier: discovery, pendingMultiplier: pending, economyMultiplier, chance: input.hasEligibleInventory ? clamp(SALES_ORDER_BASE_ACQUISITION_CHANCE_PER_MINUTE * discovery * pending * economyMultiplier, 0, 0.95) : 0 };
+  const inventoryReadiness = clamp(input.inventoryReadinessMultiplier ?? 1, 0, 1);
+  return { baseChance: SALES_ORDER_BASE_ACQUISITION_CHANCE_PER_MINUTE, prestigeDiscoveryMultiplier: discovery, pendingMultiplier: pending, economyMultiplier, chance: input.hasEligibleInventory ? clamp(SALES_ORDER_BASE_ACQUISITION_CHANCE_PER_MINUTE * discovery * pending * economyMultiplier * inventoryReadiness, 0, 0.95) : 0 };
 }
 export function getEligibleSalesOrderResourceTypes(input: SalesOrderEligibilityInput): ResourceType[] {
   const maximumOrderValue = Math.max(SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP, input.maximumOrderValue);
   return input.candidateResourceTypes.filter((resourceType) => {
     const standardOrderLot = getSalesResourceProfile(resourceType).standardOrderLot;
     const globalPrice = input.globalPrices[resourceType];
-    return input.inventoryByResource[resourceType] >= standardOrderLot
+    return calculateSalesOrderInventoryReadiness(input.inventoryByResource[resourceType], standardOrderLot) > 0
       && Number.isFinite(globalPrice)
       && globalPrice > 0
       && standardOrderLot * globalPrice <= maximumOrderValue;
   });
+}
+export function calculateSalesOrderInventoryReadiness(inventoryAmount: number, standardOrderLot: number): number {
+  if (!Number.isFinite(inventoryAmount) || !Number.isFinite(standardOrderLot) || standardOrderLot <= 0) return 0;
+  const coverage = Math.max(0, inventoryAmount) / standardOrderLot;
+  if (coverage < SALES_ORDER_MINIMUM_INVENTORY_LOT_FRACTION) return 0;
+  return Math.sqrt(Math.min(1, coverage));
 }
 export function calculateSalesOrderStockCoverageWeight(inventoryAmount: number, standardOrderLot: number): number {
   if (!Number.isFinite(inventoryAmount) || !Number.isFinite(standardOrderLot) || standardOrderLot <= 0) return 0;
@@ -79,14 +89,26 @@ export function calculateSalesOrderCustomerTypeMaturity(customerType: SalesCusto
   const prestige = Math.max(0, companyPrestige);
   return prestige / (prestige + profile.prestigeScale);
 }
-export function calculateSalesOrderTargetValue(input: { baseTargetValue: number; companyPrestige: number; relationship: number; customerType?: SalesCustomerType; customerTypeMultiplier?: number }): number {
+export function calculateSalesOrderBaseTargetValue(input: { baseRange: readonly [number, number]; companyPrestige: number; randomValue: number }): number {
+  const prestige = Math.max(0, input.companyPrestige);
+  const roll = clamp(input.randomValue, 0, 1);
+  const exponent = 1 + (SALES_ORDER_VOLUME_SCALING.maximumBaseRollExponent - 1) * SALES_ORDER_VOLUME_SCALING.baseRollPrestigeScale / (prestige + SALES_ORDER_VOLUME_SCALING.baseRollPrestigeScale);
+  return input.baseRange[0] + (input.baseRange[1] - input.baseRange[0]) * roll ** exponent;
+}
+export function calculateSalesOrderCompanyValueMultiplier(companyAssets: number | undefined): number {
+  if (!Number.isFinite(companyAssets)) return 1;
+  const assets = Math.max(0, companyAssets as number);
+  return SALES_ORDER_VOLUME_SCALING.minimumCompanyValueMultiplier
+    + (1 - SALES_ORDER_VOLUME_SCALING.minimumCompanyValueMultiplier) * assets / (assets + SALES_ORDER_VOLUME_SCALING.companyValueScale);
+}
+export function calculateSalesOrderTargetValue(input: { baseTargetValue: number; companyAssets?: number; companyPrestige: number; relationship: number; customerType?: SalesCustomerType; customerTypeMultiplier?: number }): number {
   const prestige = Math.max(0, input.companyPrestige);
   const prestigeProgress = prestige / (prestige + SALES_ORDER_VOLUME_SCALING.prestigeScale);
   const prestigeMultiplier = 1 + (SALES_ORDER_VOLUME_SCALING.maximumPrestigeMultiplier - 1) * prestigeProgress;
   const customerTypeMaturity = input.customerType ? calculateSalesOrderCustomerTypeMaturity(input.customerType, prestige) : 1;
-  const customerTypeMultiplier = input.customerTypeMultiplier === undefined ? 1 : 1 + (Math.max(1, input.customerTypeMultiplier) - 1) * customerTypeMaturity;
+  const customerTypeMultiplier = input.customerTypeMultiplier === undefined ? 1 : 1 + (Math.max(0, input.customerTypeMultiplier) - 1) * customerTypeMaturity;
   const relationshipMultiplier = 1 + clamp(input.relationship, 0, 1) * (SALES_ORDER_VOLUME_SCALING.maximumRelationshipMultiplier - 1);
-  return Math.max(0, input.baseTargetValue) * prestigeMultiplier * customerTypeMultiplier * relationshipMultiplier;
+  return Math.max(0, input.baseTargetValue) * calculateSalesOrderCompanyValueMultiplier(input.companyAssets) * prestigeMultiplier * customerTypeMultiplier * relationshipMultiplier;
 }
 export function calculateSalesOrderMarketVolumeMultiplier(input: { resourceType: ResourceType; globalSupply: number }): number {
   const benchmarkSupply = getResource(input.resourceType).market.globalBenchmarkSupply;
@@ -160,31 +182,48 @@ export class SalesOrders {
     const maximumOrderValue = Math.max(SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP, input.maximumOrderValue);
     const eligibleResources = getEligibleSalesOrderResourceTypes({ ...input, maximumOrderValue });
     const acquisitionChance = calculateSalesOrderAcquisitionChance({ openOrderCount: this.offered.length, maximumOpenOrders: input.maximumOpenOrders, companyPrestige: input.companyPrestige, economyPhase: input.economyPhase, hasEligibleInventory: eligibleResources.length > 0 });
+    salesOrderDiagnostic('acquisition check', {
+      currentGameTimeMs: input.currentGameTimeMs,
+      companyPrestige: input.companyPrestige,
+      maximumOrderValue,
+      openOrderCount: this.offered.length,
+      maximumOpenOrders: input.maximumOpenOrders,
+      candidateResources: input.candidateResourceTypes,
+      eligibleResources,
+      resourceChecks: input.candidateResourceTypes.map((resourceType) => ({ resourceType, inventory: input.inventoryByResource[resourceType], standardOrderLot: getSalesResourceProfile(resourceType).standardOrderLot, globalPrice: input.globalPrices[resourceType], lotValue: getSalesResourceProfile(resourceType).standardOrderLot * input.globalPrices[resourceType], eligible: eligibleResources.includes(resourceType) })),
+      acquisitionChance,
+    });
     if (this.offered.length >= input.maximumOpenOrders || eligibleResources.length === 0 || getDeterministicUnitInterval(`acquire:${this.worldSeed}:${this.nextOrderNumber}:${input.currentGameTimeMs}`) >= acquisitionChance) return { ordersCreated: 0, ordersExpired, acquisitionChance };
     const customerCatalogue = this.getCustomerCatalogueInternal();
-    const customerResourcePair = pickDeterministicWeighted(eligibleResources.flatMap((resourceType) => {
+    const weightedCandidates = eligibleResources.flatMap((resourceType) => {
       const resourceProfile = getSalesResourceProfile(resourceType);
       return customerCatalogue
         .filter((customer) => customer.domain === resourceProfile.domain)
         .map((customer) => {
           const state = this.getCustomerState(customer.id, input.currentGameTimeMs, input.companyPrestige, relationshipDecayHalfLifeMultiplier);
+          const customerAccessibility = calculateSalesCustomerAccessibility(customer.customerType, input.companyPrestige);
+          const weight = calculateSalesOrderSelectionWeight({
+            inventoryAmount: input.inventoryByResource[resourceType],
+            standardOrderLot: resourceProfile.standardOrderLot,
+            productionWeight: input.getResourceWeight(resourceType),
+            customerMarketShare: customer.marketShare,
+            customerAccessibility,
+            domainFrequency: SALES_CUSTOMER_DOMAIN_PROFILES[customer.domain].frequency,
+            customerTypeFrequency: SALES_CUSTOMER_TYPE_PROFILES[customer.customerType].frequencyMultiplier,
+            relationship: state.relationship,
+          });
           return {
             value: { customer, resourceType, state },
-            weight: calculateSalesOrderSelectionWeight({
-              inventoryAmount: input.inventoryByResource[resourceType],
-              standardOrderLot: resourceProfile.standardOrderLot,
-              productionWeight: input.getResourceWeight(resourceType),
-              customerMarketShare: customer.marketShare,
-              customerAccessibility: calculateSalesCustomerAccessibility(customer.customerType, input.companyPrestige),
-              domainFrequency: SALES_CUSTOMER_DOMAIN_PROFILES[customer.domain].frequency,
-              customerTypeFrequency: SALES_CUSTOMER_TYPE_PROFILES[customer.customerType].frequencyMultiplier,
-              relationship: state.relationship,
-            }),
+            weight,
+            diagnostics: { resourceType, customerId: customer.id, customerName: customer.name, customerType: customer.customerType, customerDomain: customer.domain, marketShare: customer.marketShare, customerAccessibility, relationship: state.relationship },
           };
         });
-    }), `customer-resource:${this.nextOrderNumber}`);
+    });
+    salesOrderDiagnostic('customer-resource candidates', weightedCandidates.map(({ diagnostics, weight }) => ({ ...diagnostics, weight })));
+    const customerResourcePair = pickDeterministicWeighted(weightedCandidates, `customer-resource:${this.nextOrderNumber}`);
     if (!customerResourcePair) return { ordersCreated: 0, ordersExpired, acquisitionChance };
     const { customer, resourceType: primaryResource, state } = customerResourcePair;
+    salesOrderDiagnostic('selected customer-resource pair', { resourceType: primaryResource, customerId: customer.id, customerName: customer.name, customerType: customer.customerType, customerDomain: customer.domain, relationship: state.relationship });
     const compatibleResources = eligibleResources.filter((resourceType) => customer.operatingDomains.includes(getSalesResourceProfile(resourceType).domain));
     const lineCount = calculateSalesOrderBundleLineCount({ candidateCount: compatibleResources.length, companyPrestige: input.companyPrestige, relationship: state.relationship, marketShare: customer.marketShare, bundleAppetite: SALES_CUSTOMER_TYPE_PROFILES[customer.customerType].bundleAppetite, bundleMaturityMultiplier, seed: `bundle:${this.nextOrderNumber}` });
     const selectedResources: ResourceType[] = [primaryResource]; const remaining = compatibleResources.filter((resourceType) => resourceType !== primaryResource);
@@ -203,9 +242,12 @@ export class SalesOrders {
     }
     const domain = SALES_CUSTOMER_DOMAIN_PROFILES[customer.domain];
     const type = SALES_CUSTOMER_TYPE_PROFILES[customer.customerType];
-    const baseTargetValue = domain.targetOrderValue[0] + (domain.targetOrderValue[1] - domain.targetOrderValue[0]) * getDeterministicUnitInterval(`value:${this.nextOrderNumber}`);
+    const baseTargetValue = calculateSalesOrderBaseTargetValue({ baseRange: domain.targetOrderValue, companyPrestige: input.companyPrestige, randomValue: getDeterministicUnitInterval(`value:${this.nextOrderNumber}`) });
     const customerTypeMultiplier = type.targetValueMultiplier[0] + (type.targetValueMultiplier[1] - type.targetValueMultiplier[0]) * getDeterministicUnitInterval(`type-value:${this.nextOrderNumber}`);
-    const targetValue = Math.min(maximumOrderValue, calculateSalesOrderTargetValue({ baseTargetValue, companyPrestige: input.companyPrestige, customerType: customer.customerType, customerTypeMultiplier, relationship: state.relationship }));
+    const customerTypeMaturity = calculateSalesOrderCustomerTypeMaturity(customer.customerType, input.companyPrestige);
+    const targetValueBeforeCap = calculateSalesOrderTargetValue({ baseTargetValue, companyAssets: input.companyAssets, companyPrestige: input.companyPrestige, customerType: customer.customerType, customerTypeMultiplier, relationship: state.relationship });
+    const targetValue = Math.min(maximumOrderValue, targetValueBeforeCap);
+    salesOrderDiagnostic('order target value', { customerType: customer.customerType, domain: customer.domain, baseTargetValue, baseRollExponent: 1 + (SALES_ORDER_VOLUME_SCALING.maximumBaseRollExponent - 1) * SALES_ORDER_VOLUME_SCALING.baseRollPrestigeScale / (input.companyPrestige + SALES_ORDER_VOLUME_SCALING.baseRollPrestigeScale), companyAssets: input.companyAssets, companyValueMultiplier: calculateSalesOrderCompanyValueMultiplier(input.companyAssets), typeMultiplierRoll: customerTypeMultiplier, customerTypeMaturity, relationship: state.relationship, targetValueBeforeCap, maximumOrderValue, targetValue, selectedResources });
     const lines: SalesOrderLine[] = [];
     let remainingOrderValue = maximumOrderValue;
     for (const resourceType of selectedResources) {
@@ -214,7 +256,9 @@ export class SalesOrders {
       lines.push(line); remainingOrderValue -= line.reward;
     }
     if (lines.length === 0) return { ordersCreated: 0, ordersExpired, acquisitionChance };
-    const order = this.createOrder(customer, lines, input.currentGameTimeMs); this.nextOrderNumber += 1; this.offered.push(order); return { ordersCreated: 1, ordersExpired, acquisitionChance };
+    const order = this.createOrder(customer, lines, input.currentGameTimeMs); this.nextOrderNumber += 1; this.offered.push(order);
+    salesOrderDiagnostic('order created', { orderId: order.id, customerName: order.customerName, customerType: order.customerType, customerDomain: order.customerDomain, reward: order.reward, lines: order.lines.map((line) => ({ resourceType: line.resourceType, quantity: line.quantity, bidUnitPrice: line.bidUnitPrice, reward: line.reward })) });
+    return { ordersCreated: 1, ordersExpired, acquisitionChance };
   }
   fulfill(id: string, fulfilledAtGameTimeMs: number, companyPrestige: number, relationshipDecayHalfLifeMultiplier = 1, relationshipFulfilmentGainMultiplier = 1, relationshipFailureLossMultiplier = 1): SalesOrder | null { const index = this.offered.findIndex((order) => order.id === id); if (index < 0) return null; const [order] = this.offered.splice(index, 1); const fulfilled = { ...order, status: 'fulfilled' as const, fulfilledAtGameTimeMs }; this.completed.unshift(fulfilled); this.applyRelationshipForOrder(fulfilled, companyPrestige, fulfilledAtGameTimeMs, 'fulfilled', relationshipDecayHalfLifeMultiplier, relationshipFulfilmentGainMultiplier, relationshipFailureLossMultiplier); return cloneOrder(fulfilled); }
   reject(id: string, rejectedAtGameTimeMs: number, companyPrestige: number, relationshipDecayHalfLifeMultiplier = 1, relationshipFulfilmentGainMultiplier = 1, relationshipFailureLossMultiplier = 1): SalesOrder | null { const index = this.offered.findIndex((order) => order.id === id); if (index < 0) return null; const [order] = this.offered.splice(index, 1); const rejected = { ...order, status: 'rejected' as const, rejectedAtGameTimeMs }; this.completed.unshift(rejected); this.applyRelationshipForOrder(rejected, companyPrestige, rejectedAtGameTimeMs, 'rejected', relationshipDecayHalfLifeMultiplier, relationshipFulfilmentGainMultiplier, relationshipFailureLossMultiplier); return cloneOrder(rejected); }
