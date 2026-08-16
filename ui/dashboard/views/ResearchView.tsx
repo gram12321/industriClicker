@@ -83,10 +83,15 @@ function getResearchSeries(projects: readonly ResearchProjectDefinition[], compl
   });
 }
 
-function getProjectIcon(project: ResearchProjectDefinition): string {
+function getRecipeProjectIcon(project: ResearchProjectDefinition): string | null {
   return project.effect.kind === 'recipe-unlock' || project.effect.kind === 'recipe-work-speed-bonus'
     ? RECIPE_ICONS[project.effect.recipeName]
-    : CHAIN_DETAILS[project.chainId].icon;
+    : null;
+}
+
+function ProjectIcon({ project }: { project: ResearchProjectDefinition }) {
+  const recipeIcon = getRecipeProjectIcon(project);
+  return recipeIcon ? <Text>{recipeIcon}</Text> : <MaterialCommunityIcons color={colors.primary} name={CHAIN_DETAILS[project.chainId].icon as never} size={20} />;
 }
 
 export function ResearchView({
@@ -140,7 +145,7 @@ export function ResearchView({
         <View key={project.id} style={localStyles.researchCard}>
           <View style={localStyles.cardBody}>
             <Text style={dashboardStyles.cardKicker}>ACTIVE PROJECT</Text>
-            <View style={localStyles.projectNameRow}><MaterialCommunityIcons color={colors.primary} name={getProjectIcon(project) as never} size={20} /><Text style={localStyles.activeTitle} variant="titleLarge">{project.name}</Text></View>
+            <View style={localStyles.projectNameRow}><ProjectIcon project={project} /><Text style={localStyles.activeTitle} variant="titleLarge">{project.name}</Text></View>
             <View style={localStyles.iconValueRow}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={[dashboardStyles.cardDescription, localStyles.timeLabel, { color: getColorClass(Math.min(1, active.progressMs / active.durationMs)) }]}>{`${formatElapsedTime(active.progressMs)} / ${formatElapsedTime(active.durationMs)}`}</Text></View>
             <View style={localStyles.progressTrack}>
               <ProgressBar accessible accessibilityLabel={`${project.name} progress ${formatElapsedTime(active.progressMs)} of ${formatElapsedTime(active.durationMs)}`} color={getColorClass(Math.min(1, active.progressMs / active.durationMs))} progress={Math.min(1, active.progressMs / active.durationMs)} style={localStyles.progress} />
@@ -211,7 +216,7 @@ function ResearchProjectCard({ activeProjectIds, availability, completed, expand
   return (
     <View style={[localStyles.researchCard, !completed && !isActive && !availability.startable && localStyles.lockedCard]}>
       <View style={localStyles.cardBody}>
-        <View style={localStyles.projectHeader}><View style={localStyles.projectTitle}><View style={localStyles.projectNameRow}><MaterialCommunityIcons color={colors.primary} name={getProjectIcon(project) as never} size={20} /><Text variant="titleMedium">{project.name}</Text></View><View style={localStyles.iconValueRow}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.coin} size={15} /><Text style={dashboardStyles.cardDescription}>{availability.usesFreeGrant ? 'Free tutorial grant · 10× faster' : formatCurrency(availability.cost)}</Text><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={dashboardStyles.cardDescription}>{formatElapsedTime(availability.durationMs)}</Text></View></View><Text style={[localStyles.status, completed ? localStyles.completedStatus : availability.startable ? localStyles.readyStatus : localStyles.lockedStatus]}>{status}</Text></View>
+        <View style={localStyles.projectHeader}><View style={localStyles.projectTitle}><View style={localStyles.projectNameRow}><ProjectIcon project={project} /><Text variant="titleMedium">{project.name}</Text></View><View style={localStyles.iconValueRow}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.coin} size={15} /><Text style={dashboardStyles.cardDescription}>{availability.usesFreeGrant ? 'Free tutorial grant · 10× faster' : formatCurrency(availability.cost)}</Text><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={dashboardStyles.cardDescription}>{formatElapsedTime(availability.durationMs)}</Text></View></View><Text style={[localStyles.status, completed ? localStyles.completedStatus : availability.startable ? localStyles.readyStatus : localStyles.lockedStatus]}>{status}</Text></View>
         <View style={localStyles.seriesProgressHeader}><Text style={dashboardStyles.cardKicker}>RESEARCH CHAIN</Text><Text style={dashboardStyles.cardKicker}>{`${seriesCompletedCount} / ${seriesProjectCount}`}</Text></View>
         <View style={localStyles.seriesProgressTrack}><ProgressBar accessible accessibilityLabel={`${seriesCompletedCount} of ${seriesProjectCount} research projects completed in this chain`} color={getColorClass(seriesProjectCount === 0 ? 0 : seriesCompletedCount / seriesProjectCount)} progress={seriesProjectCount === 0 ? 0 : seriesCompletedCount / seriesProjectCount} style={localStyles.seriesProgress} /></View>
         {recipeTimeComparison && <View style={localStyles.recipeTimeComparison}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={dashboardStyles.cardDescription}>Recipe time: {recipeTimeComparison.before} → {recipeTimeComparison.after}</Text></View>}

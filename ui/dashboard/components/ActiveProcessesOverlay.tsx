@@ -13,7 +13,7 @@ import { colors } from '@/theme';
 import { clamp, formatDuration, formatElapsedTime, formatNumber, getColorClass } from '@/utils';
 import { formatRecipeName } from '@/ui/dashboard/helpers/recipeFormatters';
 
-type ActiveProcess = { id: string; icon: string; label: string; progress: number; timing: string; title: string };
+type ActiveProcess = { icon: string; id: string; isRecipe?: boolean; label: string; progress: number; timing: string; title: string };
 
 export function ActiveProcessesOverlay({ customerPipelineProgress, facilities, finance, inventory, maximumOpenOrders, onCompleteProcess, research, salesOrders, showInstantCompletion }: {
   customerPipelineProgress: number;
@@ -43,7 +43,7 @@ export function ActiveProcessesOverlay({ customerPipelineProgress, facilities, f
         : <ScrollView contentContainerStyle={localStyles.processList} nestedScrollEnabled showsVerticalScrollIndicator={false}>
           {processes.map((process) => <View key={process.id} style={localStyles.process}>
             <View style={localStyles.processHeader}>
-              <MaterialCommunityIcons color={colors.primary} name={process.icon as never} size={18} />
+              {process.isRecipe ? <Text>{process.icon}</Text> : <MaterialCommunityIcons color={colors.primary} name={process.icon as never} size={18} />}
               <View style={localStyles.processCopy}><Text numberOfLines={1} style={localStyles.processTitle}>{process.title}</Text><Text numberOfLines={1} style={localStyles.processLabel}>{process.label}</Text></View>
               <Text style={[localStyles.processTiming, { color: getColorClass(process.progress) }]}>{process.timing}</Text>
             </View>
@@ -71,7 +71,7 @@ function getActiveProcesses({ customerPipelineProgress, facilities, finance, inv
     const progress = clamp(recipeProgress / recipe.requiredWork, 0, 1);
     const workPerMinute = calculateFacilityEffectiveWork(facilityView, BASE_WORK_PER_MINUTE, getRecipeResearchWorkSpeedMultiplier(recipe.name, research.getCompletedProjectIds()));
     const minutesRemaining = workPerMinute > 0 ? (recipe.requiredWork - recipeProgress) / workPerMinute : 0;
-    return [{ id: facilityView.id, icon: RECIPE_ICONS[recipe.name], label: formatRecipeName(recipe), progress, timing: `${formatNumber(progress * 100, { decimals: 0 })}% · ${formatDuration(minutesRemaining)} left`, title: facilityView.displayName }];
+    return [{ id: facilityView.id, icon: RECIPE_ICONS[recipe.name], isRecipe: true, label: formatRecipeName(recipe), progress, timing: `${formatNumber(progress * 100, { decimals: 0 })}% · ${formatDuration(minutesRemaining)} left`, title: facilityView.displayName }];
   });
 
   const researchProcesses = research.getActiveProjects().flatMap((activeResearch) => {

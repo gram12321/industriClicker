@@ -117,7 +117,7 @@ export function AchievementsView({
                   <Card.Content style={dashboardStyles.cardContent}>
                     <View style={localStyles.header}>
                       <View style={localStyles.title}>
-                        <List.Icon color={achievement.isUnlocked ? colors.primary : colors.muted} icon={achievement.isUnlocked ? achievement.icon : 'lock-outline'} />
+                        {achievement.isUnlocked && achievement.resourceType ? <Text>{achievement.icon}</Text> : <List.Icon color={achievement.isUnlocked ? colors.primary : colors.muted} icon={achievement.isUnlocked ? achievement.icon : 'lock-outline'} />}
                         <Text numberOfLines={1} style={localStyles.titleText} variant="titleMedium">{achievement.name}</Text>
                       </View>
                       <View style={[localStyles.masteryPill, achievement.isUnlocked ? localStyles.unlockedMasteryPill : localStyles.lockedMasteryPill]}>

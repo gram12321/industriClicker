@@ -38,7 +38,7 @@ export function SalesOrderRequestCard({
         <View style={styles.adminSalesOrderControls}>
           <Menu
             anchor={(
-              <Button icon={getResourceIcon(selectedResourceType)} mode="outlined" onPress={() => setIsResourceMenuOpen(true)}>
+              <Button icon={() => <Text>{getResourceIcon(selectedResourceType)}</Text>} mode="outlined" onPress={() => setIsResourceMenuOpen(true)}>
                 {selectedResource.name}
               </Button>
             )}
@@ -51,7 +51,7 @@ export function SalesOrderRequestCard({
               return (
                 <Menu.Item
                   key={resourceType}
-                  leadingIcon={getResourceIcon(resourceType)}
+                  leadingIcon={() => <Text>{getResourceIcon(resourceType)}</Text>}
                   onPress={() => { setSelectedResourceType(resourceType); setIsResourceMenuOpen(false); }}
                   title={resource.name}
                 />

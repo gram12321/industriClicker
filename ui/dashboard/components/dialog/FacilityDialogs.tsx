@@ -199,7 +199,7 @@ function ConfirmConstrution({
           {definition.recipes.map((recipe) => (
             <List.Item
               key={recipe.name}
-              left={(props) => <List.Icon {...props} icon={RECIPE_ICONS[recipe.name]} />}
+              left={() => <Text>{RECIPE_ICONS[recipe.name]}</Text>}
               title={formatRecipeName(recipe)}
               description={<View><Text style={styles.cardDescription}>{`${formatRecipeInputs(recipe)} → ${formatRecipeOutput(recipe)}`}</Text><WorkMetric value={String(recipe.requiredWork)} /></View>}
             />
