@@ -104,7 +104,7 @@ export const RESOURCES: Readonly<Record<ResourceType, { name: string; market: Re
   },
   [ResourceType.ConstructionMaterials]: {
     name: 'Construction Materials',
-    market: { localBenchmarkSupply: 1_275, localInitialSupply: 75, regionalBenchmarkSupply: 4_250, regionalInitialSupply: 250, globalBenchmarkSupply: 42_500, globalInitialSupply: 2_500, logisticsMultiplier: 0.5, valueDensityMultiplier: 1.2 },
+    market: { localBenchmarkSupply: 1_275, localInitialSupply: 150, regionalBenchmarkSupply: 4_250, regionalInitialSupply: 500, globalBenchmarkSupply: 42_500, globalInitialSupply: 2_500, logisticsMultiplier: 0.5, valueDensityMultiplier: 1.2 },
   },
   [ResourceType.Sand]: {
     name: 'Sand',
