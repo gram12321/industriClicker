@@ -10,15 +10,13 @@ import { getSalesResourceProfile } from '@/game/sales';
 import { MARKET_AUTOTRADE_DEFAULT_INTERVAL_MS, MARKET_AUTOTRADE_INTERVAL_OPTIONS, type Market, type MarketAutomation, type MarketTradeMultiplier } from '@/game/market';
 import { RESOURCE_GROUPS, RESOURCE_TYPES, getResource, getResourceIcon } from '@/game/resources';
 import { APP_ICONS } from '@/icons';
-import { formatCurrency as formatCurrencyBase, formatNumber as formatNumberBase, getColorClass } from '@/utils';
+import { formatCurrency, formatNumber, getColorClass } from '@/utils';
 import { colors } from '@/theme';
 import { SectionHeading } from '@/ui/dashboard/components/DashboardPrimitives';
 import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 
 const multiplierSteps = [1, 10, 100, 1000] as const;
 
-const formatCurrency = (value: number) => formatCurrencyBase(value, { adaptiveNearInteger: true });
-const formatNumber = (value: number, options: Parameters<typeof formatNumberBase>[1] = {}) => formatNumberBase(value, options.forceDecimals && options.decimals === 2 ? { ...options, adaptiveNearInteger: true } : options.smartDecimals && Math.abs(value) >= 1_000_000 ? { ...options, omitDecimalsAbove: 1_000_000 } : options);
 const sliderMinimum = 1;
 const sliderMaximum = 1000;
 

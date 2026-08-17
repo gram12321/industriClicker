@@ -123,7 +123,7 @@ export function formatNumber(value: number, options: NumberFormatOptions = {}): 
     smartDecimals = false,
     smartMaxDecimals = false,
     adaptiveNearOne = true,
-    adaptiveNearInteger = false,
+    adaptiveNearInteger = forceDecimals && decimals === 2,
     compact = false,
     currency = false,
     percent = false,
@@ -166,7 +166,7 @@ export function formatNumber(value: number, options: NumberFormatOptions = {}): 
     fractionDigits = getSmartFractionDigits(absoluteValue, fractionDigits, adaptiveNearOne);
   }
 
-  if (options.omitDecimalsAbove !== undefined && absoluteValue >= options.omitDecimalsAbove) fractionDigits = 0;
+  if ((smartDecimals && absoluteValue >= 1_000_000) || (options.omitDecimalsAbove !== undefined && absoluteValue >= options.omitDecimalsAbove)) fractionDigits = 0;
 
   if (adaptiveNearInteger && absoluteValue < 100 && !Number.isInteger(value)) {
     const distanceToInteger = Math.abs(value - Math.round(value));
@@ -189,7 +189,7 @@ export function formatNumber(value: number, options: NumberFormatOptions = {}): 
 export function formatCurrency(value: number, options: CurrencyFormatOptions = {}): string {
   const safeValue = Number.isFinite(value) ? value : 0;
   const distanceToInteger = Math.abs(safeValue - Math.round(safeValue));
-  const adaptiveDecimals = options.adaptiveNearInteger && Math.abs(safeValue) < 100 && distanceToInteger > 0 && distanceToInteger < 0.01
+  const adaptiveDecimals = (options.adaptiveNearInteger ?? true) && Math.abs(safeValue) < 100 && distanceToInteger > 0 && distanceToInteger < 0.01
     ? distanceToInteger < 0.001 ? 4 : 3
     : 0;
   const decimals = Math.max(0, options.decimals ?? Math.max(2, adaptiveDecimals));
