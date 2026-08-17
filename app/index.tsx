@@ -128,12 +128,51 @@ function GameShell({ companyName }: { companyName: string }) {
     if (tutorialStage) dismissTutorial();
     else dismissGameDialog();
   };
+  const advancePastConstructionConfirmation = () => {
+    const firstFacility = facilities.getAll()[0];
+    if (firstFacility) {
+      setPendingConstruction(null);
+      setIsConstructionYardOpen(false);
+      setFirstBuiltFacilityType(firstFacility.getView().facilityType);
+      setTutorialStage({ kind: 'first-facility' });
+    } else if (pendingConstruction) {
+      dismissTutorial();
+    } else {
+      setTutorialStage({ kind: 'build-facility' });
+    }
+  };
+  const advancePastFacilityChoice = () => {
+    const firstFacility = facilities.getAll()[0];
+    if (firstFacility) {
+      setFirstBuiltFacilityType(firstFacility.getView().facilityType);
+      setPendingConstruction(null);
+      setIsConstructionYardOpen(false);
+      setTutorialStage({ kind: 'first-facility' });
+    } else if (pendingConstruction) {
+      setTutorialStage({ kind: 'construction-confirmation' });
+    } else {
+      dismissTutorial();
+    }
+  };
   const reopenTutorial = () => {
-    setTutorialStage(lastTutorialStage);
-    if (lastTutorialStage.kind === 'welcome') setActiveView('company');
+    const firstFacility = facilities.getAll()[0];
+    const recoveredStage = lastTutorialStage.kind === 'construction-confirmation' && firstFacility
+      ? { kind: 'first-facility' as const }
+      : lastTutorialStage.kind === 'construction-confirmation' && !pendingConstruction
+        ? { kind: 'build-facility' as const }
+      : lastTutorialStage.kind === 'first-facility' && !firstFacility
+        ? { kind: 'build-facility' as const }
+        : lastTutorialStage;
+    if (firstFacility && recoveredStage.kind === 'first-facility') setFirstBuiltFacilityType(firstFacility.getView().facilityType);
+    if (recoveredStage.kind === 'first-facility') {
+      setPendingConstruction(null);
+      setIsConstructionYardOpen(false);
+    }
+    setTutorialStage(recoveredStage);
+    if (recoveredStage.kind === 'welcome') setActiveView('company');
     else {
       setActiveView('production');
-      if (lastTutorialStage.kind === 'construction' || lastTutorialStage.kind === 'facility-choice') setIsConstructionYardOpen(true);
+      if (recoveredStage.kind === 'construction' || recoveredStage.kind === 'facility-choice') setIsConstructionYardOpen(true);
     }
   };
   const economyPhase = finance.getEconomyPhase();
@@ -149,7 +188,7 @@ function GameShell({ companyName }: { companyName: string }) {
     if (!tutorial.completedWelcome) {
       setActiveView('company');
       setHasStartedProductionTutorial(false);
-      setFirstBuiltFacilityType(null);
+      setFirstBuiltFacilityType(facilities.getAll()[0]?.getView().facilityType ?? null);
     } else {
       setFirstBuiltFacilityType(null);
     }
@@ -183,7 +222,7 @@ function GameShell({ companyName }: { companyName: string }) {
             </Menu>
           </View>
         </View></View>
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[styles.content, tutorialStage && styles.tutorialScrollableContent]} nestedScrollEnabled showsVerticalScrollIndicator={activeView === 'production'}>
           {activeView === 'admin' && isAdminDashboardAvailable ? <AdminDashboard isTutorialEnabled={!tutorial.completedWelcome} onAddFunds={addAdminFunds} onClearAllLocalData={clearAllLocalData} onCreateSalesOrderRequest={createSalesOrderRequest} onDeleteCompany={deleteActiveCompany} onDisableTutorial={completeWelcomeTutorial} onEnableTutorial={reopenWelcomeTutorial} onSetBalance={setAdminBalance} onSetInventoryAmount={setInventoryAmount} />
             : activeView === 'achievements' ? <AchievementsView achievements={achievements} companyStartedAtGameTimeMs={companyStartedAtGameTimeMs} currentGameTimeMs={lastProcessedAtMs} facilities={facilities} facilityMaintenance={facilityMaintenance} finance={finance} prestige={prestige} resourceFlow={resourceFlow} salesOrders={salesOrders} />
                 : activeView === 'profile' ? <ProfileScreen companyName={companyName} onDeleteCompany={deleteActiveCompany} onManageCompanies={logout} onReplayTutorial={reopenWelcomeTutorial} playerName={playerName} />
@@ -197,7 +236,7 @@ function GameShell({ companyName }: { companyName: string }) {
         {tutorial.completedWelcome && <ActiveProcessesOverlay customerPipelineProgress={customerPipelineProgress} facilities={facilities} finance={finance} inventory={inventory} maximumOpenOrders={maximumOpenOrders} onCompleteProcess={completeActivityInstantly} research={research} salesOrders={salesOrders} showInstantCompletion={isAdminDashboardAvailable} />}
         <View style={styles.bottomNavigation}>{(tutorial.completedWelcome ? [...tabs.slice(0, 3), salesTab, researchTab, ...tabs.slice(3)] : tutorialStep === 5 ? [tabs[0], tabs[2]] : [tabs[0]]).map((tab) => <BottomNavigationItem active={activeView === tab.key} highlight={tutorialStep === 5 && activeView !== 'production' && tab.key === 'production'} icon={tab.icon} key={tab.key} label={tab.label} onPress={() => { setActiveView(tab.key); if (tutorial.completedWelcome) return; if (tab.key === 'company') setTutorialStage({ kind: 'welcome', step: tutorialStep }); if (tab.key === 'production') setTutorialStage({ kind: hasStartedProductionTutorial ? 'build-facility' : 'production' }); }} symbol={tab.symbol} />)}</View>
       </View>
-      <FacilityConstructionDialog facilities={facilities} finance={finance} inventory={inventory} isConstructionTutorial={isConstructionTutorialOpen || isFacilityChoiceTutorialOpen || isConstructionConfirmationTutorialOpen} isConstructionYardOpen={isConstructionYardOpen} market={market} onBuyMissingConstructionInputs={() => { if (pendingConstruction) buyMissingConstructionInputs(pendingConstruction); }} onCloseConstructionYard={() => dismissTutorialOrGameDialog(() => setIsConstructionYardOpen(false))} onConfirmConstruction={() => { const isFirstFacility = facilities.getAll().length === 0; if (pendingConstruction && buildFacility(pendingConstruction)) { if (isFirstFacility && !tutorial.completedWelcome) { setFirstBuiltFacilityType(pendingConstruction); setTutorialStage({ kind: 'first-facility' }); } setPendingConstruction(null); } }} onConfirmDestruction={() => { if (pendingDestruction && sellFacility(pendingDestruction)) setPendingDestruction(null); }} onDismissConstruction={() => dismissTutorialOrGameDialog(() => setPendingConstruction(null))} onDismissDestruction={() => dismissTutorialOrGameDialog(() => setPendingDestruction(null))} onSelectFacility={(facilityType) => { setIsConstructionYardOpen(false); setPendingConstruction(facilityType); if (!tutorial.completedWelcome) setTutorialStage({ kind: 'construction-confirmation' }); }} pendingConstruction={pendingConstruction} pendingDestruction={pendingDestruction} />
+      <FacilityConstructionDialog facilities={facilities} finance={finance} inventory={inventory} isConstructionTutorial={isConstructionTutorialOpen || isFacilityChoiceTutorialOpen || isConstructionConfirmationTutorialOpen} isFacilitySelectionEnabled={isConstructionTutorialOpen || isFacilityChoiceTutorialOpen} isConstructionYardOpen={isConstructionYardOpen} market={market} onBuyMissingConstructionInputs={() => { if (pendingConstruction) buyMissingConstructionInputs(pendingConstruction); }} onCloseConstructionYard={() => dismissTutorialOrGameDialog(() => setIsConstructionYardOpen(false))} onConfirmConstruction={() => { const isFirstFacility = facilities.getAll().length === 0; if (pendingConstruction && buildFacility(pendingConstruction)) { if (isFirstFacility && !tutorial.completedWelcome) { setFirstBuiltFacilityType(pendingConstruction); setTutorialStage({ kind: 'first-facility' }); } setPendingConstruction(null); } }} onConfirmDestruction={() => { if (pendingDestruction && sellFacility(pendingDestruction)) setPendingDestruction(null); }} onDismissConstruction={() => dismissTutorialOrGameDialog(() => setPendingConstruction(null))} onDismissDestruction={() => dismissTutorialOrGameDialog(() => setPendingDestruction(null))} onSelectFacility={(facilityType) => { if (isConstructionTutorialOpen) { setTutorialStage({ kind: 'facility-choice' }); return; } setIsConstructionYardOpen(false); setPendingConstruction(facilityType); if (!tutorial.completedWelcome) setTutorialStage({ kind: 'construction-confirmation' }); }} pendingConstruction={pendingConstruction} pendingDestruction={pendingDestruction} />
       <PrestigeDialog currentGameTimeMs={lastProcessedAtMs} facilityConditions={facilities.getAll().map((facility) => facility.getView().facilityCondition)} isOpen={isPrestigeOpen} onClose={() => dismissTutorialOrGameDialog(() => setIsPrestigeOpen(false))} summary={prestigeSummary} />
       <CollectionDialog finance={finance} onAcceptRestructure={acceptDebtRestructure} onAcknowledge={acknowledgeCollectionNotice} />
       {!tutorial.completedWelcome && ((activeView === 'company' && !isTutorialOpen) || (activeView === 'production' && tutorialStage === null)) && <Portal><View style={styles.tutorialReopenControl}><Pressable accessibilityLabel="Reopen tutorial" accessibilityRole="button" onPress={reopenTutorial} style={styles.tutorialReopenButton}><Image accessibilityLabel="Simulucius" resizeMode="contain" source={SIMULUCIUS_TUTORIAL_BUTTON} style={styles.tutorialReopenCharacter} /></Pressable><IconButton accessibilityLabel="Exit tutorial" icon="close" onPress={() => { void completeWelcomeTutorial(); }} size={16} style={styles.tutorialReopenCloseButton} /></View></Portal>}
@@ -205,8 +244,8 @@ function GameShell({ companyName }: { companyName: string }) {
       <ProductionTutorialDialog onBack={() => { setActiveView('company'); setTutorialStage({ kind: 'welcome', step: tutorialStep }); }} onClose={() => { setHasStartedProductionTutorial(true); setTutorialStage({ kind: 'build-facility' }); }} onDismiss={dismissTutorial} onExit={() => { void completeWelcomeTutorial(); }} visible={isProductionTutorialOpen && activeView === 'production'} />
       <BuildFacilityTutorialDialog highlightLayout={buildFacilityButtonLayout} onBack={() => { setHasStartedProductionTutorial(false); setTutorialStage({ kind: 'production' }); }} onDismiss={dismissTutorial} onExit={() => { void completeWelcomeTutorial(); }} onNext={() => { setIsConstructionYardOpen(true); setTutorialStage({ kind: 'construction' }); }} visible={isBuildFacilityTutorialOpen && activeView === 'production'} />
       <ConstructionTutorialDialog onBack={() => { setIsConstructionYardOpen(false); setTutorialStage({ kind: 'build-facility' }); }} onExit={() => { void completeWelcomeTutorial(); }} onNext={() => setTutorialStage({ kind: 'facility-choice' })} visible={isConstructionTutorialOpen && activeView === 'production'} />
-      <FacilityChoiceTutorialDialog onBack={() => setTutorialStage({ kind: 'construction' })} onExit={() => { void completeWelcomeTutorial(); }} onNext={dismissTutorial} visible={isFacilityChoiceTutorialOpen && activeView === 'production'} />
-      <ConstructionConfirmationTutorialDialog onBack={() => { setPendingConstruction(null); setIsConstructionYardOpen(true); setTutorialStage({ kind: 'facility-choice' }); }} onExit={() => { void completeWelcomeTutorial(); }} onNext={dismissTutorial} visible={isConstructionConfirmationTutorialOpen} />
+      <FacilityChoiceTutorialDialog onBack={() => setTutorialStage({ kind: 'construction' })} onExit={() => { void completeWelcomeTutorial(); }} onNext={advancePastFacilityChoice} visible={isFacilityChoiceTutorialOpen && activeView === 'production'} />
+      <ConstructionConfirmationTutorialDialog onBack={() => { setPendingConstruction(null); setIsConstructionYardOpen(true); setTutorialStage({ kind: 'facility-choice' }); }} onExit={() => { void completeWelcomeTutorial(); }} onNext={advancePastConstructionConfirmation} visible={isConstructionConfirmationTutorialOpen} />
       <FirstFacilityTutorialDialog facilityType={firstBuiltFacilityType} onBack={() => setTutorialStage({ kind: 'build-facility' })} onDismiss={dismissTutorial} onExit={() => { void completeWelcomeTutorial(); }} onNext={() => { void completeWelcomeTutorial(); }} visible={isFirstFacilityTutorialOpen && activeView === 'production'} />
     </SafeAreaView>
   );

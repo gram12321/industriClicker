@@ -42,6 +42,7 @@ export function FacilityConstructionDialog(props: {
   pendingDestruction: string | null;
   isConstructionYardOpen: boolean;
   isConstructionTutorial?: boolean;
+  isFacilitySelectionEnabled?: boolean;
   onCloseConstructionYard: () => void;
   onSelectFacility: (facilityType: FacilityType) => void;
   onConfirmConstruction: () => void;
@@ -52,7 +53,7 @@ export function FacilityConstructionDialog(props: {
 }) {
   return <>
     <ConfirmConstrution facilityType={props.pendingConstruction} finance={props.finance} inventory={props.inventory} isConstructionTutorial={props.isConstructionTutorial} market={props.market} onBuyMissingConstructionInputs={props.onBuyMissingConstructionInputs} onConfirm={props.onConfirmConstruction} onDismiss={props.onDismissConstruction} />
-    <BuildFacilityDialog finance={props.finance} inventory={props.inventory} isConstructionTutorial={props.isConstructionTutorial} market={props.market} onDismiss={props.onCloseConstructionYard} onSelectFacility={props.onSelectFacility} visible={props.isConstructionYardOpen} />
+    <BuildFacilityDialog finance={props.finance} inventory={props.inventory} isConstructionTutorial={props.isConstructionTutorial} isFacilitySelectionEnabled={props.isFacilitySelectionEnabled} market={props.market} onDismiss={props.onCloseConstructionYard} onSelectFacility={props.onSelectFacility} visible={props.isConstructionYardOpen} />
     <DestructionDialog facilities={props.facilities} facilityId={props.pendingDestruction} market={props.market} onConfirm={props.onConfirmDestruction} onDismiss={props.onDismissDestruction} />
   </>;
 }
@@ -60,6 +61,7 @@ function BuildFacilityDialog({
   finance,
   inventory,
   isConstructionTutorial,
+  isFacilitySelectionEnabled,
   market,
   onDismiss,
   onSelectFacility,
@@ -68,6 +70,7 @@ function BuildFacilityDialog({
   finance: Finance;
   inventory: Inventory;
   isConstructionTutorial?: boolean;
+  isFacilitySelectionEnabled?: boolean;
   market: Market;
   onDismiss: () => void;
   onSelectFacility: (facilityType: FacilityType) => void;
@@ -76,6 +79,7 @@ function BuildFacilityDialog({
   const { height } = useWindowDimensions();
   const facilityListMaxHeight = clamp(height - 280, 160, 480);
   const tutorialFacilityListMaxHeight = clamp(height * 0.24, 140, 220);
+  const canSelectFacility = !isConstructionTutorial || isFacilitySelectionEnabled === true;
   const [facilityFilter, setFacilityFilter] = useState<'all' | 'available' | 'unavailable'>('all');
   const facilities = FACILITY_GROUPS.flatMap((group) => group.facilities.map((facilityType) => {
     const definition = getFacilityDefinition(facilityType);
@@ -122,10 +126,10 @@ function BuildFacilityDialog({
                 {showGroup && <Text style={styles.cardKicker}>{groupLabel}</Text>}
                 <Card
                   accessibilityLabel={`${definition.name}${canAffordConstruction ? '' : ' unavailable'}`}
-                  accessibilityState={{ disabled: !canAffordConstruction || isConstructionTutorial }}
+                  accessibilityState={{ disabled: !canAffordConstruction || !canSelectFacility }}
                   mode="contained"
-                  onPress={canAffordConstruction && !isConstructionTutorial ? () => onSelectFacility(facilityType) : undefined}
-                  style={[styles.constructionYardCard, !canAffordConstruction && styles.constructionYardCardDisabled]}
+                  onPress={canAffordConstruction && canSelectFacility ? () => onSelectFacility(facilityType) : undefined}
+                  style={[styles.constructionYardCard, (!canAffordConstruction || !canSelectFacility) && styles.constructionYardCardDisabled]}
                 >
                   <Card.Content>
                     <List.Item
@@ -175,6 +179,9 @@ function ConfirmConstrution({
   }
 
   const definition = getFacilityDefinition(facilityType);
+  const contentMaxHeight = isConstructionTutorial
+    ? Math.min(300, Math.max(180, height * 0.38))
+    : Math.min(420, Math.max(220, height * 0.52));
   const canConstruct = finance.canAfford(definition.landCost)
     && inventory.has(ResourceType.ConstructionMaterials, definition.constructionMaterialsCost)
     && inventory.has(ResourceType.IndustrialMachines, definition.industrialMachinesCost);
@@ -196,7 +203,7 @@ function ConfirmConstrution({
       <Dialog dismissable onDismiss={onDismiss} style={isConstructionTutorial ? styles.tutorialConstructionConfirmDialog : undefined} visible>
         <Dialog.Title>{`Construct ${definition.name}?`}</Dialog.Title>
         <Dialog.Content>
-          <ScrollView contentContainerStyle={styles.constructionConfirmContent} style={{ maxHeight: Math.min(420, Math.max(220, height * 0.52)) }}>
+          <ScrollView contentContainerStyle={[styles.constructionConfirmContent, isConstructionTutorial && styles.tutorialConstructionConfirmContent]} style={{ maxHeight: contentMaxHeight }}>
             <Text style={styles.dialogDescription}>
               Purchase the land, supply the Construction Materials, and install the Industrial Machines before the facility is added to your company.
             </Text>
