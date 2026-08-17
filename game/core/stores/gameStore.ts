@@ -299,7 +299,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const trade = market.buyFromLocal(resourceType, amount);
     const total = trade.unitPrice * trade.amount;
     if (!trade.success || !finance.canAfford(total) || !inventory.add(resourceType, trade.amount, trade.quality)
-      || !finance.applyTransaction({ amount: -total, description: `Bought ${trade.amount} ${resourceType} from local market`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: get().lastProcessedAtMs })) return false;
+      || !finance.applyTransaction({ amount: -total, description: `Bought ${trade.amount} ${resourceType} from local market`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`, `Quality: Q${trade.quality.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: get().lastProcessedAtMs })) return false;
     const resourceFlow = get().resourceFlow.clone();
     resourceFlow.record('market-buy', resourceType, trade.amount, get().lastProcessedAtMs);
     set({ market, inventory, finance, resourceFlow });
@@ -316,7 +316,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const trade = market.sellToLocal(resourceType, amount, quality);
     const total = trade.unitPrice * trade.amount;
     if (!trade.success || !inventory.remove(resourceType, amount)
-      || !finance.applyTransaction({ amount: total, description: `Sold ${trade.amount} ${resourceType} to local market`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-sale', occurredAtGameTimeMs: get().lastProcessedAtMs })) return false;
+      || !finance.applyTransaction({ amount: total, description: `Sold ${trade.amount} ${resourceType} to local market`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`, `Quality: Q${quality.toFixed(2)}`], kind: 'operating', source: 'market-sale', occurredAtGameTimeMs: get().lastProcessedAtMs })) return false;
     const resourceFlow = get().resourceFlow.clone();
     resourceFlow.record('market-sell', resourceType, -trade.amount, get().lastProcessedAtMs);
     set({ market, inventory, finance, resourceFlow });
@@ -650,7 +650,7 @@ export const useGameStore = create<GameState>((set, get) => {
         if (inventory === get().inventory) inventory = inventory.clone();
         const trade = buyingMarket.buyFromLocal(resourceType, purchaseAmount);
         if (trade.success && inventory.add(resourceType, trade.amount, trade.quality)) {
-          marketFinance.applyTransaction({ amount: -trade.unitPrice * trade.amount, description: `Autobought ${formatNumber(trade.amount, { smartDecimals: true })} ${resourceType}`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: stepEndGameTimeMs });
+          marketFinance.applyTransaction({ amount: -trade.unitPrice * trade.amount, description: `Autobought ${formatNumber(trade.amount, { smartDecimals: true })} ${resourceType}`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`, `Quality: Q${trade.quality.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: stepEndGameTimeMs });
           recordResourceFlow('market-buy', resourceType, trade.amount, stepEndGameTimeMs);
         }
       }
@@ -673,7 +673,7 @@ export const useGameStore = create<GameState>((set, get) => {
               || unitPrice > automation.autoBuyMaxUnitPrice || !marketFinance.canAfford(unitPrice * purchaseAmount)) continue;
             const trade = market.buyFromLocal(input.resourceType, purchaseAmount);
             if (trade.success && inventory.add(input.resourceType, trade.amount, trade.quality)) {
-              marketFinance.applyTransaction({ amount: -trade.unitPrice * trade.amount, description: `Autobought ${formatNumber(trade.amount, { smartDecimals: true })} ${input.resourceType} for production`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: stepEndGameTimeMs });
+          marketFinance.applyTransaction({ amount: -trade.unitPrice * trade.amount, description: `Autobought ${formatNumber(trade.amount, { smartDecimals: true })} ${input.resourceType} for production`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`, `Quality: Q${trade.quality.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: stepEndGameTimeMs });
               recordResourceFlow('market-buy', input.resourceType, trade.amount, stepEndGameTimeMs);
             }
           }
@@ -727,7 +727,7 @@ export const useGameStore = create<GameState>((set, get) => {
         if (inventory === get().inventory) inventory = inventory.clone();
         const trade = market.sellToLocal(resourceType, amount, inventoryQuality);
         if (trade.success && inventory.remove(resourceType, amount)) {
-          marketFinance.applyTransaction({ amount: trade.unitPrice * trade.amount, description: `Autosold ${trade.amount} ${resourceType} to local market`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-sale', occurredAtGameTimeMs: stepEndGameTimeMs });
+          marketFinance.applyTransaction({ amount: trade.unitPrice * trade.amount, description: `Autosold ${trade.amount} ${resourceType} to local market`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`, `Quality: Q${trade.quality.toFixed(2)}`], kind: 'operating', source: 'market-sale', occurredAtGameTimeMs: stepEndGameTimeMs });
           recordResourceFlow('market-sell', resourceType, -trade.amount, stepEndGameTimeMs);
         }
       }
@@ -1151,12 +1151,13 @@ export const useGameStore = create<GameState>((set, get) => {
     }
 
     const currentGameTimeMs = get().lastProcessedAtMs;
+    const deliveredQualities = new Map(order.lines.map((line) => [line.resourceType, inventory.getQuality(line.resourceType)]));
     for (const line of order.lines) {
       const quality = inventory.getQuality(line.resourceType);
       if (!inventory.remove(line.resourceType, line.quantity) || !market.addToGlobal(line.resourceType, line.quantity, quality)) return false;
     }
     const completedResearchProjectIds = get().research.getCompletedProjectIds();
-    if (!finance.applyTransaction({ amount: order.reward, description: `Customer order fulfilled: ${order.customerName}`, detailLines: order.lines.map((line) => `Delivered ${line.quantity} ${line.resourceType}`), kind: 'operating', source: 'order-sale', occurredAtGameTimeMs: currentGameTimeMs })
+    if (!finance.applyTransaction({ amount: order.reward, description: `Customer order fulfilled: ${order.customerName}`, detailLines: order.lines.map((line) => { const quality = deliveredQualities.get(line.resourceType) ?? 1; const premiumMultiplier = 1 + line.premiumPercent / 100; const qualityMultiplier = quality; const calculatedUnitPrice = line.globalReferenceUnitPrice * premiumMultiplier * qualityMultiplier; return `Delivered ${line.quantity} ${line.resourceType} at Q${quality.toFixed(2)} · €${line.globalReferenceUnitPrice.toFixed(2)} base × ${premiumMultiplier.toFixed(2)} premium × ${qualityMultiplier.toFixed(2)} quality = €${calculatedUnitPrice.toFixed(2)}/unit`; }), kind: 'operating', source: 'order-sale', occurredAtGameTimeMs: currentGameTimeMs })
       || !salesOrders.fulfill(order.id, currentGameTimeMs, calculateCompanyPrestigeSummary(get().prestige.getEvents(), currentGameTimeMs).totalPrestige, getSalesRelationshipDecayHalfLifeMultiplier(completedResearchProjectIds), getSalesRelationshipFulfilmentGainMultiplier(completedResearchProjectIds), getSalesRelationshipFailureLossMultiplier(completedResearchProjectIds))) {
       return false;
     }

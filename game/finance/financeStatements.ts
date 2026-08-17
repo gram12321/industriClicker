@@ -129,7 +129,7 @@ function parseMarketTransaction(description: string): { description: string; qua
   const match = /^(Autobought|Autosold|Bought|Sold) ([\d.,]+) (.+?)(?: (for production|from local market|to local market))?$/.exec(description);
   if (!match) return null;
   const quantity = Number(match[2].replace(',', '.'));
-  const suffix = match[4] ? ` ${match[4]}` : '';
+  const suffix = match[4] === 'for production' ? '' : match[4] ? ` ${match[4]}` : '';
   return Number.isFinite(quantity) && quantity > 0 ? { description: `${match[1]} ${match[3]}${suffix}`, quantity } : null;
 }
 

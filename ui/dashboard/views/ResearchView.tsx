@@ -96,7 +96,7 @@ function getProjectsForGroup(group: ResearchGroup, completedIds: readonly string
   const fixedProjects = RESEARCH_PROJECTS.filter((project) => group.chainIds.includes(project.chainId)
     && (project.chainId !== 'recipe-unlocks' || !showOnlyConstructedRecipes || isRecipeProjectForConstructedFacility(project, facilities)));
   if (!group.chainIds.includes('resource-quality')) return fixedProjects;
-  return RESOURCE_TYPES.flatMap((resourceType) => {
+  return RESOURCE_TYPES.filter((resourceType) => !showOnlyConstructedRecipes || Object.values(FACILITIES).some((facility) => facilities.has(facility.type) && facility.recipes.some((recipe) => recipe.outputs.some((output) => output.resourceType === resourceType)))).flatMap((resourceType) => {
     const nextLevel = getResourceProductionQualityLevel(resourceType, completedIds) + 1;
     const project = getResearchProject(getResourceQualityResearchProjectId(resourceType, nextLevel));
     return project ? [project] : [];
@@ -195,7 +195,7 @@ export function ResearchView({
             <View style={localStyles.chainHeading}>
               <SectionHeading eyebrow={group.eyebrow} title={group.title} subtitle={group.subtitle} />
             </View>
-            {group.id === 'recipe-unlocks' && <Button compact mode={showOnlyConstructedRecipes ? 'contained' : 'outlined'} onPress={() => setShowOnlyConstructedRecipes((current) => !current)}>{showOnlyConstructedRecipes ? 'Constructed facilities only' : 'All facility recipes'}</Button>}
+            {(group.id === 'recipe-unlocks' || group.id === 'resource-quality') && <Button compact mode={showOnlyConstructedRecipes ? 'contained' : 'outlined'} onPress={() => setShowOnlyConstructedRecipes((current) => !current)}>{showOnlyConstructedRecipes ? 'Constructed facilities only' : group.id === 'resource-quality' ? 'All resources' : 'All facility recipes'}</Button>}
             {displayedSeries.map((series) => (
               <View key={series.project.id} style={localStyles.projectCardWrap}>
                 <ResearchProjectCard

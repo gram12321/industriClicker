@@ -64,6 +64,7 @@ export function FinanceView(props: Props) {
     useState<(typeof FINANCE_REPORT_PERIODS)[number]["id"]>("all-time");
   const [cashFlowGroupMs, setCashFlowGroupMs] = useState(60_000);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+  const [expandedDetails, setExpandedDetails] = useState<ReadonlySet<string>>(new Set());
   const [searching, setSearching] = useState(false);
   const [selectedTypes, setSelectedTypes] = useState<
     readonly (typeof LENDER_TYPES)[number][]
@@ -108,6 +109,12 @@ export function FinanceView(props: Props) {
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
+  const toggleDetail = (id: string) =>
+    setExpandedDetails((current) => {
+      const next = new Set(current);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
   return (
     <View style={s.screen}>
       <SectionHeading
@@ -129,9 +136,11 @@ export function FinanceView(props: Props) {
           companyStartedAtGameTimeMs={props.companyStartedAtGameTimeMs}
           data={data}
           expanded={expanded}
+          expandedDetails={expandedDetails}
           groupMs={cashFlowGroupMs}
           setGroupMs={setCashFlowGroupMs}
           toggle={toggle}
+          toggleDetail={toggleDetail}
         />
       )}
       {page === "funding" && (
@@ -695,16 +704,20 @@ function CashFlow({
   companyStartedAtGameTimeMs,
   data,
   expanded,
+  expandedDetails,
   groupMs,
   setGroupMs,
   toggle,
+  toggleDetail,
 }: {
   companyStartedAtGameTimeMs: number;
   data: StatementData;
   expanded: ReadonlySet<string>;
+  expandedDetails: ReadonlySet<string>;
   groupMs: number;
   setGroupMs: (value: number) => void;
   toggle: (id: string) => void;
+  toggleDetail: (id: string) => void;
 }) {
   return (
     <View style={s.content}>
@@ -730,13 +743,12 @@ function CashFlow({
         </Surface>
       ) : (
         data.cashFlowRows.map((row) => (
+          <View key={row.id} style={s.cash}>
           <Pressable
             accessibilityLabel={`${expanded.has(row.id) ? "Hide" : "Show"} ${row.description} details`}
             accessibilityRole="button"
             accessibilityState={{ expanded: expanded.has(row.id) }}
-            key={row.id}
             onPress={() => toggle(row.id)}
-            style={s.cash}
           >
             <View style={s.row}>
               <View style={s.cashName}>
@@ -753,6 +765,7 @@ function CashFlow({
                 {formatCurrency(row.amount)}
               </Text>
             </View>
+          </Pressable>
             {expanded.has(row.id) && (
               <View style={s.details}>
                 {row.detailGroups.map((group) => {
@@ -769,11 +782,13 @@ function CashFlow({
                       />
                       {group.details.map((detail) => (
                         <View key={detail.id} style={s.detailStack}>
+                          <Text accessibilityRole="button" accessibilityState={{ expanded: expandedDetails.has(detail.id) }} onPress={() => toggleDetail(detail.id)}>
                           <Text style={s.detail}>
                             • {detail.description}
                             {detail.count > 1 ? ` ×${detail.count}` : ""}
                           </Text>
-                          {detail.totalQuantity &&
+                          </Text>
+                          {expandedDetails.has(detail.id) ? detail.totalQuantity &&
                           detail.totalAbsoluteAmount ? (
                             <>
                               <Text style={s.detailSubline}>
@@ -799,7 +814,7 @@ function CashFlow({
                                 {line}
                               </Text>
                             ))
-                          )}
+                          ) : null}
                         </View>
                       ))}
                     </View>
@@ -810,7 +825,7 @@ function CashFlow({
             <Text style={s.hint}>
               Balance after: {formatCurrency(row.balance)}
             </Text>
-          </Pressable>
+          </View>
         ))
       )}
     </View>

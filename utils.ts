@@ -26,6 +26,9 @@ export interface NumberFormatOptions {
   smartDecimals?: boolean;
   smartMaxDecimals?: boolean;
   adaptiveNearOne?: boolean;
+  /** Preserve useful fractional precision for values very close to a whole number. Opt-in because it is not suitable for large quantities. */
+  adaptiveNearInteger?: boolean;
+  omitDecimalsAbove?: number;
   compact?: boolean;
   currency?: boolean;
   percent?: boolean;
@@ -36,6 +39,7 @@ export interface CurrencyFormatOptions {
   decimals?: number;
   minimumFractionDigits?: number;
   showSign?: boolean;
+  adaptiveNearInteger?: boolean;
 }
 
 export interface CompactFormatOptions {
@@ -119,6 +123,7 @@ export function formatNumber(value: number, options: NumberFormatOptions = {}): 
     smartDecimals = false,
     smartMaxDecimals = false,
     adaptiveNearOne = true,
+    adaptiveNearInteger = false,
     compact = false,
     currency = false,
     percent = false,
@@ -146,6 +151,7 @@ export function formatNumber(value: number, options: NumberFormatOptions = {}): 
   }
 
   let fractionDigits = decimals ?? 2;
+  let adaptiveMinimumFractionDigits = 0;
   const absoluteValue = Math.abs(value);
 
   if (smartMaxDecimals) {
@@ -160,19 +166,33 @@ export function formatNumber(value: number, options: NumberFormatOptions = {}): 
     fractionDigits = getSmartFractionDigits(absoluteValue, fractionDigits, adaptiveNearOne);
   }
 
+  if (options.omitDecimalsAbove !== undefined && absoluteValue >= options.omitDecimalsAbove) fractionDigits = 0;
+
+  if (adaptiveNearInteger && absoluteValue < 100 && !Number.isInteger(value)) {
+    const distanceToInteger = Math.abs(value - Math.round(value));
+    if (distanceToInteger < 0.01) {
+      adaptiveMinimumFractionDigits = distanceToInteger < 0.001 ? 4 : 3;
+      fractionDigits = Math.max(fractionDigits, adaptiveMinimumFractionDigits);
+    }
+  }
+
   if (!forceDecimals && !smartDecimals && (absoluteValue >= 1000 || Number.isInteger(value))) {
     return new Intl.NumberFormat(DISPLAY_LOCALE, { maximumFractionDigits: 0 }).format(value);
   }
 
   return new Intl.NumberFormat(DISPLAY_LOCALE, {
-    minimumFractionDigits: forceDecimals || !smartDecimals ? fractionDigits : 0,
+    minimumFractionDigits: forceDecimals || !smartDecimals ? fractionDigits : adaptiveMinimumFractionDigits,
     maximumFractionDigits: fractionDigits,
   }).format(value);
 }
 
 export function formatCurrency(value: number, options: CurrencyFormatOptions = {}): string {
   const safeValue = Number.isFinite(value) ? value : 0;
-  const decimals = Math.max(0, options.decimals ?? 2);
+  const distanceToInteger = Math.abs(safeValue - Math.round(safeValue));
+  const adaptiveDecimals = options.adaptiveNearInteger && Math.abs(safeValue) < 100 && distanceToInteger > 0 && distanceToInteger < 0.01
+    ? distanceToInteger < 0.001 ? 4 : 3
+    : 0;
+  const decimals = Math.max(0, options.decimals ?? Math.max(2, adaptiveDecimals));
   const roundedValue = Number(safeValue.toFixed(decimals));
   const minimumFractionDigits = Math.max(0, Math.min(options.minimumFractionDigits ?? (Number.isInteger(roundedValue) ? 0 : decimals), decimals));
 

@@ -7,6 +7,7 @@ import { ECONOMY_INTEREST_MULTIPLIERS, ECONOMY_PHASES, type EconomyPhase } from 
 import { PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS } from '@/game/prestige';
 import type { Market, MarketDiffusionDetails } from '@/game/market';
 import { getResource, getResourceIcon, RESOURCE_GROUPS, RESOURCE_TYPES, ResourceType } from '@/game/resources';
+import { FACILITIES } from '@/game/facilities';
 import { formatCurrency, formatNumber, formatSigned, formatSignedPercent, getColorClass, normalizeToUnitInterval } from '@/utils';
 import { SectionHeading, WorkMetric } from '@/ui/dashboard/components/DashboardPrimitives';
 import { formatRecipeInputs, formatRecipeName, formatRecipeOutput } from '@/ui/dashboard/helpers/recipeFormatters';
@@ -260,7 +261,7 @@ function MarketFlowSection({ market }: { market: Market }) {
       <BalanceRow label="Regional target" value={formatNumber(details.higherTargetSupply, { smartDecimals: true })} />
       <BalanceRow label="Local adjustment remaining" value={`${formatSigned(localBalanceDelta, { smartDecimals: true })} units`} />
       <BalanceRow label="Next correction" value={details.direction === 'none' ? 'None needed' : `${formatNumber(details.amount, { smartDecimals: true })} units`} />
-      <BalanceRow label="Expected mixed quality" value={`Q${formatNumber(details.equilibriumQuality, { decimals: 3, forceDecimals: true })}`} />
+      <BalanceRow label="Expected mixed quality" value={`Q${formatNumber(details.equilibriumQuality, { decimals: 2, smartDecimals: true, adaptiveNearInteger: true })}`} />
       <BalanceRow label="Local quality diffusion" value={`${formatSigned(details.lowerQualityChangePerMinute, { decimals: 5, forceDecimals: true })} Q/min`} />
       <BalanceRow label="Regional quality diffusion" value={`${formatSigned(details.higherQualityChangePerMinute, { decimals: 5, forceDecimals: true })} Q/min`} />
       <Text style={localStyles.balancePairHeading}>REGIONAL ↔ GLOBAL</Text>
@@ -268,7 +269,7 @@ function MarketFlowSection({ market }: { market: Market }) {
       <BalanceRow label="Global target" value={formatNumber(regionalGlobalDetails.higherTargetSupply, { smartDecimals: true })} />
       <BalanceRow label="Regional adjustment remaining" value={`${formatSigned(regionalBalanceDelta, { smartDecimals: true })} units`} />
       <BalanceRow label="Next correction" value={regionalGlobalDetails.direction === 'none' ? 'None needed' : `${formatNumber(regionalGlobalDetails.amount, { smartDecimals: true })} units`} />
-      <BalanceRow label="Expected mixed quality" value={`Q${formatNumber(regionalGlobalDetails.equilibriumQuality, { decimals: 3, forceDecimals: true })}`} />
+      <BalanceRow label="Expected mixed quality" value={`Q${formatNumber(regionalGlobalDetails.equilibriumQuality, { decimals: 2, smartDecimals: true, adaptiveNearInteger: true })}`} />
       <BalanceRow label="Regional quality diffusion" value={`${formatSigned(regionalGlobalDetails.lowerQualityChangePerMinute, { decimals: 5, forceDecimals: true })} Q/min`} />
       <BalanceRow label="Global quality diffusion" value={`${formatSigned(regionalGlobalDetails.higherQualityChangePerMinute, { decimals: 5, forceDecimals: true })} Q/min`} />
     </Card.Content></Card>
@@ -306,13 +307,13 @@ function MarketPool({ label, price, quality, supply }: { label: string; price: n
   return <View style={localStyles.marketPool}>
     <Text style={localStyles.marketPoolLabel}>{label}</Text>
     <Text style={localStyles.marketPoolSupply}>{formatNumber(supply, { smartDecimals: true })}</Text>
-    <Text style={localStyles.marketPoolSupply}>{`Q${formatNumber(quality, { decimals: 2, forceDecimals: true })}`}</Text>
+    <Text style={localStyles.marketPoolSupply}>{`Q${formatNumber(quality, { decimals: 2, smartDecimals: true, adaptiveNearInteger: true })}`}</Text>
     <CurrencyValue value={price} style={localStyles.marketPoolPrice} />
   </View>;
 }
 
 function BalanceRow({ label, value }: { label: string; value: ReactNode }) {
-  return <View style={localStyles.balanceRow}><Text style={localStyles.balanceLabel}>{label}</Text><View style={localStyles.balanceValueContainer}>{typeof value === 'string' ? <Text style={styles.balanceValue}>{value}</Text> : value}</View></View>;
+  return <View style={localStyles.balanceRow}><Text style={localStyles.balanceLabel}>{label}</Text><View style={localStyles.balanceValueContainer}>{typeof value === 'string' ? <Text style={localStyles.balanceValue}>{value}</Text> : value}</View></View>;
 }
 
 function MarketFlowConnector({ details }: { details: MarketDiffusionDetails }) {
@@ -356,6 +357,7 @@ function getFlowAccessibilityLabel(direction: 'to-local' | 'to-regional' | 'to-g
 }
 
 function ResourcesSection() {
+  const [expandedResource, setExpandedResource] = useState<ResourceType | null>(null);
   return <>
     <SectionHeading eyebrow="RESOURCES" title="Resource catalogue" subtitle="Resources are held in inventory and can be produced, consumed, or supplied to customers." />
     <Card mode="contained" style={styles.featureCard}><Card.Content><List.Section>
@@ -591,10 +593,10 @@ const localStyles = StyleSheet.create({
   balanceFillToGlobal: { right: '50%' },
   balanceFillToLocal: { left: '50%' },
   balanceLabel: { color: colors.muted, flex: 1, fontSize: 12 },
+  balanceValue: { color: colors.charcoal, fontSize: 16, fontWeight: '700' },
   balancePairHeading: { color: colors.primary, fontSize: 11, fontWeight: '700', marginTop: 4 },
   balanceRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   balanceTrack: { backgroundColor: '#E4ECE8', borderRadius: 6, height: 8, overflow: 'hidden', position: 'relative' },
-  balanceValue: { color: colors.charcoal, fontSize: 13, fontWeight: '700' },
   flowAmount: { fontSize: 18, fontWeight: '800' },
   flowCardContent: { gap: 10 },
   flowConnector: { alignItems: 'center', gap: 2, paddingVertical: 6 },
