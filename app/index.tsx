@@ -2,12 +2,12 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, View, type StyleProp, type ViewStyle } from 'react-native';
-import { Avatar, Divider, IconButton, Menu, Text } from 'react-native-paper';
+import { Avatar, Divider, IconButton, Menu, Portal, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { APP_ICONS, ECONOMY_PHASE_ICONS } from '@/icons';
 import { calculateCompanyPrestigeSummary, getMaximumOpenSalesOrders, type FacilityType, useCompanySessionStore, useGameStore } from '@/game';
 import { colors } from '@/theme';
-import { ActiveProcessesOverlay, AdminDashboard, AchievementsView, CollectionDialog, ConstructionTutorialDialog, FirstFacilityTutorialDialog, GameViewContent, FacilityConstructionDialog, BuildFacilityTutorialDialog, IndustriPediaView, isDevAdminSurfaceAvailable, LeaderboardScreen, PrestigeDialog, ProfileScreen, ResearchView, SettingsScreen, styles, ProductionTutorialDialog, TutorialGuideDialog, LoginView, type GameViewId } from '@/ui';
+import { ActiveProcessesOverlay, AdminDashboard, AchievementsView, CollectionDialog, ConstructionTutorialDialog, FacilityChoiceTutorialDialog, FirstFacilityTutorialDialog, GameViewContent, FacilityConstructionDialog, BuildFacilityTutorialDialog, IndustriPediaView, isDevAdminSurfaceAvailable, LeaderboardScreen, PrestigeDialog, ProfileScreen, ResearchView, SettingsScreen, styles, ProductionTutorialDialog, TutorialGuideDialog, LoginView, type GameViewId } from '@/ui';
 import { formatCurrency, formatElapsedTime, formatNumber } from '@/utils';
 
 type ActiveScreen = GameViewId | 'achievements' | 'admin' | 'profile' | 'pedia' | 'settings' | 'leaderboard';
@@ -17,6 +17,7 @@ type TutorialStage =
   | { kind: 'production' }
   | { kind: 'build-facility' }
   | { kind: 'construction' }
+  | { kind: 'facility-choice' }
   | { kind: 'first-facility' }
   | null;
 
@@ -45,9 +46,11 @@ function GameShell({ companyName }: { companyName: string }) {
   const [isConstructionYardOpen, setIsConstructionYardOpen] = useState(false);
   const [isPrestigeOpen, setIsPrestigeOpen] = useState(false);
   const [tutorialStage, setTutorialStage] = useState<TutorialStage>(null);
+  const [lastTutorialStage, setLastTutorialStage] = useState<Exclude<TutorialStage, null>>({ kind: 'welcome', step: 1 });
   const [hasStartedProductionTutorial, setHasStartedProductionTutorial] = useState(false);
   const [firstBuiltFacilityType, setFirstBuiltFacilityType] = useState<FacilityType | null>(null);
   const [buildFacilityButtonLayout, setBuildFacilityButtonLayout] = useState<{ height: number; width: number; x: number; y: number } | null>(null);
+  const [companyOverviewLayout, setCompanyOverviewLayout] = useState<{ height: number; width: number; x: number; y: number } | null>(null);
   const [pendingConstruction, setPendingConstruction] = useState<import('@/game').FacilityType | null>(null);
   const [pendingDestruction, setPendingDestruction] = useState<string | null>(null);
   const inventory = useGameStore((state) => state.inventory);
@@ -113,6 +116,23 @@ function GameShell({ companyName }: { companyName: string }) {
   const isBuildFacilityTutorialOpen = tutorialStage?.kind === 'build-facility';
   const isFirstFacilityTutorialOpen = tutorialStage?.kind === 'first-facility';
   const isConstructionTutorialOpen = tutorialStage?.kind === 'construction';
+  const isFacilityChoiceTutorialOpen = tutorialStage?.kind === 'facility-choice';
+  const dismissTutorial = () => {
+    if (tutorialStage) setLastTutorialStage(tutorialStage);
+    setTutorialStage(null);
+  };
+  const dismissTutorialOrGameDialog = (dismissGameDialog: () => void) => {
+    if (tutorialStage) dismissTutorial();
+    else dismissGameDialog();
+  };
+  const reopenTutorial = () => {
+    setTutorialStage(lastTutorialStage);
+    if (lastTutorialStage.kind === 'welcome') setActiveView('company');
+    else {
+      setActiveView('production');
+      if (lastTutorialStage.kind === 'construction' || lastTutorialStage.kind === 'facility-choice') setIsConstructionYardOpen(true);
+    }
+  };
   const economyPhase = finance.getEconomyPhase();
   const economyPhaseColor = economyPhase === 'crash' || economyPhase === 'recession' ? colors.error : economyPhase === 'stable' ? colors.onDark : colors.paleGreen;
   const completeActivityInstantly = (_processId: string, remainingMs: number) => {
@@ -121,7 +141,8 @@ function GameShell({ companyName }: { companyName: string }) {
   };
 
   useEffect(() => {
-    setTutorialStage(tutorial.completedWelcome ? null : { kind: 'welcome', step: 1 });
+      setTutorialStage(tutorial.completedWelcome ? null : { kind: 'welcome', step: 1 });
+      if (!tutorial.completedWelcome) setLastTutorialStage({ kind: 'welcome', step: 1 });
     if (!tutorial.completedWelcome) {
       setActiveView('company');
       setHasStartedProductionTutorial(false);
@@ -144,8 +165,7 @@ function GameShell({ companyName }: { companyName: string }) {
             {tutorial.completedWelcome && <Pressable accessibilityLabel="Open company prestige" accessibilityRole="button" onPress={() => setIsPrestigeOpen(true)} style={styles.prestigeInline}><MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.achievements} size={17} /><Text style={styles.prestigeInlineValue}>{formatNumber(prestigeSummary.totalPrestige, { smartDecimals: true })}</Text></Pressable>}
           </View>
           <View style={styles.headerActions}>
-            <View accessibilityLabel={`Economy: ${economyPhase}`} style={styles.headerElapsedTime}><MaterialCommunityIcons color={economyPhaseColor} name={ECONOMY_PHASE_ICONS[economyPhase] as never} size={18} /></View>
-            {tutorial.completedWelcome && <Pressable accessibilityLabel={`Open IndustriPedia economy phase: ${finance.getEconomyPhase()}`} accessibilityRole="button" onPress={() => { setPediaInitialSection('economy'); setActiveView('pedia'); }} style={styles.economyPhaseButton}><MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.economyPhase} size={21} /></Pressable>}
+            {tutorial.completedWelcome && <View accessibilityLabel={`Economy: ${economyPhase}`} style={styles.headerElapsedTime}><MaterialCommunityIcons color={economyPhaseColor} name={ECONOMY_PHASE_ICONS[economyPhase] as never} size={18} /></View>}
             {tutorial.completedWelcome && <IconButton accessibilityLabel="Fast-forward one minute" icon={APP_ICONS.fastForward} iconColor={colors.onDark} onPress={fastForwardOneMinute} />}
             <View accessibilityLabel={isTutorialOpen && tutorialStep === 3 ? 'Tutorial highlighted company time' : `Time ${formatElapsedTime(elapsedForegroundTimeMs)}`} style={styles.headerElapsedTime}><MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.elapsedTime} size={17} /><Text style={styles.headerElapsedTimeValue}>{formatElapsedTime(elapsedForegroundTimeMs)}</Text></View>
             <Menu anchor={<Pressable accessibilityLabel="Open profile menu" accessibilityRole="button" onPress={() => setIsProfileMenuOpen(true)} style={styles.profileButton}><Avatar.Text label={companyName.slice(0, 2).toUpperCase()} size={38} style={styles.avatar} /></Pressable>} onDismiss={() => setIsProfileMenuOpen(false)} visible={isProfileMenuOpen}>
@@ -168,21 +188,22 @@ function GameShell({ companyName }: { companyName: string }) {
                 : activeView === 'settings' ? <SettingsScreen onLogout={logout} />
                   : activeView === 'leaderboard' ? <LeaderboardScreen />
                     : activeView === 'pedia' ? <IndustriPediaView companyPrestige={prestigeSummary.totalPrestige} currentGameTimeMs={lastProcessedAtMs} economyPhase={economyPhase} initialSection={pediaInitialSection} market={market} salesOrders={salesOrders} />
-                    : <GameViewContent achievements={achievements} activeTab={activeView === 'admin' ? 'company' : activeView} buyMarketResource={buyMarketResource} companyName={companyName} companyPrestige={prestigeSummary.totalPrestige} companyStartedAtGameTimeMs={companyStartedAtGameTimeMs} currentGameTimeMs={lastProcessedAtMs} customerPipelineProgress={customerPipelineProgress} facilities={facilities} finance={finance} fulfillSalesOrder={fulfillSalesOrder} getResearchAvailability={getResearchAvailability} inventory={inventory} isBuildFacilityTutorial={isBuildFacilityTutorialOpen} market={market} maximumOpenOrders={maximumOpenOrders} onAcceptLoanOffer={acceptLoanOffer} onBuildFacilityLayout={setBuildFacilityButtonLayout} onExtraLoanPayment={makeExtraLoanPayment} onRemoveLoanOffer={removeLoanOffer} onRemoveUnavailableLoanOffers={removeUnavailableLoanOffers} onRepayLoanInFull={repayLoanInFull} onStartLoanSearch={startLoanSearch} onlyInStock={onlyInStock} openConstructionYard={() => { const wasBuildTutorialOpen = isBuildFacilityTutorialOpen; if (wasBuildTutorialOpen) setTutorialStage(null); setIsConstructionYardOpen(true); if (wasBuildTutorialOpen) setTutorialStage({ kind: 'construction' }); }} rejectSalesOrder={rejectSalesOrder} repairFacility={repairFacility} requestFacilityDestruction={setPendingDestruction} research={research} resourceFlow={resourceFlow} salesOrderAcquisition={salesOrderAcquisition} salesOrders={salesOrders} sellMarketResource={sellMarketResource} setFacilityProductionActive={setFacilityProductionActive} setFacilityProductionCycle={setFacilityProductionCycle} setFacilityWorkers={setFacilityWorkers} setMarketAutomation={setMarketAutomation} setOnlyInStock={setOnlyInStock} setShowActiveRecipeInputs={setShowActiveRecipeInputs} showActiveRecipeInputs={showActiveRecipeInputs} startResearch={startResearch} upgradeFacility={upgradeFacility} />}
+                    : <GameViewContent achievements={achievements} activeTab={activeView === 'admin' ? 'company' : activeView} buyMarketResource={buyMarketResource} companyName={companyName} companyPrestige={prestigeSummary.totalPrestige} companyStartedAtGameTimeMs={companyStartedAtGameTimeMs} currentGameTimeMs={lastProcessedAtMs} customerPipelineProgress={customerPipelineProgress} facilities={facilities} finance={finance} fulfillSalesOrder={fulfillSalesOrder} getResearchAvailability={getResearchAvailability} inventory={inventory} isBuildFacilityTutorial={isBuildFacilityTutorialOpen} isFirstFacilityTutorial={isFirstFacilityTutorialOpen} isProductionTutorial={isProductionTutorialOpen} market={market} maximumOpenOrders={maximumOpenOrders} onAcceptLoanOffer={acceptLoanOffer} onBuildFacilityLayout={setBuildFacilityButtonLayout} onCompanyOverviewLayout={setCompanyOverviewLayout} onExtraLoanPayment={makeExtraLoanPayment} onRemoveLoanOffer={removeLoanOffer} onRemoveUnavailableLoanOffers={removeUnavailableLoanOffers} onRepayLoanInFull={repayLoanInFull} onStartLoanSearch={startLoanSearch} onlyInStock={onlyInStock} openConstructionYard={() => { const wasBuildTutorialOpen = isBuildFacilityTutorialOpen; if (wasBuildTutorialOpen) setTutorialStage(null); setIsConstructionYardOpen(true); if (wasBuildTutorialOpen) setTutorialStage({ kind: 'construction' }); }} rejectSalesOrder={rejectSalesOrder} repairFacility={repairFacility} requestFacilityDestruction={setPendingDestruction} research={research} resourceFlow={resourceFlow} salesOrderAcquisition={salesOrderAcquisition} salesOrders={salesOrders} sellMarketResource={sellMarketResource} setFacilityProductionActive={setFacilityProductionActive} setFacilityProductionCycle={setFacilityProductionCycle} setFacilityWorkers={setFacilityWorkers} setMarketAutomation={setMarketAutomation} setOnlyInStock={setOnlyInStock} setShowActiveRecipeInputs={setShowActiveRecipeInputs} showActiveRecipeInputs={showActiveRecipeInputs} startResearch={startResearch} upgradeFacility={upgradeFacility} />}
 
         </ScrollView>
         {tutorial.completedWelcome && <ActiveProcessesOverlay customerPipelineProgress={customerPipelineProgress} facilities={facilities} finance={finance} inventory={inventory} maximumOpenOrders={maximumOpenOrders} onCompleteProcess={completeActivityInstantly} research={research} salesOrders={salesOrders} showInstantCompletion={isAdminDashboardAvailable} />}
         <View style={styles.bottomNavigation}>{(tutorial.completedWelcome ? [...tabs.slice(0, 3), salesTab, researchTab, ...tabs.slice(3)] : tutorialStep === 5 ? [tabs[0], tabs[2]] : [tabs[0]]).map((tab) => <BottomNavigationItem active={activeView === tab.key} highlight={tutorialStep === 5 && activeView !== 'production' && tab.key === 'production'} icon={tab.icon} key={tab.key} label={tab.label} onPress={() => { setActiveView(tab.key); if (tutorial.completedWelcome) return; if (tab.key === 'company') setTutorialStage({ kind: 'welcome', step: tutorialStep }); if (tab.key === 'production') setTutorialStage({ kind: hasStartedProductionTutorial ? 'build-facility' : 'production' }); }} symbol={tab.symbol} />)}</View>
       </View>
-      <FacilityConstructionDialog facilities={facilities} finance={finance} inventory={inventory} isConstructionYardOpen={isConstructionYardOpen} market={market} onBuyMissingConstructionInputs={() => { if (pendingConstruction) buyMissingConstructionInputs(pendingConstruction); }} onCloseConstructionYard={() => setIsConstructionYardOpen(false)} onConfirmConstruction={() => { if (pendingConstruction && buildFacility(pendingConstruction)) { if (facilities.getAll().length === 0 && !tutorial.completedWelcome) { setFirstBuiltFacilityType(pendingConstruction); setTutorialStage({ kind: 'first-facility' }); } setPendingConstruction(null); } }} onConfirmDestruction={() => { if (pendingDestruction && sellFacility(pendingDestruction)) setPendingDestruction(null); }} onDismissConstruction={() => setPendingConstruction(null)} onDismissDestruction={() => setPendingDestruction(null)} onSelectFacility={(facilityType) => { setIsConstructionYardOpen(false); setPendingConstruction(facilityType); }} pendingConstruction={pendingConstruction} pendingDestruction={pendingDestruction} />
-      <PrestigeDialog currentGameTimeMs={lastProcessedAtMs} facilityConditions={facilities.getAll().map((facility) => facility.getView().facilityCondition)} isOpen={isPrestigeOpen} onClose={() => setIsPrestigeOpen(false)} summary={prestigeSummary} />
+      <FacilityConstructionDialog facilities={facilities} finance={finance} inventory={inventory} isConstructionTutorial={isConstructionTutorialOpen || isFacilityChoiceTutorialOpen} isConstructionYardOpen={isConstructionYardOpen} market={market} onBuyMissingConstructionInputs={() => { if (pendingConstruction) buyMissingConstructionInputs(pendingConstruction); }} onCloseConstructionYard={() => dismissTutorialOrGameDialog(() => setIsConstructionYardOpen(false))} onConfirmConstruction={() => { const isFirstFacility = facilities.getAll().length === 0; if (pendingConstruction && buildFacility(pendingConstruction)) { if (isFirstFacility && !tutorial.completedWelcome) { setFirstBuiltFacilityType(pendingConstruction); setTutorialStage({ kind: 'first-facility' }); } setPendingConstruction(null); } }} onConfirmDestruction={() => { if (pendingDestruction && sellFacility(pendingDestruction)) setPendingDestruction(null); }} onDismissConstruction={() => dismissTutorialOrGameDialog(() => setPendingConstruction(null))} onDismissDestruction={() => dismissTutorialOrGameDialog(() => setPendingDestruction(null))} onSelectFacility={(facilityType) => { setIsConstructionYardOpen(false); setPendingConstruction(facilityType); }} pendingConstruction={pendingConstruction} pendingDestruction={pendingDestruction} />
+      <PrestigeDialog currentGameTimeMs={lastProcessedAtMs} facilityConditions={facilities.getAll().map((facility) => facility.getView().facilityCondition)} isOpen={isPrestigeOpen} onClose={() => dismissTutorialOrGameDialog(() => setIsPrestigeOpen(false))} summary={prestigeSummary} />
       <CollectionDialog finance={finance} onAcceptRestructure={acceptDebtRestructure} onAcknowledge={acknowledgeCollectionNotice} />
-      {!tutorial.completedWelcome && ((activeView === 'company' && !isTutorialOpen) || (activeView === 'production' && tutorialStage === null)) && <View style={styles.tutorialReopenControl}><Pressable accessibilityLabel="Reopen tutorial" accessibilityRole="button" onPress={() => { if (activeView === 'company') setTutorialStage({ kind: 'welcome', step: tutorialStep }); if (activeView === 'production') setTutorialStage(firstBuiltFacilityType ? { kind: 'first-facility' } : { kind: hasStartedProductionTutorial ? 'build-facility' : 'production' }); }} style={styles.tutorialReopenButton}><Image accessibilityLabel="Simulucius" resizeMode="contain" source={SIMULUCIUS_TUTORIAL_BUTTON} style={styles.tutorialReopenCharacter} /></Pressable><IconButton accessibilityLabel="Exit tutorial" icon="close" onPress={() => { void completeWelcomeTutorial(); }} size={16} style={styles.tutorialReopenCloseButton} /></View>}
-      <TutorialGuideDialog balance={formatCurrency(finance.getBalance())} elapsedTime={formatElapsedTime(elapsedForegroundTimeMs)} onBack={() => setTutorialStage({ kind: 'welcome', step: Math.max(1, tutorialStep - 1) as 1 | 2 | 3 | 4 | 5 })} onDismiss={() => setTutorialStage(null)} onExit={() => { void completeWelcomeTutorial(); }} onNext={() => { if (tutorialStep === 5) { setActiveView('production'); setTutorialStage({ kind: 'production' }); } else setTutorialStage({ kind: 'welcome', step: (tutorialStep + 1) as 1 | 2 | 3 | 4 | 5 }); }} step={tutorialStep} visible={isTutorialOpen && activeView === 'company'} />
-      <ProductionTutorialDialog onBack={() => { setActiveView('company'); setTutorialStage({ kind: 'welcome', step: tutorialStep }); }} onClose={() => { setHasStartedProductionTutorial(true); setTutorialStage({ kind: 'build-facility' }); }} onDismiss={() => setTutorialStage(null)} onExit={() => { void completeWelcomeTutorial(); }} visible={isProductionTutorialOpen && activeView === 'production'} />
-      <BuildFacilityTutorialDialog highlightLayout={buildFacilityButtonLayout} onBack={() => { setHasStartedProductionTutorial(false); setTutorialStage({ kind: 'production' }); }} onDismiss={() => setTutorialStage(null)} onExit={() => { void completeWelcomeTutorial(); }} onNext={() => { setIsConstructionYardOpen(true); setTutorialStage({ kind: 'construction' }); }} visible={isBuildFacilityTutorialOpen && activeView === 'production'} />
-      <ConstructionTutorialDialog onBack={() => { setIsConstructionYardOpen(false); setTutorialStage({ kind: 'build-facility' }); }} onDismiss={() => setTutorialStage(null)} onExit={() => { void completeWelcomeTutorial(); }} onNext={() => setTutorialStage(null)} visible={isConstructionTutorialOpen && activeView === 'production'} />
-      <FirstFacilityTutorialDialog facilityType={firstBuiltFacilityType} onBack={() => setTutorialStage({ kind: 'build-facility' })} onDismiss={() => setTutorialStage(null)} onExit={() => { void completeWelcomeTutorial(); }} onNext={() => { void completeWelcomeTutorial(); }} visible={isFirstFacilityTutorialOpen && activeView === 'production'} />
+      {!tutorial.completedWelcome && ((activeView === 'company' && !isTutorialOpen) || (activeView === 'production' && tutorialStage === null)) && <Portal><View style={styles.tutorialReopenControl}><Pressable accessibilityLabel="Reopen tutorial" accessibilityRole="button" onPress={reopenTutorial} style={styles.tutorialReopenButton}><Image accessibilityLabel="Simulucius" resizeMode="contain" source={SIMULUCIUS_TUTORIAL_BUTTON} style={styles.tutorialReopenCharacter} /></Pressable><IconButton accessibilityLabel="Exit tutorial" icon="close" onPress={() => { void completeWelcomeTutorial(); }} size={16} style={styles.tutorialReopenCloseButton} /></View></Portal>}
+      <TutorialGuideDialog balance={formatCurrency(finance.getBalance())} companyOverviewLayout={companyOverviewLayout} elapsedTime={formatElapsedTime(elapsedForegroundTimeMs)} onBack={() => setTutorialStage({ kind: 'welcome', step: Math.max(1, tutorialStep - 1) as 1 | 2 | 3 | 4 | 5 })} onDismiss={dismissTutorial} onExit={() => { void completeWelcomeTutorial(); }} onNext={() => { if (tutorialStep === 5) { setActiveView('production'); setTutorialStage({ kind: 'production' }); } else setTutorialStage({ kind: 'welcome', step: (tutorialStep + 1) as 1 | 2 | 3 | 4 | 5 }); }} step={tutorialStep} visible={isTutorialOpen && activeView === 'company'} />
+      <ProductionTutorialDialog onBack={() => { setActiveView('company'); setTutorialStage({ kind: 'welcome', step: tutorialStep }); }} onClose={() => { setHasStartedProductionTutorial(true); setTutorialStage({ kind: 'build-facility' }); }} onDismiss={dismissTutorial} onExit={() => { void completeWelcomeTutorial(); }} visible={isProductionTutorialOpen && activeView === 'production'} />
+      <BuildFacilityTutorialDialog highlightLayout={buildFacilityButtonLayout} onBack={() => { setHasStartedProductionTutorial(false); setTutorialStage({ kind: 'production' }); }} onDismiss={dismissTutorial} onExit={() => { void completeWelcomeTutorial(); }} onNext={() => { setIsConstructionYardOpen(true); setTutorialStage({ kind: 'construction' }); }} visible={isBuildFacilityTutorialOpen && activeView === 'production'} />
+      <ConstructionTutorialDialog onBack={() => { setIsConstructionYardOpen(false); setTutorialStage({ kind: 'build-facility' }); }} onExit={() => { void completeWelcomeTutorial(); }} onNext={() => setTutorialStage({ kind: 'facility-choice' })} visible={isConstructionTutorialOpen && activeView === 'production'} />
+      <FacilityChoiceTutorialDialog onBack={() => setTutorialStage({ kind: 'construction' })} onExit={() => { void completeWelcomeTutorial(); }} onNext={dismissTutorial} visible={isFacilityChoiceTutorialOpen && activeView === 'production'} />
+      <FirstFacilityTutorialDialog facilityType={firstBuiltFacilityType} onBack={() => setTutorialStage({ kind: 'build-facility' })} onDismiss={dismissTutorial} onExit={() => { void completeWelcomeTutorial(); }} onNext={() => { void completeWelcomeTutorial(); }} visible={isFirstFacilityTutorialOpen && activeView === 'production'} />
     </SafeAreaView>
   );
 }

@@ -14,7 +14,7 @@ import { clamp, formatCurrency, formatNumber } from '@/utils';
 import { WorkMetric } from '@/ui/dashboard/components/DashboardPrimitives';
 import { formatRecipeName } from '@/ui/dashboard/helpers/recipeFormatters';
 import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
-import { APP_ICONS, RECIPE_ICONS } from '@/icons';
+import { APP_ICONS, RECIPE_ICONS, RESOURCE_ICONS } from '@/icons';
 
 function CurrencyValue({ value }: { value: number }) {
   return <View style={styles.currencyValue}><MaterialCommunityIcons name={APP_ICONS.coin} size={16} color={styles.detailValue.color} /><Text style={styles.detailValue}>{formatCurrency(value).replace(/\s*€/u, '')}</Text></View>;
@@ -37,6 +37,7 @@ export function FacilityConstructionDialog(props: {
   pendingConstruction: FacilityType | null;
   pendingDestruction: string | null;
   isConstructionYardOpen: boolean;
+  isConstructionTutorial?: boolean;
   onCloseConstructionYard: () => void;
   onSelectFacility: (facilityType: FacilityType) => void;
   onConfirmConstruction: () => void;
@@ -47,13 +48,14 @@ export function FacilityConstructionDialog(props: {
 }) {
   return <>
     <ConfirmConstrution facilityType={props.pendingConstruction} finance={props.finance} inventory={props.inventory} market={props.market} onBuyMissingConstructionInputs={props.onBuyMissingConstructionInputs} onConfirm={props.onConfirmConstruction} onDismiss={props.onDismissConstruction} />
-    <BuildFacilityDialog finance={props.finance} inventory={props.inventory} market={props.market} onDismiss={props.onCloseConstructionYard} onSelectFacility={props.onSelectFacility} visible={props.isConstructionYardOpen} />
+    <BuildFacilityDialog finance={props.finance} inventory={props.inventory} isConstructionTutorial={props.isConstructionTutorial} market={props.market} onDismiss={props.onCloseConstructionYard} onSelectFacility={props.onSelectFacility} visible={props.isConstructionYardOpen} />
     <DestructionDialog facilities={props.facilities} facilityId={props.pendingDestruction} market={props.market} onConfirm={props.onConfirmDestruction} onDismiss={props.onDismissDestruction} />
   </>;
 }
 function BuildFacilityDialog({
   finance,
   inventory,
+  isConstructionTutorial,
   market,
   onDismiss,
   onSelectFacility,
@@ -61,6 +63,7 @@ function BuildFacilityDialog({
 }: {
   finance: Finance;
   inventory: Inventory;
+  isConstructionTutorial?: boolean;
   market: Market;
   onDismiss: () => void;
   onSelectFacility: (facilityType: FacilityType) => void;
@@ -83,7 +86,7 @@ function BuildFacilityDialog({
 
   return (
     <Portal>
-      <Dialog dismissable onDismiss={onDismiss} style={styles.constructionYardDialog} visible={visible}>
+      <Dialog dismissable onDismiss={onDismiss} style={[styles.constructionYardDialog, isConstructionTutorial && styles.tutorialConstructionYardDialog]} visible={visible}>
         <Dialog.Title>Build facility</Dialog.Title>
         <Dialog.Content style={styles.constructionYardDialogContent}>
           <SegmentedButtons
@@ -112,20 +115,20 @@ function BuildFacilityDialog({
                 {showGroup && <Text style={styles.cardKicker}>{groupLabel}</Text>}
                 <Card
                   accessibilityLabel={`${definition.name}${canAffordConstruction ? '' : ' unavailable'}`}
-                  accessibilityState={{ disabled: !canAffordConstruction }}
+                  accessibilityState={{ disabled: !canAffordConstruction || isConstructionTutorial }}
                   mode="contained"
-                  onPress={canAffordConstruction ? () => onSelectFacility(facilityType) : undefined}
+                  onPress={canAffordConstruction && !isConstructionTutorial ? () => onSelectFacility(facilityType) : undefined}
                   style={[styles.constructionYardCard, !canAffordConstruction && styles.constructionYardCardDisabled]}
                 >
                   <Card.Content>
                     <List.Item
-                      description={<View style={styles.currencyDescription}><Text>Land:</Text><CurrencyValue value={definition.landCost} /><Text>{` · Materials: ${formatNumber(definition.constructionMaterialsCost)} · Machines: ${formatNumber(definition.industrialMachinesCost)}`}</Text></View>}
+                      description={<View style={styles.currencyDescription}><Text>Land (euros):</Text><CurrencyValue value={definition.landCost} /><Text>{` · ${RESOURCE_ICONS[ResourceType.ConstructionMaterials]} Construction Materials: ${formatNumber(definition.constructionMaterialsCost)} · ${RESOURCE_ICONS[ResourceType.IndustrialMachines]} Industrial Machines: ${formatNumber(definition.industrialMachinesCost)}`}</Text></View>}
                       left={(props) => <List.Icon {...props} icon={definition.icon} />}
                       title={definition.name}
                       titleStyle={styles.facilityTitle}
                     />
                     <View style={styles.facilityCostDetails}>
-                      <View style={styles.currencyDescription}><Text>Material price:</Text><CurrencyValue value={constructionMaterialsPrice} /><Text> · Machine price:</Text><CurrencyValue value={industrialMachinesPrice} /></View>
+                      <View style={styles.currencyDescription}><Text>{`${RESOURCE_ICONS[ResourceType.ConstructionMaterials]} Construction Materials price:`}</Text><CurrencyValue value={constructionMaterialsPrice} /><Text>{` · ${RESOURCE_ICONS[ResourceType.IndustrialMachines]} Industrial Machines price:`}</Text><CurrencyValue value={industrialMachinesPrice} /></View>
                       <View style={styles.currencyDescription}><Text>Market replacement cost:</Text><CurrencyValue value={totalConstructionCost} /></View>
                     </View>
                   </Card.Content>
@@ -187,12 +190,12 @@ function ConfirmConstrution({
         <Dialog.Title>{`Construct ${definition.name}?`}</Dialog.Title>
         <Dialog.Content>
           <Text style={styles.dialogDescription}>
-            Purchase the land, supply the construction materials, and install the industrial machines before the facility is added to your company.
+            Purchase the land, supply the Construction Materials, and install the Industrial Machines before the facility is added to your company.
           </Text>
           <Card mode="contained" style={styles.dialogSummaryCard}>
             <Card.Content style={styles.dialogSummaryContent}>
-              <View style={styles.dialogSummaryRow}><Text>Construction cost</Text><View style={styles.currencyDescription}><CurrencyValue value={definition.landCost} /><Text style={styles.detailValue}>{` · Materials: ${formatNumber(definition.constructionMaterialsCost)} · Machines: ${formatNumber(definition.industrialMachinesCost)}`}</Text></View></View>
-              <View style={styles.dialogSummaryRow}><Text>Resources after purchase</Text><View style={styles.currencyDescription}><CurrencyValue value={balanceAfterConstruction} /><Text style={styles.detailValue}>{` · Materials: ${formatNumber(materialsAfterConstruction)} · Machines: ${formatNumber(industrialMachinesAfterConstruction)}`}</Text></View></View>
+              <View style={styles.dialogSummaryRow}><Text>Construction cost</Text><View style={styles.currencyDescription}><CurrencyValue value={definition.landCost} /><Text style={styles.detailValue}>{` · ${RESOURCE_ICONS[ResourceType.ConstructionMaterials]} Construction Materials: ${formatNumber(definition.constructionMaterialsCost)} · ${RESOURCE_ICONS[ResourceType.IndustrialMachines]} Industrial Machines: ${formatNumber(definition.industrialMachinesCost)}`}</Text></View></View>
+              <View style={styles.dialogSummaryRow}><Text>Resources after purchase</Text><View style={styles.currencyDescription}><CurrencyValue value={balanceAfterConstruction} /><Text style={styles.detailValue}>{` · ${RESOURCE_ICONS[ResourceType.ConstructionMaterials]} Construction Materials: ${formatNumber(materialsAfterConstruction)} · ${RESOURCE_ICONS[ResourceType.IndustrialMachines]} Industrial Machines: ${formatNumber(industrialMachinesAfterConstruction)}`}</Text></View></View>
             </Card.Content>
           </Card>
           <Text variant="titleMedium" style={styles.dialogSectionHeading}>Available recipes</Text>
