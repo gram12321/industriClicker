@@ -14,7 +14,8 @@ import { clamp, formatCurrency, formatNumber } from '@/utils';
 import { WorkMetric } from '@/ui/dashboard/components/DashboardPrimitives';
 import { formatRecipeName } from '@/ui/dashboard/helpers/recipeFormatters';
 import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
-import { APP_ICONS, RECIPE_ICONS, RESOURCE_ICONS } from '@/icons';
+import { APP_ICONS, RECIPE_ICONS } from '@/icons';
+import { TooltipResourceIcon, TooltipTextIcon } from '@/ui/dashboard/components/IconTooltip';
 
 function CurrencyValue({ value }: { value: number }) {
   return <View style={styles.currencyValue}><MaterialCommunityIcons name={APP_ICONS.coin} size={16} color={styles.detailValue.color} /><Text style={styles.detailValue}>{formatCurrency(value).replace(/\s*€/u, '')}</Text></View>;
@@ -122,13 +123,13 @@ function BuildFacilityDialog({
                 >
                   <Card.Content>
                     <List.Item
-                      description={<View style={styles.currencyDescription}><Text>Land (euros):</Text><CurrencyValue value={definition.landCost} /><Text>{` · ${RESOURCE_ICONS[ResourceType.ConstructionMaterials]} Construction Materials: ${formatNumber(definition.constructionMaterialsCost)} · ${RESOURCE_ICONS[ResourceType.IndustrialMachines]} Industrial Machines: ${formatNumber(definition.industrialMachinesCost)}`}</Text></View>}
+                      description={<View style={styles.currencyDescription}><Text>Land (euros):</Text><CurrencyValue value={definition.landCost} /><Text> · <TooltipResourceIcon resourceType={ResourceType.ConstructionMaterials} /> Construction Materials: {formatNumber(definition.constructionMaterialsCost)} · <TooltipResourceIcon resourceType={ResourceType.IndustrialMachines} /> Industrial Machines: {formatNumber(definition.industrialMachinesCost)}</Text></View>}
                       left={(props) => <List.Icon {...props} icon={definition.icon} />}
                       title={definition.name}
                       titleStyle={styles.facilityTitle}
                     />
                     <View style={styles.facilityCostDetails}>
-                      <View style={styles.currencyDescription}><Text>{`${RESOURCE_ICONS[ResourceType.ConstructionMaterials]} Construction Materials price:`}</Text><CurrencyValue value={constructionMaterialsPrice} /><Text>{` · ${RESOURCE_ICONS[ResourceType.IndustrialMachines]} Industrial Machines price:`}</Text><CurrencyValue value={industrialMachinesPrice} /></View>
+                      <View style={styles.currencyDescription}><Text><TooltipResourceIcon resourceType={ResourceType.ConstructionMaterials} /> Construction Materials price:</Text><CurrencyValue value={constructionMaterialsPrice} /><Text> · <TooltipResourceIcon resourceType={ResourceType.IndustrialMachines} /> Industrial Machines price:</Text><CurrencyValue value={industrialMachinesPrice} /></View>
                       <View style={styles.currencyDescription}><Text>Market replacement cost:</Text><CurrencyValue value={totalConstructionCost} /></View>
                     </View>
                   </Card.Content>
@@ -194,15 +195,15 @@ function ConfirmConstrution({
           </Text>
           <Card mode="contained" style={styles.dialogSummaryCard}>
             <Card.Content style={styles.dialogSummaryContent}>
-              <View style={styles.dialogSummaryRow}><Text>Construction cost</Text><View style={styles.currencyDescription}><CurrencyValue value={definition.landCost} /><Text style={styles.detailValue}>{` · ${RESOURCE_ICONS[ResourceType.ConstructionMaterials]} Construction Materials: ${formatNumber(definition.constructionMaterialsCost)} · ${RESOURCE_ICONS[ResourceType.IndustrialMachines]} Industrial Machines: ${formatNumber(definition.industrialMachinesCost)}`}</Text></View></View>
-              <View style={styles.dialogSummaryRow}><Text>Resources after purchase</Text><View style={styles.currencyDescription}><CurrencyValue value={balanceAfterConstruction} /><Text style={styles.detailValue}>{` · ${RESOURCE_ICONS[ResourceType.ConstructionMaterials]} Construction Materials: ${formatNumber(materialsAfterConstruction)} · ${RESOURCE_ICONS[ResourceType.IndustrialMachines]} Industrial Machines: ${formatNumber(industrialMachinesAfterConstruction)}`}</Text></View></View>
+              <View style={styles.dialogSummaryRow}><Text>Construction cost</Text><View style={styles.currencyDescription}><CurrencyValue value={definition.landCost} /><Text style={styles.detailValue}> · <TooltipResourceIcon resourceType={ResourceType.ConstructionMaterials} /> Construction Materials: {formatNumber(definition.constructionMaterialsCost)} · <TooltipResourceIcon resourceType={ResourceType.IndustrialMachines} /> Industrial Machines: {formatNumber(definition.industrialMachinesCost)}</Text></View></View>
+              <View style={styles.dialogSummaryRow}><Text>Resources after purchase</Text><View style={styles.currencyDescription}><CurrencyValue value={balanceAfterConstruction} /><Text style={styles.detailValue}> · <TooltipResourceIcon resourceType={ResourceType.ConstructionMaterials} /> Construction Materials: {formatNumber(materialsAfterConstruction)} · <TooltipResourceIcon resourceType={ResourceType.IndustrialMachines} /> Industrial Machines: {formatNumber(industrialMachinesAfterConstruction)}</Text></View></View>
             </Card.Content>
           </Card>
           <Text variant="titleMedium" style={styles.dialogSectionHeading}>Available recipes</Text>
           {definition.recipes.map((recipe) => (
             <List.Item
               key={recipe.name}
-              left={() => <Text>{RECIPE_ICONS[recipe.name]}</Text>}
+              left={() => <TooltipTextIcon label={formatRecipeName(recipe)}>{RECIPE_ICONS[recipe.name]}</TooltipTextIcon>}
               title={formatRecipeName(recipe)}
               description={<View><Text style={styles.cardDescription}>{`${formatRecipeInputs(recipe)} → ${formatRecipeOutput(recipe)}`}</Text><WorkMetric value={String(recipe.requiredWork)} /></View>}
             />

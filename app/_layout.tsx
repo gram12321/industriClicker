@@ -7,6 +7,7 @@ import { PaperProvider } from 'react-native-paper';
 import { useCompanySessionStore, useGameStore } from '@/game';
 import { saveCompanySnapshot } from '@/game/company/companyDatabase';
 import { paperTheme } from '@/theme';
+import { IconTooltipProvider } from '@/ui/dashboard/components/IconTooltip';
 
 const ACTIVE_SAVE_BATCH_MS = 5_000;
 
@@ -119,7 +120,9 @@ export default function RootLayout() {
         <LocalSessionBootstrap>
           <CompanyGamePersistence>
             <ForegroundRealtimeClock />
-            <Stack screenOptions={{ headerShown: false }} />
+            <IconTooltipProvider>
+              <Stack screenOptions={{ headerShown: false }} />
+            </IconTooltipProvider>
           </CompanyGamePersistence>
         </LocalSessionBootstrap>
       </PaperProvider>

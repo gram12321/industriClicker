@@ -12,6 +12,7 @@ import { APP_ICONS, RECIPE_ICONS } from '@/icons';
 import { colors } from '@/theme';
 import { clamp, formatDuration, formatElapsedTime, formatNumber, getColorClass } from '@/utils';
 import { formatRecipeName } from '@/ui/dashboard/helpers/recipeFormatters';
+import { TooltipMaterialIcon, TooltipTextIcon } from '@/ui/dashboard/components/IconTooltip';
 
 type ActiveProcess = { icon: string; id: string; isRecipe?: boolean; label: string; progress: number; timing: string; title: string };
 
@@ -43,7 +44,7 @@ export function ActiveProcessesOverlay({ customerPipelineProgress, facilities, f
         : <ScrollView contentContainerStyle={localStyles.processList} nestedScrollEnabled showsVerticalScrollIndicator={false}>
           {processes.map((process) => <View key={process.id} style={localStyles.process}>
             <View style={localStyles.processHeader}>
-              {process.isRecipe ? <Text>{process.icon}</Text> : <MaterialCommunityIcons color={colors.primary} name={process.icon as never} size={18} />}
+              {process.isRecipe ? <TooltipTextIcon label={process.label}>{process.icon}</TooltipTextIcon> : <TooltipMaterialIcon color={colors.primary} label={process.label} name={process.icon} size={18} />}
               <View style={localStyles.processCopy}><Text numberOfLines={1} style={localStyles.processTitle}>{process.title}</Text><Text numberOfLines={1} style={localStyles.processLabel}>{process.label}</Text></View>
               <Text style={[localStyles.processTiming, { color: getColorClass(process.progress) }]}>{process.timing}</Text>
             </View>

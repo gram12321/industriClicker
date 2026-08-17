@@ -14,6 +14,7 @@ import { colors } from '@/theme';
 import { APP_ICONS, RECIPE_ICONS } from '@/icons';
 import { formatCurrency as formatCurrencyWithSymbol, formatDuration, formatElapsedTime, getColorClass } from '@/utils';
 import { SectionHeading } from '@/ui/dashboard/components/DashboardPrimitives';
+import { TooltipMaterialIcon, TooltipTextIcon } from '@/ui/dashboard/components/IconTooltip';
 import { styles as dashboardStyles } from '@/ui/dashboard/helpers/dashboard.styles';
 
 const CHAIN_DETAILS: Record<ResearchChainId, { eyebrow: string; icon: string; title: string; subtitle: string }> = {
@@ -51,7 +52,7 @@ function isRecipeProjectForConstructedFacility(project: ResearchProjectDefinitio
 }
 
 function CurrencyValue({ value }: { value: number }) {
-  return <View style={localStyles.iconValueRow}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.coin} size={15} /><Text style={dashboardStyles.cardDescription}>{formatCurrency(value)}</Text></View>;
+  return <View style={localStyles.iconValueRow}><TooltipMaterialIcon color={colors.muted} label="Currency" name={APP_ICONS.coin} size={15} /><Text style={dashboardStyles.cardDescription}>{formatCurrency(value)}</Text></View>;
 }
 
 function isRequirementFulfilled(requirement: GateRequirement, availability: ResearchAvailability): boolean {
@@ -92,7 +93,7 @@ function getRecipeProjectIcon(project: ResearchProjectDefinition): string | null
 
 function ProjectIcon({ project }: { project: ResearchProjectDefinition }) {
   const recipeIcon = getRecipeProjectIcon(project);
-  return recipeIcon ? <Text>{recipeIcon}</Text> : <MaterialCommunityIcons color={colors.primary} name={CHAIN_DETAILS[project.chainId].icon as never} size={20} />;
+  return recipeIcon ? <TooltipTextIcon label={project.name}>{recipeIcon}</TooltipTextIcon> : <TooltipMaterialIcon color={colors.primary} label={CHAIN_DETAILS[project.chainId].title} name={CHAIN_DETAILS[project.chainId].icon} size={20} />;
 }
 
 export function ResearchView({
@@ -150,7 +151,7 @@ export function ResearchView({
           <View style={localStyles.cardBody}>
             <Text style={dashboardStyles.cardKicker}>ACTIVE PROJECT</Text>
             <View style={localStyles.projectNameRow}><ProjectIcon project={project} /><Text style={localStyles.activeTitle} variant="titleLarge">{project.name}</Text></View>
-            <View style={localStyles.iconValueRow}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={[dashboardStyles.cardDescription, localStyles.timeLabel, { color: getColorClass(Math.min(1, active.progressMs / active.durationMs)) }]}>{`${formatElapsedTime(active.progressMs)} / ${formatElapsedTime(active.durationMs)}`}</Text></View>
+            <View style={localStyles.iconValueRow}><TooltipMaterialIcon color={colors.muted} label="Elapsed research time" name={APP_ICONS.elapsedTime} size={15} /><Text style={[dashboardStyles.cardDescription, localStyles.timeLabel, { color: getColorClass(Math.min(1, active.progressMs / active.durationMs)) }]}>{`${formatElapsedTime(active.progressMs)} / ${formatElapsedTime(active.durationMs)}`}</Text></View>
             <View style={localStyles.progressTrack}>
               <ProgressBar accessible accessibilityLabel={`${project.name} progress ${formatElapsedTime(active.progressMs)} of ${formatElapsedTime(active.durationMs)}`} color={getColorClass(Math.min(1, active.progressMs / active.durationMs))} progress={Math.min(1, active.progressMs / active.durationMs)} style={localStyles.progress} />
             </View>
@@ -169,8 +170,8 @@ export function ResearchView({
         return <View key={activation.projectId} style={localStyles.researchCard}>
           <View style={localStyles.cardBody}>
             <Text style={dashboardStyles.cardKicker}>MARKET ACTIVATION</Text>
-            <View style={localStyles.projectNameRow}><MaterialCommunityIcons color={colors.primary} name="storefront-outline" size={20} /><Text style={localStyles.activeTitle} variant="titleLarge">{title}</Text></View>
-            <View style={localStyles.iconValueRow}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={[dashboardStyles.cardDescription, localStyles.timeLabel, { color: getColorClass(progress) }]}>{`${formatElapsedTime(elapsedMs)} / ${formatElapsedTime(durationMs)}`}</Text></View>
+            <View style={localStyles.projectNameRow}><TooltipMaterialIcon color={colors.primary} label="Local market" name="storefront-outline" size={20} /><Text style={localStyles.activeTitle} variant="titleLarge">{title}</Text></View>
+            <View style={localStyles.iconValueRow}><TooltipMaterialIcon color={colors.muted} label="Elapsed market activation time" name={APP_ICONS.elapsedTime} size={15} /><Text style={[dashboardStyles.cardDescription, localStyles.timeLabel, { color: getColorClass(progress) }]}>{`${formatElapsedTime(elapsedMs)} / ${formatElapsedTime(durationMs)}`}</Text></View>
             <View style={localStyles.progressTrack}><ProgressBar accessible accessibilityLabel={`${title} progress ${formatElapsedTime(elapsedMs)} of ${formatElapsedTime(durationMs)}`} color={getColorClass(progress)} progress={progress} style={localStyles.progress} /></View>
             <Text style={[dashboardStyles.cardDescription, localStyles.activationNote]}>Adding local market stock and benchmark capacity at 5% of each resource’s initial local supply per minute.</Text>
           </View>
@@ -232,14 +233,14 @@ function ResearchProjectCard({ activeProjectIds, availability, completed, expand
   const isActive = activeProjectIds.has(project.id);
   const status = completed ? 'Completed' : isActive ? 'In progress' : availability.startable ? 'Ready to start' : 'Locked';
   const recipeTimeComparison = getRecipeTimeComparison(project);
-  const requirementRows = project.requirements.map((requirement) => { const fulfilled = isRequirementFulfilled(requirement, availability); return <View key={`checked-${requirement.kind}-${getRequirementDescription(requirement)}`} style={localStyles.requirementRow}><MaterialCommunityIcons color={fulfilled ? colors.primary : colors.error} name={fulfilled ? 'check-circle-outline' : 'close-circle-outline'} size={16} /><Text style={localStyles.requirementText}>{getRequirementDescription(requirement)}</Text></View>; });
+  const requirementRows = project.requirements.map((requirement) => { const fulfilled = isRequirementFulfilled(requirement, availability); return <View key={`checked-${requirement.kind}-${getRequirementDescription(requirement)}`} style={localStyles.requirementRow}><TooltipMaterialIcon color={fulfilled ? colors.primary : colors.error} label={fulfilled ? 'Requirement met' : 'Requirement not met'} name={fulfilled ? 'check-circle-outline' : 'close-circle-outline'} size={16} /><Text style={localStyles.requirementText}>{getRequirementDescription(requirement)}</Text></View>; });
   return (
     <View style={[localStyles.researchCard, !completed && !isActive && !availability.startable && localStyles.lockedCard]}>
       <View style={localStyles.cardBody}>
-        <View style={localStyles.projectHeader}><View style={localStyles.projectTitle}><View style={localStyles.projectNameRow}><ProjectIcon project={project} /><Text variant="titleMedium">{project.name}</Text></View><View style={localStyles.iconValueRow}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.coin} size={15} /><Text style={dashboardStyles.cardDescription}>{availability.usesFreeGrant ? 'Free tutorial grant · 10× faster' : formatCurrency(availability.cost)}</Text><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={dashboardStyles.cardDescription}>{formatElapsedTime(availability.durationMs)}</Text></View></View><Text style={[localStyles.status, completed ? localStyles.completedStatus : availability.startable ? localStyles.readyStatus : localStyles.lockedStatus]}>{status}</Text></View>
+        <View style={localStyles.projectHeader}><View style={localStyles.projectTitle}><View style={localStyles.projectNameRow}><ProjectIcon project={project} /><Text variant="titleMedium">{project.name}</Text></View><View style={localStyles.iconValueRow}><TooltipMaterialIcon color={colors.muted} label="Currency" name={APP_ICONS.coin} size={15} /><Text style={dashboardStyles.cardDescription}>{availability.usesFreeGrant ? 'Free tutorial grant · 10× faster' : formatCurrency(availability.cost)}</Text><TooltipMaterialIcon color={colors.muted} label="Research duration" name={APP_ICONS.elapsedTime} size={15} /><Text style={dashboardStyles.cardDescription}>{formatElapsedTime(availability.durationMs)}</Text></View></View><Text style={[localStyles.status, completed ? localStyles.completedStatus : availability.startable ? localStyles.readyStatus : localStyles.lockedStatus]}>{status}</Text></View>
         <View style={localStyles.seriesProgressHeader}><Text style={dashboardStyles.cardKicker}>RESEARCH CHAIN</Text><Text style={dashboardStyles.cardKicker}>{`${seriesCompletedCount} / ${seriesProjectCount}`}</Text></View>
         <View style={localStyles.seriesProgressTrack}><ProgressBar accessible accessibilityLabel={`${seriesCompletedCount} of ${seriesProjectCount} research projects completed in this chain`} color={getColorClass(seriesProjectCount === 0 ? 0 : seriesCompletedCount / seriesProjectCount)} progress={seriesProjectCount === 0 ? 0 : seriesCompletedCount / seriesProjectCount} style={localStyles.seriesProgress} /></View>
-        {recipeTimeComparison && <View style={localStyles.recipeTimeComparison}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={dashboardStyles.cardDescription}>Recipe time: {recipeTimeComparison.before} → {recipeTimeComparison.after}</Text></View>}
+        {recipeTimeComparison && <View style={localStyles.recipeTimeComparison}><TooltipMaterialIcon color={colors.muted} label="Recipe time" name={APP_ICONS.elapsedTime} size={15} /><Text style={dashboardStyles.cardDescription}>Recipe time: {recipeTimeComparison.before} → {recipeTimeComparison.after}</Text></View>}
         {!expanded ? <Button compact onPress={onToggleExpanded}>Show details</Button> : <><Text style={[dashboardStyles.cardDescription, localStyles.reward]}>{`Completion reward: ${describeResearchEffect(project.effect)}`}</Text><Text style={[dashboardStyles.cardKicker, localStyles.requirementsHeading]}>REQUIREMENTS</Text>{requirementRows}{!completed && !isActive && !availability.startable && availability.unmetReasons.map((reason) => <Text accessibilityLabel={`Locked condition: ${reason}`} key={reason} style={localStyles.unmetRequirement}>{reason}</Text>)}{completed && <Text style={localStyles.completedStatus}>Reward applied permanently.</Text>}{!completed && !isActive && <Button accessibilityLabel={`Start ${project.name}`} disabled={!availability.startable} mode="contained" onPress={() => onStart(project.id)} style={localStyles.startButton}>Start research</Button>}<Button compact onPress={onToggleExpanded}>Hide details</Button></>}
       </View>
     </View>

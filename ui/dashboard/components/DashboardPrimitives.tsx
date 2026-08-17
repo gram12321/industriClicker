@@ -1,11 +1,11 @@
 import { View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Surface, Text } from 'react-native-paper';
 import type { FinanceTransaction } from '@/game/finance';
 import { formatCurrency, formatDate } from '@/utils';
 import { styles } from '@/ui/dashboard/helpers';
 import { APP_ICONS } from '@/icons';
-import { RESOURCE_TYPES, getResource, getResourceIcon } from '@/game/resources';
+import { RESOURCE_TYPES, getResource } from '@/game/resources';
+import { TooltipAppIcon, TooltipMaterialIcon, TooltipResourceIcon } from '@/ui/dashboard/components/IconTooltip';
 
 export function SectionHeading({ eyebrow, subtitle, title }: { eyebrow: string; subtitle: string; title: string }) {
   return <View style={styles.sectionHeading}><Text style={styles.sectionEyebrow}>{eyebrow}</Text><Text variant="headlineSmall">{title}</Text><Text style={styles.sectionSubtitle}>{subtitle}</Text></View>;
@@ -18,7 +18,7 @@ export function DetailRow({ label, value }: { label: string; value: string }) {
 export function TransactionRow({ transaction }: { transaction: FinanceTransaction }) {
   const isCost = transaction.amount < 0;
   const resourceType = getTransactionResourceType(transaction.description);
-  return <Surface elevation={0} style={styles.detailRow}><View style={[styles.transactionIcon, isCost ? styles.transactionIconCost : styles.transactionIconIncome]}><MaterialCommunityIcons color={isCost ? styles.transactionCost.color : styles.transactionIncome.color} name={getTransactionIcon(transaction.description) as never} size={20} /></View><View style={styles.transactionDetails}><Text variant="bodyLarge">{resourceType && getResourceIcon(resourceType)} {transaction.description}</Text><Text style={styles.detailValue}>{formatDate(new Date(transaction.occurredAtGameTimeMs), true)}</Text></View><Text style={isCost ? styles.transactionCost : styles.transactionIncome}>{formatCurrency(transaction.amount)}</Text></Surface>;
+  return <Surface elevation={0} style={styles.detailRow}><View style={[styles.transactionIcon, isCost ? styles.transactionIconCost : styles.transactionIconIncome]}><TooltipMaterialIcon color={isCost ? styles.transactionCost.color : styles.transactionIncome.color} label={transaction.description} name={getTransactionIcon(transaction.description)} size={20} /></View><View style={styles.transactionDetails}><Text variant="bodyLarge">{resourceType && <TooltipResourceIcon resourceType={resourceType} />} {transaction.description}</Text><Text style={styles.detailValue}>{formatDate(new Date(transaction.occurredAtGameTimeMs), true)}</Text></View><Text style={isCost ? styles.transactionCost : styles.transactionIncome}>{formatCurrency(transaction.amount)}</Text></Surface>;
 }
 
 function getTransactionResourceType(description: string): (typeof RESOURCE_TYPES)[number] | null {
@@ -35,5 +35,5 @@ function getTransactionIcon(description: string): string {
 }
 
 export function WorkMetric({ value }: { value: string }) {
-  return <View accessibilityLabel={`Work ${value}`} style={styles.workMetric}><MaterialCommunityIcons color={styles.workMetricIcon.color} name={APP_ICONS.work} size={16} /><Text style={styles.cardDescription}>{value}</Text></View>;
+  return <View accessibilityLabel={`Work ${value}`} style={styles.workMetric}><TooltipAppIcon color={styles.workMetricIcon.color} iconKey="work" size={16} /><Text style={styles.cardDescription}>{value}</Text></View>;
 }
