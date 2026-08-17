@@ -6,7 +6,8 @@ import type { Finance } from '@/game/finance';
 import { FACILITIES, type FacilityCollection } from '@/game/facilities';
 import { getRecipe } from '@/game/recipes';
 import { calculateDiminishingBonus } from '@/game/core/math/scaling';
-import { RESEARCH_PROJECTS, describeResearchEffect, type ResearchChainId, type ResearchLedger, type ResearchProjectDefinition, type ResearchProjectId } from '@/game/research';
+import { RESEARCH_PROJECTS, describeResearchEffect, getResearchProject, type ResearchChainId, type ResearchLedger, type ResearchProjectDefinition, type ResearchProjectId } from '@/game/research';
+import { LOCAL_MARKET_NETWORK_EXPANSION_PER_MINUTE, type Market } from '@/game/market';
 import type { GateRequirement } from '@/game/gates';
 import type { ResearchAvailability } from '@/game/core/stores';
 import { colors } from '@/theme';
@@ -100,6 +101,7 @@ export function ResearchView({
   getAvailability,
   onCancel,
   onStart,
+  market,
   research,
 }: {
   facilities: FacilityCollection;
@@ -107,6 +109,7 @@ export function ResearchView({
   getAvailability: (projectId: ResearchProjectId) => ResearchAvailability;
   onCancel: (projectId: ResearchProjectId) => boolean;
   onStart: (projectId: ResearchProjectId) => boolean;
+  market: Market;
   research: ResearchLedger;
 }) {
   const [selectedGroup, setSelectedGroup] = useState<ResearchGroupId | 'all'>('all');
@@ -117,6 +120,7 @@ export function ResearchView({
     return project ? [{ active, project }] : [];
   });
   const activeProjectIds = new Set(activeProjects.map(({ project }) => project.id));
+  const localMarketNetworkActivations = market.getLocalMarketNetworkActivations();
   const completedIds = research.getCompletedProjectIds();
   const completedCount = completedIds.length;
   const completion = RESEARCH_PROJECTS.length === 0 ? 0 : completedCount / RESEARCH_PROJECTS.length;
@@ -156,6 +160,22 @@ export function ResearchView({
           </View>
         </View>
       ))}
+      {localMarketNetworkActivations.map((activation) => {
+        const project = getResearchProject(activation.projectId);
+        const progress = Math.min(1, activation.appliedDepthIncrease / activation.totalDepthIncrease);
+        const durationMs = activation.totalDepthIncrease / LOCAL_MARKET_NETWORK_EXPANSION_PER_MINUTE * 60_000;
+        const elapsedMs = activation.appliedDepthIncrease / LOCAL_MARKET_NETWORK_EXPANSION_PER_MINUTE * 60_000;
+        const title = `${project?.name ?? 'Local Market Network'} activation`;
+        return <View key={activation.projectId} style={localStyles.researchCard}>
+          <View style={localStyles.cardBody}>
+            <Text style={dashboardStyles.cardKicker}>MARKET ACTIVATION</Text>
+            <View style={localStyles.projectNameRow}><MaterialCommunityIcons color={colors.primary} name="storefront-outline" size={20} /><Text style={localStyles.activeTitle} variant="titleLarge">{title}</Text></View>
+            <View style={localStyles.iconValueRow}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={[dashboardStyles.cardDescription, localStyles.timeLabel, { color: getColorClass(progress) }]}>{`${formatElapsedTime(elapsedMs)} / ${formatElapsedTime(durationMs)}`}</Text></View>
+            <View style={localStyles.progressTrack}><ProgressBar accessible accessibilityLabel={`${title} progress ${formatElapsedTime(elapsedMs)} of ${formatElapsedTime(durationMs)}`} color={getColorClass(progress)} progress={progress} style={localStyles.progress} /></View>
+            <Text style={[dashboardStyles.cardDescription, localStyles.activationNote]}>Adding local market stock and benchmark capacity at 5% of each resource’s initial local supply per minute.</Text>
+          </View>
+        </View>;
+      })}
       <View style={[localStyles.researchCard, localStyles.filters]}>
         <Button compact icon="view-grid-outline" mode={selectedGroup === 'all' ? 'contained' : 'outlined'} onPress={() => setSelectedGroup('all')}>{`All (${visibleSeriesCount})`}</Button>
         {RESEARCH_GROUPS.map((group) => {
@@ -237,6 +257,7 @@ function getRequirementDescription(requirement: GateRequirement): string {
 
 const localStyles = StyleSheet.create({
   activeTitle: { marginTop: 4 },
+  activationNote: { color: colors.muted, marginTop: 12 },
   balanceHint: { color: colors.muted, marginTop: 4, textAlign: 'right' },
   cancelButton: { marginTop: 12 },
   cancelNote: { color: colors.muted, fontSize: 12, lineHeight: 18 },

@@ -634,6 +634,13 @@ export const useGameStore = create<GameState>((set, get) => {
         facilities.applyPassiveConditionLoss((stepMs / REALTIME_WORK_MINUTE_MS) * FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE);
       }
 
+      const networkMarket: Market = market ?? get().market;
+      if (networkMarket.getLocalMarketNetworkActivations().length > 0) {
+        const activatingMarket: Market = market ?? networkMarket.clone();
+        activatingMarket.advanceLocalMarketNetworkActivations(stepMs);
+        market = activatingMarket;
+      }
+
       const automationMarket: Market = market ?? get().market;
       for (const resourceType of RESOURCE_TYPES) {
         const automation = automationMarket.getAutomation(resourceType);
@@ -643,7 +650,8 @@ export const useGameStore = create<GameState>((set, get) => {
         const unitPrice = automationMarket.getLocalPrice(resourceType);
         const availableFinance = marketFinance ?? get().finance;
         const purchaseAmount = Math.min(targetDeficit, automationMarket.getMaximumLocalPurchaseAmountAtUnitPrice(resourceType, automation.autoBuyMaxUnitPrice));
-        if (unitPrice > automation.autoBuyMaxUnitPrice || purchaseAmount <= 0 || !availableFinance.canAfford(unitPrice * purchaseAmount)) continue;
+        const quote = automationMarket.getLocalBuyQuote(resourceType, purchaseAmount);
+        if (unitPrice > automation.autoBuyMaxUnitPrice || !quote.success || !availableFinance.canAfford(quote.unitPrice * quote.amount)) continue;
         const buyingMarket: Market = market ?? automationMarket.clone();
         market = buyingMarket;
         marketFinance ??= get().finance.clone();
@@ -669,8 +677,9 @@ export const useGameStore = create<GameState>((set, get) => {
               Math.max(productionCycleDeficit, targetDeficit),
               market.getMaximumLocalPurchaseAmountAtUnitPrice(input.resourceType, automation.autoBuyMaxUnitPrice),
             );
+            const quote = market.getLocalBuyQuote(input.resourceType, purchaseAmount);
             if (!automation.autoBuyEnabled || completedIntervals <= 0 || !canAutoBuyMarketResource(input.resourceType)
-              || unitPrice > automation.autoBuyMaxUnitPrice || !marketFinance.canAfford(unitPrice * purchaseAmount)) continue;
+              || unitPrice > automation.autoBuyMaxUnitPrice || !quote.success || !marketFinance.canAfford(quote.unitPrice * quote.amount)) continue;
             const trade = market.buyFromLocal(input.resourceType, purchaseAmount);
             if (trade.success && inventory.add(input.resourceType, trade.amount, trade.quality)) {
               marketFinance.applyTransaction({ amount: -trade.unitPrice * trade.amount, description: `Autobought ${formatNumber(trade.amount, { smartDecimals: true })} ${input.resourceType} for production`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: stepEndGameTimeMs });
@@ -720,7 +729,8 @@ export const useGameStore = create<GameState>((set, get) => {
           automation.autoSellMaxPerMinute * automation.autoTradeIntervalMs * completedIntervals / REALTIME_WORK_MINUTE_MS,
           Math.max(0, inventory.getAmount(resourceType) - automation.autoSellMinKeep),
         );
-        if (amount <= 0 || currentPrice < automation.autoSellMinUnitPrice) continue;
+        const quote = activeMarket.getLocalSellQuote(resourceType, amount, inventory.getQuality(resourceType));
+        if (amount <= 0 || currentPrice < automation.autoSellMinUnitPrice || !quote.success || quote.unitPrice < automation.autoSellMinUnitPrice) continue;
         market ??= activeMarket.clone();
         marketFinance ??= get().finance.clone();
         if (inventory === get().inventory) inventory = inventory.clone();
@@ -850,7 +860,10 @@ export const useGameStore = create<GameState>((set, get) => {
         const completedProject = getResearchProject(completedResearchProjectId);
         if (completedProject?.effect.kind === 'local-market-depth') {
           market ??= get().market.clone();
-          market.setLocalMarketDepthMultiplier(getLocalMarketDepthMultiplier(research.getCompletedProjectIds()));
+          const completedProjectIdsBeforeActivation = research.getCompletedProjectIds().filter((projectId) => projectId !== completedResearchProjectId);
+          const previousDepthMultiplier = getLocalMarketDepthMultiplier(completedProjectIdsBeforeActivation);
+          const depthIncrease = Number((completedProject.effect.multiplier - previousDepthMultiplier).toFixed(6));
+          market.startLocalMarketNetworkActivation(completedResearchProjectId, depthIncrease);
         }
         if (completedProject?.effect.kind === 'local-regional-diffusion') {
           market ??= get().market.clone();
@@ -1228,7 +1241,6 @@ export const useGameStore = create<GameState>((set, get) => {
     const facilityMaintenance = FacilityMaintenanceStatistics.fromSnapshot(snapshot.facilityMaintenance);
     const prestige = PrestigeLedger.fromSnapshot(snapshot.prestige);
     const research = ResearchLedger.fromSnapshot(snapshot.research);
-    market.restoreLocalMarketDepthMultiplier(getLocalMarketDepthMultiplier(research.getCompletedProjectIds()));
     market.setLocalRegionalDiffusionMultiplier(getLocalRegionalDiffusionMultiplier(research.getCompletedProjectIds()));
     const grants = GrantLedger.fromSnapshot(snapshot.grants);
     const inventory = Inventory.fromSnapshot(snapshot.inventory);
