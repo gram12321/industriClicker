@@ -3,6 +3,7 @@ export * from './dashboard/helpers/devAdminGate';
 export * from './dashboard/helpers/recipeFormatters';
 export * from './dashboard/components/DashboardPrimitives';
 export * from './dashboard/components/IconTooltip';
+export * from './dashboard/components/RecipeResourceSummary';
 export * from './dashboard/components/ActiveProcessesOverlay';
 export * from './dashboard/components/cards/SalesOrderRequestCard';
 export * from './dashboard/components/cards/DeleteCompanyCard';

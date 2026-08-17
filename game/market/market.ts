@@ -211,6 +211,23 @@ export class Market {
     return { success: true, amount, unitPrice: (unitPrice + postTradePrice) / 2, quality };
   }
 
+  /** Returns the largest whole-unit local purchase affordable at the supplied cash balance. */
+  getMaximumLocalPurchaseAmountAtCash(resourceType: ResourceType, cashBalance: number): number {
+    const availableSupply = Math.floor(this.local[resourceType].supply);
+    if (!isNonNegativeFinite(cashBalance) || availableSupply <= 0) return 0;
+    const fullQuote = this.getLocalBuyQuote(resourceType, availableSupply);
+    if (fullQuote.success && fullQuote.unitPrice * fullQuote.amount <= cashBalance) return availableSupply;
+    let low = 0;
+    let high = availableSupply;
+    while (low < high) {
+      const candidate = Math.ceil((low + high) / 2);
+      const quote = this.getLocalBuyQuote(resourceType, candidate);
+      if (quote.success && quote.unitPrice * quote.amount <= cashBalance) low = candidate;
+      else high = candidate - 1;
+    }
+    return low;
+  }
+
   addToGlobal(resourceType: ResourceType, amount: number, quality: number): boolean {
     if (!isPositiveFinite(amount) || !isPositiveFinite(quality)) return false;
     const entry = this.global[resourceType];

@@ -168,7 +168,7 @@ function MarketCard({ buyMarketResource, currentGameTimeMs, finance, flowPeriod,
   const localPrice = market.getLocalPrice(resourceType);
   const regionalPrice = market.getRegionalPrice(resourceType);
   const globalPrice = market.getGlobalPrice(resourceType);
-  const buyAmount = multiplier === 'all' ? Math.floor(Math.min(local.supply, finance.getBalance() / localPrice)) : multiplier;
+  const buyAmount = multiplier === 'all' ? market.getMaximumLocalPurchaseAmountAtCash(resourceType, finance.getBalance()) : multiplier;
   const sellAmount = multiplier === 'all' ? inventory.getAmount(resourceType) : multiplier;
   const localRegionalDiffusion = market.getLocalRegionalDiffusionInfo(resourceType);
   const regionalGlobalDiffusion = market.getRegionalGlobalDiffusionInfo(resourceType);

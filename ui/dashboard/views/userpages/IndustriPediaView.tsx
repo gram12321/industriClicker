@@ -9,7 +9,8 @@ import type { Market, MarketDiffusionDetails } from '@/game/market';
 import { getResource, RESOURCE_GROUPS, RESOURCE_TYPES, ResourceType } from '@/game/resources';
 import { formatCurrency, formatNumber, formatSigned, formatSignedPercent, getColorClass, normalizeToUnitInterval } from '@/utils';
 import { SectionHeading, WorkMetric } from '@/ui/dashboard/components/DashboardPrimitives';
-import { formatRecipeInputs, formatRecipeName, formatRecipeOutput } from '@/ui/dashboard/helpers/recipeFormatters';
+import { formatRecipeName } from '@/ui/dashboard/helpers/recipeFormatters';
+import { RecipeResourceSummary } from '@/ui/dashboard/components/RecipeResourceSummary';
 import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS, RECIPE_ICONS, SALES_CUSTOMER_DOMAIN_ICONS, SALES_CUSTOMER_TYPE_ICONS } from '@/icons';
 import { TooltipMaterialIcon, TooltipResourceIcon, TooltipTextIcon } from '@/ui/dashboard/components/IconTooltip';
@@ -376,7 +377,7 @@ function FacilitiesSection() {
         title={facility.name}
       />
         <Text style={styles.cardKicker}>AVAILABLE RECIPES</Text>
-        {facility.recipes.map((recipe) => <Text key={recipe.name} style={styles.cardDescription}>{formatRecipeName(recipe)}: {formatRecipeInputs(recipe, { includeNames: false })} → {formatRecipeOutput(recipe, { includeNames: false })}</Text>)}
+        {facility.recipes.map((recipe) => <View key={recipe.name}><Text style={styles.cardDescription}>{formatRecipeName(recipe)}</Text><RecipeResourceSummary recipe={recipe} /></View>)}
       </Card.Content></Card>;
     })}</View>)}
   </>;
@@ -441,7 +442,7 @@ function RecipesSection() {
       const recipes = [...facility.recipes].sort((left, right) => formatRecipeName(left).localeCompare(formatRecipeName(right)));
       return <Card key={facilityType} mode="contained" style={styles.featureCard}><Card.Content><Text style={localStyles.catalogueGroupTitle}>{facility.name}</Text><List.Section>
         {recipes.map((recipe) => <List.Item
-          description={<View><Text style={styles.cardDescription}>{`${formatRecipeInputs(recipe, { includeNames: false })} → ${formatRecipeOutput(recipe, { includeNames: false })}`}</Text><WorkMetric value={formatNumber(recipe.requiredWork, { smartDecimals: true })} /></View>}
+          description={<View><RecipeResourceSummary recipe={recipe} /><WorkMetric value={formatNumber(recipe.requiredWork, { smartDecimals: true })} /></View>}
           key={recipe.name}
           left={() => <TooltipTextIcon label={formatRecipeName(recipe)}>{RECIPE_ICONS[recipe.name]}</TooltipTextIcon>}
           title={formatRecipeName(recipe)}

@@ -149,6 +149,23 @@ describe('Market regional tier', () => {
     expect(market.getLocalPrice(ResourceType.Grain)).toBeCloseTo(0.8);
   });
 
+  it('caps an all-market purchase using the slippage-adjusted execution cost', () => {
+    const market = new Market();
+    const resourceType = ResourceType.Grain;
+    const availableSupply = Math.floor(market.getLocalEntry(resourceType).supply);
+    const spotPrice = market.getLocalPrice(resourceType);
+    const cash = spotPrice * availableSupply;
+    const affordableAmount = market.getMaximumLocalPurchaseAmountAtCash(resourceType, cash);
+
+    expect(affordableAmount).toBeLessThan(availableSupply);
+    const affordableQuote = market.getLocalBuyQuote(resourceType, affordableAmount);
+    const nextQuote = market.getLocalBuyQuote(resourceType, affordableAmount + 1);
+    expect(affordableQuote.success).toBe(true);
+    expect(nextQuote.success).toBe(true);
+    expect(affordableQuote.unitPrice * affordableQuote.amount).toBeLessThanOrEqual(cash);
+    expect(nextQuote.unitPrice * nextQuote.amount).toBeGreaterThan(cash);
+  });
+
   it('starts Plastic and Fertilizer with deeper local markets at their existing prices', () => {
     const market = new Market();
 
