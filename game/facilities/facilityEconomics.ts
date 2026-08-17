@@ -116,6 +116,7 @@ export function calculateProjectedFacilityQualityUpgradeNetGainPerMinute(
   recipeResearchWorkSpeedMultiplier: number,
   researchQualityForResource: (resourceType: ResourceType) => number,
   weightedInputQuality: number | null,
+  productionQualityLimitForResource: (resourceType: ResourceType) => number = () => Number.POSITIVE_INFINITY,
 ): number {
   const view = facility.getView();
   const currentLimit = view.qualityLimit;
@@ -124,8 +125,9 @@ export function calculateProjectedFacilityQualityUpgradeNetGainPerMinute(
   if (recipe.requiredWork <= 0 || effectiveWorkPerMinute <= 0) return 0;
 
   return recipe.outputs.reduce((total, output) => {
-    const currentQuality = calculateProductionOutputQuality(researchQualityForResource(output.resourceType), weightedInputQuality, currentLimit);
-    const nextQuality = calculateProductionOutputQuality(researchQualityForResource(output.resourceType), weightedInputQuality, nextLimit);
+    const productionQualityLimit = productionQualityLimitForResource(output.resourceType);
+    const currentQuality = calculateProductionOutputQuality(researchQualityForResource(output.resourceType), weightedInputQuality, currentLimit, productionQualityLimit);
+    const nextQuality = calculateProductionOutputQuality(researchQualityForResource(output.resourceType), weightedInputQuality, nextLimit, productionQualityLimit);
     const unitsPerMinute = output.amount * view.outputMultiplier * effectiveWorkPerMinute / recipe.requiredWork;
     return total + unitsPerMinute * (market.getLocalSalePrice(output.resourceType, nextQuality) - market.getLocalSalePrice(output.resourceType, currentQuality));
   }, 0);

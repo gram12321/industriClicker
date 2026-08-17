@@ -369,7 +369,7 @@ flowchart LR
 | Facility upgrade levels, assigned workers, and 0–1 condition | Stored | `Facility` | Upgrade/staffing commands and foreground wear/production tear | Facility snapshot |
 | `salesOrders.offered`/`.completed` atomic order lines, `.customerStates`, `.nextOrderNumber` | Stored | `SalesOrders` | Customer-order bundle creation, expiry, fulfilment, and relationship actions | `SalesOrdersSnapshot` |
 | `achievements.unlocks` | Stored | `AchievementLedger` | Post-command achievement evaluation | `AchievementLedgerSnapshot` |
-| `resourceFlow.allTime.facility-output.*` | Stored | `ResourceFlowLedger` | Completed facility recipe output only | Resource-flow snapshot inside `GameSnapshot` |
+| `resourceFlow.allTime.facility-output.*` | Stored / derived | `ResourceFlowLedger` | Completed facility recipe output only; derives each resource's lifetime-production quality limit | Resource-flow snapshot inside `GameSnapshot` |
 | Facility maintenance repaired-condition, largest-repair, and repair-value totals | Stored | `FacilityMaintenanceStatistics` | Successful facility repairs | Facility-maintenance snapshot inside `GameSnapshot` |
 | `prestige.events` | Stored | `PrestigeLedger` | Balance changes and fulfilled sales | `PrestigeLedgerSnapshot` |
 | `research.completed`, `.active[]` (including each active project's effective duration) | Stored | `ResearchLedger` | Research start, foreground advance, per-project completion and cancellation | `ResearchLedgerSnapshot` |

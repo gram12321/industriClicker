@@ -3,6 +3,7 @@
  *
  * Consumers:
  * - `game/facilities/facilityUpgrades.ts` for upgrade costs and worker requirements.
+ * - `game/facilities/facilityProduction.ts` for lifetime-production quality requirements.
  * - `game/research/researchConstants.ts` for resource-quality research cost and duration.
  *
  * Maintenance note: Future coding AIs adding a consumer must register it in

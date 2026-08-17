@@ -8,7 +8,7 @@ import {
   calculateFacilityNetGainPerMinute,
   calculateRecipeValuePerMinute,
 } from '@/game/facilities/facilityEconomics';
-import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateProductionOutputQuality, calculateWeightedInputQuality, getFacilityProductionCycleInputs, getRecipeProductionConditionLoss } from '@/game/facilities/facilityProduction';
+import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateProductionOutputQuality, calculateWeightedInputQuality, getFacilityProductionCycleInputs, getProductionQualityLimit, getRecipeProductionConditionLoss } from '@/game/facilities/facilityProduction';
 import { Market } from '@/game/market';
 import { FacilityType } from '@/game/facilities/facilityTypes';
 
@@ -93,6 +93,19 @@ describe('facility economics', () => {
 });
 
 describe('advanceAllFacilityProduction', () => {
+  it('requires escalating lifetime production for each resource quality cap', () => {
+    expect(getProductionQualityLimit(0)).toBe(1);
+    expect(getProductionQualityLimit(99)).toBe(1);
+    expect(getProductionQualityLimit(100)).toBe(2);
+    expect(getProductionQualityLimit(341)).toBe(2);
+    expect(getProductionQualityLimit(342)).toBe(3);
+    expect(getProductionQualityLimit(10_000)).toBe(10);
+    expect(getProductionQualityLimit(30_000)).toBe(20);
+    expect(getProductionQualityLimit(80_000)).toBe(40);
+    expect(getProductionQualityLimit(207_500)).toBe(50);
+    expect(getProductionQualityLimit(22_000_000)).toBe(98);
+  });
+
   it('weights input quality by the recipe amounts and limits output quality by that average plus one', () => {
     const inventory = new Inventory();
     inventory.add(ResourceType.Water, 1, 2);
@@ -104,6 +117,7 @@ describe('advanceAllFacilityProduction', () => {
     expect(calculateProductionOutputQuality(20, calculateWeightedInputQuality(recipe, inventory))).toBeCloseTo(5.197531);
     expect(calculateProductionOutputQuality(3, calculateWeightedInputQuality(recipe, inventory))).toBe(3);
     expect(calculateProductionOutputQuality(20, calculateWeightedInputQuality(recipe, inventory), 2)).toBe(2);
+    expect(calculateProductionOutputQuality(20, calculateWeightedInputQuality(recipe, inventory), 20, 2)).toBe(2);
   });
 
   it('runs repeated recipes in a configured cycle before returning to the start', () => {

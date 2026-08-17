@@ -1,7 +1,8 @@
 import type { Inventory } from '@/game/inventory';
+import { scaleExponential } from '@/game/core/math';
 import { getRecipe, type Recipe, type RecipeInput, type RecipeName } from '@/game/recipes';
 import type { ResourceType } from '@/game/resources';
-import { FACILITY_INPUT_QUALITY_BONUS, FACILITY_PRODUCTION_CONDITION_LOSS_PER_CYCLE, FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT, FACILITY_PRODUCTION_ORDER, FACILITY_STAFF_WORK_PER_WORKER_PER_MINUTE } from './facilityConstants';
+import { FACILITY_INPUT_QUALITY_BONUS, FACILITY_PRODUCTION_CONDITION_LOSS_PER_CYCLE, FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT, FACILITY_PRODUCTION_ORDER, FACILITY_PRODUCTION_QUALITY_MAXIMUM, FACILITY_PRODUCTION_QUALITY_Q10_REQUIRED, FACILITY_PRODUCTION_QUALITY_Q20_REQUIRED, FACILITY_PRODUCTION_QUALITY_Q2_REQUIRED, FACILITY_PRODUCTION_QUALITY_Q40_REQUIRED, FACILITY_PRODUCTION_QUALITY_Q5_REQUIRED, FACILITY_PRODUCTION_QUALITY_TAIL_GROWTH, FACILITY_STAFF_WORK_PER_WORKER_PER_MINUTE } from './facilityConstants';
 import type { FacilityView } from './facility';
 import type { FacilityCollection } from './facilityCollection';
 
@@ -31,12 +32,39 @@ export function calculateWeightedInputQuality(recipe: Recipe, inventory: Invento
   return totalAmount > 0 ? weightedQuality / totalAmount : null;
 }
 
-/** Applies the lower-of-research-or-input quality constraint to one output. */
-export function calculateProductionOutputQuality(researchQuality: number, weightedInputQuality: number | null, facilityQualityLimit = Number.POSITIVE_INFINITY): number {
+/** Highest quality unlocked by lifetime facility output of one resource. */
+export function getProductionQualityLimit(lifetimeProduction: number): number {
+  if (!Number.isFinite(lifetimeProduction) || lifetimeProduction < FACILITY_PRODUCTION_QUALITY_Q2_REQUIRED) return 1;
+  if (lifetimeProduction < FACILITY_PRODUCTION_QUALITY_Q5_REQUIRED) return getQualityLimitForExponentialInterval(lifetimeProduction, 2, FACILITY_PRODUCTION_QUALITY_Q2_REQUIRED, 5, getExponentialGrowthFactor(FACILITY_PRODUCTION_QUALITY_Q2_REQUIRED, FACILITY_PRODUCTION_QUALITY_Q5_REQUIRED, 2, 5));
+  if (lifetimeProduction < FACILITY_PRODUCTION_QUALITY_Q10_REQUIRED) return getQualityLimitForExponentialInterval(lifetimeProduction, 5, FACILITY_PRODUCTION_QUALITY_Q5_REQUIRED, 10, getExponentialGrowthFactor(FACILITY_PRODUCTION_QUALITY_Q5_REQUIRED, FACILITY_PRODUCTION_QUALITY_Q10_REQUIRED, 5, 10));
+  if (lifetimeProduction < FACILITY_PRODUCTION_QUALITY_Q20_REQUIRED) return getQualityLimitForExponentialInterval(lifetimeProduction, 10, FACILITY_PRODUCTION_QUALITY_Q10_REQUIRED, 20, getExponentialGrowthFactor(FACILITY_PRODUCTION_QUALITY_Q10_REQUIRED, FACILITY_PRODUCTION_QUALITY_Q20_REQUIRED, 10, 20));
+  if (lifetimeProduction < FACILITY_PRODUCTION_QUALITY_Q40_REQUIRED) return getQualityLimitForExponentialInterval(lifetimeProduction, 20, FACILITY_PRODUCTION_QUALITY_Q20_REQUIRED, 40, getExponentialGrowthFactor(FACILITY_PRODUCTION_QUALITY_Q20_REQUIRED, FACILITY_PRODUCTION_QUALITY_Q40_REQUIRED, 20, 40));
+  return getQualityLimitForExponentialInterval(lifetimeProduction, 40, FACILITY_PRODUCTION_QUALITY_Q40_REQUIRED, FACILITY_PRODUCTION_QUALITY_MAXIMUM, FACILITY_PRODUCTION_QUALITY_TAIL_GROWTH);
+}
+
+function getExponentialGrowthFactor(startProduction: number, endProduction: number, startQuality: number, endQuality: number): number {
+  return Math.pow(endProduction / startProduction, 1 / (endQuality - startQuality));
+}
+
+function getQualityLimitForExponentialInterval(lifetimeProduction: number, startQuality: number, startProduction: number, endQuality: number, growthFactor: number): number {
+  let qualityLimit = startQuality;
+
+  for (let quality = startQuality + 1; quality <= endQuality; quality += 1) {
+    const requiredProduction = Math.ceil(scaleExponential(startProduction, quality - startQuality, growthFactor));
+    if (lifetimeProduction < requiredProduction) return qualityLimit;
+    qualityLimit = quality;
+  }
+
+  return qualityLimit;
+}
+
+/** Applies the lower of input, research, facility-upgrade, and lifetime-production quality limits to one output. */
+export function calculateProductionOutputQuality(researchQuality: number, weightedInputQuality: number | null, facilityQualityLimit = Number.POSITIVE_INFINITY, productionQualityLimit = Number.POSITIVE_INFINITY): number {
   if (!Number.isFinite(researchQuality) || researchQuality <= 0) return 1;
   const inputQualityLimit = weightedInputQuality === null ? Number.POSITIVE_INFINITY : weightedInputQuality + FACILITY_INPUT_QUALITY_BONUS;
   const safeFacilityQualityLimit = Number.isFinite(facilityQualityLimit) && facilityQualityLimit > 0 ? facilityQualityLimit : Number.POSITIVE_INFINITY;
-  return Math.min(researchQuality, inputQualityLimit, safeFacilityQualityLimit);
+  const safeProductionQualityLimit = Number.isFinite(productionQualityLimit) && productionQualityLimit > 0 ? productionQualityLimit : Number.POSITIVE_INFINITY;
+  return Math.min(researchQuality, inputQualityLimit, safeFacilityQualityLimit, safeProductionQualityLimit);
 }
 
 /** Deterministic production wear for one completed recipe cycle. */
