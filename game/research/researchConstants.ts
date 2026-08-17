@@ -86,7 +86,7 @@ function getResourceQualityResearchProject(resourceType: ResourceType, level: nu
     requirements: previousId
       ? [{ kind: 'research', projectId: previousId, label: `${getResource(resourceType).name} quality ${normalizedLevel - 1}` }]
       : [FACILITY_TIER_1],
-    effect: { kind: 'resource-production-quality', resourceType, level: normalizedLevel, quality: Math.min(RESOURCE_QUALITY_THEORETICAL_MAXIMUM - Number.EPSILON * RESOURCE_QUALITY_THEORETICAL_MAXIMUM, quality) },
+    effect: { kind: 'resource-production-quality', resourceType, level: normalizedLevel, quality },
   };
 }
 

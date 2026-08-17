@@ -14,7 +14,8 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Inventory flow period | The shared Inventory reporting window: last 15 seconds, 1 minute, 15 minutes, 1 hour, or all company time. It uses foreground logical game time. |
 | Facility maintenance statistics | Lifetime repaired-condition, largest-repair, and repair-value facts owned by Facilities. |
 | Resource quality | A quantity-weighted property of an inventory entry and every market reservoir. All entries start at Q1. Selling uses the inventory quality as a direct price multiplier and mixes it into the receiving market reservoir; diffusion mixes source quality into its destination. Completed resource-quality research controls the quality of all subsequently completed facility outputs for that resource. |
-| Resource-quality research | An unlimited, sequential research chain for one resource. It raises future facility output quality toward, but never reaching, Q100. |
+| Resource-quality research | An unlimited, sequential research chain for one resource. It raises future facility output quality toward, but never reaching, Q100; production input quality can impose a lower output limit. |
+| Facility quality upgrade | A per-facility quality parameter that raises that facility's output-quality limit through the same diminishing-return progression as resource-quality research. Each facility instance upgrades independently. |
 | Logistics multiplier | A resource catalogue value for physical shipping, storage, and market-network constraints on adjacent-market diffusion. |
 | Value-density multiplier | A resource catalogue value for the economic value of moving a resource relative to its transport burden. |
 | Local market depth | A completed-research multiplier that proportionally expands each local resource supply and benchmark supply, retaining price at completion while reducing local price volatility. |

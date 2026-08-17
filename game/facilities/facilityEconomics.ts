@@ -11,7 +11,8 @@ import {
   FACILITY_REPAIR_MATERIAL_COST_RATE,
   getFacilityDefinition,
 } from './facilityConstants';
-import { calculateFacilityEffectiveWork, getRecipeProductionConditionLoss } from './facilityProduction';
+import { calculateFacilityEffectiveWork, calculateProductionOutputQuality, getRecipeProductionConditionLoss } from './facilityProduction';
+import { getFacilityQualityLimit } from './facilityUpgrades';
 import type { FacilityUpgradeKind } from './facilityUpgrades';
 
 function clamp(value: number, minimum: number, maximum: number): number {
@@ -105,6 +106,29 @@ export function calculateFacilityNetGainPerMinute(
 ): number {
   return valuePerMinute
     - decayMaterialCostPerMinute * market.getLocalPrice(ResourceType.ConstructionMaterials);
+}
+
+/** Projects the incremental market value per minute from one facility quality upgrade. */
+export function calculateProjectedFacilityQualityUpgradeNetGainPerMinute(
+  facility: Facility,
+  recipe: Recipe,
+  market: Market,
+  recipeResearchWorkSpeedMultiplier: number,
+  researchQualityForResource: (resourceType: ResourceType) => number,
+  weightedInputQuality: number | null,
+): number {
+  const view = facility.getView();
+  const currentLimit = view.qualityLimit;
+  const nextLimit = getFacilityQualityLimit(view.qualityUpgradeLevel + 1);
+  const effectiveWorkPerMinute = calculateFacilityEffectiveWork(view, BASE_WORK_PER_MINUTE, recipeResearchWorkSpeedMultiplier);
+  if (recipe.requiredWork <= 0 || effectiveWorkPerMinute <= 0) return 0;
+
+  return recipe.outputs.reduce((total, output) => {
+    const currentQuality = calculateProductionOutputQuality(researchQualityForResource(output.resourceType), weightedInputQuality, currentLimit);
+    const nextQuality = calculateProductionOutputQuality(researchQualityForResource(output.resourceType), weightedInputQuality, nextLimit);
+    const unitsPerMinute = output.amount * view.outputMultiplier * effectiveWorkPerMinute / recipe.requiredWork;
+    return total + unitsPerMinute * (market.getLocalSalePrice(output.resourceType, nextQuality) - market.getLocalSalePrice(output.resourceType, currentQuality));
+  }, 0);
 }
 
 /** Projects a single upgrade's recurring net gain without mutating the live facility. */

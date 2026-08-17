@@ -14,6 +14,7 @@ type ResourceFlowBucket = {
 type ResourceFlowSnapshot = {
   allTime: ResourceFlowValues;
   recentBuckets: ResourceFlowBucket[];
+  highestFacilityOutputQuality?: Partial<Record<ResourceType, number>>;
 };
 
 function createEmptyValues(): ResourceFlowValues {
@@ -55,11 +56,13 @@ function addAmount(values: ResourceFlowValues, kind: ResourceFlowKind, resourceT
 export class ResourceFlowLedger {
   private allTime: ResourceFlowValues = createEmptyValues();
   private recentBuckets: ResourceFlowBucket[] = [];
+  private highestFacilityOutputQuality: Partial<Record<ResourceType, number>> = {};
 
   constructor(snapshot?: ResourceFlowSnapshot) {
     if (snapshot) {
       this.allTime = cloneValues(snapshot.allTime);
       this.recentBuckets = snapshot.recentBuckets.map(cloneBucket);
+      this.highestFacilityOutputQuality = { ...(snapshot.highestFacilityOutputQuality ?? {}) };
     }
   }
 
@@ -77,6 +80,16 @@ export class ResourceFlowLedger {
     addAmount(bucket.values, kind, resourceType, amount);
     this.prune(occurredAtGameTimeMs);
     return true;
+  }
+
+  recordFacilityOutput(resourceType: ResourceType, amount: number, quality: number, occurredAtGameTimeMs: number): boolean {
+    if (!Number.isFinite(quality) || quality <= 0 || !this.record('facility-output', resourceType, amount, occurredAtGameTimeMs)) return false;
+    this.highestFacilityOutputQuality[resourceType] = Math.max(this.highestFacilityOutputQuality[resourceType] ?? 0, quality);
+    return true;
+  }
+
+  getHighestFacilityOutputQuality(): number {
+    return Math.max(1, ...Object.values(this.highestFacilityOutputQuality).filter((quality): quality is number => Number.isFinite(quality)));
   }
 
   hasExpiredBuckets(currentGameTimeMs: number): boolean {
@@ -144,7 +157,7 @@ export class ResourceFlowLedger {
   }
 
   toSnapshot(): ResourceFlowSnapshot {
-    return { allTime: cloneValues(this.allTime), recentBuckets: this.recentBuckets.map(cloneBucket) };
+    return { allTime: cloneValues(this.allTime), recentBuckets: this.recentBuckets.map(cloneBucket), highestFacilityOutputQuality: { ...this.highestFacilityOutputQuality } };
   }
 
   static isSnapshot(value: unknown): value is ResourceFlowSnapshot {

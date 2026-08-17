@@ -87,6 +87,7 @@ describe('resource-quality research', () => {
     expect(second.durationMs).toBeGreaterThan(first.durationMs);
     expect((second.effect as Extract<typeof second.effect, { kind: 'resource-production-quality' }>).quality).toBeGreaterThan(2);
     expect((distant.effect as Extract<typeof distant.effect, { kind: 'resource-production-quality' }>).quality).toBeLessThan(100);
+    expect((distant.effect as Extract<typeof distant.effect, { kind: 'resource-production-quality' }>).quality).toBeGreaterThan(99);
   });
 
   it('uses the highest completed resource-quality level for new production', () => {

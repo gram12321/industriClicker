@@ -1,7 +1,7 @@
 import type { Inventory } from '@/game/inventory';
 import { getRecipe, type Recipe, type RecipeInput, type RecipeName } from '@/game/recipes';
 import type { ResourceType } from '@/game/resources';
-import { FACILITY_PRODUCTION_CONDITION_LOSS_PER_CYCLE, FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT, FACILITY_PRODUCTION_ORDER, FACILITY_STAFF_WORK_PER_WORKER_PER_MINUTE } from './facilityConstants';
+import { FACILITY_INPUT_QUALITY_BONUS, FACILITY_PRODUCTION_CONDITION_LOSS_PER_CYCLE, FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT, FACILITY_PRODUCTION_ORDER, FACILITY_STAFF_WORK_PER_WORKER_PER_MINUTE } from './facilityConstants';
 import type { FacilityView } from './facility';
 import type { FacilityCollection } from './facilityCollection';
 
@@ -16,6 +16,28 @@ export type ProductionOutput = {
   amount: number;
   quality: number;
 };
+
+/** Calculates the amount-weighted quality of a recipe's consumed inputs. */
+export function calculateWeightedInputQuality(recipe: Recipe, inventory: Inventory): number | null {
+  let totalAmount = 0;
+  let weightedQuality = 0;
+
+  for (const input of recipe.inputs) {
+    if (!Number.isFinite(input.amount) || input.amount <= 0) continue;
+    totalAmount += input.amount;
+    weightedQuality += input.amount * inventory.getQuality(input.resourceType);
+  }
+
+  return totalAmount > 0 ? weightedQuality / totalAmount : null;
+}
+
+/** Applies the lower-of-research-or-input quality constraint to one output. */
+export function calculateProductionOutputQuality(researchQuality: number, weightedInputQuality: number | null, facilityQualityLimit = Number.POSITIVE_INFINITY): number {
+  if (!Number.isFinite(researchQuality) || researchQuality <= 0) return 1;
+  const inputQualityLimit = weightedInputQuality === null ? Number.POSITIVE_INFINITY : weightedInputQuality + FACILITY_INPUT_QUALITY_BONUS;
+  const safeFacilityQualityLimit = Number.isFinite(facilityQualityLimit) && facilityQualityLimit > 0 ? facilityQualityLimit : Number.POSITIVE_INFINITY;
+  return Math.min(researchQuality, inputQualityLimit, safeFacilityQualityLimit);
+}
 
 /** Deterministic production wear for one completed recipe cycle. */
 export function getRecipeProductionConditionLoss(recipe: Recipe): number {
@@ -76,7 +98,7 @@ export function advanceAllFacilityProduction(
   inventory: Inventory,
   getEffectiveWork: (facility: FacilityView, recipeName: RecipeName) => number,
   onInputConsumed?: (input: RecipeInput) => void,
-  getOutputQuality?: (resourceType: ResourceType) => number,
+  getOutputQuality?: (resourceType: ResourceType, weightedInputQuality: number | null, facilityQualityLimit: number) => number,
 ): ProductionOutput[] {
   const outputs: ProductionOutput[] = [];
 
@@ -98,6 +120,7 @@ export function advanceAllFacilityProduction(
         if (progress === 0 && !recipe.inputs.every((input) => inventory.has(input.resourceType, input.amount))) break;
 
         if (progress === 0) {
+          facility.setRecipeInputQuality(calculateWeightedInputQuality(recipe, inventory));
           for (const input of recipe.inputs) {
             if (inventory.remove(input.resourceType, input.amount)) onInputConsumed?.(input);
           }
@@ -110,11 +133,12 @@ export function advanceAllFacilityProduction(
         if (progress + WORK_COMPLETION_EPSILON >= recipe.requiredWork) {
           for (const output of recipe.outputs) {
             const amount = output.amount * facilityView.outputMultiplier;
-            const quality = getOutputQuality?.(output.resourceType) ?? 1;
+            const quality = getOutputQuality?.(output.resourceType, facility.getView().recipeInputQuality, facilityView.qualityLimit) ?? 1;
             inventory.add(output.resourceType, amount, quality);
             outputs.push({ facilityType: facilityView.facilityType, recipeName: recipe.name, resourceType: output.resourceType, amount, quality });
           }
           facility.applyConditionLoss(getRecipeProductionConditionLoss(recipe));
+          facility.setRecipeInputQuality(null);
           progress = 0;
           if (!facility.advanceProductionCycle()) break;
           currentRecipeName = facility.getView().activeRecipeName ?? currentRecipeName;

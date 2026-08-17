@@ -8,7 +8,7 @@ import {
   calculateFacilityNetGainPerMinute,
   calculateRecipeValuePerMinute,
 } from '@/game/facilities/facilityEconomics';
-import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, getFacilityProductionCycleInputs, getRecipeProductionConditionLoss } from '@/game/facilities/facilityProduction';
+import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateProductionOutputQuality, calculateWeightedInputQuality, getFacilityProductionCycleInputs, getRecipeProductionConditionLoss } from '@/game/facilities/facilityProduction';
 import { Market } from '@/game/market';
 import { FacilityType } from '@/game/facilities/facilityTypes';
 
@@ -93,6 +93,19 @@ describe('facility economics', () => {
 });
 
 describe('advanceAllFacilityProduction', () => {
+  it('weights input quality by the recipe amounts and limits output quality by that average plus one', () => {
+    const inventory = new Inventory();
+    inventory.add(ResourceType.Water, 1, 2);
+    inventory.add(ResourceType.Electricity, 1, 4);
+    inventory.add(ResourceType.Fertilizer, 0.025, 100);
+    const recipe = getRecipe(RecipeName.GrowGrain);
+
+    expect(calculateWeightedInputQuality(recipe, inventory)).toBeCloseTo((2 + 4 + 0.025 * 100) / 2.025);
+    expect(calculateProductionOutputQuality(20, calculateWeightedInputQuality(recipe, inventory))).toBeCloseTo(5.197531);
+    expect(calculateProductionOutputQuality(3, calculateWeightedInputQuality(recipe, inventory))).toBe(3);
+    expect(calculateProductionOutputQuality(20, calculateWeightedInputQuality(recipe, inventory), 2)).toBe(2);
+  });
+
   it('runs repeated recipes in a configured cycle before returning to the start', () => {
     const { facilities, facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
     facility.setProductionCycle([RecipeName.GrowGrain, RecipeName.GrowGrain, RecipeName.GrowSugar]);

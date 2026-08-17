@@ -360,6 +360,8 @@ flowchart LR
 | State | Kind | Owner | Changes through | Saved as |
 |---|---|---|---|---|
 | `inventory.entries.*.quantity`, `.quality` | Stored | `Inventory` | Resource commands and production | `InventorySnapshot` |
+| `facility.recipeInputQuality` | Stored | `Facility` | Captured when a recipe cycle consumes inputs; used when that cycle completes | Facility snapshot; derives the input-quality output limit |
+| `facility.qualityUpgradeLevel` / `.qualityLimit` | Stored / derived | `Facility` | Per-facility quality upgrades and production output calculation | Facility snapshot / derives the facility quality constraint |
 | `research.completed.resource-quality-*` | Stored | `ResearchLedger` | Resource-quality research completion | `ResearchLedgerSnapshot`; derives future facility output quality by resource |
 | Resource-flow all-time category totals and the latest one-hour buckets | Stored | `ResourceFlowLedger` | Inventory-affecting commands and foreground production/autotrade | Resource-flow snapshot inside `GameSnapshot` |
 | `finance.balance`, `.transactions`, `.loans`, `.lenders`, `.activeLoanSearch`, `.loanSearchOffers`, economy phase, loan-payment history | Stored | `Finance` | Accepted transactions, timed lender searches, loan actions, economy transitions, and foreground repayment attempts | `FinanceSnapshot` |

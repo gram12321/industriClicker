@@ -53,12 +53,15 @@ export function calculateFacilityAssetValue(facility: Facility, market: Market):
     + getFacilityUpgradeInvestmentCost(definition.upgradeCost, view.speedUpgradeLevel)
     + getFacilityUpgradeInvestmentCost(definition.upgradeCost, view.outputUpgradeLevel)
     + getFacilityUpgradeInvestmentCost(definition.upgradeCost, view.conditionDecayUpgradeLevel)
+    + getFacilityUpgradeInvestmentCost(definition.upgradeCost, Math.max(0, view.qualityUpgradeLevel - 1))
     + getFacilityUpgradeResourceInvestmentCost(definition.constructionMaterialsCost, view.speedUpgradeLevel) * market.getLocalPrice(ResourceType.ConstructionMaterials)
     + getFacilityUpgradeResourceInvestmentCost(definition.constructionMaterialsCost, view.outputUpgradeLevel) * market.getLocalPrice(ResourceType.ConstructionMaterials)
     + getFacilityUpgradeResourceInvestmentCost(definition.constructionMaterialsCost, view.conditionDecayUpgradeLevel) * market.getLocalPrice(ResourceType.ConstructionMaterials)
+    + getFacilityUpgradeResourceInvestmentCost(definition.constructionMaterialsCost, Math.max(0, view.qualityUpgradeLevel - 1)) * market.getLocalPrice(ResourceType.ConstructionMaterials)
     + getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, view.speedUpgradeLevel) * market.getLocalPrice(ResourceType.IndustrialMachines)
     + getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, view.outputUpgradeLevel) * market.getLocalPrice(ResourceType.IndustrialMachines)
-    + getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, view.conditionDecayUpgradeLevel) * market.getLocalPrice(ResourceType.IndustrialMachines);
+    + getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, view.conditionDecayUpgradeLevel) * market.getLocalPrice(ResourceType.IndustrialMachines)
+    + getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, Math.max(0, view.qualityUpgradeLevel - 1)) * market.getLocalPrice(ResourceType.IndustrialMachines);
   return replacementCost * Math.max(0.1, view.facilityCondition);
 }
 

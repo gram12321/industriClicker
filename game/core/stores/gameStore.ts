@@ -1,6 +1,6 @@
 import { Finance, LOAN_COLLECTION, buildFinanceStatementData, calculateAssets, calculateFacilityAssetValue, calculateLoanSearchEstimate, generateLoanOffers, LENDER_TYPES, refreshLoanOfferAvailability, type LoanOffer, type LoanSearchCriteria } from '@/game/finance';
 import { Inventory, ResourceFlowLedger } from '@/game/inventory';
-import { FACILITIES, FacilityCollection, FacilityMaintenanceStatistics, advanceAllFacilityProduction, calculateFacilityEffectiveWork, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
+import { FACILITIES, FacilityCollection, FacilityMaintenanceStatistics, advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateProductionOutputQuality, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
 import type { RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
 import { MARKET_DIFFUSION_INTERVAL_MS, MARKET_SALES_ORDER_BID_MULTIPLIER, Market, canAutoBuyMarketResource, canBuyMarketResource, canSellMarketResource, type MarketAutomation } from '@/game/market';
@@ -541,11 +541,14 @@ export const useGameStore = create<GameState>((set, get) => {
     const facilityView = facility.getView();
     const currentLevel = upgradeKind === 'speed'
       ? facilityView.speedUpgradeLevel
-      : upgradeKind === 'output' ? facilityView.outputUpgradeLevel : facilityView.conditionDecayUpgradeLevel;
+      : upgradeKind === 'output' ? facilityView.outputUpgradeLevel
+        : upgradeKind === 'condition' ? facilityView.conditionDecayUpgradeLevel
+          : facilityView.qualityUpgradeLevel;
     const definition = getFacilityDefinition(facility.facilityType);
-    const cost = getFacilityUpgradeCost(definition.upgradeCost, currentLevel);
-    const constructionMaterialsCost = getFacilityUpgradeResourceCost(definition.constructionMaterialsCost, currentLevel);
-    const industrialMachinesCost = getFacilityUpgradeResourceCost(definition.industrialMachinesCost, currentLevel);
+    const costLevel = upgradeKind === 'quality' ? Math.max(0, currentLevel - 1) : currentLevel;
+    const cost = getFacilityUpgradeCost(definition.upgradeCost, costLevel);
+    const constructionMaterialsCost = getFacilityUpgradeResourceCost(definition.constructionMaterialsCost, costLevel);
+    const industrialMachinesCost = getFacilityUpgradeResourceCost(definition.industrialMachinesCost, costLevel);
     const missingConstructionMaterials = Math.max(0, constructionMaterialsCost - inventory.getAmount(ResourceType.ConstructionMaterials));
     const missingIndustrialMachines = Math.max(0, industrialMachinesCost - inventory.getAmount(ResourceType.IndustrialMachines));
     const missingInputs = [
@@ -565,12 +568,14 @@ export const useGameStore = create<GameState>((set, get) => {
       facility.upgradeSpeed();
     } else if (upgradeKind === 'output') {
       facility.upgradeOutput();
-    } else {
+    } else if (upgradeKind === 'condition') {
       facility.upgradeConditionDecay();
+    } else {
+      facility.upgradeQuality();
     }
 
     if ((missingInputPurchaseCost > 0 && !finance.applyTransaction({ amount: -missingInputPurchaseCost, description: `Bought missing upgrade inputs for ${facilityView.displayName}`, detailLines: trades.map(({ resourceType, trade }) => `${trade.amount} ${resourceType} at €${trade.unitPrice.toFixed(2)} each`), kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: get().lastProcessedAtMs }))
-      || !finance.applyTransaction({ amount: -cost, description: `${upgradeKind === 'speed' ? 'Speed' : upgradeKind === 'output' ? 'Output' : 'Condition decay'} upgrade for ${facilityView.displayName}`, detailLines: [`Level ${currentLevel + 1}`, `Construction materials committed: ${constructionMaterialsCost}`, `Industrial machines installed: ${industrialMachinesCost}`], kind: 'investing', source: 'facility-upgrade', occurredAtGameTimeMs: get().lastProcessedAtMs })
+      || !finance.applyTransaction({ amount: -cost, description: `${upgradeKind === 'speed' ? 'Speed' : upgradeKind === 'output' ? 'Output' : upgradeKind === 'condition' ? 'Condition decay' : 'Quality'} upgrade for ${facilityView.displayName}`, detailLines: [`Level ${currentLevel + 1}`, `Construction materials committed: ${constructionMaterialsCost}`, `Industrial machines installed: ${industrialMachinesCost}`], kind: 'investing', source: 'facility-upgrade', occurredAtGameTimeMs: get().lastProcessedAtMs })
       || !inventory.remove(ResourceType.ConstructionMaterials, constructionMaterialsCost)
       || !inventory.remove(ResourceType.IndustrialMachines, industrialMachinesCost)) {
       return false;
@@ -683,11 +688,12 @@ export const useGameStore = create<GameState>((set, get) => {
           facility,
           baseWork,
           getRecipeResearchWorkSpeedMultiplier(recipeName, research.getCompletedProjectIds()),
-        ), (input) => recordResourceFlow('facility-input', input.resourceType, -input.amount, stepEndGameTimeMs), (resourceType) => getResourceProductionQuality(resourceType, research.getCompletedProjectIds()));
+        ), (input) => recordResourceFlow('facility-input', input.resourceType, -input.amount, stepEndGameTimeMs), (resourceType, weightedInputQuality, facilityQualityLimit) => calculateProductionOutputQuality(getResourceProductionQuality(resourceType, research.getCompletedProjectIds()), weightedInputQuality, facilityQualityLimit));
         if (outputs.length > 0) {
           producedOutput = true;
           for (const output of outputs) {
-            recordResourceFlow('facility-output', output.resourceType, output.amount, stepEndGameTimeMs);
+            if (resourceFlow === get().resourceFlow) resourceFlow = resourceFlow.clone();
+            resourceFlow.recordFacilityOutput(output.resourceType, output.amount, output.quality, stepEndGameTimeMs);
           }
         }
       }
