@@ -13,7 +13,7 @@ import { APP_ICONS } from '@/icons';
 import { formatCurrency, formatNumber, getColorClass } from '@/utils';
 import { colors } from '@/theme';
 import { SectionHeading } from '@/ui/dashboard/components/DashboardPrimitives';
-import { TooltipAppIcon, TooltipMaterialIcon, TooltipResourceIcon } from '@/ui/dashboard/components/IconTooltip';
+import { TooltipMaterialIcon, TooltipResourceIcon } from '@/ui/dashboard/components/IconTooltip';
 import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 
 const multiplierSteps = [1, 10, 100, 1000] as const;
@@ -105,8 +105,8 @@ export function InventoryView({ buyMarketResource, currentGameTimeMs, facilities
       const isSelected = selectedResource === resourceType;
       return <View key={resourceType}>
         <Pressable accessibilityLabel={`${resource.name}: ${formatNumber(entry.quantity, { smartDecimals: true })} units, quality ${formatNumber(entry.quality, { smartDecimals: true })}`} accessibilityRole="button" onPress={() => setSelectedResource(isSelected ? null : resourceType)} style={styles.detailRow}>
-          <Text variant="bodyLarge"><TooltipResourceIcon resourceType={resourceType} /> {resource.name}</Text>
-          <View style={styles.inventoryQualityValue}><Text style={styles.detailValue}>{`${formatNumber(entry.quantity, { smartDecimals: true })} units`}</Text><TooltipAppIcon color={colors.muted} iconKey="quality" size={16} /><Text style={[styles.detailValue, { color: getColorClass(entry.quality) }]}>{formatNumber(entry.quality, { smartDecimals: true })}</Text></View>
+          <Text variant="bodyLarge">{resource.icon} {resource.name}</Text>
+          <View style={styles.inventoryQualityValue}><Text style={styles.detailValue}>{`${formatNumber(entry.quantity, { smartDecimals: true })} units`}</Text><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.quality} size={16} /><Text style={[styles.detailValue, { color: getColorClass(entry.quality) }]}>{formatNumber(entry.quality, { smartDecimals: true })}</Text></View>
         </Pressable>
         {isSelected && <MarketCard buyMarketResource={buyMarketResource} currentGameTimeMs={currentGameTimeMs} finance={finance} flowPeriod={flowPeriod} inventory={inventory} market={market} multiplier={multiplier} openSettings={openSettings} resourceFlow={resourceFlow} resourceType={resourceType} sellMarketResource={sellMarketResource} setMarketAutomation={setMarketAutomation} />}
       </View>;
