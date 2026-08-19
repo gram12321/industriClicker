@@ -37,16 +37,19 @@ describe('market sales', () => {
     expect(isGameSnapshot({ ...snapshot, resourceFlow: staleResourceFlow })).toBe(false);
   });
 
-  it('pays a higher-quality inventory at its own quality-adjusted price', () => {
+  it('pays a higher-quality inventory at its own quality-adjusted, slippage-aware price', () => {
     const state = useGameStore.getState();
     const snapshot = createStartingGameSnapshot(Date.now());
     snapshot.inventory.entries[ResourceType.Grain] = { quantity: 10, quality: 1.5 };
     state.restoreSnapshot(snapshot);
     const balanceBefore = useGameStore.getState().finance.getBalance();
-    const initialUnitPrice = useGameStore.getState().market.getLocalPrice(ResourceType.Grain);
+    const market = useGameStore.getState().market;
+    const initialUnitPrice = market.getLocalSalePrice(ResourceType.Grain, 1.5);
+    const initialSupply = market.getLocalEntry(ResourceType.Grain).supply;
+    const expectedUnitPrice = (initialUnitPrice + initialUnitPrice * initialSupply / (initialSupply + 10)) / 2;
 
     expect(state.sellMarketResource(ResourceType.Grain, 10)).toBe(true);
-    expect(useGameStore.getState().finance.getBalance()).toBeCloseTo(balanceBefore + 10 * initialUnitPrice * 1.5);
+    expect(useGameStore.getState().finance.getBalance()).toBeCloseTo(balanceBefore + 10 * expectedUnitPrice);
   });
 
   it('allows autosell when its inventory-quality price meets the threshold', () => {
@@ -63,6 +66,25 @@ describe('market sales', () => {
     state.advanceGameTime(5_000);
 
     expect(useGameStore.getState().inventory.getAmount(ResourceType.Grain)).toBeLessThan(100);
+  });
+
+  it('does not autosell when slippage drops the executable quote below the threshold', () => {
+    const state = useGameStore.getState();
+    const snapshot = createStartingGameSnapshot(Date.now());
+    snapshot.inventory.entries[ResourceType.Grain] = { quantity: 100, quality: 2 };
+    state.restoreSnapshot(snapshot);
+    const market = useGameStore.getState().market;
+    const spotPrice = market.getLocalSalePrice(ResourceType.Grain, 2);
+    const executionPrice = market.getLocalSellQuote(ResourceType.Grain, 5, 2).unitPrice;
+    state.setMarketAutomation(ResourceType.Grain, {
+      autoSellEnabled: true,
+      autoSellMaxPerMinute: 60,
+      autoSellMinUnitPrice: (spotPrice + executionPrice) / 2,
+    });
+
+    state.advanceGameTime(5_000);
+
+    expect(useGameStore.getState().inventory.getAmount(ResourceType.Grain)).toBe(100);
   });
 });
 

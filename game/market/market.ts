@@ -215,10 +215,12 @@ export class Market {
     const entry = this.local[resourceType];
     const unitPrice = this.getLocalSalePrice(resourceType, quality);
     if (!isPositiveFinite(amount) || !isPositiveFinite(quality)) return { success: false, amount: 0, unitPrice, quality };
-    const postTradeEntry = { supply: entry.supply + amount, quality: mixQuality(entry, amount, quality) };
+    // Price the entire quote using the quality being sold. Pool quality is mixed only
+    // once the trade executes, so a seller is not penalized for quality they have not
+    // yet added to the market while still receiving the normal supply slippage.
+    const postTradeEntry = { supply: entry.supply + amount, quality };
     const postTradePrice = calculateMarketPrice(RESOURCES[resourceType].market.localBenchmarkSupply * this.localMarketDepthMultiplier, postTradeEntry);
-    const executionPrice = quality === entry.quality ? (unitPrice + postTradePrice) / 2 : unitPrice;
-    return { success: true, amount, unitPrice: executionPrice, quality };
+    return { success: true, amount, unitPrice: (unitPrice + postTradePrice) / 2, quality };
   }
 
   /** Returns the largest whole-unit local purchase affordable at the supplied cash balance. */

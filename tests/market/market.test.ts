@@ -178,12 +178,14 @@ describe('Market regional tier', () => {
   it('pays the sold inventory quality and mixes it into the local market', () => {
     const market = new Market();
     const initialLocal = market.getLocalEntry(ResourceType.Grain);
-    const initialUnitPrice = market.getLocalPrice(ResourceType.Grain);
+    const initialUnitPrice = market.getLocalSalePrice(ResourceType.Grain, 2);
+    const expectedPostTradePrice = initialUnitPrice * initialLocal.supply / (initialLocal.supply + 10);
 
     const trade = market.sellToLocal(ResourceType.Grain, 10, 2);
 
     expect(trade).toMatchObject({ success: true, amount: 10, quality: 2 });
-    expect(trade.unitPrice).toBeCloseTo(initialUnitPrice * 2);
+    expect(trade.unitPrice).toBeCloseTo((initialUnitPrice + expectedPostTradePrice) / 2);
+    expect(trade.unitPrice).toBeLessThan(initialUnitPrice);
     expect(market.getLocalEntry(ResourceType.Grain).quality).toBeCloseTo(
       (initialLocal.supply * initialLocal.quality + 10 * 2) / (initialLocal.supply + 10),
     );

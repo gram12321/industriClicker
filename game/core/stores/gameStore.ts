@@ -742,8 +742,8 @@ export const useGameStore = create<GameState>((set, get) => {
           automation.autoSellMaxPerMinute * automation.autoTradeIntervalMs * completedIntervals / REALTIME_WORK_MINUTE_MS,
           Math.max(0, inventory.getAmount(resourceType) - automation.autoSellMinKeep),
         );
-        const quote = activeMarket.getLocalSellQuote(resourceType, amount, inventory.getQuality(resourceType));
-        if (amount <= 0 || currentPrice < automation.autoSellMinUnitPrice || !quote.success) continue;
+        const quote = activeMarket.getLocalSellQuote(resourceType, amount, inventoryQuality);
+        if (amount <= 0 || currentPrice < automation.autoSellMinUnitPrice || !quote.success || quote.unitPrice < automation.autoSellMinUnitPrice) continue;
         market ??= activeMarket.clone();
         marketFinance ??= get().finance.clone();
         if (inventory === get().inventory) inventory = inventory.clone();
