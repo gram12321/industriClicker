@@ -1,8 +1,9 @@
 import type { RecipeName } from '@/game/recipes';
 import { calculateAsymmetricalScaler01 } from '@/game/core/math/scaling';
+import { calculateUpgradeMaxQ } from '@/game/quality';
 import { getFacilityDefinition } from './facilityConstants';
 import { FacilityType } from './facilityTypes';
-import { getConditionDecayMultiplier, getFacilityConditionEfficiency, getFacilityEfficiency, getFacilityQualityLimit, getOutputUpgradeMultiplier, getOverstaffingConditionDecayMultiplier, getRequiredWorkers, getSpeedUpgradeWorkSpeedMultiplier, getStaffingEfficiency } from './facilityUpgrades';
+import { getConditionDecayMultiplier, getFacilityConditionEfficiency, getFacilityEfficiency, getOutputUpgradeMultiplier, getOverstaffingConditionDecayMultiplier, getRequiredWorkers, getSpeedUpgradeWorkSpeedMultiplier, getStaffingEfficiency } from './facilityUpgrades';
 
 /** Plain data used by the game snapshot and Expo SQLite adapter. */
 export type FacilitySnapshot = {
@@ -13,8 +14,8 @@ export type FacilitySnapshot = {
   productionCycleIndex: number;
   isActive: boolean;
   recipeProgress: Partial<Record<RecipeName, number>>;
-  recipeInputQuality: number | null;
-  qualityUpgradeLevel?: number;
+  recipeInputQ: number | null;
+  qualityUpgradeLevel: number;
   speedUpgradeLevel?: number;
   outputUpgradeLevel?: number;
   conditionDecayUpgradeLevel?: number;
@@ -32,9 +33,9 @@ export type FacilityView = {
   productionCycleIndex: number;
   isActive: boolean;
   recipeProgress: Readonly<Partial<Record<RecipeName, number>>>;
-  recipeInputQuality: number | null;
+  recipeInputQ: number | null;
   qualityUpgradeLevel: number;
-  qualityLimit: number;
+  upgradeMaxQ: number;
   speedUpgradeLevel: number;
   outputUpgradeLevel: number;
   conditionDecayUpgradeLevel: number;
@@ -57,7 +58,7 @@ export class Facility {
   private productionCycleIndex = 0;
   private active = false;
   private recipeProgress: Partial<Record<RecipeName, number>> = {};
-  private recipeInputQuality: number | null = null;
+  private recipeInputQ: number | null = null;
   private qualityUpgradeLevel = 1;
   private speedUpgradeLevel = 0;
   private outputUpgradeLevel = 0;
@@ -90,9 +91,9 @@ export class Facility {
       productionCycleIndex: this.productionCycleIndex,
       isActive: this.active,
       recipeProgress: { ...this.recipeProgress },
-      recipeInputQuality: this.recipeInputQuality,
+      recipeInputQ: this.recipeInputQ,
       qualityUpgradeLevel: this.qualityUpgradeLevel,
-      qualityLimit: getFacilityQualityLimit(this.qualityUpgradeLevel),
+      upgradeMaxQ: calculateUpgradeMaxQ(this.qualityUpgradeLevel),
       speedUpgradeLevel: this.speedUpgradeLevel,
       outputUpgradeLevel: this.outputUpgradeLevel,
       conditionDecayUpgradeLevel: this.conditionDecayUpgradeLevel,
@@ -144,7 +145,7 @@ export class Facility {
       this.productionCycle = [];
       this.productionCycleIndex = 0;
       this.active = false;
-      this.recipeInputQuality = null;
+      this.recipeInputQ = null;
       return true;
     }
 
@@ -163,7 +164,7 @@ export class Facility {
     this.productionCycleIndex = 0;
     this.activeRecipeName = this.productionCycle[0] ?? null;
     this.active = this.activeRecipeName !== null;
-    this.recipeInputQuality = null;
+    this.recipeInputQ = null;
     return true;
   }
 
@@ -212,9 +213,9 @@ export class Facility {
     return true;
   }
 
-  /** Records the quality average of inputs consumed for the in-progress cycle. */
-  setRecipeInputQuality(quality: number | null): void {
-    this.recipeInputQuality = quality !== null && Number.isFinite(quality) && quality > 0 ? quality : null;
+  /** Records the weighted quality of inputs consumed for the in-progress cycle. */
+  setRecipeInputQ(inputQ: number | null): void {
+    this.recipeInputQ = inputQ !== null && Number.isFinite(inputQ) && inputQ > 0 ? inputQ : null;
   }
 
   toSnapshot(): FacilitySnapshot {
@@ -226,7 +227,7 @@ export class Facility {
       productionCycleIndex: this.productionCycleIndex,
       isActive: this.active,
       recipeProgress: { ...this.recipeProgress },
-      recipeInputQuality: this.recipeInputQuality,
+      recipeInputQ: this.recipeInputQ,
       qualityUpgradeLevel: this.qualityUpgradeLevel,
       speedUpgradeLevel: this.speedUpgradeLevel,
       outputUpgradeLevel: this.outputUpgradeLevel,
@@ -251,9 +252,9 @@ export class Facility {
     this.active = snapshot.isActive;
 
     this.recipeProgress = {};
-    const recipeInputQuality = snapshot.recipeInputQuality;
-    this.recipeInputQuality = typeof recipeInputQuality === 'number' && Number.isFinite(recipeInputQuality) && recipeInputQuality > 0
-      ? recipeInputQuality
+    const recipeInputQ = snapshot.recipeInputQ;
+    this.recipeInputQ = typeof recipeInputQ === 'number' && Number.isFinite(recipeInputQ) && recipeInputQ > 0
+      ? recipeInputQ
       : null;
     this.qualityUpgradeLevel = isValidUpgradeLevel(snapshot.qualityUpgradeLevel) ? Math.max(1, snapshot.qualityUpgradeLevel) : 1;
     this.speedUpgradeLevel = isValidUpgradeLevel(snapshot.speedUpgradeLevel) ? snapshot.speedUpgradeLevel : 0;

@@ -12,6 +12,7 @@ The Expo Router app presents a local company-selection screen and a mobile dashb
 
 - Typed resource, recipe, facility, research, grant, achievement, prestige, and sales catalogues own deterministic configuration.
 - Facility production runs only in foreground time. It supports staffing, condition wear and repair, upgrades, researched recipe cycles, multi-output recipes, and local-market autobuy/autosell.
+- Output quality is resolved by the pure `game/quality` domain as the minimum of InputMaxQ, ResearchMaxQ, UpgradeMaxQ, and company-wide ProductionMaxQ. Research and facility upgrades share one diminishing curve; lifetime production uses a continuous asymptotic normalizer.
 - Research projects have typed gates and effects. Research capacity determines how many independent projects can run at once; every active project remains visible and can be cancelled by its own project ID for a full refund of its recorded cost.
 - Customer orders use a deterministic local catalogue, relationships, multi-line fulfilment, company-asset order caps, and research-controlled targeting, capacity, and bid effects.
 

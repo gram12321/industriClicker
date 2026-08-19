@@ -2,6 +2,7 @@ import { getRecipeResearchLevelProjectId, getResearchProject, type ResearchProje
 import type { RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, type ResourceType } from '@/game/resources';
 import { calculateDiminishingBonus } from '@/game/core/math/scaling';
+import { calculateResearchMaxQ } from '@/game/quality';
 import { SALES_ORDER_BASE_COMPANY_VALUE_FRACTION } from '@/game/sales/salesConstants';
 
 export type CompletedResearchProject = { projectId: ResearchProjectId; completedAtGameTimeMs: number };
@@ -37,17 +38,17 @@ export function getRecipeResearchWorkSpeedMultiplier(recipeName: RecipeName, com
   return 1 + calculateDiminishingBonus(level, 0.75, 0.35);
 }
 
-/** Highest completed quality research controls every new facility output of this resource. */
-export function getResourceProductionQuality(resourceType: ResourceType, completedProjectIds: readonly string[]): number {
+/** Highest completed resource-research level controls new output quality for this resource. */
+export function getResourceResearchMaxQ(resourceType: ResourceType, completedProjectIds: readonly string[]): number {
   return completedProjectIds.reduce((quality, projectId) => {
     const effect = getResearchProject(projectId)?.effect;
     return effect?.kind === 'resource-production-quality' && effect.resourceType === resourceType
-      ? Math.max(quality, effect.quality)
+      ? Math.max(quality, calculateResearchMaxQ(effect.level))
       : quality;
   }, 1);
 }
 
-export function getResourceProductionQualityLevel(resourceType: ResourceType, completedProjectIds: readonly string[]): number {
+export function getResourceResearchLevel(resourceType: ResourceType, completedProjectIds: readonly string[]): number {
   return completedProjectIds.reduce((level, projectId) => {
     const effect = getResearchProject(projectId)?.effect;
     return effect?.kind === 'resource-production-quality' && effect.resourceType === resourceType

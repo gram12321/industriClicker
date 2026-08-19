@@ -1,6 +1,7 @@
 import { Finance, LOAN_COLLECTION, buildFinanceStatementData, calculateAssets, calculateFacilityAssetValue, calculateLoanSearchEstimate, generateLoanOffers, LENDER_TYPES, refreshLoanOfferAvailability, type LoanOffer, type LoanSearchCriteria } from '@/game/finance';
 import { Inventory, ResourceFlowLedger } from '@/game/inventory';
-import { FACILITIES, FacilityCollection, FacilityMaintenanceStatistics, advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateProductionOutputQuality, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, getProductionQualityLimit, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
+import { FACILITIES, FacilityCollection, FacilityMaintenanceStatistics, advanceAllFacilityProduction, calculateFacilityEffectiveWork, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
+import { calculateOutputQuality, calculateProductionMaxQ } from '@/game/quality';
 import type { RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
 import { MARKET_DIFFUSION_INTERVAL_MS, MARKET_SALES_ORDER_BID_MULTIPLIER, Market, canAutoBuyMarketResource, canBuyMarketResource, canSellMarketResource, type MarketAutomation } from '@/game/market';
@@ -11,7 +12,7 @@ import { AchievementLedger, createAchievementEvaluationContext, evaluateAchievem
 
 import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyAssetsPrestige, calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary, calculateFacilityConditionPrestige } from '@/game/prestige';
 import { evaluateGateRequirements, type GateContext, type GateEvaluation } from '@/game/gates';
-import { ResearchLedger, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesOrders, getMaximumSimultaneousResearchProjects, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, getResourceProductionQuality, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, getSalesOrderBidMultiplier, getSalesOrderBundleMaturityMultiplier, getSalesOrderMaximumCompanyValueFraction, getSalesOrderMinimumPremiumBonus, getSalesPressureOfferChanceMultiplier, getSalesRelationshipDecayHalfLifeMultiplier, getSalesRelationshipFailureLossMultiplier, getSalesRelationshipFulfilmentGainMultiplier, type ResearchProjectId } from '@/game/research';
+import { ResearchLedger, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesOrders, getMaximumSimultaneousResearchProjects, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, getResourceResearchMaxQ, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, getSalesOrderBidMultiplier, getSalesOrderBundleMaturityMultiplier, getSalesOrderMaximumCompanyValueFraction, getSalesOrderMinimumPremiumBonus, getSalesPressureOfferChanceMultiplier, getSalesRelationshipDecayHalfLifeMultiplier, getSalesRelationshipFailureLossMultiplier, getSalesRelationshipFulfilmentGainMultiplier, type ResearchProjectId } from '@/game/research';
 import { FIRST_FACILITY_RECIPE_RESEARCH_GRANT_ID, FIRST_FACILITY_RECIPE_RESEARCH_WORK_SPEED_MULTIPLIER, GrantLedger } from '@/game/grants';
 import type { StartingConditionId } from '@/game/company/companyTypes';
 import { STANDARD_START_CONSTRUCTION_MATERIALS, STANDARD_START_INDUSTRIAL_MACHINES } from '@/game/company/companyConstants';
@@ -688,7 +689,12 @@ export const useGameStore = create<GameState>((set, get) => {
           facility,
           baseWork,
           getRecipeResearchWorkSpeedMultiplier(recipeName, research.getCompletedProjectIds()),
-        ), (input) => recordResourceFlow('facility-input', input.resourceType, -input.amount, stepEndGameTimeMs), (resourceType, weightedInputQuality, facilityQualityLimit) => calculateProductionOutputQuality(getResourceProductionQuality(resourceType, research.getCompletedProjectIds()), weightedInputQuality, facilityQualityLimit, getProductionQualityLimit(resourceFlow.getLifetimeFacilityOutput(resourceType))));
+        ), (input) => recordResourceFlow('facility-input', input.resourceType, -input.amount, stepEndGameTimeMs), (resourceType, weightedInputQ, upgradeMaxQ) => calculateOutputQuality({
+          weightedInputQ,
+          researchMaxQ: getResourceResearchMaxQ(resourceType, research.getCompletedProjectIds()),
+          upgradeMaxQ,
+          productionMaxQ: calculateProductionMaxQ(resourceFlow.getLifetimeFacilityOutput(resourceType)),
+        }));
         if (outputs.length > 0) {
           producedOutput = true;
           for (const output of outputs) {

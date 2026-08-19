@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ACHIEVEMENT_DEFINITIONS } from '@/game/achievements';
 import { FACILITIES } from '@/game/facilities';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
-import { BASE_MAXIMUM_OPEN_SALES_ORDERS, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesOrders, getRecipeResearchProjectId, getResearchProject, getResourceProductionQuality, getResourceProductionQualityLevel, getResourceQualityResearchProjectId, getSalesOrderBidMultiplier, getSalesOrderBundleMaturityMultiplier, getSalesOrderMaximumCompanyValueFraction, getSalesOrderMinimumPremiumBonus, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, getSalesPressureOfferChanceMultiplier, getSalesRelationshipDecayHalfLifeMultiplier, getSalesRelationshipFailureLossMultiplier, getSalesRelationshipFulfilmentGainMultiplier, RESEARCH_PROJECTS, ResearchLedger } from '@/game/research';
+import { BASE_MAXIMUM_OPEN_SALES_ORDERS, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesOrders, getRecipeResearchProjectId, getResearchProject, getResourceResearchLevel, getResourceResearchMaxQ, getResourceQualityResearchProjectId, getSalesOrderBidMultiplier, getSalesOrderBundleMaturityMultiplier, getSalesOrderMaximumCompanyValueFraction, getSalesOrderMinimumPremiumBonus, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, getSalesPressureOfferChanceMultiplier, getSalesRelationshipDecayHalfLifeMultiplier, getSalesRelationshipFailureLossMultiplier, getSalesRelationshipFulfilmentGainMultiplier, RESEARCH_PROJECTS, ResearchLedger } from '@/game/research';
 
 function createProductionTotals(produced: readonly ResourceType[]): Record<ResourceType, number> {
   return RESOURCE_TYPES.reduce((totals, resourceType) => {
@@ -93,9 +93,9 @@ describe('resource-quality research', () => {
   it('uses the highest completed resource-quality level for new production', () => {
     const completed = [getResourceQualityResearchProjectId(ResourceType.Grain, 1), getResourceQualityResearchProjectId(ResourceType.Grain, 2)];
 
-    expect(getResourceProductionQualityLevel(ResourceType.Grain, completed)).toBe(2);
-    expect(getResourceProductionQuality(ResourceType.Grain, completed)).toBeGreaterThan(2);
-    expect(getResourceProductionQuality(ResourceType.Bread, completed)).toBe(1);
+    expect(getResourceResearchLevel(ResourceType.Grain, completed)).toBe(2);
+    expect(getResourceResearchMaxQ(ResourceType.Grain, completed)).toBeGreaterThan(2);
+    expect(getResourceResearchMaxQ(ResourceType.Bread, completed)).toBe(1);
   });
 });
 

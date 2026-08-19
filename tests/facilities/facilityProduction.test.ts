@@ -8,7 +8,8 @@ import {
   calculateFacilityNetGainPerMinute,
   calculateRecipeValuePerMinute,
 } from '@/game/facilities/facilityEconomics';
-import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateProductionOutputQuality, calculateWeightedInputQuality, getFacilityProductionCycleInputs, getProductionQualityLimit, getRecipeProductionConditionLoss } from '@/game/facilities/facilityProduction';
+import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateRecipeInputQ, getFacilityProductionCycleInputs, getRecipeProductionConditionLoss } from '@/game/facilities/facilityProduction';
+import { calculateOutputQuality, calculateProductionMaxQ } from '@/game/quality';
 import { Market } from '@/game/market';
 import { FacilityType } from '@/game/facilities/facilityTypes';
 
@@ -94,16 +95,13 @@ describe('facility economics', () => {
 
 describe('advanceAllFacilityProduction', () => {
   it('requires escalating lifetime production for each resource quality cap', () => {
-    expect(getProductionQualityLimit(0)).toBe(1);
-    expect(getProductionQualityLimit(99)).toBe(1);
-    expect(getProductionQualityLimit(100)).toBe(2);
-    expect(getProductionQualityLimit(341)).toBe(2);
-    expect(getProductionQualityLimit(342)).toBe(3);
-    expect(getProductionQualityLimit(10_000)).toBe(10);
-    expect(getProductionQualityLimit(30_000)).toBe(20);
-    expect(getProductionQualityLimit(80_000)).toBe(40);
-    expect(getProductionQualityLimit(207_500)).toBe(50);
-    expect(getProductionQualityLimit(22_000_000)).toBe(98);
+    expect(calculateProductionMaxQ(0)).toBe(1);
+    expect(calculateProductionMaxQ(99)).toBeLessThan(2);
+    expect(calculateProductionMaxQ(100)).toBe(2);
+    expect(calculateProductionMaxQ(10_000)).toBeGreaterThan(calculateProductionMaxQ(100));
+    expect(calculateProductionMaxQ(207_500)).toBeGreaterThan(40);
+    expect(calculateProductionMaxQ(22_000_000)).toBeGreaterThan(98);
+    expect(calculateProductionMaxQ(Number.MAX_VALUE)).toBeLessThan(100);
   });
 
   it('weights input quality by the recipe amounts and limits output quality by that average plus one', () => {
@@ -113,11 +111,12 @@ describe('advanceAllFacilityProduction', () => {
     inventory.add(ResourceType.Fertilizer, 0.025, 100);
     const recipe = getRecipe(RecipeName.GrowGrain);
 
-    expect(calculateWeightedInputQuality(recipe, inventory)).toBeCloseTo((2 + 4 + 0.025 * 100) / 2.025);
-    expect(calculateProductionOutputQuality(20, calculateWeightedInputQuality(recipe, inventory))).toBeCloseTo(5.197531);
-    expect(calculateProductionOutputQuality(3, calculateWeightedInputQuality(recipe, inventory))).toBe(3);
-    expect(calculateProductionOutputQuality(20, calculateWeightedInputQuality(recipe, inventory), 2)).toBe(2);
-    expect(calculateProductionOutputQuality(20, calculateWeightedInputQuality(recipe, inventory), 20, 2)).toBe(2);
+    const inputQ = calculateRecipeInputQ(recipe, inventory);
+    expect(inputQ).toBeCloseTo((2 + 4 + 0.025 * 100) / 2.025);
+    expect(calculateOutputQuality({ researchMaxQ: 20, weightedInputQ: inputQ }).outputQ).toBeCloseTo(5.197531);
+    expect(calculateOutputQuality({ researchMaxQ: 3, weightedInputQ: inputQ }).outputQ).toBe(3);
+    expect(calculateOutputQuality({ researchMaxQ: 20, weightedInputQ: inputQ, upgradeMaxQ: 2 }).outputQ).toBe(2);
+    expect(calculateOutputQuality({ researchMaxQ: 20, weightedInputQ: inputQ, upgradeMaxQ: 20, productionMaxQ: 2 }).outputQ).toBe(2);
   });
 
   it('runs repeated recipes in a configured cycle before returning to the start', () => {
@@ -247,7 +246,7 @@ describe('advanceAllFacilityProduction', () => {
       inventory,
       () => getRecipe(RecipeName.GrowGrain).requiredWork,
       undefined,
-      () => 2,
+      () => calculateOutputQuality({ researchMaxQ: 2, upgradeMaxQ: 2, productionMaxQ: 2 }),
     );
 
     expect(outputs[0]!.quality).toBe(2);

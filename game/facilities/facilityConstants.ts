@@ -37,19 +37,6 @@ export const FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT = 1 / 1_200;
 export const FACILITY_PRODUCTION_CONDITION_LOSS_PER_CYCLE = 0.05 / 1_200;
 /** Fraction of each facility construction input required to restore one point of condition. */
 export const FACILITY_REPAIR_MATERIAL_COST_RATE = 0.45;
-/** Output quality may exceed the weighted input quality by this absolute amount. */
-export const FACILITY_INPUT_QUALITY_BONUS = 1;
-export const FACILITY_QUALITY_THEORETICAL_MAXIMUM = 100;
-export const FACILITY_QUALITY_RESEARCH_RATE = Math.log(99 / 98);
-/** Lifetime output thresholds at the boundaries of the production-quality curve. */
-export const FACILITY_PRODUCTION_QUALITY_Q2_REQUIRED = 100;
-export const FACILITY_PRODUCTION_QUALITY_Q5_REQUIRED = 4_000;
-export const FACILITY_PRODUCTION_QUALITY_Q10_REQUIRED = 10_000;
-export const FACILITY_PRODUCTION_QUALITY_Q20_REQUIRED = 30_000;
-export const FACILITY_PRODUCTION_QUALITY_Q40_REQUIRED = 80_000;
-export const FACILITY_PRODUCTION_QUALITY_MAXIMUM = 99;
-export const FACILITY_PRODUCTION_QUALITY_TAIL_GROWTH = 1.1;
-
 /** Fixed order keeps production deterministic and runs utility producers first. */
 export const FACILITY_PRODUCTION_ORDER = [
   FacilityType.SmallUtilityWorks,

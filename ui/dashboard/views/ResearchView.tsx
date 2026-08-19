@@ -6,7 +6,7 @@ import type { Finance } from '@/game/finance';
 import { FACILITIES, type FacilityCollection } from '@/game/facilities';
 import { getRecipe } from '@/game/recipes';
 import { calculateDiminishingBonus } from '@/game/core/math/scaling';
-import { RESEARCH_PROJECTS, describeResearchEffect, getResearchProject, getResourceProductionQualityLevel, getResourceQualityResearchProjectId, type ResearchChainId, type ResearchLedger, type ResearchProjectDefinition, type ResearchProjectId } from '@/game/research';
+import { RESEARCH_PROJECTS, describeResearchEffect, getResearchProject, getResourceQualityResearchProjectId, getResourceResearchLevel, type ResearchChainId, type ResearchLedger, type ResearchProjectDefinition, type ResearchProjectId } from '@/game/research';
 import { RESOURCE_TYPES } from '@/game/resources';
 import type { GateRequirement } from '@/game/gates';
 import type { ResearchAvailability } from '@/game/core/stores';
@@ -85,7 +85,7 @@ function getResearchSeries(projects: readonly ResearchProjectDefinition[], compl
     const orderedProjects = [...seriesProjects].sort((left, right) => left.tier - right.tier);
     const resourceQuality = orderedProjects[0]?.effect.kind === 'resource-production-quality' ? orderedProjects[0].effect : null;
     if (resourceQuality) {
-      return { completedCount: getResourceProductionQualityLevel(resourceQuality.resourceType, completedIds), project: orderedProjects[0], projects: orderedProjects, unlimited: true };
+      return { completedCount: getResourceResearchLevel(resourceQuality.resourceType, completedIds), project: orderedProjects[0], projects: orderedProjects, unlimited: true };
     }
     const completedCount = orderedProjects.filter((project) => completedIds.includes(project.id)).length;
     return { completedCount, project: orderedProjects.find((project) => !completedIds.includes(project.id)) ?? orderedProjects[orderedProjects.length - 1], projects: orderedProjects, unlimited: false };
@@ -97,7 +97,7 @@ function getProjectsForGroup(group: ResearchGroup, completedIds: readonly string
     && (project.chainId !== 'recipe-unlocks' || !showOnlyConstructedRecipes || isRecipeProjectForConstructedFacility(project, facilities)));
   if (!group.chainIds.includes('resource-quality')) return fixedProjects;
   return RESOURCE_TYPES.filter((resourceType) => !showOnlyConstructedRecipes || Object.values(FACILITIES).some((facility) => facilities.has(facility.type) && facility.recipes.some((recipe) => recipe.outputs.some((output) => output.resourceType === resourceType)))).flatMap((resourceType) => {
-    const nextLevel = getResourceProductionQualityLevel(resourceType, completedIds) + 1;
+    const nextLevel = getResourceResearchLevel(resourceType, completedIds) + 1;
     const project = getResearchProject(getResourceQualityResearchProjectId(resourceType, nextLevel));
     return project ? [project] : [];
   });

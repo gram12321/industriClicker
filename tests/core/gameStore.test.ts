@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createStartingGameSnapshot, useGameStore } from '@/game/core/stores';
+import { isGameSnapshot } from '@/game/core/state';
 import { FACILITIES, FacilityType } from '@/game/facilities';
 import { calculateAssets } from '@/game/finance';
 import { RecipeName } from '@/game/recipes';
@@ -29,6 +30,13 @@ describe('market autobuy', () => {
 });
 
 describe('market sales', () => {
+  it('rejects snapshots missing the current quality-aware fields', () => {
+    const snapshot = createStartingGameSnapshot(0);
+    expect(isGameSnapshot(snapshot)).toBe(true);
+    const { highestFacilityOutputQuality: _highestFacilityOutputQuality, ...staleResourceFlow } = snapshot.resourceFlow;
+    expect(isGameSnapshot({ ...snapshot, resourceFlow: staleResourceFlow })).toBe(false);
+  });
+
   it('pays a higher-quality inventory at its own quality-adjusted price', () => {
     const state = useGameStore.getState();
     const snapshot = createStartingGameSnapshot(Date.now());

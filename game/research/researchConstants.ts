@@ -2,7 +2,8 @@ import type { GateRequirement } from '@/game/gates';
 import { FACILITIES } from '@/game/facilities';
 import { getRecipeDisplayName, RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, getResource, type ResourceType } from '@/game/resources';
-import { calculateDiminishingBonus, scaleExponential } from '@/game/core/math/scaling';
+import { scaleExponential } from '@/game/core/math/scaling';
+import { calculateResearchMaxQ, RESOURCE_QUALITY_BASE_RESEARCH_COST, RESOURCE_QUALITY_BASE_RESEARCH_DURATION_MS, RESOURCE_QUALITY_RESEARCH_COST_GROWTH, RESOURCE_QUALITY_RESEARCH_DURATION_GROWTH } from '@/game/quality';
 import type { ResearchEffect } from './researchEffects';
 
 const BASE_RESEARCH_PROJECT_IDS = [
@@ -41,11 +42,6 @@ const ORDERS_TIER_1: GateRequirement = { kind: 'achievement', achievementId: 'fu
 const ORDERS_TIER_2: GateRequirement = { kind: 'achievement', achievementId: 'fulfilled_orders_tier_2', label: 'Order Closer 2' };
 const PRESTIGE_TIER_1: GateRequirement = { kind: 'minimum-prestige', minimumPrestige: 1 };
 
-export const RESOURCE_QUALITY_THEORETICAL_MAXIMUM = 100;
-export const RESOURCE_QUALITY_BASE_RESEARCH_COST = 100;
-export const RESOURCE_QUALITY_BASE_RESEARCH_DURATION_MS = 30_000;
-export const RESOURCE_QUALITY_RESEARCH_GROWTH_FACTOR = 1.5;
-
 export function getRecipeResearchProjectId(recipeName: RecipeName): RecipeResearchProjectId {
   return `recipe-${recipeName}`;
 }
@@ -69,13 +65,9 @@ export function getResourceQualityResearchLevel(projectId: string): { resourceTy
 function getResourceQualityResearchProject(resourceType: ResourceType, level: number): ResearchProjectDefinition {
   const normalizedLevel = Math.max(1, Math.floor(level));
   const previousId = normalizedLevel === 1 ? null : getResourceQualityResearchProjectId(resourceType, normalizedLevel - 1);
-  const cost = Math.min(Number.MAX_SAFE_INTEGER, Math.ceil(scaleExponential(RESOURCE_QUALITY_BASE_RESEARCH_COST, normalizedLevel - 1, RESOURCE_QUALITY_RESEARCH_GROWTH_FACTOR)));
-  const durationMs = Math.min(Number.MAX_SAFE_INTEGER, Math.ceil(scaleExponential(RESOURCE_QUALITY_BASE_RESEARCH_DURATION_MS, normalizedLevel - 1, RESOURCE_QUALITY_RESEARCH_GROWTH_FACTOR)));
-  const quality = normalizedLevel === 1 ? 2 : 1 + calculateDiminishingBonus(
-    normalizedLevel,
-    RESOURCE_QUALITY_THEORETICAL_MAXIMUM - 1,
-    Math.log(99 / 98),
-  );
+  const cost = Math.min(Number.MAX_SAFE_INTEGER, Math.ceil(scaleExponential(RESOURCE_QUALITY_BASE_RESEARCH_COST, normalizedLevel - 1, RESOURCE_QUALITY_RESEARCH_COST_GROWTH)));
+  const durationMs = Math.min(Number.MAX_SAFE_INTEGER, Math.ceil(scaleExponential(RESOURCE_QUALITY_BASE_RESEARCH_DURATION_MS, normalizedLevel - 1, RESOURCE_QUALITY_RESEARCH_DURATION_GROWTH)));
+  const quality = calculateResearchMaxQ(normalizedLevel);
   return {
     id: getResourceQualityResearchProjectId(resourceType, normalizedLevel),
     chainId: 'resource-quality',

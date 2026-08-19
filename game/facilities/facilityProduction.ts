@@ -1,8 +1,8 @@
 import type { Inventory } from '@/game/inventory';
-import { scaleExponential } from '@/game/core/math';
+import { calculateOutputQuality, calculateWeightedInputQ, type OutputQualityBreakdown } from '@/game/quality';
 import { getRecipe, type Recipe, type RecipeInput, type RecipeName } from '@/game/recipes';
 import type { ResourceType } from '@/game/resources';
-import { FACILITY_INPUT_QUALITY_BONUS, FACILITY_PRODUCTION_CONDITION_LOSS_PER_CYCLE, FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT, FACILITY_PRODUCTION_ORDER, FACILITY_PRODUCTION_QUALITY_MAXIMUM, FACILITY_PRODUCTION_QUALITY_Q10_REQUIRED, FACILITY_PRODUCTION_QUALITY_Q20_REQUIRED, FACILITY_PRODUCTION_QUALITY_Q2_REQUIRED, FACILITY_PRODUCTION_QUALITY_Q40_REQUIRED, FACILITY_PRODUCTION_QUALITY_Q5_REQUIRED, FACILITY_PRODUCTION_QUALITY_TAIL_GROWTH, FACILITY_STAFF_WORK_PER_WORKER_PER_MINUTE } from './facilityConstants';
+import { FACILITY_PRODUCTION_CONDITION_LOSS_PER_CYCLE, FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT, FACILITY_PRODUCTION_ORDER, FACILITY_STAFF_WORK_PER_WORKER_PER_MINUTE } from './facilityConstants';
 import type { FacilityView } from './facility';
 import type { FacilityCollection } from './facilityCollection';
 
@@ -19,52 +19,11 @@ export type ProductionOutput = {
 };
 
 /** Calculates the amount-weighted quality of a recipe's consumed inputs. */
-export function calculateWeightedInputQuality(recipe: Recipe, inventory: Inventory): number | null {
-  let totalAmount = 0;
-  let weightedQuality = 0;
-
-  for (const input of recipe.inputs) {
-    if (!Number.isFinite(input.amount) || input.amount <= 0) continue;
-    totalAmount += input.amount;
-    weightedQuality += input.amount * inventory.getQuality(input.resourceType);
-  }
-
-  return totalAmount > 0 ? weightedQuality / totalAmount : null;
-}
-
-/** Highest quality unlocked by lifetime facility output of one resource. */
-export function getProductionQualityLimit(lifetimeProduction: number): number {
-  if (!Number.isFinite(lifetimeProduction) || lifetimeProduction < FACILITY_PRODUCTION_QUALITY_Q2_REQUIRED) return 1;
-  if (lifetimeProduction < FACILITY_PRODUCTION_QUALITY_Q5_REQUIRED) return getQualityLimitForExponentialInterval(lifetimeProduction, 2, FACILITY_PRODUCTION_QUALITY_Q2_REQUIRED, 5, getExponentialGrowthFactor(FACILITY_PRODUCTION_QUALITY_Q2_REQUIRED, FACILITY_PRODUCTION_QUALITY_Q5_REQUIRED, 2, 5));
-  if (lifetimeProduction < FACILITY_PRODUCTION_QUALITY_Q10_REQUIRED) return getQualityLimitForExponentialInterval(lifetimeProduction, 5, FACILITY_PRODUCTION_QUALITY_Q5_REQUIRED, 10, getExponentialGrowthFactor(FACILITY_PRODUCTION_QUALITY_Q5_REQUIRED, FACILITY_PRODUCTION_QUALITY_Q10_REQUIRED, 5, 10));
-  if (lifetimeProduction < FACILITY_PRODUCTION_QUALITY_Q20_REQUIRED) return getQualityLimitForExponentialInterval(lifetimeProduction, 10, FACILITY_PRODUCTION_QUALITY_Q10_REQUIRED, 20, getExponentialGrowthFactor(FACILITY_PRODUCTION_QUALITY_Q10_REQUIRED, FACILITY_PRODUCTION_QUALITY_Q20_REQUIRED, 10, 20));
-  if (lifetimeProduction < FACILITY_PRODUCTION_QUALITY_Q40_REQUIRED) return getQualityLimitForExponentialInterval(lifetimeProduction, 20, FACILITY_PRODUCTION_QUALITY_Q20_REQUIRED, 40, getExponentialGrowthFactor(FACILITY_PRODUCTION_QUALITY_Q20_REQUIRED, FACILITY_PRODUCTION_QUALITY_Q40_REQUIRED, 20, 40));
-  return getQualityLimitForExponentialInterval(lifetimeProduction, 40, FACILITY_PRODUCTION_QUALITY_Q40_REQUIRED, FACILITY_PRODUCTION_QUALITY_MAXIMUM, FACILITY_PRODUCTION_QUALITY_TAIL_GROWTH);
-}
-
-function getExponentialGrowthFactor(startProduction: number, endProduction: number, startQuality: number, endQuality: number): number {
-  return Math.pow(endProduction / startProduction, 1 / (endQuality - startQuality));
-}
-
-function getQualityLimitForExponentialInterval(lifetimeProduction: number, startQuality: number, startProduction: number, endQuality: number, growthFactor: number): number {
-  let qualityLimit = startQuality;
-
-  for (let quality = startQuality + 1; quality <= endQuality; quality += 1) {
-    const requiredProduction = Math.ceil(scaleExponential(startProduction, quality - startQuality, growthFactor));
-    if (lifetimeProduction < requiredProduction) return qualityLimit;
-    qualityLimit = quality;
-  }
-
-  return qualityLimit;
-}
-
-/** Applies the lower of input, research, facility-upgrade, and lifetime-production quality limits to one output. */
-export function calculateProductionOutputQuality(researchQuality: number, weightedInputQuality: number | null, facilityQualityLimit = Number.POSITIVE_INFINITY, productionQualityLimit = Number.POSITIVE_INFINITY): number {
-  if (!Number.isFinite(researchQuality) || researchQuality <= 0) return 1;
-  const inputQualityLimit = weightedInputQuality === null ? Number.POSITIVE_INFINITY : weightedInputQuality + FACILITY_INPUT_QUALITY_BONUS;
-  const safeFacilityQualityLimit = Number.isFinite(facilityQualityLimit) && facilityQualityLimit > 0 ? facilityQualityLimit : Number.POSITIVE_INFINITY;
-  const safeProductionQualityLimit = Number.isFinite(productionQualityLimit) && productionQualityLimit > 0 ? productionQualityLimit : Number.POSITIVE_INFINITY;
-  return Math.min(researchQuality, inputQualityLimit, safeFacilityQualityLimit, safeProductionQualityLimit);
+export function calculateRecipeInputQ(recipe: Recipe, inventory: Inventory): number | null {
+  return calculateWeightedInputQ(recipe.inputs.map((input) => ({
+    amount: input.amount,
+    quality: inventory.getQuality(input.resourceType),
+  })));
 }
 
 /** Deterministic production wear for one completed recipe cycle. */
@@ -126,7 +85,7 @@ export function advanceAllFacilityProduction(
   inventory: Inventory,
   getEffectiveWork: (facility: FacilityView, recipeName: RecipeName) => number,
   onInputConsumed?: (input: RecipeInput) => void,
-  getOutputQuality?: (resourceType: ResourceType, weightedInputQuality: number | null, facilityQualityLimit: number) => number,
+  resolveOutputQuality?: (resourceType: ResourceType, weightedInputQ: number | null, upgradeMaxQ: number) => OutputQualityBreakdown,
 ): ProductionOutput[] {
   const outputs: ProductionOutput[] = [];
 
@@ -148,7 +107,7 @@ export function advanceAllFacilityProduction(
         if (progress === 0 && !recipe.inputs.every((input) => inventory.has(input.resourceType, input.amount))) break;
 
         if (progress === 0) {
-          facility.setRecipeInputQuality(calculateWeightedInputQuality(recipe, inventory));
+          facility.setRecipeInputQ(calculateRecipeInputQ(recipe, inventory));
           for (const input of recipe.inputs) {
             if (inventory.remove(input.resourceType, input.amount)) onInputConsumed?.(input);
           }
@@ -161,12 +120,13 @@ export function advanceAllFacilityProduction(
         if (progress + WORK_COMPLETION_EPSILON >= recipe.requiredWork) {
           for (const output of recipe.outputs) {
             const amount = output.amount * facilityView.outputMultiplier;
-            const quality = getOutputQuality?.(output.resourceType, facility.getView().recipeInputQuality, facilityView.qualityLimit) ?? 1;
-            inventory.add(output.resourceType, amount, quality);
-            outputs.push({ facilityType: facilityView.facilityType, recipeName: recipe.name, resourceType: output.resourceType, amount, quality });
+            const qualityBreakdown = resolveOutputQuality?.(output.resourceType, facility.getView().recipeInputQ, facilityView.upgradeMaxQ)
+              ?? calculateOutputQuality({ weightedInputQ: facility.getView().recipeInputQ, researchMaxQ: 1, upgradeMaxQ: facilityView.upgradeMaxQ });
+            inventory.add(output.resourceType, amount, qualityBreakdown.outputQ);
+            outputs.push({ facilityType: facilityView.facilityType, recipeName: recipe.name, resourceType: output.resourceType, amount, quality: qualityBreakdown.outputQ });
           }
           facility.applyConditionLoss(getRecipeProductionConditionLoss(recipe));
-          facility.setRecipeInputQuality(null);
+          facility.setRecipeInputQ(null);
           progress = 0;
           if (!facility.advanceProductionCycle()) break;
           currentRecipeName = facility.getView().activeRecipeName ?? currentRecipeName;

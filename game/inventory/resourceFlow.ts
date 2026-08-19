@@ -14,7 +14,7 @@ type ResourceFlowBucket = {
 type ResourceFlowSnapshot = {
   allTime: ResourceFlowValues;
   recentBuckets: ResourceFlowBucket[];
-  highestFacilityOutputQuality?: Partial<Record<ResourceType, number>>;
+  highestFacilityOutputQuality: Partial<Record<ResourceType, number>>;
 };
 
 function createEmptyValues(): ResourceFlowValues {
@@ -62,7 +62,7 @@ export class ResourceFlowLedger {
     if (snapshot) {
       this.allTime = cloneValues(snapshot.allTime);
       this.recentBuckets = snapshot.recentBuckets.map(cloneBucket);
-      this.highestFacilityOutputQuality = { ...(snapshot.highestFacilityOutputQuality ?? {}) };
+      this.highestFacilityOutputQuality = { ...snapshot.highestFacilityOutputQuality };
     }
   }
 
@@ -165,6 +165,10 @@ export class ResourceFlowLedger {
     const snapshot = value as Record<string, unknown>;
     return isValues(snapshot.allTime)
       && Array.isArray(snapshot.recentBuckets)
+      && typeof snapshot.highestFacilityOutputQuality === 'object'
+      && snapshot.highestFacilityOutputQuality !== null
+      && Object.entries(snapshot.highestFacilityOutputQuality).every(([resourceType, quality]) => RESOURCE_TYPES.includes(resourceType as ResourceType)
+        && typeof quality === 'number' && Number.isFinite(quality) && quality > 0)
       && snapshot.recentBuckets.every((bucket) => typeof bucket === 'object' && bucket !== null
         && typeof (bucket as Record<string, unknown>).occurredAtGameTimeMs === 'number'
         && Number.isFinite((bucket as Record<string, unknown>).occurredAtGameTimeMs)

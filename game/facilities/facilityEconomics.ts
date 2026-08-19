@@ -5,14 +5,14 @@ import type { Inventory } from '@/game/inventory';
 import type { Market } from '@/game/market';
 import type { Recipe } from '@/game/recipes';
 import { ResourceType } from '@/game/resources';
+import { calculateOutputQuality, calculateUpgradeMaxQ } from '@/game/quality';
 import { Facility } from './facility';
 import {
   FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE,
   FACILITY_REPAIR_MATERIAL_COST_RATE,
   getFacilityDefinition,
 } from './facilityConstants';
-import { calculateFacilityEffectiveWork, calculateProductionOutputQuality, getRecipeProductionConditionLoss } from './facilityProduction';
-import { getFacilityQualityLimit } from './facilityUpgrades';
+import { calculateFacilityEffectiveWork, getRecipeProductionConditionLoss } from './facilityProduction';
 import type { FacilityUpgradeKind } from './facilityUpgrades';
 
 function clamp(value: number, minimum: number, maximum: number): number {
@@ -114,20 +114,20 @@ export function calculateProjectedFacilityQualityUpgradeNetGainPerMinute(
   recipe: Recipe,
   market: Market,
   recipeResearchWorkSpeedMultiplier: number,
-  researchQualityForResource: (resourceType: ResourceType) => number,
-  weightedInputQuality: number | null,
-  productionQualityLimitForResource: (resourceType: ResourceType) => number = () => Number.POSITIVE_INFINITY,
+  researchMaxQForResource: (resourceType: ResourceType) => number,
+  weightedInputQ: number | null,
+  productionMaxQForResource: (resourceType: ResourceType) => number = () => Number.POSITIVE_INFINITY,
 ): number {
   const view = facility.getView();
-  const currentLimit = view.qualityLimit;
-  const nextLimit = getFacilityQualityLimit(view.qualityUpgradeLevel + 1);
+  const currentLimit = view.upgradeMaxQ;
+  const nextLimit = calculateUpgradeMaxQ(view.qualityUpgradeLevel + 1);
   const effectiveWorkPerMinute = calculateFacilityEffectiveWork(view, BASE_WORK_PER_MINUTE, recipeResearchWorkSpeedMultiplier);
   if (recipe.requiredWork <= 0 || effectiveWorkPerMinute <= 0) return 0;
 
   return recipe.outputs.reduce((total, output) => {
-    const productionQualityLimit = productionQualityLimitForResource(output.resourceType);
-    const currentQuality = calculateProductionOutputQuality(researchQualityForResource(output.resourceType), weightedInputQuality, currentLimit, productionQualityLimit);
-    const nextQuality = calculateProductionOutputQuality(researchQualityForResource(output.resourceType), weightedInputQuality, nextLimit, productionQualityLimit);
+    const productionMaxQ = productionMaxQForResource(output.resourceType);
+    const currentQuality = calculateOutputQuality({ researchMaxQ: researchMaxQForResource(output.resourceType), weightedInputQ, upgradeMaxQ: currentLimit, productionMaxQ }).outputQ;
+    const nextQuality = calculateOutputQuality({ researchMaxQ: researchMaxQForResource(output.resourceType), weightedInputQ, upgradeMaxQ: nextLimit, productionMaxQ }).outputQ;
     const unitsPerMinute = output.amount * view.outputMultiplier * effectiveWorkPerMinute / recipe.requiredWork;
     return total + unitsPerMinute * (market.getLocalSalePrice(output.resourceType, nextQuality) - market.getLocalSalePrice(output.resourceType, currentQuality));
   }, 0);
