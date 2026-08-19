@@ -4,6 +4,7 @@ export type FreeActionGrant = {
   targetId: string;
   grantedAtGameTimeMs: number;
   usedAtGameTimeMs: number | null;
+  resourceRewardGrantedAtGameTimeMs?: number | null;
 };
 
 export type GrantLedgerSnapshot = { grants: FreeActionGrant[] };
@@ -15,7 +16,9 @@ function isFreeActionGrant(value: unknown): value is FreeActionGrant {
     && grant.action === 'start-research'
     && typeof grant.targetId === 'string' && grant.targetId.length > 0
     && typeof grant.grantedAtGameTimeMs === 'number' && Number.isFinite(grant.grantedAtGameTimeMs)
-    && (grant.usedAtGameTimeMs === null || (typeof grant.usedAtGameTimeMs === 'number' && Number.isFinite(grant.usedAtGameTimeMs)));
+    && (grant.usedAtGameTimeMs === null || (typeof grant.usedAtGameTimeMs === 'number' && Number.isFinite(grant.usedAtGameTimeMs)))
+    && (grant.resourceRewardGrantedAtGameTimeMs === undefined || grant.resourceRewardGrantedAtGameTimeMs === null || (typeof grant.resourceRewardGrantedAtGameTimeMs === 'number' && Number.isFinite(grant.resourceRewardGrantedAtGameTimeMs)));
+
 }
 
 export function isGrantLedgerSnapshot(value: unknown): value is GrantLedgerSnapshot {
@@ -36,7 +39,7 @@ export class GrantLedger {
 
   grant(input: Omit<FreeActionGrant, 'usedAtGameTimeMs'>): boolean {
     if (this.grants.some((grant) => grant.id === input.id)) return false;
-    this.grants.push({ ...input, usedAtGameTimeMs: null });
+    this.grants.push({ ...input, usedAtGameTimeMs: null, resourceRewardGrantedAtGameTimeMs: null });
     return true;
   }
 
@@ -59,6 +62,16 @@ export class GrantLedger {
     const grant = this.grants.find((candidate) => candidate.action === action && targetIds.includes(candidate.targetId) && candidate.usedAtGameTimeMs === null);
     if (!grant || !Number.isFinite(usedAtGameTimeMs)) return false;
     grant.usedAtGameTimeMs = usedAtGameTimeMs;
+    return true;
+  }
+
+  claimResourceReward(action: FreeActionGrant['action'], targetId: string, rewardedAtGameTimeMs: number): boolean {
+    const grant = this.grants.find((candidate) => candidate.action === action
+      && candidate.targetId === targetId
+      && candidate.usedAtGameTimeMs !== null
+      && candidate.resourceRewardGrantedAtGameTimeMs == null);
+    if (!grant || !Number.isFinite(rewardedAtGameTimeMs)) return false;
+    grant.resourceRewardGrantedAtGameTimeMs = rewardedAtGameTimeMs;
     return true;
   }
 

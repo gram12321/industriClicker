@@ -524,7 +524,7 @@ function AchievementsSection() {
     </Card.Content></Card>
     <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
       <Text style={styles.cardKicker}>FACILITIES</Text>
-      <Text style={styles.cardDescription}>Industrial Footprint: own 1, 3, 6, 10, then 15 facilities. The first facility also grants starter Water and Electricity.</Text>
+      <Text style={styles.cardDescription}>Industrial Footprint: own 1, 3, 6, 10, then 15 facilities. The first-facility research grant provides 10 production cycles of the selected recipe’s inputs when that research completes.</Text>
       <Text style={styles.cardDescription}>Moderniser: buy 1, 5, 15, 30, then 60 facility upgrades. Integrated Industry: keep one facility for every six total upgrades, from 1 facility / 6 upgrades through 5 / 30.</Text>
       <Text style={styles.cardDescription}>Operational Excellence unlocks when 1, 3, 6, 10, or 15 facilities simultaneously meet 50%, 75%, 90%, 100%, or 110% efficiency.</Text>
     </Card.Content></Card>

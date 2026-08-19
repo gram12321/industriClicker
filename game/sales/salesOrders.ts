@@ -40,7 +40,7 @@ export function calculateSalesOrderAcquisitionDetails(input: SalesOrderAcquisiti
   const pending = input.openOrderCount >= input.maximumOpenOrders
     ? 0
     : Math.max(0.08, 1 - input.openOrderCount * SALES_ORDER_PENDING_PENALTY_PER_OPEN_ORDER);
-  const economyMultiplier = SALES_ECONOMY_MULTIPLIERS[input.economyPhase].acquisition;
+  const economyMultiplier = (SALES_ECONOMY_MULTIPLIERS[input.economyPhase] ?? SALES_ECONOMY_MULTIPLIERS.stable).acquisition;
   const inventoryReadiness = clamp(input.inventoryReadinessMultiplier ?? 1, 0, 1);
   return { baseChance: SALES_ORDER_BASE_ACQUISITION_CHANCE_PER_MINUTE, prestigeDiscoveryMultiplier: discovery, pendingMultiplier: pending, economyMultiplier, chance: input.hasEligibleInventory ? clamp(SALES_ORDER_BASE_ACQUISITION_CHANCE_PER_MINUTE * discovery * pending * economyMultiplier * inventoryReadiness, 0, 0.95) : 0 };
 }

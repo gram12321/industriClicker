@@ -1,7 +1,7 @@
 import { Finance, LOAN_COLLECTION, buildFinanceStatementData, calculateAssets, calculateFacilityAssetValue, calculateLoanSearchEstimate, generateLoanOffers, LENDER_TYPES, refreshLoanOfferAvailability, type LoanOffer, type LoanSearchCriteria } from '@/game/finance';
 import { Inventory, ResourceFlowLedger } from '@/game/inventory';
 import { FACILITIES, FacilityCollection, FacilityMaintenanceStatistics, advanceAllFacilityProduction, calculateFacilityEffectiveWork, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
-import type { RecipeName } from '@/game/recipes';
+import { getRecipe, type RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
 import { MARKET_DIFFUSION_INTERVAL_MS, MARKET_SALES_ORDER_BID_MULTIPLIER, Market, canAutoBuyMarketResource, canBuyMarketResource, canSellMarketResource, type MarketAutomation } from '@/game/market';
 import type { GameSnapshot } from '@/game/core/state';
@@ -12,7 +12,7 @@ import { AchievementLedger, createAchievementEvaluationContext, evaluateAchievem
 import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyAssetsPrestige, calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary, calculateFacilityConditionPrestige } from '@/game/prestige';
 import { evaluateGateRequirements, type GateContext, type GateEvaluation } from '@/game/gates';
 import { ResearchLedger, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesOrders, getMaximumSimultaneousResearchProjects, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, getSalesOrderBidMultiplier, getSalesOrderBundleMaturityMultiplier, getSalesOrderMaximumCompanyValueFraction, getSalesOrderMinimumPremiumBonus, getSalesPressureOfferChanceMultiplier, getSalesRelationshipDecayHalfLifeMultiplier, getSalesRelationshipFailureLossMultiplier, getSalesRelationshipFulfilmentGainMultiplier, type ResearchProjectId } from '@/game/research';
-import { FIRST_FACILITY_RECIPE_RESEARCH_GRANT_ID, FIRST_FACILITY_RECIPE_RESEARCH_WORK_SPEED_MULTIPLIER, GrantLedger } from '@/game/grants';
+import { FIRST_FACILITY_RECIPE_RESEARCH_GRANT_ID, FIRST_FACILITY_RECIPE_RESEARCH_MAX_DURATION_MS, FIRST_FACILITY_RECIPE_RESEARCH_WORK_SPEED_MULTIPLIER, GrantLedger } from '@/game/grants';
 import type { StartingConditionId } from '@/game/company/companyTypes';
 import { STANDARD_START_CONSTRUCTION_MATERIALS, STANDARD_START_INDUSTRIAL_MACHINES } from '@/game/company/companyConstants';
 import { create } from 'zustand';
@@ -141,7 +141,7 @@ function getRecipeResearchGrantTarget(project: ReturnType<typeof getResearchProj
 
 function getResearchDurationMs(project: NonNullable<ReturnType<typeof getResearchProject>>, usesFreeGrant: boolean): number {
   return usesFreeGrant
-    ? Math.ceil(project.durationMs / FIRST_FACILITY_RECIPE_RESEARCH_WORK_SPEED_MULTIPLIER)
+    ? Math.min(FIRST_FACILITY_RECIPE_RESEARCH_MAX_DURATION_MS, Math.ceil(project.durationMs / FIRST_FACILITY_RECIPE_RESEARCH_WORK_SPEED_MULTIPLIER))
     : project.durationMs;
 }
 
@@ -620,6 +620,9 @@ export const useGameStore = create<GameState>((set, get) => {
     let market: Market | null = null;
     let marketFinance: Finance | null = null;
     let research = get().research;
+    const grants = get().grants.clone();
+    const firstRecipeInputRewards: Array<{ amount: number; resourceType: ResourceType }> = [];
+    let firstRecipeInputRewardClaimed = false;
     let unprocessedWorkMs = get().unprocessedWorkMs;
     let customerPipelineProgress = get().customerPipelineProgress;
     let elapsedMinutes = 0;
@@ -858,6 +861,16 @@ export const useGameStore = create<GameState>((set, get) => {
       for (const completedResearchProjectId of completedResearchProjectIds) {
         research.complete(completedResearchProjectId, nextGameTimeMs);
         const completedProject = getResearchProject(completedResearchProjectId);
+        const grantTarget = getRecipeResearchGrantTarget(completedProject);
+        if (completedProject?.effect.kind === 'recipe-unlock' && grantTarget && grants.claimResourceReward('start-research', grantTarget, nextGameTimeMs)) {
+          firstRecipeInputRewardClaimed = true;
+          inventory = inventory.clone();
+          for (const input of getRecipe(completedProject.effect.recipeName).inputs) {
+            const amount = input.amount * 10;
+            inventory.add(input.resourceType, amount);
+            firstRecipeInputRewards.push({ amount, resourceType: input.resourceType });
+          }
+        }
         if (completedProject?.effect.kind === 'local-market-depth') {
           market ??= get().market.clone();
           const completedProjectIdsBeforeActivation = research.getCompletedProjectIds().filter((projectId) => projectId !== completedResearchProjectId);
@@ -917,6 +930,7 @@ export const useGameStore = create<GameState>((set, get) => {
       const rewardAmount = achievementResult.inventory.getAmount(resourceType) - inventory.getAmount(resourceType);
       if (rewardAmount > 0) recordResourceFlow('reward', resourceType, rewardAmount, nextGameTimeMs);
     }
+    for (const reward of firstRecipeInputRewards) recordResourceFlow('reward', reward.resourceType, reward.amount, nextGameTimeMs);
     if (resourceFlow === get().resourceFlow && resourceFlow.hasExpiredBuckets(nextGameTimeMs)) {
       resourceFlow = resourceFlow.clone();
       resourceFlow.prune(nextGameTimeMs);
@@ -934,6 +948,7 @@ export const useGameStore = create<GameState>((set, get) => {
       ...(salesOrders ? { salesOrders } : {}),
       ...(market ? { market } : {}),
       ...(research !== get().research ? { research } : {}),
+      ...(firstRecipeInputRewardClaimed ? { grants } : {}),
       ...(achievementResult.achievements !== get().achievements ? { achievements: achievementResult.achievements } : {}),
       ...(achievementResult.prestige !== get().prestige ? { prestige: achievementResult.prestige } : {}),
     });

@@ -16,10 +16,11 @@ import { TooltipMaterialIcon, TooltipTextIcon } from '@/ui/dashboard/components/
 
 type ActiveProcess = { icon: string; id: string; isRecipe?: boolean; label: string; progress: number; timing: string; title: string };
 
-export function ActiveProcessesOverlay({ customerPipelineProgress, facilities, finance, inventory, maximumOpenOrders, onCompleteProcess, research, salesOrders, showInstantCompletion }: {
+export function ActiveProcessesOverlay({ customerPipelineProgress, facilities, finance, initiallyOpen = false, inventory, maximumOpenOrders, onCompleteProcess, research, salesOrders, showInstantCompletion }: {
   customerPipelineProgress: number;
   facilities: FacilityCollection;
   finance: Finance;
+  initiallyOpen?: boolean;
   inventory: Inventory;
   maximumOpenOrders: number;
   onCompleteProcess?: (processId: string, remainingMs: number) => void;
@@ -27,7 +28,7 @@ export function ActiveProcessesOverlay({ customerPipelineProgress, facilities, f
   salesOrders: SalesOrders;
   showInstantCompletion?: boolean;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(initiallyOpen);
   const processes = getActiveProcesses({ customerPipelineProgress, facilities, finance, inventory, maximumOpenOrders, research, salesOrders });
   const processCountLabel = processes.length === 1 ? '1 active process' : `${processes.length} active processes`;
 

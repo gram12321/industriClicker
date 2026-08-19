@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
-import { Pressable, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
+import { Platform, Pressable, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Modal, Portal, Surface, Text } from 'react-native-paper';
 import { getResource, getResourceIcon, type ResourceType } from '@/game/resources';
@@ -47,7 +47,7 @@ export function TooltipAppIcon({ color, iconKey, label = getAppIconLabel(iconKey
 /** Inline emoji icon for resource and recipe labels. */
 export function TooltipTextIcon({ children, label, style }: { children: string; label: string; style?: StyleProp<TextStyle> }) {
   const showTooltip = useShowTooltip(label);
-  return <Text accessibilityLabel={`Show ${label}`} accessibilityRole="button" onPress={(event) => { event.stopPropagation(); showTooltip(); }} style={style}>{children}</Text>;
+  return <Text accessibilityLabel={`Show ${label}`} accessibilityRole={Platform.OS === 'web' ? undefined : 'button'} onPress={(event) => { event.stopPropagation(); showTooltip(); }} style={style}>{children}</Text>;
 }
 
 export function TooltipResourceIcon({ resourceType, style }: { resourceType: ResourceType; style?: StyleProp<TextStyle> }) {
