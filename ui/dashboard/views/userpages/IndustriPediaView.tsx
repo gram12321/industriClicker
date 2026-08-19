@@ -6,13 +6,14 @@ import { FINANCE_INITIAL_BALANCE } from '@/game/company/companyConstants';
 import { ECONOMY_INTEREST_MULTIPLIERS, ECONOMY_PHASES, type EconomyPhase } from '@/game/finance';
 import { PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS } from '@/game/prestige';
 import type { Market, MarketDiffusionDetails } from '@/game/market';
-import { getResource, getResourceIcon, RESOURCE_GROUPS, RESOURCE_TYPES, ResourceType } from '@/game/resources';
-import { FACILITIES } from '@/game/facilities';
+import { getResource, RESOURCE_GROUPS, RESOURCE_TYPES, ResourceType } from '@/game/resources';
 import { formatCurrency, formatNumber, formatSigned, formatSignedPercent, getColorClass, normalizeToUnitInterval } from '@/utils';
 import { SectionHeading, WorkMetric } from '@/ui/dashboard/components/DashboardPrimitives';
-import { formatRecipeInputs, formatRecipeName, formatRecipeOutput } from '@/ui/dashboard/helpers/recipeFormatters';
+import { formatRecipeName } from '@/ui/dashboard/helpers/recipeFormatters';
+import { RecipeResourceSummary } from '@/ui/dashboard/components/RecipeResourceSummary';
 import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS, RECIPE_ICONS, SALES_CUSTOMER_DOMAIN_ICONS, SALES_CUSTOMER_TYPE_ICONS } from '@/icons';
+import { TooltipMaterialIcon, TooltipResourceIcon, TooltipTextIcon } from '@/ui/dashboard/components/IconTooltip';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '@/theme';
 import { SALES_CUSTOMER_BID_MULTIPLIER_RANGE, SALES_CUSTOMER_DOMAIN_PROFILES, SALES_CUSTOMER_DOMAINS, SALES_CUSTOMER_PURCHASING_POWER_RANGE, SALES_CUSTOMER_TYPE_PROFILES, SALES_CUSTOMER_TYPES, SALES_ECONOMY_MULTIPLIERS, calculateSalesCustomerRelationshipDetails, getSalesCustomerRelationshipLabel, getSalesCustomerCatalogue, getSalesResourceProfile, type SalesCustomerDefinition, type SalesCustomerDomain, type SalesCustomerType, type SalesOrders } from '@/game/sales';
@@ -89,8 +90,8 @@ function CustomerDomainsSection() {
       const profile = SALES_CUSTOMER_DOMAIN_PROFILES[domain];
       const resources = RESOURCE_TYPES.filter((resourceType) => getSalesResourceProfile(resourceType).domain === domain);
       return <Card key={domain} mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
-        <View style={localStyles.customerTypeHeading}><MaterialCommunityIcons color={colors.primary} name={SALES_CUSTOMER_DOMAIN_ICONS[domain] as never} size={20} /><Text variant="titleMedium">{profile.label}</Text></View>
-        <View style={localStyles.customerDomainResources}>{resources.map((resourceType) => <Text accessibilityLabel={getResource(resourceType).name + ', standard lot ' + formatNumber(getSalesResourceProfile(resourceType).standardOrderLot)} key={resourceType} style={localStyles.customerDomainResource}>{getResourceIcon(resourceType)} {formatNumber(getSalesResourceProfile(resourceType).standardOrderLot)}</Text>)}</View>
+        <View style={localStyles.customerTypeHeading}><TooltipMaterialIcon color={colors.primary} label={profile.label} name={SALES_CUSTOMER_DOMAIN_ICONS[domain]} size={20} /><Text variant="titleMedium">{profile.label}</Text></View>
+        <View style={localStyles.customerDomainResources}>{resources.map((resourceType) => <Text accessibilityLabel={getResource(resourceType).name + ', standard lot ' + formatNumber(getSalesResourceProfile(resourceType).standardOrderLot)} key={resourceType} style={localStyles.customerDomainResource}><TooltipResourceIcon resourceType={resourceType} /> {formatNumber(getSalesResourceProfile(resourceType).standardOrderLot)}</Text>)}</View>
         <View style={localStyles.customerTypeMetrics}>
           <CustomerTypeMetric icon={CUSTOMER_DOMAIN_METRIC_ICONS.bidRange} label="Bid range" value={formatNumber(profile.bidRange[0] * 100, { decimals: 0 }) + '%–' + formatNumber(profile.bidRange[1] * 100, { decimals: 0 }) + '%'} />
           <CustomerTypeMetric icon={CUSTOMER_DOMAIN_METRIC_ICONS.targetValue} label="Base target value" value={formatCurrency(profile.targetOrderValue[0]) + '–' + formatCurrency(profile.targetOrderValue[1])} />
@@ -127,9 +128,9 @@ function CustomerTypesSection() {
       const profile = SALES_CUSTOMER_TYPE_PROFILES[customerType];
       const operatingDomainLabels = profile.allowedOperatingDomains.map((domain) => SALES_CUSTOMER_DOMAIN_PROFILES[domain].label).join(', ');
       return <Card key={customerType} mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
-        <View style={localStyles.customerTypeHeading}><MaterialCommunityIcons color={colors.primary} name={SALES_CUSTOMER_TYPE_ICONS[customerType]} size={20} /><Text variant="titleMedium">{profile.label}</Text></View>
+        <View style={localStyles.customerTypeHeading}><TooltipMaterialIcon color={colors.primary} label={profile.label} name={SALES_CUSTOMER_TYPE_ICONS[customerType]} size={20} /><Text variant="titleMedium">{profile.label}</Text></View>
         <Text style={styles.cardDescription}>{profile.description}</Text>
-        <View accessibilityLabel={'Operating domains: ' + operatingDomainLabels} style={localStyles.customerTypeDomains}>{profile.allowedOperatingDomains.map((domain) => <MaterialCommunityIcons accessibilityLabel={SALES_CUSTOMER_DOMAIN_PROFILES[domain].label} color={colors.muted} key={domain} name={SALES_CUSTOMER_DOMAIN_ICONS[domain] as never} size={16} />)}</View>
+        <View accessibilityLabel={'Operating domains: ' + operatingDomainLabels} style={localStyles.customerTypeDomains}>{profile.allowedOperatingDomains.map((domain) => <TooltipMaterialIcon label={SALES_CUSTOMER_DOMAIN_PROFILES[domain].label} color={colors.muted} key={domain} name={SALES_CUSTOMER_DOMAIN_ICONS[domain]} size={16} />)}</View>
         <View style={localStyles.customerTypeMetrics}>
           <CustomerTypeMetric icon={CUSTOMER_TYPE_METRIC_ICONS.marketShare} label="Market share tendency" value={formatNumber(profile.marketShareScale, { smartDecimals: true }) + '×'} />
           <CustomerTypeMetric icon={CUSTOMER_TYPE_METRIC_ICONS.crossDomain} label="Cross-domain tendency" value={formatNumber(profile.crossDomainChance * 100, { decimals: 0 }) + '%'} />
@@ -144,11 +145,11 @@ function CustomerTypesSection() {
 }
 
 function TypeProfileKey({ icon, text }: { icon: string; text: string }) {
-  return <View style={localStyles.typeProfileKey}><MaterialCommunityIcons color={colors.primary} name={icon as never} size={15} /><Text style={styles.salesAvailability}>{text}</Text></View>;
+  return <View style={localStyles.typeProfileKey}><TooltipMaterialIcon color={colors.primary} label={text} name={icon} size={15} /><Text style={styles.salesAvailability}>{text}</Text></View>;
 }
 
 function CustomerTypeMetric({ icon, label, value }: { icon: string; label: string; value: string }) {
-  return <View accessibilityLabel={label + ': ' + value} style={localStyles.customerTypeMetric}><MaterialCommunityIcons color={colors.muted} name={icon as never} size={15} /><Text style={styles.salesAvailability}>{value}</Text></View>;
+  return <View accessibilityLabel={label + ': ' + value} style={localStyles.customerTypeMetric}><TooltipMaterialIcon color={colors.muted} label={label} name={icon} size={15} /><Text style={styles.salesAvailability}>{value}</Text></View>;
 }
 
 function CustomersSection({ companyPrestige, currentGameTimeMs, salesOrders }: { companyPrestige: number; currentGameTimeMs: number; salesOrders: SalesOrders }) {
@@ -173,10 +174,10 @@ function CustomersSection({ companyPrestige, currentGameTimeMs, salesOrders }: {
     });
   const sortLabel = CUSTOMER_SORT_OPTIONS.find((option) => option.key === sortKey)?.label ?? 'Market share';
   return <>
-    <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text style={styles.cardKicker}>CUSTOMER DIRECTORY</Text><Text variant="titleMedium">{`${formatNumber(customers.length)} of ${formatNumber(catalogue.length)} buyers`}</Text><Text style={styles.cardDescription}>A list of available customers. Tap a customer to see its buying profile, relationship, and order history.</Text><View style={localStyles.directoryHint}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.purchasingPower} size={15} /><Text style={styles.salesAvailability}>Purchasing power = typical spending capacity. Bid profile = how far this customer's offer tends to move from the global reference price. Red-to-green shows each value within its own range.</Text></View></Card.Content></Card>
+    <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}><Text style={styles.cardKicker}>CUSTOMER DIRECTORY</Text><Text variant="titleMedium">{`${formatNumber(customers.length)} of ${formatNumber(catalogue.length)} buyers`}</Text><Text style={styles.cardDescription}>A list of available customers. Tap a customer to see its buying profile, relationship, and order history.</Text><View style={localStyles.directoryHint}><TooltipMaterialIcon color={colors.muted} label="Purchasing power" name={APP_ICONS.purchasingPower} size={15} /><Text style={styles.salesAvailability}>Purchasing power = typical spending capacity. Bid profile = how far this customer's offer tends to move from the global reference price. Red-to-green shows each value within its own range.</Text></View></Card.Content></Card>
     <View style={localStyles.controlGroup}><Text style={styles.cardKicker}>FILTERS</Text><Text style={localStyles.controlLabel}>CUSTOMER TYPE</Text><View style={localStyles.directoryControls}><Menu visible={typeMenuVisible} onDismiss={() => setTypeMenuVisible(false)} anchor={<Button compact mode={selectedType === 'all' ? 'outlined' : 'contained'} icon={() => <MaterialCommunityIcons color={selectedType === 'all' ? colors.primary : colors.surface} name={selectedType === 'all' ? 'account-group-outline' : SALES_CUSTOMER_TYPE_ICONS[selectedType]} size={15} />} onPress={() => setTypeMenuVisible(true)}>{selectedType === 'all' ? 'All customer types' : SALES_CUSTOMER_TYPE_PROFILES[selectedType].label}</Button>}>{<Menu.Item leadingIcon="account-group-outline" title="All customer types" onPress={() => { setSelectedType('all'); setTypeMenuVisible(false); }} />}{SALES_CUSTOMER_TYPES.map((customerType) => <Menu.Item key={customerType} leadingIcon={SALES_CUSTOMER_TYPE_ICONS[customerType] as never} title={SALES_CUSTOMER_TYPE_PROFILES[customerType].label} onPress={() => { setSelectedType(customerType); setTypeMenuVisible(false); }} />)}</Menu><Button compact mode={knownOnly ? 'contained' : 'outlined'} onPress={() => setKnownOnly((value) => !value)}>{knownOnly ? 'Known only' : 'Show known'}</Button></View><Text style={localStyles.controlLabel}>DOMAIN</Text><View style={localStyles.sectionTabs}><Button compact mode={selectedDomain === 'all' ? 'contained' : 'outlined'} onPress={() => setSelectedDomain('all')}>All domains</Button>{SALES_CUSTOMER_DOMAINS.map((domain) => <Button compact key={domain} mode={selectedDomain === domain ? 'contained' : 'outlined'} icon={() => <MaterialCommunityIcons color={selectedDomain === domain ? colors.surface : colors.primary} name={SALES_CUSTOMER_DOMAIN_ICONS[domain] as never} size={15} />} onPress={() => setSelectedDomain(domain)}>{SALES_CUSTOMER_DOMAIN_PROFILES[domain].label}</Button>)}</View></View>
     <View style={localStyles.controlGroup}><Text style={styles.cardKicker}>SORTING</Text><View style={localStyles.directoryControls}><Menu visible={sortMenuVisible} onDismiss={() => setSortMenuVisible(false)} anchor={<Button compact mode="outlined" icon="sort" onPress={() => setSortMenuVisible(true)}>{`Sort: ${sortLabel}`}</Button>}>{CUSTOMER_SORT_OPTIONS.map((option) => <Menu.Item key={option.key} leadingIcon={option.icon as never} title={option.label} onPress={() => { setSortKey(option.key); setSortMenuVisible(false); }} />)}</Menu><Button compact mode="outlined" icon={sortDescending ? 'sort-ascending' : 'sort-descending'} onPress={() => setSortDescending((value) => !value)}>{sortDescending ? 'High first' : 'Low first'}</Button></View></View>
-    {customers.map(({ customer, state, rejected, relationship }) => { const isExpanded = expandedCustomerId === customer.id; const relationshipDetails = calculateSalesCustomerRelationshipDetails(customer, companyPrestige); return <Card key={customer.id} mode="contained" style={styles.featureCard}><Pressable accessibilityLabel={`${isExpanded ? 'Hide' : 'Show'} details for ${customer.name}`} accessibilityRole="button" accessibilityState={{ expanded: isExpanded }} onPress={() => setExpandedCustomerId((current) => current === customer.id ? null : customer.id)}><Card.Content style={styles.cardContent}><View style={localStyles.customerHeader}><View style={localStyles.customerTitle}><View style={localStyles.customerTypeHeading}><MaterialCommunityIcons color={colors.primary} name={SALES_CUSTOMER_TYPE_ICONS[customer.customerType] as never} size={18} /><Text variant="titleMedium">{customer.name}</Text></View><View style={localStyles.customerSubheader}><MaterialCommunityIcons color={colors.muted} name={SALES_CUSTOMER_DOMAIN_ICONS[customer.domain] as never} size={14} /><Text style={styles.cardDescription}>{SALES_CUSTOMER_DOMAIN_PROFILES[customer.domain].label}</Text><MaterialCommunityIcons color={colors.muted} name={SALES_CUSTOMER_TYPE_ICONS[customer.customerType] as never} size={14} /><Text style={styles.cardDescription}>{SALES_CUSTOMER_TYPE_PROFILES[customer.customerType].label}</Text></View></View><MaterialCommunityIcons color={colors.muted} name={isExpanded ? 'chevron-up' : 'chevron-down'} size={22} /></View><CustomerStats customer={customer} isExpanded={isExpanded} relationship={relationship} rejected={rejected} state={state} />{isExpanded && <RelationshipExplanation details={relationshipDetails} relationship={relationship} />}</Card.Content></Pressable></Card>; })}
+    {customers.map(({ customer, state, rejected, relationship }) => { const isExpanded = expandedCustomerId === customer.id; const relationshipDetails = calculateSalesCustomerRelationshipDetails(customer, companyPrestige); return <Card key={customer.id} mode="contained" style={styles.featureCard}><Pressable accessibilityLabel={`${isExpanded ? 'Hide' : 'Show'} details for ${customer.name}`} accessibilityRole="button" accessibilityState={{ expanded: isExpanded }} onPress={() => setExpandedCustomerId((current) => current === customer.id ? null : customer.id)}><Card.Content style={styles.cardContent}><View style={localStyles.customerHeader}><View style={localStyles.customerTitle}><View style={localStyles.customerTypeHeading}><TooltipMaterialIcon color={colors.primary} label={SALES_CUSTOMER_TYPE_PROFILES[customer.customerType].label} name={SALES_CUSTOMER_TYPE_ICONS[customer.customerType]} size={18} /><Text variant="titleMedium">{customer.name}</Text></View><View style={localStyles.customerSubheader}><TooltipMaterialIcon color={colors.muted} label={SALES_CUSTOMER_DOMAIN_PROFILES[customer.domain].label} name={SALES_CUSTOMER_DOMAIN_ICONS[customer.domain]} size={14} /><Text style={styles.cardDescription}>{SALES_CUSTOMER_DOMAIN_PROFILES[customer.domain].label}</Text><TooltipMaterialIcon color={colors.muted} label={SALES_CUSTOMER_TYPE_PROFILES[customer.customerType].label} name={SALES_CUSTOMER_TYPE_ICONS[customer.customerType]} size={14} /><Text style={styles.cardDescription}>{SALES_CUSTOMER_TYPE_PROFILES[customer.customerType].label}</Text></View></View><MaterialCommunityIcons color={colors.muted} name={isExpanded ? 'chevron-up' : 'chevron-down'} size={22} /></View><CustomerStats customer={customer} isExpanded={isExpanded} relationship={relationship} rejected={rejected} state={state} />{isExpanded && <RelationshipExplanation details={relationshipDetails} relationship={relationship} />}</Card.Content></Pressable></Card>; })}
   </>;
 }
 
@@ -225,7 +226,7 @@ function getCustomerSortValue(view: { customer: SalesCustomerDefinition; state: 
 }
 
 function Metric({ color = colors.muted, icon, label, suffix, value }: { color?: string; icon: string; label: string; suffix?: string; value: string }) {
-  return <View style={localStyles.metric}><MaterialCommunityIcons color={colors.muted} name={icon as never} size={14} /><Text style={styles.salesAvailability}>{`${label}: `}<Text style={{ color }}>{value}</Text>{suffix && <Text>{` · ${suffix}`}</Text>}</Text></View>;
+  return <View style={localStyles.metric}><TooltipMaterialIcon color={colors.muted} label={label} name={icon} size={14} /><Text style={styles.salesAvailability}>{`${label}: `}<Text style={{ color }}>{value}</Text>{suffix && <Text>{` · ${suffix}`}</Text>}</Text></View>;
 }
 
 function MarketFlowSection({ market }: { market: Market }) {
@@ -242,12 +243,12 @@ function MarketFlowSection({ market }: { market: Market }) {
   return <>
     <SectionHeading eyebrow="MARKET FLOW" title="Follow market balancing" subtitle="Prices guide resources through local, regional, and global reservoirs every five foreground seconds." />
     <View style={localStyles.resourceTabs}>
-      {RESOURCE_GROUPS.map((group) => <View key={group.id} style={localStyles.resourceGroupTabs}><Text style={styles.cardKicker}>{group.label}</Text><View style={localStyles.resourceGroupButtons}>{group.resources.map((resourceType) => <Button accessibilityLabel={getResource(resourceType).name} compact icon={() => <Text>{getResourceIcon(resourceType)}</Text>} key={resourceType} mode={selectedResource === resourceType ? 'contained' : 'outlined'} onPress={() => setSelectedResource(resourceType)}>
+      {RESOURCE_GROUPS.map((group) => <View key={group.id} style={localStyles.resourceGroupTabs}><Text style={styles.cardKicker}>{group.label}</Text><View style={localStyles.resourceGroupButtons}>{group.resources.map((resourceType) => <Button accessibilityLabel={getResource(resourceType).name} compact icon={() => <TooltipResourceIcon resourceType={resourceType} />} key={resourceType} mode={selectedResource === resourceType ? 'contained' : 'outlined'} onPress={() => setSelectedResource(resourceType)}>
         {getResource(resourceType).name}
       </Button>)}</View></View>)}
     </View>
     <Card mode="contained" style={styles.featureCard}><Card.Content style={localStyles.flowCardContent}>
-      <Text accessibilityLabel={resource.name} variant="titleMedium" style={localStyles.flowTitle}>{getResourceIcon(selectedResource)} {resource.name}</Text>
+      <Text accessibilityLabel={resource.name} variant="titleMedium" style={localStyles.flowTitle}><TooltipResourceIcon resourceType={selectedResource} /> {resource.name}</Text>
       <MarketPool label="Global market" price={regionalGlobalDetails.higherPrice} quality={global.quality} supply={global.supply} />
       <MarketFlowConnector details={regionalGlobalDetails} />
       <MarketPool label="Regional market" price={details.higherPrice} quality={regional.quality} supply={regional.supply} />
@@ -325,7 +326,7 @@ function MarketFlowConnector({ details }: { details: MarketDiffusionDetails }) {
   const pairLabel = `${capitalize(details.lowerMarket)}/${capitalize(details.higherMarket)}`;
 
   return <View accessibilityLabel={getFlowAccessibilityLabel(details.direction, details.amount)} style={localStyles.flowConnector}>
-    <MaterialCommunityIcons color={flowColor} name={flowIcon as never} size={28} />
+    <TooltipMaterialIcon color={flowColor} label={getFlowAccessibilityLabel(details.direction, details.amount)} name={flowIcon} size={28} />
     <Text style={[localStyles.flowAmount, { color: flowColor }]}>{details.direction === 'none' ? 'Prices balanced' : `${formatNumber(details.amount, { smartDecimals: true })} / minute`}</Text>
     <Text style={localStyles.flowDirection}>{getFlowDescription(details.direction)}</Text>
     <Text style={localStyles.priceGapText}>{`${pairLabel} price gap: ${formatNumber(details.priceGap, { percent: true, decimals: 1 })}`}</Text>
@@ -341,7 +342,7 @@ function capitalize(value: string): string {
 }
 
 function CurrencyValue({ value, style }: { value: number; style?: object }) {
-  return <View style={localStyles.iconValue}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.coin} size={14} /><Text style={style}>{formatCurrency(value).replace(/\s*€/u, '')}</Text></View>;
+  return <View style={localStyles.iconValue}><TooltipMaterialIcon color={colors.muted} label="Currency" name={APP_ICONS.coin} size={14} /><Text style={style}>{formatCurrency(value).replace(/\s*€/u, '')}</Text></View>;
 }
 
 function getFlowDescription(direction: 'to-local' | 'to-regional' | 'to-global' | 'none'): string {
@@ -364,7 +365,7 @@ function ResourcesSection() {
       {RESOURCE_GROUPS.map((group) => <View key={group.id}><Text style={styles.cardKicker}>{group.label}</Text>{group.resources.map((resourceType) => {
         const resource = getResource(resourceType);
         const initialPrice = resource.market.localBenchmarkSupply / resource.market.localInitialSupply;
-        return <List.Item description={<View><Text style={styles.cardDescription}>{getResourceSummary(resourceType)}</Text><View style={localStyles.iconValue}><Text style={localStyles.resourceMarketSeed}>Initial price</Text><CurrencyValue value={initialPrice} style={localStyles.resourceMarketSeed} /><Text style={localStyles.resourceMarketSeed}>· Initial local supply: {formatNumber(resource.market.localInitialSupply, { smartDecimals: true })}</Text></View></View>} key={resourceType} left={() => <Text>{getResourceIcon(resourceType)}</Text>} title={<Text accessibilityLabel={resource.name} style={localStyles.resourceTitle}>{resource.name}</Text>} />;
+        return <List.Item description={<View><Text style={styles.cardDescription}>{getResourceSummary(resourceType)}</Text><View style={localStyles.iconValue}><Text style={localStyles.resourceMarketSeed}>Initial price</Text><CurrencyValue value={initialPrice} style={localStyles.resourceMarketSeed} /><Text style={localStyles.resourceMarketSeed}>· Initial local supply: {formatNumber(resource.market.localInitialSupply, { smartDecimals: true })}</Text></View></View>} key={resourceType} left={() => <TooltipResourceIcon resourceType={resourceType} />} title={<Text accessibilityLabel={resource.name} style={localStyles.resourceTitle}>{resource.name}</Text>} />;
       })}</View>)}
       <List.Item description="Inventory and market reservoirs begin at Q1. Quality research raises new facility output; quantities mix quality by amount, and a sale uses the inventory quality as its price multiplier." left={(props) => <List.Icon {...props} icon={APP_ICONS.quality} />} title="Resource quality" />
     </List.Section></Card.Content></Card>
@@ -379,12 +380,12 @@ function FacilitiesSection() {
     {FACILITY_GROUPS.map((group) => <View key={group.id} style={localStyles.catalogueGroup}><Text style={styles.cardKicker}>{group.label}</Text>{group.facilities.map((facilityType) => {
       const facility = getFacilityDefinition(facilityType);
       return <Card key={facilityType} mode="contained" style={styles.featureCard}><Card.Content><List.Item
-        description={<View style={localStyles.facilityCostSummary}><View style={localStyles.iconValue}><Text style={styles.cardDescription}>Land:</Text><CurrencyValue value={facility.landCost} style={styles.cardDescription} /></View><View style={localStyles.iconValue}><Text style={styles.cardDescription}>Materials:</Text><Text style={styles.cardDescription}>{getResourceIcon(ResourceType.ConstructionMaterials)} {formatNumber(facility.constructionMaterialsCost)}</Text><Text style={styles.cardDescription}>· {facility.baseWorkers} base workers</Text></View></View>}
+        description={<View style={localStyles.facilityCostSummary}><View style={localStyles.iconValue}><Text style={styles.cardDescription}>Land:</Text><CurrencyValue value={facility.landCost} style={styles.cardDescription} /></View><View style={localStyles.iconValue}><Text style={styles.cardDescription}>Materials:</Text><Text style={styles.cardDescription}><TooltipResourceIcon resourceType={ResourceType.ConstructionMaterials} /> {formatNumber(facility.constructionMaterialsCost)}</Text><Text style={styles.cardDescription}>· {facility.baseWorkers} base workers</Text></View></View>}
         left={(props) => <List.Icon {...props} icon={facility.icon} />}
         title={facility.name}
       />
         <Text style={styles.cardKicker}>AVAILABLE RECIPES</Text>
-        {facility.recipes.map((recipe) => <Text key={recipe.name} style={styles.cardDescription}>{formatRecipeName(recipe)}: {formatRecipeInputs(recipe, { includeNames: false })} → {formatRecipeOutput(recipe, { includeNames: false })}</Text>)}
+        {facility.recipes.map((recipe) => <View key={recipe.name}><Text style={styles.cardDescription}>{formatRecipeName(recipe)}</Text><RecipeResourceSummary recipe={recipe} /></View>)}
       </Card.Content></Card>;
     })}</View>)}
   </>;
@@ -396,7 +397,7 @@ function FacilityConditionReference() {
     <Text style={styles.cardDescription}>Wear is fastest at high condition and slows as a facility approaches zero. One 1.00-work production cycle has almost the same base wear as one foreground minute. Excess staffing increases both wear sources exponentially.</Text>
     <Text style={localStyles.formula}>Staff efficiency: 0.01 + 0.99 × ratio^1.6 when understaffed; 1 + 0.25 × (1 − e^(−0.7 × (ratio − 1))) when overstaffed.</Text>
     <Text style={localStyles.formula}>Facility efficiency: staff efficiency × (1 − condition curve(1 − facility condition)); damage becomes increasingly costly.</Text>
-    <Text style={localStyles.formula}>Repair cost: {getResourceIcon(ResourceType.ConstructionMaterials)} construction-material cost × 0.9 × (1 − facility condition).</Text>
+    <Text style={localStyles.formula}>Repair cost: <TooltipResourceIcon resourceType={ResourceType.ConstructionMaterials} /> construction-material cost × 0.9 × (1 − facility condition).</Text>
     <View style={localStyles.conditionTableRow}>
       <Text style={[localStyles.conditionTableCell, localStyles.conditionTableHeader]}>Time</Text>
       <Text style={[localStyles.conditionTableCell, localStyles.conditionTableHeader]}>1.00 cycles</Text>
@@ -414,7 +415,7 @@ function FacilityConditionReference() {
 
 function FacilityUpgradeReference() {
   return <Card mode="contained" style={styles.featureCard}><Card.Content style={localStyles.conditionReferenceContent}>
-    <View style={localStyles.upgradeReferenceHeading}><MaterialCommunityIcons color={colors.primary} name={APP_ICONS.upgrade} size={16} /><Text style={styles.cardKicker}>FACILITY UPGRADES</Text></View>
+    <View style={localStyles.upgradeReferenceHeading}><TooltipMaterialIcon color={colors.primary} label="Upgrades" name={APP_ICONS.upgrade} size={16} /><Text style={styles.cardKicker}>FACILITY UPGRADES</Text></View>
     <Text style={styles.cardDescription}>Each facility has its own Speed, Output, and Condition upgrade tracks. Every new level costs euros, Construction Materials, and Industrial Machines, with all three inputs increasing by level.</Text>
     <Text style={styles.cardDescription}>Speed upgrades complete production work faster. Output upgrades produce more from each finished cycle. Both raise the facility's worker requirement.</Text>
     <Text style={styles.cardDescription}>Condition upgrades slow both passive and production wear without requiring more workers. Each level helps less than the last, but fully developed maintenance can reduce decay by almost 75%.</Text>
@@ -426,7 +427,7 @@ function FacilityUpgradeReference() {
 }
 
 function UpgradeExample({ icon, label, values }: { icon: string; label: string; values: string }) {
-  return <View style={localStyles.upgradeExample}><MaterialCommunityIcons color={colors.primary} name={icon as never} size={15} /><Text style={styles.cardDescription}><Text style={localStyles.upgradeExampleLabel}>{label}</Text>: {values}</Text></View>;
+  return <View style={localStyles.upgradeExample}><TooltipMaterialIcon color={colors.primary} label={label} name={icon} size={15} /><Text style={styles.cardDescription}><Text style={localStyles.upgradeExampleLabel}>{label}</Text>: {values}</Text></View>;
 }
 
 const FACILITY_CONDITION_REFERENCE = [
@@ -449,9 +450,9 @@ function RecipesSection() {
       const recipes = [...facility.recipes].sort((left, right) => formatRecipeName(left).localeCompare(formatRecipeName(right)));
       return <Card key={facilityType} mode="contained" style={styles.featureCard}><Card.Content><Text style={localStyles.catalogueGroupTitle}>{facility.name}</Text><List.Section>
         {recipes.map((recipe) => <List.Item
-          description={<View><Text style={styles.cardDescription}>{`${formatRecipeInputs(recipe, { includeNames: false })} → ${formatRecipeOutput(recipe, { includeNames: false })}`}</Text><WorkMetric value={formatNumber(recipe.requiredWork, { smartDecimals: true })} /></View>}
+          description={<View><RecipeResourceSummary recipe={recipe} /><WorkMetric value={formatNumber(recipe.requiredWork, { smartDecimals: true })} /></View>}
           key={recipe.name}
-          left={() => <Text>{RECIPE_ICONS[recipe.name]}</Text>}
+          left={() => <TooltipTextIcon label={formatRecipeName(recipe)}>{RECIPE_ICONS[recipe.name]}</TooltipTextIcon>}
           title={formatRecipeName(recipe)}
         />)}
       </List.Section></Card.Content></Card>;
@@ -518,7 +519,7 @@ function PrestigeSection() {
 
 function ResourceMention({ resourceType }: { resourceType: string }) {
   const typedResource = resourceType as ResourceType;
-  return <Text accessibilityLabel={getResource(typedResource).name}>{getResourceIcon(typedResource)}</Text>;
+  return <TooltipResourceIcon resourceType={typedResource} />;
 }
 
 function AchievementsSection() {

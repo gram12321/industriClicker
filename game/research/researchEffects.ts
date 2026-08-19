@@ -35,7 +35,7 @@ export function describeResearchEffect(effect: ResearchEffect): string {
     case 'sales-order-minimum-premium-bonus': return `Minimum bid premium floor: +${Math.round(effect.bonus * 100)} pts`;
     case 'sales-offer-produced-resource-weight': return `Produced resources are ${effect.multiplier}× more likely in sales offers`;
     case 'sales-offer-produced-only': return 'Customer orders only request resources your company has produced';
-    case 'local-market-depth': return `Local market depth: ${effect.multiplier.toFixed(1)}×`;
+    case 'local-market-depth': return `Activate local market depth: ${effect.multiplier.toFixed(1)}×`;
     case 'local-regional-diffusion': return `Local-regional diffusion rate: ${effect.multiplier.toFixed(2)}×`;
     case 'research-capacity': return `Additional simultaneous research projects: ${effect.additionalSlots}`;
     case 'recipe-unlock': return `Unlock recipe: ${getRecipeDisplayName(effect.recipeName)}`;

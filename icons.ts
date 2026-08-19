@@ -116,6 +116,15 @@ export const APP_ICONS = {
   work: 'progress-clock',
 } as const;
 
+export type AppIconKey = keyof typeof APP_ICONS;
+
+/** Human-readable labels used when an app icon is tapped for help. */
+export function getAppIconLabel(iconKey: AppIconKey): string {
+  return iconKey
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/^./, (character) => character.toUpperCase());
+}
+
 export const ECONOMY_PHASE_ICONS: Readonly<Record<EconomyPhase, string>> = {
   crash: 'weather-lightning-rainy',
   recession: 'weather-rainy',

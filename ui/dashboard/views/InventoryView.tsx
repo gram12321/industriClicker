@@ -8,11 +8,12 @@ import type { FacilityCollection } from '@/game/facilities/facilityCollection';
 import { getRecipe } from '@/game/recipes';
 import { getSalesResourceProfile } from '@/game/sales';
 import { MARKET_AUTOTRADE_DEFAULT_INTERVAL_MS, MARKET_AUTOTRADE_INTERVAL_OPTIONS, type Market, type MarketAutomation, type MarketTradeMultiplier } from '@/game/market';
-import { RESOURCE_GROUPS, RESOURCE_TYPES, getResource, getResourceIcon } from '@/game/resources';
+import { RESOURCE_GROUPS, RESOURCE_TYPES, getResource } from '@/game/resources';
 import { APP_ICONS } from '@/icons';
 import { formatCurrency, formatNumber, getColorClass } from '@/utils';
 import { colors } from '@/theme';
 import { SectionHeading } from '@/ui/dashboard/components/DashboardPrimitives';
+import { TooltipAppIcon, TooltipMaterialIcon, TooltipResourceIcon } from '@/ui/dashboard/components/IconTooltip';
 import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 
 const multiplierSteps = [1, 10, 100, 1000] as const;
@@ -104,8 +105,8 @@ export function InventoryView({ buyMarketResource, currentGameTimeMs, facilities
       const isSelected = selectedResource === resourceType;
       return <View key={resourceType}>
         <Pressable accessibilityLabel={`${resource.name}: ${formatNumber(entry.quantity, { smartDecimals: true })} units, quality ${formatNumber(entry.quality, { smartDecimals: true })}`} accessibilityRole="button" onPress={() => setSelectedResource(isSelected ? null : resourceType)} style={styles.detailRow}>
-          <Text variant="bodyLarge">{getResourceIcon(resourceType)} {resource.name}</Text>
-          <View style={styles.inventoryQualityValue}><Text style={styles.detailValue}>{`${formatNumber(entry.quantity, { smartDecimals: true })} units`}</Text><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.quality} size={16} /><Text style={[styles.detailValue, { color: getColorClass(entry.quality) }]}>{formatNumber(entry.quality, { smartDecimals: true })}</Text></View>
+          <Text variant="bodyLarge"><TooltipResourceIcon resourceType={resourceType} /> {resource.name}</Text>
+          <View style={styles.inventoryQualityValue}><Text style={styles.detailValue}>{`${formatNumber(entry.quantity, { smartDecimals: true })} units`}</Text><TooltipAppIcon color={colors.muted} iconKey="quality" size={16} /><Text style={[styles.detailValue, { color: getColorClass(entry.quality) }]}>{formatNumber(entry.quality, { smartDecimals: true })}</Text></View>
         </Pressable>
         {isSelected && <MarketCard buyMarketResource={buyMarketResource} currentGameTimeMs={currentGameTimeMs} finance={finance} flowPeriod={flowPeriod} inventory={inventory} market={market} multiplier={multiplier} openSettings={openSettings} resourceFlow={resourceFlow} resourceType={resourceType} sellMarketResource={sellMarketResource} setMarketAutomation={setMarketAutomation} />}
       </View>;
@@ -171,7 +172,7 @@ function MarketCard({ buyMarketResource, currentGameTimeMs, finance, flowPeriod,
   const localPrice = market.getLocalPrice(resourceType);
   const regionalPrice = market.getRegionalPrice(resourceType);
   const globalPrice = market.getGlobalPrice(resourceType);
-  const buyAmount = multiplier === 'all' ? Math.floor(Math.min(local.supply, finance.getBalance() / localPrice)) : multiplier;
+  const buyAmount = multiplier === 'all' ? market.getMaximumLocalPurchaseAmountAtCash(resourceType, finance.getBalance()) : multiplier;
   const sellAmount = multiplier === 'all' ? inventory.getAmount(resourceType) : multiplier;
   const localRegionalDiffusion = market.getLocalRegionalDiffusionInfo(resourceType);
   const regionalGlobalDiffusion = market.getRegionalGlobalDiffusionInfo(resourceType);
@@ -182,7 +183,7 @@ function MarketCard({ buyMarketResource, currentGameTimeMs, finance, flowPeriod,
   const resourceName = getResource(resourceType).name;
   return <Card mode="contained" style={styles.marketCard}><Card.Content style={styles.marketCardContent}>
     <View style={localStyles.marketInfo}><ResourceFlowCard currentGameTimeMs={currentGameTimeMs} flowPeriod={flowPeriod} resourceFlow={resourceFlow} resourceType={resourceType} />
-    <View style={styles.marketMetrics}><View style={localStyles.marketRows}><View style={localStyles.marketRow}><MarketMetric color={colors.marketGold} icon={APP_ICONS.marketLocalPrice} trend={localPriceTrend} label="Local price" value={formatCurrency(localPrice)} /><MarketMetric color={colors.charcoal} icon={APP_ICONS.localMarket} trend={localSupplyTrend} label="Local supply" value={formatNumber(local.supply, { smartDecimals: true })} /><MarketMetric color={colors.charcoal} icon={APP_ICONS.quality} label="Local quality" value={`Q${formatNumber(local.quality, { decimals: 2, forceDecimals: true })}`} /></View><View style={localStyles.marketRow}><MarketMetric color={colors.muted} icon={APP_ICONS.marketRegionalPrice} label="Regional price" value={formatCurrency(regionalPrice)} /><MarketMetric color={colors.muted} icon={APP_ICONS.regionalMarket} label="Regional supply" value={formatNumber(regional.supply, { smartDecimals: true })} /><MarketMetric color={colors.muted} icon={APP_ICONS.quality} label="Regional quality" value={`Q${formatNumber(regional.quality, { decimals: 2, forceDecimals: true })}`} /></View><View style={localStyles.marketRow}><MarketMetric color={colors.muted} icon={APP_ICONS.marketGlobalPrice} trend={globalPriceTrend} label="Global price" value={formatCurrency(globalPrice)} /><MarketMetric color={colors.muted} icon={APP_ICONS.globalMarket} trend={globalSupplyTrend} label="Global supply" value={formatNumber(global.supply, { smartDecimals: true })} /><MarketMetric color={colors.muted} icon={APP_ICONS.quality} label="Global quality" value={`Q${formatNumber(global.quality, { decimals: 2, forceDecimals: true })}`} /></View></View><View style={styles.marketMetricFlowColumn}><MarketMetric color={colors.marketGreen} label="Local ↔ Regional" value={localRegionalDiffusion.direction === 'none' ? '—' : `${formatNumber(localRegionalDiffusion.amount, { smartDecimals: true })}/m`} /><MarketMetric color={colors.marketGreen} label="Regional ↔ Global" value={regionalGlobalDiffusion.direction === 'none' ? '—' : `${formatNumber(regionalGlobalDiffusion.amount, { smartDecimals: true })}/m`} /></View></View></View>
+    <View style={styles.marketMetrics}><View style={localStyles.marketRows}><View style={localStyles.marketRow}><MarketMetric color={colors.marketGold} icon={APP_ICONS.marketLocalPrice} trend={localPriceTrend} label="Local price" value={formatCurrency(localPrice)} /><MarketMetric color={colors.charcoal} icon={APP_ICONS.localMarket} trend={localSupplyTrend} label="Local supply" value={formatNumber(local.supply, { smartDecimals: true })} /><MarketMetric color={colors.charcoal} icon={APP_ICONS.quality} label="Local quality" value={`Q${formatNumber(local.quality, { decimals: 2, forceDecimals: true })}`} /></View><View style={localStyles.marketRow}><MarketMetric color={colors.muted} icon={APP_ICONS.marketRegionalPrice} label="Regional price" value={formatCurrency(regionalPrice)} /><MarketMetric color={colors.muted} icon={APP_ICONS.regionalMarket} label="Regional supply" value={formatNumber(regional.supply, { smartDecimals: true })} /><MarketMetric color={colors.muted} icon={APP_ICONS.quality} label="Regional quality" value={`Q${formatNumber(regional.quality, { decimals: 2, forceDecimals: true })}`} /></View><View style={localStyles.marketRow}><MarketMetric color={colors.muted} icon={APP_ICONS.marketGlobalPrice} trend={globalPriceTrend} label="Global price" value={formatCurrency(globalPrice)} /><MarketMetric color={colors.muted} icon={APP_ICONS.globalMarket} trend={globalSupplyTrend} label="Global supply" value={formatNumber(global.supply, { smartDecimals: true })} /><MarketMetric color={colors.muted} icon={APP_ICONS.quality} label="Global quality" value={`Q${formatNumber(global.quality, { decimals: 2, forceDecimals: true })}`} /></View></View><View style={styles.marketMetricFlowColumn}><MarketMetric color={colors.marketGreen} label="Local â†” Regional" value={localRegionalDiffusion.direction === 'none' ? 'â€”' : `${formatNumber(localRegionalDiffusion.amount, { smartDecimals: true })}/m`} /><MarketMetric color={colors.marketGreen} label="Regional â†” Global" value={regionalGlobalDiffusion.direction === 'none' ? 'â€”' : `${formatNumber(regionalGlobalDiffusion.amount, { smartDecimals: true })}/m`} /></View></View></View>
     <View style={styles.marketActions}><IconButton accessibilityLabel={`Buy ${formatNumber(buyAmount)} ${resourceName}`} containerColor={colors.marketBuy} disabled={buyAmount <= 0} icon={APP_ICONS.marketBuy} iconColor={colors.onDark} onPress={() => buyMarketResource(resourceType, buyAmount)} size={19} style={styles.marketActionButton} /><IconButton accessibilityLabel={`Sell ${formatNumber(sellAmount)} ${resourceName}`} containerColor={colors.marketSell} disabled={sellAmount <= 0} icon={APP_ICONS.marketSell} iconColor={colors.onDark} onPress={() => sellMarketResource(resourceType, sellAmount)} size={19} style={styles.marketActionButton} /><IconButton accessibilityLabel={`${automation.autoBuyEnabled ? 'Disable' : 'Enable'} autobuy for ${resourceName}`} containerColor={automation.autoBuyEnabled ? colors.marketAutomationActive : colors.marketAutomation} icon={APP_ICONS.marketAutoBuy} iconColor={colors.onDark} onPress={() => setMarketAutomation(resourceType, { autoBuyEnabled: !automation.autoBuyEnabled })} size={19} style={styles.marketActionButton} /><IconButton accessibilityLabel={`${automation.autoSellEnabled ? 'Disable' : 'Enable'} autosell for ${resourceName}`} containerColor={automation.autoSellEnabled ? colors.marketAutomationActive : colors.marketAutomation} icon={APP_ICONS.marketAutoSell} iconColor={colors.onDark} onPress={() => setMarketAutomation(resourceType, { autoSellEnabled: !automation.autoSellEnabled })} size={19} style={styles.marketActionButton} /><IconButton accessibilityLabel={`Automation settings for ${resourceName}`} containerColor={colors.marketAutomation} icon={APP_ICONS.settings} iconColor={colors.onDark} onPress={() => openSettings(resourceType)} size={19} style={styles.marketActionButton} /></View>
   </Card.Content></Card>;
 }
@@ -192,14 +193,14 @@ function ResourceFlowCard({ currentGameTimeMs, flowPeriod, resourceFlow, resourc
   const rows = [
     { label: 'Facility output', value: summary.facilityOutput },
     { label: 'Production inputs', value: summary.facilityInput },
-    { label: 'Market (net)', value: summary.market, suffix: summary.market === 0 && summary.marketVolume > 0 ? ` · ${formatNumber(summary.marketVolume, { smartDecimals: true })} traded` : '' },
+    { label: 'Market (net)', value: summary.market, suffix: summary.market === 0 && summary.marketVolume > 0 ? ` Â· ${formatNumber(summary.marketVolume, { smartDecimals: true })} traded` : '' },
     { label: 'Customer orders', value: summary.customerOrders },
     { label: 'Facility spending', value: summary.facilitySpending },
     { label: 'Rewards', value: summary.rewards },
   ].filter((row) => row.value !== 0 || row.suffix);
 
   return <View style={localStyles.resourceFlow}>
-    <Text style={localStyles.resourceFlowHeader}>{`Inventory flow · ${flowPeriod.label}`}</Text>
+    <Text style={localStyles.resourceFlowHeader}>{`Inventory flow Â· ${flowPeriod.label}`}</Text>
     {rows.length === 0 && <Text style={styles.marketMetricLabel}>No inventory changes in this period.</Text>}
     {rows.map((row) => <ResourceFlowRow key={row.label} label={row.label} suffix={row.suffix} value={row.value} />)}
     <View style={localStyles.resourceFlowNet}><ResourceFlowRow label="Net change" strong value={summary.netChange} /></View>
@@ -208,11 +209,11 @@ function ResourceFlowCard({ currentGameTimeMs, flowPeriod, resourceFlow, resourc
 
 function ResourceFlowRow({ label, strong = false, suffix = '', value }: { label: string; strong?: boolean; suffix?: string; value: number }) {
   const color = value > 0 ? colors.marketGreen : value < 0 ? colors.error : colors.muted;
-  const formattedValue = `${value > 0 ? '+' : value < 0 ? '−' : ''}${formatNumber(Math.abs(value), { smartDecimals: true })}${suffix}`;
+  const formattedValue = `${value > 0 ? '+' : value < 0 ? 'âˆ’' : ''}${formatNumber(Math.abs(value), { smartDecimals: true })}${suffix}`;
   return <View accessibilityLabel={`${label}: ${formattedValue}`} style={localStyles.resourceFlowRow}><Text style={strong ? localStyles.resourceFlowValue : undefined}>{label}</Text><Text style={[localStyles.resourceFlowValue, { color }]}>{formattedValue}</Text></View>;
 }
 
 function MarketMetric({ color, icon, label, trend = 'none', value }: { color: string; icon?: string; label: string; trend?: 'up' | 'down' | 'none'; value: string }) {
   const trendIcon = trend === 'up' ? APP_ICONS.marketTrendUp : trend === 'down' ? APP_ICONS.marketTrendDown : undefined;
-  return <View accessibilityLabel={`${label}: ${value}`} style={styles.marketMetric}><Text style={styles.marketMetricLabel}>{label}</Text><View style={styles.marketMetricValueRow}>{icon && <MaterialCommunityIcons color={color} name={icon as never} size={14} />}<Text style={[styles.marketMetricValue, { color }]}>{value}</Text>{trendIcon && <MaterialCommunityIcons color={colors.marketGreen} name={trendIcon as never} size={13} />}</View></View>;
+  return <View accessibilityLabel={`${label}: ${value}`} style={styles.marketMetric}><Text style={styles.marketMetricLabel}>{label}</Text><View style={styles.marketMetricValueRow}>{icon && <TooltipMaterialIcon color={color} label={label} name={icon} size={14} />}<Text style={[styles.marketMetricValue, { color }]}>{value}</Text>{trendIcon && <TooltipMaterialIcon color={colors.marketGreen} label={`${label} trend`} name={trendIcon} size={13} />}</View></View>;
 }

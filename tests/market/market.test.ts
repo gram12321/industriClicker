@@ -102,6 +102,70 @@ describe('Market regional tier', () => {
     expect(market.getLocalPrice(ResourceType.Grain)).toBeCloseTo(priceBefore);
   });
 
+  it('activates fixed baseline market stock over foreground time, even when the local pool is depleted', () => {
+    const snapshot = new Market().toSnapshot();
+    snapshot.local[ResourceType.Grain].supply = 10;
+    const market = Market.fromSnapshot(snapshot);
+
+    expect(market.startLocalMarketNetworkActivation('local-market-network-1', 0.2)).toBe(true);
+    expect(market.advanceLocalMarketNetworkActivations(60_000)).toBe(true);
+    expect(market.getLocalEntry(ResourceType.Grain).supply).toBeCloseTo(60);
+    expect(market.getLocalPrice(ResourceType.Grain)).toBeCloseTo(14);
+    expect(market.getLocalMarketNetworkActivations()).toMatchObject([{ projectId: 'local-market-network-1', totalDepthIncrease: 0.2, appliedDepthIncrease: 0.05 }]);
+
+    market.advanceLocalMarketNetworkActivations(180_000);
+    expect(market.getLocalEntry(ResourceType.Grain).supply).toBeCloseTo(210);
+    expect(market.getLocalPrice(ResourceType.Grain)).toBeCloseTo(960 / 210);
+    expect(market.getLocalMarketNetworkActivations()).toEqual([]);
+  });
+
+  it('runs separate market-network activations simultaneously and retains them in a snapshot', () => {
+    const market = new Market();
+    expect(market.startLocalMarketNetworkActivation('local-market-network-1', 0.2)).toBe(true);
+    expect(market.startLocalMarketNetworkActivation('local-market-network-2', 0.3)).toBe(true);
+
+    market.advanceLocalMarketNetworkActivations(60_000);
+    const restored = Market.fromSnapshot(market.toSnapshot());
+
+    expect(restored.getLocalEntry(ResourceType.Grain).supply).toBeCloseTo(1_100);
+    expect(restored.getLocalPrice(ResourceType.Grain)).toBeCloseTo(0.8);
+    expect(restored.getLocalMarketNetworkActivations()).toMatchObject([
+      { projectId: 'local-market-network-1', appliedDepthIncrease: 0.05 },
+      { projectId: 'local-market-network-2', appliedDepthIncrease: 0.05 },
+    ]);
+  });
+
+  it('uses the changing market price across a trade so a round trip cannot create cash', () => {
+    const market = new Market();
+    const amount = market.getLocalEntry(ResourceType.Grain).supply;
+
+    const purchase = market.buyFromLocal(ResourceType.Grain, amount);
+    const sale = market.sellToLocal(ResourceType.Grain, amount, purchase.quality);
+
+    expect(purchase.success).toBe(true);
+    expect(purchase.unitPrice).toBeGreaterThan(0.8);
+    expect(sale.success).toBe(true);
+    expect(sale.unitPrice * sale.amount).toBeCloseTo(purchase.unitPrice * purchase.amount);
+    expect(market.getLocalPrice(ResourceType.Grain)).toBeCloseTo(0.8);
+  });
+
+  it('caps an all-market purchase using the slippage-adjusted execution cost', () => {
+    const market = new Market();
+    const resourceType = ResourceType.Grain;
+    const availableSupply = Math.floor(market.getLocalEntry(resourceType).supply);
+    const spotPrice = market.getLocalPrice(resourceType);
+    const cash = spotPrice * availableSupply;
+    const affordableAmount = market.getMaximumLocalPurchaseAmountAtCash(resourceType, cash);
+
+    expect(affordableAmount).toBeLessThan(availableSupply);
+    const affordableQuote = market.getLocalBuyQuote(resourceType, affordableAmount);
+    const nextQuote = market.getLocalBuyQuote(resourceType, affordableAmount + 1);
+    expect(affordableQuote.success).toBe(true);
+    expect(nextQuote.success).toBe(true);
+    expect(affordableQuote.unitPrice * affordableQuote.amount).toBeLessThanOrEqual(cash);
+    expect(nextQuote.unitPrice * nextQuote.amount).toBeGreaterThan(cash);
+  });
+
   it('starts Plastic and Fertilizer with deeper local markets at their existing prices', () => {
     const market = new Market();
 

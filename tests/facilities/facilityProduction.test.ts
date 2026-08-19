@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { Inventory } from '@/game/inventory';
+import { Finance } from '@/game/finance';
 import { getRecipe, RecipeName } from '@/game/recipes';
 import { ResourceType } from '@/game/resources';
 import { FacilityCollection } from '@/game/facilities/facilityCollection';
 import {
   calculateFacilityDecayMaterialCostPerMinute,
   calculateFacilityNetGainPerMinute,
+  calculateFacilityResourcePayment,
   calculateRecipeValuePerMinute,
 } from '@/game/facilities/facilityEconomics';
 import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateRecipeInputQ, getFacilityProductionCycleInputs, getRecipeProductionConditionLoss } from '@/game/facilities/facilityProduction';
@@ -56,6 +58,21 @@ describe('calculateFacilityEffectiveWork', () => {
       * 1.5;
 
     expect(calculateFacilityEffectiveWork(view, 1, 1.5)).toBeCloseTo(expectedWork);
+  });
+});
+
+describe('facility resource payment', () => {
+  it('uses the slippage-adjusted quote for missing materials', () => {
+    const finance = new Finance();
+    const inventory = new Inventory();
+    const market = new Market();
+    const quote = market.getLocalBuyQuote(ResourceType.ConstructionMaterials, 1);
+
+    const payment = calculateFacilityResourcePayment(finance, inventory, market, 0, 1, 0);
+
+    expect(quote.success).toBe(true);
+    expect(payment.cashCost).toBeCloseTo(quote.unitPrice);
+    expect(payment.canAfford).toBe(finance.getBalance() >= payment.cashCost);
   });
 });
 

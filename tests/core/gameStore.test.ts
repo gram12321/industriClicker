@@ -66,6 +66,25 @@ describe('market sales', () => {
   });
 });
 
+describe('local market network activation', () => {
+  it('starts a persisted foreground market expansion when the research completes', () => {
+    const state = useGameStore.getState();
+    state.restoreSnapshot(createStartingGameSnapshot(0));
+    state.setAdminBalance(1_000);
+
+    expect(state.buildFacility(FacilityType.Farm)).toBe(true);
+    expect(state.startResearch('local-market-network-1')).toBe(true);
+    state.advanceGameTime(90_000);
+
+    expect(useGameStore.getState().market.getLocalMarketNetworkActivations()).toMatchObject([
+      { projectId: 'local-market-network-1', totalDepthIncrease: 0.2, appliedDepthIncrease: 0 },
+    ]);
+
+    state.advanceGameTime(60_000);
+    expect(useGameStore.getState().market.getLocalEntry(ResourceType.Grain).supply).toBeCloseTo(1_050);
+  });
+});
+
 describe('sales order fulfilment', () => {
   it('recalculates company-assets prestige from the fulfilled order state', () => {
     const state = useGameStore.getState();

@@ -374,13 +374,13 @@ flowchart LR
 | `prestige.events` | Stored | `PrestigeLedger` | Balance changes and fulfilled sales | `PrestigeLedgerSnapshot` |
 | `research.completed`, `.active[]` (including each active project's effective duration) | Stored | `ResearchLedger` | Research start, foreground advance, per-project completion and cancellation | `ResearchLedgerSnapshot` |
 | `grants.grants` | Stored | `GrantLedger` | First facility construction and free-action consumption | `GrantLedgerSnapshot` |
-| `market.local`, `.regional`, `.global`, `.automation` | Stored | `Market` | Manual local trades, contract fulfilment, and adjacent-pair diffusion | `MarketSnapshot` |
+| `market.local`, `.regional`, `.global`, `.automation`, `.localMarketDepthMultiplier`, `.localMarketNetworkActivations` | Stored | `Market` | Manual local trades, contract fulfilment, adjacent-pair diffusion, and foreground Local Market Network activation | `MarketSnapshot` |
 | `startingConditionId` | Runtime | Zustand game store | Company activation/session change | No; source is the local company record |
 | `companyStartedAtGameTimeMs`, `lastProcessedAtMs`, `unprocessedWorkMs`, `customerPipelineProgress` | Stored | Zustand game store | Company creation, deletion, and global time advance | `GameTimeSnapshot` |
 | `lastObservedAtMs` | Runtime | Zustand game store | Foreground observation and lifecycle | No |
 | Local profile, company record, tutorial state, device session | Stored | Company domain SQLite adapters | Local player/company commands | Dedicated local tables |
 
-Derived values include facility efficiency, production work/output, customer-order reward cap, offer chance, stock/relationship-aware customer-resource selection weights, current prestige, market diffusion amount, completed-research local market depth and local-regional diffusion rate, and UI view models.
+Derived values include facility efficiency, production work/output, customer-order reward cap, offer chance, stock/relationship-aware customer-resource selection weights, current prestige, market diffusion amount, local-market activation progress, completed-research local market depth and local-regional diffusion rate, and UI view models.
 
 ## Command Effects
 

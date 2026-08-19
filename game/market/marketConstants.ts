@@ -6,6 +6,8 @@ export const MARKET_DIFFUSION_MAX_EQUILIBRIUM_CORRECTION = 0.5;
 export const MARKET_DIFFUSION_REFERENCE_INTERVAL_MS = 60_000;
 /** Foreground cadence for applying market-pool diffusion. */
 export const MARKET_DIFFUSION_INTERVAL_MS = 5_000;
+/** Each active Local Market Network tier adds this share of every resource's initial local supply per foreground minute. */
+export const LOCAL_MARKET_NETWORK_EXPANSION_PER_MINUTE = 0.05;
 export const MARKET_SALES_ORDER_BID_MULTIPLIER = 1.2;
 export const MARKET_AUTOSELL_DEFAULT_MAX_PER_MINUTE = 50;
 export const MARKET_AUTOTRADE_INTERVAL_OPTIONS = [

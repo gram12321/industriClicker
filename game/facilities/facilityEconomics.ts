@@ -41,15 +41,16 @@ export function calculateFacilityResourcePayment(
     0,
     industrialMachinesCost - inventory.getAmount(ResourceType.IndustrialMachines),
   );
-  const missingInputPurchaseCost =
-    missingConstructionMaterials * market.getLocalPrice(ResourceType.ConstructionMaterials)
-    + missingIndustrialMachines * market.getLocalPrice(ResourceType.IndustrialMachines);
+  const missingConstructionMaterialsQuote = missingConstructionMaterials > 0 ? market.getLocalBuyQuote(ResourceType.ConstructionMaterials, missingConstructionMaterials) : null;
+  const missingIndustrialMachinesQuote = missingIndustrialMachines > 0 ? market.getLocalBuyQuote(ResourceType.IndustrialMachines, missingIndustrialMachines) : null;
+  const missingInputPurchaseCost = (missingConstructionMaterialsQuote === null ? 0 : missingConstructionMaterialsQuote.success ? missingConstructionMaterialsQuote.unitPrice * missingConstructionMaterialsQuote.amount : Number.POSITIVE_INFINITY)
+    + (missingIndustrialMachinesQuote === null ? 0 : missingIndustrialMachinesQuote.success ? missingIndustrialMachinesQuote.unitPrice * missingIndustrialMachinesQuote.amount : Number.POSITIVE_INFINITY);
   const cashCost = cashBaseCost + missingInputPurchaseCost;
 
   return {
     canAfford:
-      market.getLocalEntry(ResourceType.ConstructionMaterials).supply >= missingConstructionMaterials
-      && market.getLocalEntry(ResourceType.IndustrialMachines).supply >= missingIndustrialMachines
+      (missingConstructionMaterialsQuote === null || missingConstructionMaterialsQuote.success)
+      && (missingIndustrialMachinesQuote === null || missingIndustrialMachinesQuote.success)
       && finance.canAfford(cashCost),
     cashCost,
   };
