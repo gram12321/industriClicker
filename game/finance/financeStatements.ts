@@ -15,7 +15,7 @@ export type IncomeStatement = { income: number; expenses: number; netIncome: num
 export type FinanceBreakdown = { label: string; amount: number };
 export type AssetsStatement = { cash: number; inventory: number; facilities: number; research: number; currentAssets: number; fixedAssets: number; intangibleAssets: number; totalAssets: number };
 export type LiabilitiesEquityStatement = { loans: Loan[]; totalLiabilities: number; contributedCapital: number; retainedEarnings: number; assetRevaluation: number; totalEquity: number };
-export type CashFlowDetail = { id: string; description: string; detailLines: string[]; count: number; totalQuantity?: number; totalAbsoluteAmount?: number };
+export type CashFlowDetail = { id: string; description: string; detailLines: string[]; count: number; resourceType?: ResourceType; totalQuantity?: number; totalAbsoluteAmount?: number; totalQualityQuantity?: number; totalQualityAmount?: number };
 export type CashFlowDetailGroup = { id: string; label: string; amount: number; details: CashFlowDetail[] };
 export type CashFlowRow = { id: string; atGameTimeMs: number; type: string; description: string; detailGroups: CashFlowDetailGroup[]; amount: number; balance: number };
 export type FinanceStatementData = { incomeStatement: IncomeStatement; assets: AssetsStatement; liabilitiesEquity: LiabilitiesEquityStatement; creditRating: CreditRating; loanLimitBreakdown: LoanLimitBreakdown; economyPhase: ReturnType<Finance['getEconomyPhase']>; cashFlowRows: CashFlowRow[] };
@@ -128,12 +128,22 @@ function cashFlowHeading(kind: FinanceTransaction['kind'], amount: number): stri
   return `Equity ${direction}`;
 }
 
-function parseMarketTransaction(description: string): { description: string; quantity: number } | null {
+type ParsedMarketTransaction = { description: string; quantity: number; resourceType: ResourceType };
+
+function parseMarketTransaction(description: string): ParsedMarketTransaction | null {
   const match = /^(Autobought|Autosold|Bought|Sold) ([\d.,]+) (.+?)(?: (for production|from local market|to local market))?$/.exec(description);
   if (!match) return null;
   const quantity = Number(match[2].replace(',', '.'));
   const suffix = match[4] === 'for production' ? '' : match[4] ? ` ${match[4]}` : '';
-  return Number.isFinite(quantity) && quantity > 0 ? { description: `${match[1]} ${match[3]}${suffix}`, quantity } : null;
+  const resourceType = RESOURCE_TYPES.find((candidate) => candidate === match[3]);
+  return Number.isFinite(quantity) && quantity > 0 && resourceType ? { description: `${match[1]} ${match[3]}${suffix}`, quantity, resourceType } : null;
+}
+
+function parseMarketQuality(detailLines: readonly string[]): number | null {
+  const qualityLine = detailLines.find((line) => /^Quality:\s*Q[\d.]+$/.test(line));
+  if (!qualityLine) return null;
+  const quality = Number(qualityLine.replace(/^Quality:\s*Q/u, ''));
+  return Number.isFinite(quality) && quality > 0 ? quality : null;
 }
 
 function buildCashFlowRows(transactions: FinanceTransaction[], groupDurationMs = 60_000, bucketOriginGameTimeMs = 0): CashFlowRow[] {
@@ -158,6 +168,7 @@ function buildCashFlowRows(transactions: FinanceTransaction[], groupDurationMs =
     }
     detailGroup.amount += transaction.amount;
     const marketTransaction = parseMarketTransaction(transaction.description);
+    const marketQuality = marketTransaction ? parseMarketQuality(transaction.detailLines) : null;
     const matchingDetail = detailGroup.details.find((candidate) => marketTransaction
       ? candidate.description === marketTransaction.description
       : candidate.description === transaction.description && candidate.detailLines.join('\n') === transaction.detailLines.join('\n'));
@@ -166,8 +177,23 @@ function buildCashFlowRows(transactions: FinanceTransaction[], groupDurationMs =
       if (marketTransaction) {
         matchingDetail.totalQuantity = (matchingDetail.totalQuantity ?? 0) + marketTransaction.quantity;
         matchingDetail.totalAbsoluteAmount = (matchingDetail.totalAbsoluteAmount ?? 0) + Math.abs(transaction.amount);
+        if (marketQuality !== null) {
+          matchingDetail.totalQualityQuantity = (matchingDetail.totalQualityQuantity ?? 0) + marketTransaction.quantity;
+          matchingDetail.totalQualityAmount = (matchingDetail.totalQualityAmount ?? 0) + marketTransaction.quantity * marketQuality;
+        }
       }
-    } else detailGroup.details.push({ id: `${detailGroup.id}-${detailGroup.details.length}`, description: marketTransaction?.description ?? transaction.description, detailLines: transaction.detailLines, count: 1, ...(marketTransaction ? { totalQuantity: marketTransaction.quantity, totalAbsoluteAmount: Math.abs(transaction.amount) } : {}) });
+    } else detailGroup.details.push({
+      id: `${detailGroup.id}-${detailGroup.details.length}`,
+      description: marketTransaction?.description ?? transaction.description,
+      detailLines: transaction.detailLines,
+      count: 1,
+      ...(marketTransaction ? {
+        resourceType: marketTransaction.resourceType,
+        totalQuantity: marketTransaction.quantity,
+        totalAbsoluteAmount: Math.abs(transaction.amount),
+        ...(marketQuality !== null ? { totalQualityQuantity: marketTransaction.quantity, totalQualityAmount: marketTransaction.quantity * marketQuality } : {}),
+      } : {}),
+    });
   }
   return Array.from(groups.values()).sort((left, right) => right.atGameTimeMs - left.atGameTimeMs);
 }

@@ -119,6 +119,32 @@ describe('advanceAllFacilityProduction', () => {
     expect(calculateOutputQuality({ researchMaxQ: 20, weightedInputQ: inputQ, upgradeMaxQ: 20, productionMaxQ: 2 }).outputQ).toBe(2);
   });
 
+  it('retains the consumed input quality when inventory changes before completion', () => {
+    const { facilities, facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    facility.upgradeQuality();
+    const inventory = new Inventory();
+    addRecipeInputs(inventory, RecipeName.GrowGrain, 1);
+
+    advanceAllFacilityProduction(facilities, inventory, () => 0.03);
+    inventory.add(ResourceType.Water, 1, 100);
+
+    const outputs = advanceAllFacilityProduction(
+      facilities,
+      inventory,
+      () => getRecipe(RecipeName.GrowGrain).requiredWork,
+      undefined,
+      (_resourceType, weightedInputQ, upgradeMaxQ) => calculateOutputQuality({
+        weightedInputQ,
+        researchMaxQ: 100,
+        upgradeMaxQ,
+        productionMaxQ: 100,
+      }),
+    );
+
+    expect(facility.getView().recipeInputQ).toBeNull();
+    expect(outputs[0]?.quality).toBeCloseTo(2);
+  });
+
   it('runs repeated recipes in a configured cycle before returning to the start', () => {
     const { facilities, facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
     facility.setProductionCycle([RecipeName.GrowGrain, RecipeName.GrowGrain, RecipeName.GrowSugar]);

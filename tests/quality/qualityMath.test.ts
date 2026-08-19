@@ -19,6 +19,12 @@ describe('quality domain', () => {
     expect(calculateResearchMaxQ(1_000)).toBeLessThan(100);
   });
 
+  it('keeps the tuned mid- and late-game curve milestones stable', () => {
+    expect(calculateResearchMaxQ(40)).toBeCloseTo(44.9713, 3);
+    expect(calculateProductionMaxQ(207_500)).toBeCloseTo(49.7208, 3);
+    expect(calculateProductionMaxQ(10_000_000)).toBeCloseTo(99.6717, 3);
+  });
+
   it('normalizes lifetime production continuously and remains below Q100', () => {
     expect(calculateProductionMaxQ(0)).toBe(1);
     expect(calculateProductionMaxQ(100)).toBe(2);
