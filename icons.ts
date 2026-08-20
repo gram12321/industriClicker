@@ -73,6 +73,7 @@ export const APP_ICONS = {
   fulfilled: 'check-circle-outline',
   globalMarket: 'earth',
   help: 'book-open-variant',
+  inputQuality: 'arrow-down-bold-circle-outline',
   logout: 'logout',
   localMarket: 'storefront-outline',
   marketAutoBuy: 'cart-arrow-down',

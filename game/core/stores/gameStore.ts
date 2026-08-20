@@ -1,6 +1,7 @@
 import { Finance, LOAN_COLLECTION, buildFinanceStatementData, calculateAssets, calculateFacilityAssetValue, calculateLoanSearchEstimate, generateLoanOffers, LENDER_TYPES, refreshLoanOfferAvailability, type LoanOffer, type LoanSearchCriteria } from '@/game/finance';
 import { Inventory, ResourceFlowLedger } from '@/game/inventory';
 import { FACILITIES, FacilityCollection, FacilityMaintenanceStatistics, advanceAllFacilityProduction, calculateFacilityEffectiveWork, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
+import { calculateOutputQuality, calculateProductionMaxQ } from '@/game/quality';
 import { getRecipe, type RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
 import { MARKET_DIFFUSION_INTERVAL_MS, MARKET_SALES_ORDER_BID_MULTIPLIER, Market, canAutoBuyMarketResource, canBuyMarketResource, canSellMarketResource, type MarketAutomation } from '@/game/market';
@@ -11,7 +12,7 @@ import { AchievementLedger, createAchievementEvaluationContext, evaluateAchievem
 
 import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyAssetsPrestige, calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary, calculateFacilityConditionPrestige } from '@/game/prestige';
 import { evaluateGateRequirements, type GateContext, type GateEvaluation } from '@/game/gates';
-import { ResearchLedger, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesOrders, getMaximumSimultaneousResearchProjects, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, getSalesOrderBidMultiplier, getSalesOrderBundleMaturityMultiplier, getSalesOrderMaximumCompanyValueFraction, getSalesOrderMinimumPremiumBonus, getSalesPressureOfferChanceMultiplier, getSalesRelationshipDecayHalfLifeMultiplier, getSalesRelationshipFailureLossMultiplier, getSalesRelationshipFulfilmentGainMultiplier, type ResearchProjectId } from '@/game/research';
+import { ResearchLedger, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesOrders, getMaximumSimultaneousResearchProjects, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResearchProject, getResourceResearchMaxQ, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, getSalesOrderBidMultiplier, getSalesOrderBundleMaturityMultiplier, getSalesOrderMaximumCompanyValueFraction, getSalesOrderMinimumPremiumBonus, getSalesPressureOfferChanceMultiplier, getSalesRelationshipDecayHalfLifeMultiplier, getSalesRelationshipFailureLossMultiplier, getSalesRelationshipFulfilmentGainMultiplier, type ResearchProjectId } from '@/game/research';
 import { FIRST_FACILITY_RECIPE_RESEARCH_GRANT_ID, FIRST_FACILITY_RECIPE_RESEARCH_MAX_DURATION_MS, FIRST_FACILITY_RECIPE_RESEARCH_WORK_SPEED_MULTIPLIER, GrantLedger } from '@/game/grants';
 import type { StartingConditionId } from '@/game/company/companyTypes';
 import { STANDARD_START_CONSTRUCTION_MATERIALS, STANDARD_START_INDUSTRIAL_MACHINES } from '@/game/company/companyConstants';
@@ -299,7 +300,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const trade = market.buyFromLocal(resourceType, amount);
     const total = trade.unitPrice * trade.amount;
     if (!trade.success || !finance.canAfford(total) || !inventory.add(resourceType, trade.amount, trade.quality)
-      || !finance.applyTransaction({ amount: -total, description: `Bought ${trade.amount} ${resourceType} from local market`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: get().lastProcessedAtMs })) return false;
+      || !finance.applyTransaction({ amount: -total, description: `Bought ${trade.amount} ${resourceType} from local market`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`, `Quality: Q${trade.quality.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: get().lastProcessedAtMs })) return false;
     const resourceFlow = get().resourceFlow.clone();
     resourceFlow.record('market-buy', resourceType, trade.amount, get().lastProcessedAtMs);
     set({ market, inventory, finance, resourceFlow });
@@ -316,7 +317,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const trade = market.sellToLocal(resourceType, amount, quality);
     const total = trade.unitPrice * trade.amount;
     if (!trade.success || !inventory.remove(resourceType, amount)
-      || !finance.applyTransaction({ amount: total, description: `Sold ${trade.amount} ${resourceType} to local market`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-sale', occurredAtGameTimeMs: get().lastProcessedAtMs })) return false;
+      || !finance.applyTransaction({ amount: total, description: `Sold ${trade.amount} ${resourceType} to local market`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`, `Quality: Q${quality.toFixed(2)}`], kind: 'operating', source: 'market-sale', occurredAtGameTimeMs: get().lastProcessedAtMs })) return false;
     const resourceFlow = get().resourceFlow.clone();
     resourceFlow.record('market-sell', resourceType, -trade.amount, get().lastProcessedAtMs);
     set({ market, inventory, finance, resourceFlow });
@@ -541,11 +542,14 @@ export const useGameStore = create<GameState>((set, get) => {
     const facilityView = facility.getView();
     const currentLevel = upgradeKind === 'speed'
       ? facilityView.speedUpgradeLevel
-      : upgradeKind === 'output' ? facilityView.outputUpgradeLevel : facilityView.conditionDecayUpgradeLevel;
+      : upgradeKind === 'output' ? facilityView.outputUpgradeLevel
+        : upgradeKind === 'condition' ? facilityView.conditionDecayUpgradeLevel
+          : facilityView.qualityUpgradeLevel;
     const definition = getFacilityDefinition(facility.facilityType);
-    const cost = getFacilityUpgradeCost(definition.upgradeCost, currentLevel);
-    const constructionMaterialsCost = getFacilityUpgradeResourceCost(definition.constructionMaterialsCost, currentLevel);
-    const industrialMachinesCost = getFacilityUpgradeResourceCost(definition.industrialMachinesCost, currentLevel);
+    const costLevel = upgradeKind === 'quality' ? Math.max(0, currentLevel - 1) : currentLevel;
+    const cost = getFacilityUpgradeCost(definition.upgradeCost, costLevel);
+    const constructionMaterialsCost = getFacilityUpgradeResourceCost(definition.constructionMaterialsCost, costLevel);
+    const industrialMachinesCost = getFacilityUpgradeResourceCost(definition.industrialMachinesCost, costLevel);
     const missingConstructionMaterials = Math.max(0, constructionMaterialsCost - inventory.getAmount(ResourceType.ConstructionMaterials));
     const missingIndustrialMachines = Math.max(0, industrialMachinesCost - inventory.getAmount(ResourceType.IndustrialMachines));
     const missingInputs = [
@@ -565,12 +569,14 @@ export const useGameStore = create<GameState>((set, get) => {
       facility.upgradeSpeed();
     } else if (upgradeKind === 'output') {
       facility.upgradeOutput();
-    } else {
+    } else if (upgradeKind === 'condition') {
       facility.upgradeConditionDecay();
+    } else {
+      facility.upgradeQuality();
     }
 
     if ((missingInputPurchaseCost > 0 && !finance.applyTransaction({ amount: -missingInputPurchaseCost, description: `Bought missing upgrade inputs for ${facilityView.displayName}`, detailLines: trades.map(({ resourceType, trade }) => `${trade.amount} ${resourceType} at €${trade.unitPrice.toFixed(2)} each`), kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: get().lastProcessedAtMs }))
-      || !finance.applyTransaction({ amount: -cost, description: `${upgradeKind === 'speed' ? 'Speed' : upgradeKind === 'output' ? 'Output' : 'Condition decay'} upgrade for ${facilityView.displayName}`, detailLines: [`Level ${currentLevel + 1}`, `Construction materials committed: ${constructionMaterialsCost}`, `Industrial machines installed: ${industrialMachinesCost}`], kind: 'investing', source: 'facility-upgrade', occurredAtGameTimeMs: get().lastProcessedAtMs })
+      || !finance.applyTransaction({ amount: -cost, description: `${upgradeKind === 'speed' ? 'Speed' : upgradeKind === 'output' ? 'Output' : upgradeKind === 'condition' ? 'Condition decay' : 'Quality'} upgrade for ${facilityView.displayName}`, detailLines: [`Level ${currentLevel + 1}`, `Construction materials committed: ${constructionMaterialsCost}`, `Industrial machines installed: ${industrialMachinesCost}`], kind: 'investing', source: 'facility-upgrade', occurredAtGameTimeMs: get().lastProcessedAtMs })
       || !inventory.remove(ResourceType.ConstructionMaterials, constructionMaterialsCost)
       || !inventory.remove(ResourceType.IndustrialMachines, industrialMachinesCost)) {
       return false;
@@ -661,7 +667,7 @@ export const useGameStore = create<GameState>((set, get) => {
         if (inventory === get().inventory) inventory = inventory.clone();
         const trade = buyingMarket.buyFromLocal(resourceType, purchaseAmount);
         if (trade.success && inventory.add(resourceType, trade.amount, trade.quality)) {
-          marketFinance.applyTransaction({ amount: -trade.unitPrice * trade.amount, description: `Autobought ${formatNumber(trade.amount, { smartDecimals: true })} ${resourceType}`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: stepEndGameTimeMs });
+          marketFinance.applyTransaction({ amount: -trade.unitPrice * trade.amount, description: `Autobought ${formatNumber(trade.amount, { smartDecimals: true })} ${resourceType}`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`, `Quality: Q${trade.quality.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: stepEndGameTimeMs });
           recordResourceFlow('market-buy', resourceType, trade.amount, stepEndGameTimeMs);
         }
       }
@@ -685,7 +691,7 @@ export const useGameStore = create<GameState>((set, get) => {
               || unitPrice > automation.autoBuyMaxUnitPrice || !quote.success || !marketFinance.canAfford(quote.unitPrice * quote.amount)) continue;
             const trade = market.buyFromLocal(input.resourceType, purchaseAmount);
             if (trade.success && inventory.add(input.resourceType, trade.amount, trade.quality)) {
-              marketFinance.applyTransaction({ amount: -trade.unitPrice * trade.amount, description: `Autobought ${formatNumber(trade.amount, { smartDecimals: true })} ${input.resourceType} for production`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: stepEndGameTimeMs });
+          marketFinance.applyTransaction({ amount: -trade.unitPrice * trade.amount, description: `Autobought ${formatNumber(trade.amount, { smartDecimals: true })} ${input.resourceType} for production`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`, `Quality: Q${trade.quality.toFixed(2)}`], kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: stepEndGameTimeMs });
               recordResourceFlow('market-buy', input.resourceType, trade.amount, stepEndGameTimeMs);
             }
           }
@@ -695,11 +701,17 @@ export const useGameStore = create<GameState>((set, get) => {
           facility,
           baseWork,
           getRecipeResearchWorkSpeedMultiplier(recipeName, research.getCompletedProjectIds()),
-        ), (input) => recordResourceFlow('facility-input', input.resourceType, -input.amount, stepEndGameTimeMs));
+        ), (input) => recordResourceFlow('facility-input', input.resourceType, -input.amount, stepEndGameTimeMs), (resourceType, weightedInputQ, upgradeMaxQ) => calculateOutputQuality({
+          weightedInputQ,
+          researchMaxQ: getResourceResearchMaxQ(resourceType, research.getCompletedProjectIds()),
+          upgradeMaxQ,
+          productionMaxQ: calculateProductionMaxQ(resourceFlow.getLifetimeFacilityOutput(resourceType)),
+        }));
         if (outputs.length > 0) {
           producedOutput = true;
           for (const output of outputs) {
-            recordResourceFlow('facility-output', output.resourceType, output.amount, stepEndGameTimeMs);
+            if (resourceFlow === get().resourceFlow) resourceFlow = resourceFlow.clone();
+            resourceFlow.recordFacilityOutput(output.resourceType, output.amount, output.quality, stepEndGameTimeMs);
           }
         }
       }
@@ -727,19 +739,20 @@ export const useGameStore = create<GameState>((set, get) => {
         const automation = activeMarket.getAutomation(resourceType);
         const completedIntervals = Math.floor(stepEndGameTimeMs / automation.autoTradeIntervalMs) - Math.floor(stepStartGameTimeMs / automation.autoTradeIntervalMs);
         if (!automation.autoSellEnabled || completedIntervals <= 0) continue;
-        const currentPrice = activeMarket.getLocalPrice(resourceType);
+        const inventoryQuality = inventory.getQuality(resourceType);
+        const currentPrice = activeMarket.getLocalSalePrice(resourceType, inventoryQuality);
         const amount = Math.min(
           automation.autoSellMaxPerMinute * automation.autoTradeIntervalMs * completedIntervals / REALTIME_WORK_MINUTE_MS,
           Math.max(0, inventory.getAmount(resourceType) - automation.autoSellMinKeep),
         );
-        const quote = activeMarket.getLocalSellQuote(resourceType, amount, inventory.getQuality(resourceType));
+        const quote = activeMarket.getLocalSellQuote(resourceType, amount, inventoryQuality);
         if (amount <= 0 || currentPrice < automation.autoSellMinUnitPrice || !quote.success || quote.unitPrice < automation.autoSellMinUnitPrice) continue;
         market ??= activeMarket.clone();
         marketFinance ??= get().finance.clone();
         if (inventory === get().inventory) inventory = inventory.clone();
-        const trade = market.sellToLocal(resourceType, amount, inventory.getQuality(resourceType));
+        const trade = market.sellToLocal(resourceType, amount, inventoryQuality);
         if (trade.success && inventory.remove(resourceType, amount)) {
-          marketFinance.applyTransaction({ amount: trade.unitPrice * trade.amount, description: `Autosold ${trade.amount} ${resourceType} to local market`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`], kind: 'operating', source: 'market-sale', occurredAtGameTimeMs: stepEndGameTimeMs });
+          marketFinance.applyTransaction({ amount: trade.unitPrice * trade.amount, description: `Autosold ${trade.amount} ${resourceType} to local market`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`, `Quality: Q${trade.quality.toFixed(2)}`], kind: 'operating', source: 'market-sale', occurredAtGameTimeMs: stepEndGameTimeMs });
           recordResourceFlow('market-sell', resourceType, -trade.amount, stepEndGameTimeMs);
         }
       }
@@ -812,7 +825,7 @@ export const useGameStore = create<GameState>((set, get) => {
         market ??= get().market.clone();
         for (const resourceType of RESOURCE_TYPES) {
           const available = inventory.getAmount(resourceType);
-          const unitRecovery = market.getLocalPrice(resourceType) * LOAN_COLLECTION.forcedInventoryRecoveryRate;
+          const unitRecovery = market.getLocalSalePrice(resourceType, inventory.getQuality(resourceType)) * LOAN_COLLECTION.forcedInventoryRecoveryRate;
           const amount = unitRecovery > 0 ? Math.min(available, (maximumRecovery - recovered) / unitRecovery) : 0;
           if (amount <= 0) continue;
           const trade = market.sellToLocal(resourceType, amount, inventory.getQuality(resourceType));
@@ -1178,12 +1191,13 @@ export const useGameStore = create<GameState>((set, get) => {
     }
 
     const currentGameTimeMs = get().lastProcessedAtMs;
+    const deliveredQualities = new Map(order.lines.map((line) => [line.resourceType, inventory.getQuality(line.resourceType)]));
     for (const line of order.lines) {
       const quality = inventory.getQuality(line.resourceType);
       if (!inventory.remove(line.resourceType, line.quantity) || !market.addToGlobal(line.resourceType, line.quantity, quality)) return false;
     }
     const completedResearchProjectIds = get().research.getCompletedProjectIds();
-    if (!finance.applyTransaction({ amount: order.reward, description: `Customer order fulfilled: ${order.customerName}`, detailLines: order.lines.map((line) => `Delivered ${line.quantity} ${line.resourceType}`), kind: 'operating', source: 'order-sale', occurredAtGameTimeMs: currentGameTimeMs })
+    if (!finance.applyTransaction({ amount: order.reward, description: `Customer order fulfilled: ${order.customerName}`, detailLines: order.lines.map((line) => { const quality = deliveredQualities.get(line.resourceType) ?? 1; const premiumMultiplier = 1 + line.premiumPercent / 100; const qualityMultiplier = quality; const calculatedUnitPrice = line.globalReferenceUnitPrice * premiumMultiplier * qualityMultiplier; return `Delivered ${line.quantity} ${line.resourceType} at Q${quality.toFixed(2)} · €${line.globalReferenceUnitPrice.toFixed(2)} base × ${premiumMultiplier.toFixed(2)} premium × ${qualityMultiplier.toFixed(2)} quality = €${calculatedUnitPrice.toFixed(2)}/unit`; }), kind: 'operating', source: 'order-sale', occurredAtGameTimeMs: currentGameTimeMs })
       || !salesOrders.fulfill(order.id, currentGameTimeMs, calculateCompanyPrestigeSummary(get().prestige.getEvents(), currentGameTimeMs).totalPrestige, getSalesRelationshipDecayHalfLifeMultiplier(completedResearchProjectIds), getSalesRelationshipFulfilmentGainMultiplier(completedResearchProjectIds), getSalesRelationshipFailureLossMultiplier(completedResearchProjectIds))) {
       return false;
     }

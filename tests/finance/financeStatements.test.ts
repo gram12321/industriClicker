@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { Facility } from '@/game/facilities/facility';
+import { FacilityCollection } from '@/game/facilities/facilityCollection';
 import { getFacilityDefinition } from '@/game/facilities/facilityConstants';
 import { getFacilityUpgradeInvestmentCost, getFacilityUpgradeResourceInvestmentCost } from '@/game/facilities/facilityUpgrades';
 import { FacilityType } from '@/game/facilities/facilityTypes';
-import { calculateFacilityAssetValue } from '@/game/finance';
+import { calculateFacilityAssetValue, buildFinanceStatementData, Finance } from '@/game/finance';
+import { AchievementLedger } from '@/game/achievements';
+import { Inventory } from '@/game/inventory';
+import { ResearchLedger } from '@/game/research';
 import { Market } from '@/game/market';
 import { ResourceType } from '@/game/resources';
 
@@ -35,5 +39,28 @@ describe('calculateFacilityAssetValue', () => {
       + expectedUpgradeInvestment;
 
     expect(calculateFacilityAssetValue(facility, market)).toBe(expectedValue);
+  });
+});
+
+describe('cash-flow market details', () => {
+  it('keeps resource icons and weighted average quality for grouped market trades', () => {
+    const finance = new Finance();
+    finance.applyTransaction({ amount: 2, description: 'Sold 1 grain to local market', detailLines: ['Quality: Q2.00'], kind: 'operating', source: 'market-sale', occurredAtGameTimeMs: 1 });
+    finance.applyTransaction({ amount: 8, description: 'Sold 4 grain to local market', detailLines: ['Quality: Q4.00'], kind: 'operating', source: 'market-sale', occurredAtGameTimeMs: 2 });
+
+    const data = buildFinanceStatementData({
+      achievements: new AchievementLedger(),
+      companyStartedAtGameTimeMs: 0,
+      currentGameTimeMs: 2,
+      facilities: new FacilityCollection(),
+      finance,
+      inventory: new Inventory(),
+      market: new Market(),
+      period: 'all-time',
+      research: new ResearchLedger(),
+    });
+    const detail = data.cashFlowRows[0]?.detailGroups[0]?.details[0];
+
+    expect(detail).toMatchObject({ resourceType: ResourceType.Grain, totalQuantity: 5, totalQualityQuantity: 5, totalQualityAmount: 18 });
   });
 });

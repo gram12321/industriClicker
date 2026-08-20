@@ -1,5 +1,6 @@
 import type { RecipeName } from '@/game/recipes';
 import { calculateAsymmetricalScaler01 } from '@/game/core/math/scaling';
+import { calculateUpgradeMaxQ } from '@/game/quality';
 import { getFacilityDefinition } from './facilityConstants';
 import { FacilityType } from './facilityTypes';
 import { getConditionDecayMultiplier, getFacilityConditionEfficiency, getFacilityEfficiency, getOutputUpgradeMultiplier, getOverstaffingConditionDecayMultiplier, getRequiredWorkers, getSpeedUpgradeWorkSpeedMultiplier, getStaffingEfficiency } from './facilityUpgrades';
@@ -13,6 +14,8 @@ export type FacilitySnapshot = {
   productionCycleIndex: number;
   isActive: boolean;
   recipeProgress: Partial<Record<RecipeName, number>>;
+  recipeInputQ: number | null;
+  qualityUpgradeLevel: number;
   speedUpgradeLevel?: number;
   outputUpgradeLevel?: number;
   conditionDecayUpgradeLevel?: number;
@@ -30,6 +33,9 @@ export type FacilityView = {
   productionCycleIndex: number;
   isActive: boolean;
   recipeProgress: Readonly<Partial<Record<RecipeName, number>>>;
+  recipeInputQ: number | null;
+  qualityUpgradeLevel: number;
+  upgradeMaxQ: number;
   speedUpgradeLevel: number;
   outputUpgradeLevel: number;
   conditionDecayUpgradeLevel: number;
@@ -52,6 +58,8 @@ export class Facility {
   private productionCycleIndex = 0;
   private active = false;
   private recipeProgress: Partial<Record<RecipeName, number>> = {};
+  private recipeInputQ: number | null = null;
+  private qualityUpgradeLevel = 1;
   private speedUpgradeLevel = 0;
   private outputUpgradeLevel = 0;
   private conditionDecayUpgradeLevel = 0;
@@ -83,6 +91,9 @@ export class Facility {
       productionCycleIndex: this.productionCycleIndex,
       isActive: this.active,
       recipeProgress: { ...this.recipeProgress },
+      recipeInputQ: this.recipeInputQ,
+      qualityUpgradeLevel: this.qualityUpgradeLevel,
+      upgradeMaxQ: calculateUpgradeMaxQ(this.qualityUpgradeLevel),
       speedUpgradeLevel: this.speedUpgradeLevel,
       outputUpgradeLevel: this.outputUpgradeLevel,
       conditionDecayUpgradeLevel: this.conditionDecayUpgradeLevel,
@@ -134,10 +145,15 @@ export class Facility {
       this.productionCycle = [];
       this.productionCycleIndex = 0;
       this.active = false;
+      this.recipeInputQ = null;
       return true;
     }
 
     return this.setProductionCycle([recipeName]);
+  }
+
+  upgradeQuality(): void {
+    this.qualityUpgradeLevel += 1;
   }
 
   setProductionCycle(recipeNames: readonly RecipeName[]): boolean {
@@ -148,6 +164,7 @@ export class Facility {
     this.productionCycleIndex = 0;
     this.activeRecipeName = this.productionCycle[0] ?? null;
     this.active = this.activeRecipeName !== null;
+    this.recipeInputQ = null;
     return true;
   }
 
@@ -196,6 +213,11 @@ export class Facility {
     return true;
   }
 
+  /** Records the weighted quality of inputs consumed for the in-progress cycle. */
+  setRecipeInputQ(inputQ: number | null): void {
+    this.recipeInputQ = inputQ !== null && Number.isFinite(inputQ) && inputQ > 0 ? inputQ : null;
+  }
+
   toSnapshot(): FacilitySnapshot {
     return {
       id: this.id,
@@ -205,6 +227,8 @@ export class Facility {
       productionCycleIndex: this.productionCycleIndex,
       isActive: this.active,
       recipeProgress: { ...this.recipeProgress },
+      recipeInputQ: this.recipeInputQ,
+      qualityUpgradeLevel: this.qualityUpgradeLevel,
       speedUpgradeLevel: this.speedUpgradeLevel,
       outputUpgradeLevel: this.outputUpgradeLevel,
       conditionDecayUpgradeLevel: this.conditionDecayUpgradeLevel,
@@ -228,6 +252,11 @@ export class Facility {
     this.active = snapshot.isActive;
 
     this.recipeProgress = {};
+    const recipeInputQ = snapshot.recipeInputQ;
+    this.recipeInputQ = typeof recipeInputQ === 'number' && Number.isFinite(recipeInputQ) && recipeInputQ > 0
+      ? recipeInputQ
+      : null;
+    this.qualityUpgradeLevel = isValidUpgradeLevel(snapshot.qualityUpgradeLevel) ? Math.max(1, snapshot.qualityUpgradeLevel) : 1;
     this.speedUpgradeLevel = isValidUpgradeLevel(snapshot.speedUpgradeLevel) ? snapshot.speedUpgradeLevel : 0;
     this.outputUpgradeLevel = isValidUpgradeLevel(snapshot.outputUpgradeLevel) ? snapshot.outputUpgradeLevel : 0;
     this.conditionDecayUpgradeLevel = isValidUpgradeLevel(snapshot.conditionDecayUpgradeLevel) ? snapshot.conditionDecayUpgradeLevel : 0;

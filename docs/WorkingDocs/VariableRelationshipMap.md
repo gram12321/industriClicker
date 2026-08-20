@@ -360,13 +360,16 @@ flowchart LR
 | State | Kind | Owner | Changes through | Saved as |
 |---|---|---|---|---|
 | `inventory.entries.*.quantity`, `.quality` | Stored | `Inventory` | Resource commands and production | `InventorySnapshot` |
+| `facility.recipeInputQ` | Stored | `Facility` | Captured when a recipe cycle consumes inputs; used when that cycle completes | Facility snapshot; quality domain derives InputMaxQ |
+| `facility.qualityUpgradeLevel` / `.upgradeMaxQ` | Stored / derived | `Facility` | Per-facility quality upgrades and quality-domain output calculation | Facility snapshot / derives UpgradeMaxQ |
+| `research.completed.resource-quality-*` | Stored | `ResearchLedger` | Resource-quality research completion | `ResearchLedgerSnapshot`; quality domain derives ResearchMaxQ by resource |
 | Resource-flow all-time category totals and the latest one-hour buckets | Stored | `ResourceFlowLedger` | Inventory-affecting commands and foreground production/autotrade | Resource-flow snapshot inside `GameSnapshot` |
 | `finance.balance`, `.transactions`, `.loans`, `.lenders`, `.activeLoanSearch`, `.loanSearchOffers`, economy phase, loan-payment history | Stored | `Finance` | Accepted transactions, timed lender searches, loan actions, economy transitions, and foreground repayment attempts | `FinanceSnapshot` |
 | Numbered facility instances, production-cycle recipe order/current position, and recipe progress | Stored | `FacilityCollection` | Construction, cycle setup, upgrades, and production | Facility snapshot |
 | Facility upgrade levels, assigned workers, and 0–1 condition | Stored | `Facility` | Upgrade/staffing commands and foreground wear/production tear | Facility snapshot |
 | `salesOrders.offered`/`.completed` atomic order lines, `.customerStates`, `.nextOrderNumber` | Stored | `SalesOrders` | Customer-order bundle creation, expiry, fulfilment, and relationship actions | `SalesOrdersSnapshot` |
 | `achievements.unlocks` | Stored | `AchievementLedger` | Post-command achievement evaluation | `AchievementLedgerSnapshot` |
-| `resourceFlow.allTime.facility-output.*` | Stored | `ResourceFlowLedger` | Completed facility recipe output only | Resource-flow snapshot inside `GameSnapshot` |
+| `resourceFlow.allTime.facility-output.*` | Stored / derived | `ResourceFlowLedger` | Completed facility recipe output only; quality domain derives company-wide ProductionMaxQ from each resource's lifetime output | Resource-flow snapshot inside `GameSnapshot` |
 | Facility maintenance repaired-condition, largest-repair, and repair-value totals | Stored | `FacilityMaintenanceStatistics` | Successful facility repairs | Facility-maintenance snapshot inside `GameSnapshot` |
 | `prestige.events` | Stored | `PrestigeLedger` | Balance changes and fulfilled sales | `PrestigeLedgerSnapshot` |
 | `research.completed`, `.active[]` (including each active project's effective duration) | Stored | `ResearchLedger` | Research start, foreground advance, per-project completion and cancellation | `ResearchLedgerSnapshot` |

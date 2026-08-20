@@ -26,6 +26,29 @@ function calculateEquilibriumLowerSupply(
   return totalSupply * lowerPriceWeight / (lowerPriceWeight + higherPriceWeight);
 }
 
+function calculateEquilibriumQuality(lower: MarketPoolEntry, higher: MarketPoolEntry): number {
+  const totalSupply = lower.supply + higher.supply;
+  return totalSupply > 0
+    ? (lower.supply * lower.quality + higher.supply * higher.quality) / totalSupply
+    : 1;
+}
+
+function calculateQualityChangesPerMinute(
+  lower: MarketPoolEntry,
+  higher: MarketPoolEntry,
+  isToLower: boolean,
+  amount: number,
+  timeScale: number,
+): { lowerQualityChangePerMinute: number; higherQualityChangePerMinute: number } {
+  if (amount <= 0 || timeScale <= 0) return { lowerQualityChangePerMinute: 0, higherQualityChangePerMinute: 0 };
+  if (isToLower) {
+    const receivingQuality = (lower.supply * lower.quality + amount * higher.quality) / (lower.supply + amount);
+    return { lowerQualityChangePerMinute: (receivingQuality - lower.quality) / timeScale, higherQualityChangePerMinute: 0 };
+  }
+  const receivingQuality = (higher.supply * higher.quality + amount * lower.quality) / (higher.supply + amount);
+  return { lowerQualityChangePerMinute: 0, higherQualityChangePerMinute: (receivingQuality - higher.quality) / timeScale };
+}
+
 function getDirection(lowerMarket: MarketPoolKind, higherMarket: MarketPoolKind, isToLower: boolean): MarketDiffusionDirection {
   return isToLower ? `to-${lowerMarket}` as MarketDiffusionDirection : `to-${higherMarket}` as MarketDiffusionDirection;
 }
@@ -44,6 +67,7 @@ export function calculateMarketDiffusionDetails(
   const priceGap = Math.max(priceRatio, 1 / priceRatio) - 1;
   const equilibriumLowerSupply = calculateEquilibriumLowerSupply(lower, higher, pair);
   const equilibriumHigherSupply = lower.supply + higher.supply - equilibriumLowerSupply;
+  const equilibriumQuality = calculateEquilibriumQuality(lower, higher);
   const timeScale = Number.isFinite(elapsedMilliseconds) && elapsedMilliseconds > 0
     ? elapsedMilliseconds / MARKET_DIFFUSION_REFERENCE_INTERVAL_MS
     : 0;
@@ -65,6 +89,9 @@ export function calculateMarketDiffusionDetails(
       diffusionMultiplier: pair.diffusionMultiplier,
       rawAmount: 0,
       equilibriumCappedAmount: 0,
+      equilibriumQuality,
+      lowerQualityChangePerMinute: 0,
+      higherQualityChangePerMinute: 0,
     };
   }
 
@@ -83,9 +110,10 @@ export function calculateMarketDiffusionDetails(
       rawAmount,
       equilibriumDistance * (1 - (1 - MARKET_DIFFUSION_MAX_EQUILIBRIUM_CORRECTION) ** timeScale),
     );
+    const amount = Math.min(equilibriumCappedAmount, higher.supply);
     return {
       direction: getDirection(pair.lowerMarket, pair.higherMarket, true),
-      amount: Math.min(equilibriumCappedAmount, higher.supply),
+      amount,
       lowerMarket: pair.lowerMarket,
       higherMarket: pair.higherMarket,
       lowerPrice,
@@ -99,6 +127,8 @@ export function calculateMarketDiffusionDetails(
       diffusionMultiplier: pair.diffusionMultiplier,
       rawAmount,
       equilibriumCappedAmount,
+      equilibriumQuality,
+      ...calculateQualityChangesPerMinute(lower, higher, true, amount, timeScale),
     };
   }
 
@@ -107,9 +137,10 @@ export function calculateMarketDiffusionDetails(
     rawAmount,
     equilibriumDistance * (1 - (1 - MARKET_DIFFUSION_MAX_EQUILIBRIUM_CORRECTION) ** timeScale),
   );
+  const amount = Math.min(equilibriumCappedAmount, lower.supply);
   return {
     direction: getDirection(pair.lowerMarket, pair.higherMarket, false),
-    amount: Math.min(equilibriumCappedAmount, lower.supply),
+    amount,
     lowerMarket: pair.lowerMarket,
     higherMarket: pair.higherMarket,
     lowerPrice,
@@ -123,6 +154,8 @@ export function calculateMarketDiffusionDetails(
     diffusionMultiplier: pair.diffusionMultiplier,
     rawAmount,
     equilibriumCappedAmount,
+    equilibriumQuality,
+    ...calculateQualityChangesPerMinute(lower, higher, false, amount, timeScale),
   };
 }
 

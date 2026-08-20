@@ -10,7 +10,9 @@ import {
   calculateFacilityNetGainPerMinute,
   calculateFacilityResourcePayment,
   calculateProjectedFacilityUpgradeNetGainPerMinute,
+  calculateProjectedFacilityQualityUpgradeNetGainPerMinute,
   calculateRecipeValuePerMinute,
+  calculateRecipeInputQ,
   FACILITY_GROUPS,
   getConditionDecayMultiplier,
   getFacilityDefinition,
@@ -25,16 +27,16 @@ import {
   type FacilityUpgradeKind,
   type FacilityView,
 } from '@/game/facilities';
-import type { Inventory } from '@/game/inventory';
+import type { Inventory, ResourceFlowLedger } from '@/game/inventory';
 import type { Market, MarketAutomation } from '@/game/market';
 import { getRecipe, type Recipe } from '@/game/recipes';
-import { getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, type ResearchLedger, type ResearchProjectId } from '@/game/research';
+import { getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResourceResearchMaxQ, type ResearchLedger, type ResearchProjectId } from '@/game/research';
+import { calculateInputMaxQ, calculateOutputQuality, calculateProductionMaxQ, calculateUpgradeMaxQ, type OutputQualityBreakdown } from '@/game/quality';
 import { BASE_WORK_PER_MINUTE } from '@/game/core/time';
 import { getResource, ResourceType } from '@/game/resources';
 import { clamp, formatCurrency, formatDuration, formatNumber, formatPercent, getColorClass } from '@/utils';
 import { DetailRow, SectionHeading, WorkMetric } from '@/ui/dashboard/components/DashboardPrimitives';
 import { TooltipAppIcon, TooltipMaterialIcon, TooltipResourceIcon, TooltipTextIcon } from '@/ui/dashboard/components/IconTooltip';
-import { RecipeResourceSummary } from '@/ui/dashboard/components/RecipeResourceSummary';
 import { formatRecipeName } from '@/ui/dashboard/helpers/recipeFormatters';
 import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS, RECIPE_ICONS } from '@/icons';
@@ -43,7 +45,7 @@ import type { ResearchAvailability } from '@/game/core/stores';
 type FacilityDetailTab = 'efficiency' | 'recipe' | 'upgrades';
 
 export function ProductionView({
-  buyMarketResource, facilities, finance, firstFacilityTutorialFocus, firstFacilityTutorialRecipeName, firstFacilityTutorialStep, getResearchAvailability, inventory, isBuildFacilityTutorial, isFirstFacilityTutorial, isProductionTutorial, market, onBuildFacilityLayout, onFirstFacilityFocusLayout, onFirstFacilityRecipeSelected, openConstructionYard, repairFacility, requestFacilityDestruction, research, setFacilityProductionActive, setFacilityProductionCycle, setFacilityWorkers, setMarketAutomation, startResearch, upgradeFacility,
+  buyMarketResource, facilities, finance, firstFacilityTutorialFocus, firstFacilityTutorialRecipeName, firstFacilityTutorialStep, getResearchAvailability, inventory, isBuildFacilityTutorial, isFirstFacilityTutorial, isProductionTutorial, market, onBuildFacilityLayout, onFirstFacilityFocusLayout, onFirstFacilityRecipeSelected, openConstructionYard, repairFacility, requestFacilityDestruction, research, resourceFlow, setFacilityProductionActive, setFacilityProductionCycle, setFacilityWorkers, setMarketAutomation, startResearch, upgradeFacility,
 }: {
   facilities: FacilityCollection;
   buyMarketResource: (resourceType: Recipe['inputs'][number]['resourceType'], amount: number) => boolean;
@@ -56,6 +58,7 @@ export function ProductionView({
   inventory: Inventory;
   market: Market;
   research: ResearchLedger;
+  resourceFlow: ResourceFlowLedger;
   isBuildFacilityTutorial?: boolean;
   isFirstFacilityTutorial?: boolean;
   isProductionTutorial?: boolean;
@@ -75,6 +78,7 @@ export function ProductionView({
   const [collapsedProductionCycles, setCollapsedProductionCycles] = useState<Record<string, boolean>>({});
   const [facilityDetailTabs, setFacilityDetailTabs] = useState<Record<string, FacilityDetailTab>>({});
   const completedResearchProjectIds = research.getCompletedProjectIds();
+  const producedByResource = resourceFlow.getLifetimeFacilityOutputByResource();
   const buildFacilityButtonRef = useRef<View>(null);
   const firstFacilityFocusRef = useRef<View>(null);
   const builtFacilities = facilities.getAll();
@@ -104,23 +108,31 @@ export function ProductionView({
         ? calculateFacilityEffectiveWork(facilityView, BASE_WORK_PER_MINUTE, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds))
         : 0;
       const productionStatus = getFacilityProductionStatus(facilityView, inventory);
-      const { assignedWorkers, conditionDecayMultiplier, conditionDecayUpgradeLevel, facilityEfficiency, facilityCondition, outputMultiplier, outputUpgradeLevel, overstaffingConditionDecayMultiplier, requiredWorkers, speedUpgradeLevel, speedUpgradeWorkSpeedMultiplier } = facilityView;
+      const { assignedWorkers, conditionDecayMultiplier, conditionDecayUpgradeLevel, facilityEfficiency, facilityCondition, outputMultiplier, outputUpgradeLevel, overstaffingConditionDecayMultiplier, upgradeMaxQ, qualityUpgradeLevel, requiredWorkers, speedUpgradeLevel, speedUpgradeWorkSpeedMultiplier } = facilityView;
       const totalConditionDecayMultiplier = conditionDecayMultiplier * overstaffingConditionDecayMultiplier;
       const speedUpgradeCost = getFacilityUpgradeCost(definition.upgradeCost, speedUpgradeLevel);
       const outputUpgradeCost = getFacilityUpgradeCost(definition.upgradeCost, outputUpgradeLevel);
       const conditionDecayUpgradeCost = getFacilityUpgradeCost(definition.upgradeCost, conditionDecayUpgradeLevel);
+      const qualityUpgradeCost = getFacilityUpgradeCost(definition.upgradeCost, Math.max(0, qualityUpgradeLevel - 1));
       const speedUpgradeConstructionMaterialsCost = getFacilityUpgradeResourceCost(definition.constructionMaterialsCost, speedUpgradeLevel);
       const outputUpgradeConstructionMaterialsCost = getFacilityUpgradeResourceCost(definition.constructionMaterialsCost, outputUpgradeLevel);
       const conditionDecayUpgradeConstructionMaterialsCost = getFacilityUpgradeResourceCost(definition.constructionMaterialsCost, conditionDecayUpgradeLevel);
+      const qualityUpgradeConstructionMaterialsCost = getFacilityUpgradeResourceCost(definition.constructionMaterialsCost, Math.max(0, qualityUpgradeLevel - 1));
       const speedUpgradeIndustrialMachinesCost = getFacilityUpgradeResourceCost(definition.industrialMachinesCost, speedUpgradeLevel);
       const outputUpgradeIndustrialMachinesCost = getFacilityUpgradeResourceCost(definition.industrialMachinesCost, outputUpgradeLevel);
       const conditionDecayUpgradeIndustrialMachinesCost = getFacilityUpgradeResourceCost(definition.industrialMachinesCost, conditionDecayUpgradeLevel);
+      const qualityUpgradeIndustrialMachinesCost = getFacilityUpgradeResourceCost(definition.industrialMachinesCost, Math.max(0, qualityUpgradeLevel - 1));
       const speedUpgradePayment = calculateFacilityResourcePayment(finance, inventory, market, speedUpgradeCost, speedUpgradeConstructionMaterialsCost, speedUpgradeIndustrialMachinesCost);
       const outputUpgradePayment = calculateFacilityResourcePayment(finance, inventory, market, outputUpgradeCost, outputUpgradeConstructionMaterialsCost, outputUpgradeIndustrialMachinesCost);
       const conditionDecayUpgradePayment = calculateFacilityResourcePayment(finance, inventory, market, conditionDecayUpgradeCost, conditionDecayUpgradeConstructionMaterialsCost, conditionDecayUpgradeIndustrialMachinesCost);
+      const qualityUpgradePayment = calculateFacilityResourcePayment(finance, inventory, market, qualityUpgradeCost, qualityUpgradeConstructionMaterialsCost, qualityUpgradeIndustrialMachinesCost);
       const speedNextEffect = `Next: ${formatPercent(getSpeedUpgradeWorkSpeedMultiplier(speedUpgradeLevel + 1) / speedUpgradeWorkSpeedMultiplier - 1, { decimals: 1 })} speed`;
       const outputNextEffect = `Next: ${formatPercent(getOutputUpgradeMultiplier(outputUpgradeLevel + 1) / outputMultiplier - 1, { decimals: 1 })} output`;
       const conditionNextEffect = `Next: ${formatPercent(1 - getConditionDecayMultiplier(conditionDecayUpgradeLevel + 1) / conditionDecayMultiplier, { decimals: 1 })} less decay`;
+      const qualityNextEffect = `Next: Q${formatNumber(calculateUpgradeMaxQ(qualityUpgradeLevel + 1), { decimals: 2, forceDecimals: true })} output limit`;
+      const qualityInputQ = activeRecipe ? facilityView.recipeInputQ ?? calculateRecipeInputQ(activeRecipe, inventory) : null;
+      const qualityUpgradeActualGain = activeRecipe ? Math.max(0, ...activeRecipe.outputs.map((output) => calculateOutputQuality({ researchMaxQ: getResourceResearchMaxQ(output.resourceType, completedResearchProjectIds), weightedInputQ: qualityInputQ, upgradeMaxQ: calculateUpgradeMaxQ(qualityUpgradeLevel + 1), productionMaxQ: calculateProductionMaxQ(producedByResource[output.resourceType]) }).outputQ - calculateOutputQuality({ researchMaxQ: getResourceResearchMaxQ(output.resourceType, completedResearchProjectIds), weightedInputQ: qualityInputQ, upgradeMaxQ, productionMaxQ: calculateProductionMaxQ(producedByResource[output.resourceType]) }).outputQ)) : 0;
+      const qualityUpgradeNetGain = activeRecipe ? calculateProjectedFacilityQualityUpgradeNetGainPerMinute(facility, activeRecipe, market, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds), (resourceType) => getResourceResearchMaxQ(resourceType, completedResearchProjectIds), qualityInputQ, (resourceType) => calculateProductionMaxQ(producedByResource[resourceType])) : undefined;
       const projectedSpeedNetGain = activeRecipe ? calculateProjectedFacilityUpgradeNetGainPerMinute(facility, activeRecipe, market, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds), 'speed') : undefined;
       const projectedOutputNetGain = activeRecipe ? calculateProjectedFacilityUpgradeNetGainPerMinute(facility, activeRecipe, market, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds), 'output') : undefined;
       const projectedConditionNetGain = activeRecipe ? calculateProjectedFacilityUpgradeNetGainPerMinute(facility, activeRecipe, market, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds), 'condition') : undefined;
@@ -152,6 +164,7 @@ export function ProductionView({
               <FacilityMetric color={getColorClass(Math.min(1, facilityEfficiency))} icon={APP_ICONS.efficiency} label="Efficiency" value={formatPercent(facilityEfficiency, { decimals: 0 })} />
               <FacilityMetric icon={APP_ICONS.speed} label="Speed upgrade" value={`L${formatNumber(speedUpgradeLevel)}`} />
               <FacilityMetric icon={APP_ICONS.output} label="Output upgrade" value={`L${formatNumber(outputUpgradeLevel)}`} />
+              <FacilityMetric icon={APP_ICONS.quality} label="Quality upgrade" value={`L${formatNumber(qualityUpgradeLevel)}`} />
               <FacilityMetric icon={APP_ICONS.durability} label="Durability upgrade" value={`L${formatNumber(conditionDecayUpgradeLevel)}`} />
               {(productionStatus === 'missing-inputs' || productionStatus === 'paused') && <View accessibilityLabel={productionStatus === 'missing-inputs' ? 'Production paused: missing inputs' : 'Production manually paused'} style={styles.facilityPauseMetric}><TooltipMaterialIcon color={colors.error} label={productionStatus === 'missing-inputs' ? 'Production paused: missing inputs' : 'Production manually paused'} name={APP_ICONS.pause} size={14} /></View>}
             </View>
@@ -165,7 +178,7 @@ export function ProductionView({
         {!isExpanded && activeRecipe && <FacilityProductionStatus compact decayCostPerMinute={calculateFacilityDecayMaterialCostPerMinute(definition.constructionMaterialsCost, facilityCondition, totalConditionDecayMultiplier, effectiveWorkPerMinute, activeRecipe)} effectiveWorkPerMinute={effectiveWorkPerMinute} market={market} outputMultiplier={outputMultiplier} progress={facilityView.recipeProgress[activeRecipe.name] ?? 0} recipe={activeRecipe} status={productionStatus} />}
         {isExpanded && <>
           <View style={styles.facilityProductionSection}>
-            {activeRecipe && <View style={styles.facilityProductionTop}><RecipeResourceSummary outputMultiplier={outputMultiplier} recipe={activeRecipe} /><View style={styles.facilityRecipeActions}>
+            {activeRecipe && <View style={styles.facilityProductionTop}><FacilityResourceSummary inputQ={qualityInputQ} upgradeMaxQ={upgradeMaxQ} getQualityBreakdown={(resourceType, weightedInputQ, facilityMaxQ) => calculateOutputQuality({ researchMaxQ: getResourceResearchMaxQ(resourceType, completedResearchProjectIds), weightedInputQ, upgradeMaxQ: facilityMaxQ, productionMaxQ: calculateProductionMaxQ(producedByResource[resourceType]) })} inventory={inventory} outputMultiplier={outputMultiplier} recipe={activeRecipe} /><View style={styles.facilityRecipeActions}>
               <IconButton accessibilityLabel={allInputsAutoBuyEnabled ? 'Disable autobuy for production cycle inputs' : 'Allow autobuy for production cycle inputs'} containerColor={allInputsAutoBuyEnabled ? colors.marketAutomationActive : colors.marketAutomation} disabled={productionCycleInputs.length === 0} icon={APP_ICONS.marketAutoBuy} iconColor={colors.onDark} onPress={() => productionCycleInputs.forEach((input) => setMarketAutomation(input.resourceType, { autoBuyEnabled: !allInputsAutoBuyEnabled }))} size={16} style={styles.facilityRecipeActionButton} />
               <IconButton accessibilityLabel="Buy missing inputs for one production cycle" containerColor={colors.marketBuy} disabled={!hasMissingCycleInputs} icon={APP_ICONS.marketBuy} iconColor={colors.onDark} onPress={() => productionCycleInputs.forEach((input) => { const missingAmount = Math.max(0, input.amount - inventory.getAmount(input.resourceType)); if (missingAmount > 0) buyMarketResource(input.resourceType, missingAmount); })} size={16} style={styles.facilityRecipeActionButton} />
             </View></View>}
@@ -220,11 +233,13 @@ export function ProductionView({
               <FacilityMetric icon={APP_ICONS.speed} label={`x${formatNumber(speedUpgradeWorkSpeedMultiplier, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })}`} />
               <FacilityMetric icon={APP_ICONS.output} label={`x${formatNumber(outputMultiplier, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })}`} />
               <FacilityMetric icon={APP_ICONS.durability} label={`x${formatNumber(conditionDecayMultiplier, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })}`} />
+              <FacilityMetric icon={APP_ICONS.quality} label={`Q${formatNumber(upgradeMaxQ, { decimals: 2, forceDecimals: true })}`} />
             </View>
             <View style={styles.facilityUpgradeControls}>
               <FacilityUpgradeControl canAfford={speedUpgradePayment.canAfford} cashCost={speedUpgradePayment.cashCost} constructionMaterialsCost={speedUpgradeConstructionMaterialsCost} euroCost={speedUpgradeCost} industrialMachinesCost={speedUpgradeIndustrialMachinesCost} icon={APP_ICONS.speed} label="Speed" level={speedUpgradeLevel} nextEffect={speedNextEffect} nextNetGain={projectedSpeedNetGain} onPress={() => upgradeFacility(facilityId, 'speed')} />
               <FacilityUpgradeControl canAfford={outputUpgradePayment.canAfford} cashCost={outputUpgradePayment.cashCost} constructionMaterialsCost={outputUpgradeConstructionMaterialsCost} euroCost={outputUpgradeCost} industrialMachinesCost={outputUpgradeIndustrialMachinesCost} icon={APP_ICONS.output} label="Output" level={outputUpgradeLevel} nextEffect={outputNextEffect} nextNetGain={projectedOutputNetGain} onPress={() => upgradeFacility(facilityId, 'output')} />
               <FacilityUpgradeControl canAfford={conditionDecayUpgradePayment.canAfford} cashCost={conditionDecayUpgradePayment.cashCost} constructionMaterialsCost={conditionDecayUpgradeConstructionMaterialsCost} euroCost={conditionDecayUpgradeCost} industrialMachinesCost={conditionDecayUpgradeIndustrialMachinesCost} icon={APP_ICONS.durability} label="Durability" level={conditionDecayUpgradeLevel} nextEffect={conditionNextEffect} nextNetGain={projectedConditionNetGain} onPress={() => upgradeFacility(facilityId, 'condition')} />
+              <FacilityUpgradeControl canAfford={qualityUpgradePayment.canAfford} cashCost={qualityUpgradePayment.cashCost} constructionMaterialsCost={qualityUpgradeConstructionMaterialsCost} euroCost={qualityUpgradeCost} industrialMachinesCost={qualityUpgradeIndustrialMachinesCost} icon={APP_ICONS.quality} label="Quality" level={qualityUpgradeLevel} nextEffect={`${qualityNextEffect} · actual +Q${formatNumber(qualityUpgradeActualGain, { decimals: 2, forceDecimals: true })}`} nextNetGain={qualityUpgradeNetGain} onPress={() => upgradeFacility(facilityId, 'quality')} />
             </View>
           </View>}
         </>}
@@ -248,6 +263,40 @@ function RecipeOption({ canResearch, decayCostPerMinute, effectiveWorkPerMinute,
   const valuePerMinute = calculateRecipeValuePerMinute(recipe, market, outputMultiplier, effectiveWorkPerMinute);
   const netGainPerMinute = calculateFacilityNetGainPerMinute(valuePerMinute, decayCostPerMinute, market);
   return <View style={[styles.facilityRecipeOption, selected && styles.facilityRecipeOptionActive, hasMissingInputs && styles.facilityRecipeOptionUnavailable, locked && styles.facilityRecipeOptionUnavailable]}><TouchableRipple accessibilityLabel={`Run ${formatRecipeName(recipe)}`} disabled={locked} onPress={onPress}><View><View style={styles.facilityRecipeOptionStats}><TooltipTextIcon label={formatRecipeName(recipe)}>{RECIPE_ICONS[recipe.name]}</TooltipTextIcon><Text style={styles.facilityRecipeOptionName}>{formatRecipeName(recipe)}</Text></View><Text style={[styles.facilityRecipeOptionDetails, (hasMissingInputs || locked) && styles.facilityRecipeOptionMissing]}>{locked ? 'Research required' : <>Inputs: {inputSummary}</>}</Text><View style={styles.facilityRecipeOptionStats}><Text style={styles.facilityRecipeOptionDetails}>Required work: {formatNumber(recipe.requiredWork, { smartDecimals: true })}</Text><Text style={styles.facilityRecipeOptionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text><Text style={styles.facilityRecipeOptionDetails}>Net gain/min: {formatCurrency(netGainPerMinute)}</Text><Text style={styles.facilityRecipeOptionDetails}>Decay cost/min: {formatConditionCost(decayCostPerMinute, market)}</Text></View></View></TouchableRipple>{locked && <Button accessibilityLabel={freeTutorialResearch ? `Research ${formatRecipeName(recipe)} for free with the tutorial grant` : `Research ${formatRecipeName(recipe)}`} compact disabled={!canResearch} icon={APP_ICONS.research} onPress={onResearch}>{freeTutorialResearch ? 'Research recipe for free' : 'Research recipe'}</Button>}</View>;
+}
+
+function FacilityResourceSummary({ getQualityBreakdown, inputQ, inventory, outputMultiplier, recipe, upgradeMaxQ }: { getQualityBreakdown: (resourceType: ResourceType, weightedInputQ: number | null, upgradeMaxQ: number) => OutputQualityBreakdown; inputQ: number | null; inventory: Inventory; outputMultiplier: number; recipe: Recipe; upgradeMaxQ: number }) {
+  const weightedInputQ = inputQ ?? calculateRecipeInputQ(recipe, inventory);
+  const inputMaxQ = weightedInputQ === null ? null : calculateInputMaxQ(weightedInputQ);
+  const inputQualityDetails = recipe.inputs.map((input) => ({ resourceType: input.resourceType, quality: inventory.getQuality(input.resourceType) }));
+  const outputQualityDetails = recipe.outputs.map((output) => ({ output, breakdown: getQualityBreakdown(output.resourceType, weightedInputQ, upgradeMaxQ) }));
+  const qualityNumber = (value: number) => formatNumber(value, { decimals: 2, forceDecimals: true });
+  const inputQualitySummary = inputQualityDetails.map(({ resourceType, quality }) => `${getResource(resourceType).icon}Q${qualityNumber(quality)}`).join(', ');
+  const outputQualitySummary = outputQualityDetails.map(({ output }) => `${getResource(output.resourceType).icon}Q${inputMaxQ === null ? '—' : qualityNumber(inputMaxQ)}`).join(', ');
+  const researchQualitySummary = outputQualityDetails.map(({ breakdown }) => `Q${qualityNumber(breakdown.researchMaxQ)}`).join(', ');
+  const productionQualitySummary = outputQualityDetails.map(({ breakdown }) => `Q${qualityNumber(breakdown.productionMaxQ)}`).join(', ');
+
+  return <View style={styles.facilityResourceSummary}>
+    <View style={styles.facilityResourceGroup}><Text style={styles.facilityResourceLabel}>Input</Text><View style={styles.facilityResourceItems}>{recipe.inputs.length === 0 ? <Text style={styles.facilityResourceEmpty}>—</Text> : recipe.inputs.map((input) => <Text key={input.resourceType} accessibilityLabel={`${getResource(input.resourceType).name} ${formatNumber(input.amount, { smartDecimals: true })}`} style={styles.facilityResourceValue}><TooltipResourceIcon resourceType={input.resourceType} /> {formatNumber(input.amount, { smartDecimals: true })}</Text>)}</View></View>
+    <Text style={styles.facilityResourceArrow}>→</Text>
+    <View style={styles.facilityResourceGroup}><Text style={styles.facilityResourceLabel}>Output</Text><View style={styles.facilityResourceItems}>{outputQualityDetails.map(({ output, breakdown }) => <Text key={output.resourceType} accessibilityLabel={`${getResource(output.resourceType).name} ${formatNumber(output.amount * outputMultiplier, { smartDecimals: true })} at quality ${qualityNumber(breakdown.outputQ)}`} style={[styles.facilityResourceValue, styles.facilityResourceOutput]}><TooltipResourceIcon resourceType={output.resourceType} /> {formatNumber(output.amount * outputMultiplier, { smartDecimals: true })} · Q{qualityNumber(breakdown.outputQ)}</Text>)}</View></View>
+    <View accessibilityLabel={`Quality limits: ${inputQualitySummary || 'no inputs'} to ${outputQualitySummary || 'no outputs'}; research ${researchQualitySummary || 'none'}; upgrade Q${qualityNumber(upgradeMaxQ)}; production ${productionQualitySummary || 'none'}`} style={styles.facilityResourceQuality}>
+      <Text style={styles.facilityResourceQualityLabel}>Quality Limits:</Text>
+      <MaterialCommunityIcons color={colors.muted} name={APP_ICONS.inputQuality} size={12} />
+      <Text style={styles.facilityResourceQualityText}>{inputQualityDetails.length === 0 ? 'No inputs' : inputQualitySummary}</Text>
+      <Text style={styles.facilityResourceQualityText}>→</Text>
+      <Text style={styles.facilityResourceQualityText}>{outputQualitySummary || '—'}</Text>
+      <Text style={styles.facilityResourceQualityText}>-</Text>
+      <MaterialCommunityIcons color={colors.muted} name={APP_ICONS.research} size={12} />
+      <Text style={styles.facilityResourceQualityText}>{researchQualitySummary || '—'}</Text>
+      <Text style={styles.facilityResourceQualityText}>-</Text>
+      <MaterialCommunityIcons color={colors.muted} name={APP_ICONS.upgrade} size={12} />
+      <Text style={styles.facilityResourceQualityText}>{`Q${qualityNumber(upgradeMaxQ)}`}</Text>
+      <Text style={styles.facilityResourceQualityText}>-</Text>
+      <MaterialCommunityIcons color={colors.muted} name={APP_ICONS.output} size={12} />
+      <Text style={styles.facilityResourceQualityText}>{productionQualitySummary || '—'}</Text>
+    </View>
+  </View>;
 }
 
 function FacilityProductionStatus({ compact = false, decayCostPerMinute, effectiveWorkPerMinute, market, outputMultiplier, progress, recipe, status }: { compact?: boolean; decayCostPerMinute: number; effectiveWorkPerMinute: number; market: Market; outputMultiplier: number; progress: number; recipe: Recipe | null; status: 'not-started' | 'paused' | 'missing-inputs' | 'producing' }) {

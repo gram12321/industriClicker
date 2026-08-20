@@ -49,4 +49,9 @@ export type MarketDiffusionDetails = MarketDiffusionInfo & {
   diffusionMultiplier: number;
   rawAmount: number;
   equilibriumCappedAmount: number;
+  /** Conserved quality average once this adjacent pair has fully mixed. */
+  equilibriumQuality: number;
+  /** Signed quality change per foreground minute in each pool. */
+  lowerQualityChangePerMinute: number;
+  higherQualityChangePerMinute: number;
 };

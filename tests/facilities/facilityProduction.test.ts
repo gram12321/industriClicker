@@ -10,7 +10,8 @@ import {
   calculateFacilityResourcePayment,
   calculateRecipeValuePerMinute,
 } from '@/game/facilities/facilityEconomics';
-import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, getFacilityProductionCycleInputs, getRecipeProductionConditionLoss } from '@/game/facilities/facilityProduction';
+import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateRecipeInputQ, getFacilityProductionCycleInputs, getRecipeProductionConditionLoss } from '@/game/facilities/facilityProduction';
+import { calculateOutputQuality, calculateProductionMaxQ } from '@/game/quality';
 import { Market } from '@/game/market';
 import { FacilityType } from '@/game/facilities/facilityTypes';
 
@@ -110,6 +111,57 @@ describe('facility economics', () => {
 });
 
 describe('advanceAllFacilityProduction', () => {
+  it('requires escalating lifetime production for each resource quality cap', () => {
+    expect(calculateProductionMaxQ(0)).toBe(1);
+    expect(calculateProductionMaxQ(99)).toBeLessThan(2);
+    expect(calculateProductionMaxQ(100)).toBe(2);
+    expect(calculateProductionMaxQ(10_000)).toBeGreaterThan(calculateProductionMaxQ(100));
+    expect(calculateProductionMaxQ(207_500)).toBeGreaterThan(40);
+    expect(calculateProductionMaxQ(22_000_000)).toBeGreaterThan(98);
+    expect(calculateProductionMaxQ(Number.MAX_VALUE)).toBeLessThan(100);
+  });
+
+  it('weights input quality by the recipe amounts and limits output quality by that average plus one', () => {
+    const inventory = new Inventory();
+    inventory.add(ResourceType.Water, 1, 2);
+    inventory.add(ResourceType.Electricity, 1, 4);
+    inventory.add(ResourceType.Fertilizer, 0.025, 100);
+    const recipe = getRecipe(RecipeName.GrowGrain);
+
+    const inputQ = calculateRecipeInputQ(recipe, inventory);
+    expect(inputQ).toBeCloseTo((2 + 4 + 0.025 * 100) / 2.025);
+    expect(calculateOutputQuality({ researchMaxQ: 20, weightedInputQ: inputQ }).outputQ).toBeCloseTo(5.197531);
+    expect(calculateOutputQuality({ researchMaxQ: 3, weightedInputQ: inputQ }).outputQ).toBe(3);
+    expect(calculateOutputQuality({ researchMaxQ: 20, weightedInputQ: inputQ, upgradeMaxQ: 2 }).outputQ).toBe(2);
+    expect(calculateOutputQuality({ researchMaxQ: 20, weightedInputQ: inputQ, upgradeMaxQ: 20, productionMaxQ: 2 }).outputQ).toBe(2);
+  });
+
+  it('retains the consumed input quality when inventory changes before completion', () => {
+    const { facilities, facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    facility.upgradeQuality();
+    const inventory = new Inventory();
+    addRecipeInputs(inventory, RecipeName.GrowGrain, 1);
+
+    advanceAllFacilityProduction(facilities, inventory, () => 0.03);
+    inventory.add(ResourceType.Water, 1, 100);
+
+    const outputs = advanceAllFacilityProduction(
+      facilities,
+      inventory,
+      () => getRecipe(RecipeName.GrowGrain).requiredWork,
+      undefined,
+      (_resourceType, weightedInputQ, upgradeMaxQ) => calculateOutputQuality({
+        weightedInputQ,
+        researchMaxQ: 100,
+        upgradeMaxQ,
+        productionMaxQ: 100,
+      }),
+    );
+
+    expect(facility.getView().recipeInputQ).toBeNull();
+    expect(outputs[0]?.quality).toBeCloseTo(2);
+  });
+
   it('runs repeated recipes in a configured cycle before returning to the start', () => {
     const { facilities, facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
     facility.setProductionCycle([RecipeName.GrowGrain, RecipeName.GrowGrain, RecipeName.GrowSugar]);
@@ -225,6 +277,23 @@ describe('advanceAllFacilityProduction', () => {
     expect(outputs).toHaveLength(1);
     expect(outputs[0]!.amount).toBeCloseTo(getRecipe(RecipeName.GrowGrain).outputs[0].amount * facility.getView().outputMultiplier);
     expect(inventory.getAmount(ResourceType.Grain)).toBeCloseTo(getRecipe(RecipeName.GrowGrain).outputs[0].amount * facility.getView().outputMultiplier);
+  });
+
+  it('adds completed recipe output at the supplied production quality', () => {
+    const { facilities } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    const inventory = new Inventory();
+    addRecipeInputs(inventory, RecipeName.GrowGrain, 1);
+
+    const outputs = advanceAllFacilityProduction(
+      facilities,
+      inventory,
+      () => getRecipe(RecipeName.GrowGrain).requiredWork,
+      undefined,
+      () => calculateOutputQuality({ researchMaxQ: 2, upgradeMaxQ: 2, productionMaxQ: 2 }),
+    );
+
+    expect(outputs[0]!.quality).toBe(2);
+    expect(inventory.getQuality(ResourceType.Grain)).toBe(2);
   });
 
 });

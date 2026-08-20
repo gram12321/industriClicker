@@ -11,6 +11,7 @@ describe('achievement evaluation context', () => {
   it('consumes lifetime facility output from resource flow', () => {
     const resourceFlow = new ResourceFlowLedger();
     resourceFlow.record('facility-output', ResourceType.Grain, 12, 10_000);
+    resourceFlow.recordFacilityOutput(ResourceType.Grain, 1, 7.5, 10_000);
     resourceFlow.record('market-buy', ResourceType.Grain, 100, 10_000);
 
     const context = createAchievementEvaluationContext({
@@ -24,7 +25,8 @@ describe('achievement evaluation context', () => {
       currentGameTimeMs: 10_000,
     });
 
-    expect(context.producedByResource[ResourceType.Grain]).toBe(12);
-    expect(context.totalProduced).toBe(12);
+    expect(context.producedByResource[ResourceType.Grain]).toBe(13);
+    expect(context.totalProduced).toBe(13);
+    expect(context.highestProducedQuality).toBe(7.5);
   });
 });

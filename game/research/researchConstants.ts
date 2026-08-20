@@ -1,6 +1,9 @@
 import type { GateRequirement } from '@/game/gates';
 import { FACILITIES } from '@/game/facilities';
 import { getRecipeDisplayName, RecipeName } from '@/game/recipes';
+import { RESOURCE_TYPES, getResource, type ResourceType } from '@/game/resources';
+import { scaleExponential } from '@/game/core/math/scaling';
+import { calculateResearchMaxQ, RESOURCE_QUALITY_BASE_RESEARCH_COST, RESOURCE_QUALITY_BASE_RESEARCH_DURATION_MS, RESOURCE_QUALITY_RESEARCH_COST_GROWTH, RESOURCE_QUALITY_RESEARCH_DURATION_GROWTH } from '@/game/quality';
 import type { ResearchEffect } from './researchEffects';
 
 const BASE_RESEARCH_PROJECT_IDS = [
@@ -17,9 +20,10 @@ const BASE_RESEARCH_PROJECT_IDS = [
 ] as const;
 
 export type RecipeResearchProjectId = `recipe-${RecipeName}` | `recipe-${RecipeName}-level-${number}`;
-export type ResearchProjectId = (typeof BASE_RESEARCH_PROJECT_IDS)[number] | RecipeResearchProjectId;
+export type ResourceQualityResearchProjectId = `resource-quality-${ResourceType}-level-${number}`;
+export type ResearchProjectId = (typeof BASE_RESEARCH_PROJECT_IDS)[number] | RecipeResearchProjectId | ResourceQualityResearchProjectId;
 export const RESEARCH_PROJECT_IDS: readonly ResearchProjectId[] = [...BASE_RESEARCH_PROJECT_IDS, ...Object.values(RecipeName).flatMap((recipeName) => [getRecipeResearchProjectId(recipeName), ...Array.from({ length: 10 }, (_, index) => getRecipeResearchLevelProjectId(recipeName, index + 1))])];
-export type ResearchChainId = 'capital-grants' | 'sales-capacity' | 'sales-order-value-limit' | 'sales-targeting' | 'bid-value' | 'relationship-management' | 'sales-intelligence' | 'local-market-network' | 'market-diffusion-network' | 'research-capacity' | 'recipe-unlocks';
+export type ResearchChainId = 'capital-grants' | 'sales-capacity' | 'sales-order-value-limit' | 'sales-targeting' | 'bid-value' | 'relationship-management' | 'sales-intelligence' | 'local-market-network' | 'market-diffusion-network' | 'research-capacity' | 'recipe-unlocks' | 'resource-quality';
 
 export type ResearchProjectDefinition = {
   id: ResearchProjectId;
@@ -44,6 +48,38 @@ export function getRecipeResearchProjectId(recipeName: RecipeName): RecipeResear
 
 export function getRecipeResearchLevelProjectId(recipeName: RecipeName, level: number): RecipeResearchProjectId {
   return `recipe-${recipeName}-level-${Math.max(1, Math.floor(level))}`;
+}
+
+export function getResourceQualityResearchProjectId(resourceType: ResourceType, level: number): ResourceQualityResearchProjectId {
+  return `resource-quality-${resourceType}-level-${Math.max(1, Math.floor(level))}`;
+}
+
+export function getResourceQualityResearchLevel(projectId: string): { resourceType: ResourceType; level: number } | null {
+  const match = /^resource-quality-(.+)-level-([1-9]\d*)$/u.exec(projectId);
+  if (!match) return null;
+  const resourceType = match[1] as ResourceType;
+  const level = Number(match[2]);
+  return RESOURCE_TYPES.includes(resourceType) && Number.isSafeInteger(level) ? { resourceType, level } : null;
+}
+
+function getResourceQualityResearchProject(resourceType: ResourceType, level: number): ResearchProjectDefinition {
+  const normalizedLevel = Math.max(1, Math.floor(level));
+  const previousId = normalizedLevel === 1 ? null : getResourceQualityResearchProjectId(resourceType, normalizedLevel - 1);
+  const cost = Math.min(Number.MAX_SAFE_INTEGER, Math.ceil(scaleExponential(RESOURCE_QUALITY_BASE_RESEARCH_COST, normalizedLevel - 1, RESOURCE_QUALITY_RESEARCH_COST_GROWTH)));
+  const durationMs = Math.min(Number.MAX_SAFE_INTEGER, Math.ceil(scaleExponential(RESOURCE_QUALITY_BASE_RESEARCH_DURATION_MS, normalizedLevel - 1, RESOURCE_QUALITY_RESEARCH_DURATION_GROWTH)));
+  const quality = calculateResearchMaxQ(normalizedLevel);
+  return {
+    id: getResourceQualityResearchProjectId(resourceType, normalizedLevel),
+    chainId: 'resource-quality',
+    tier: normalizedLevel,
+    name: `${getResource(resourceType).name} quality ${normalizedLevel}`,
+    cost,
+    durationMs,
+    requirements: previousId
+      ? [{ kind: 'research', projectId: previousId, label: `${getResource(resourceType).name} quality ${normalizedLevel - 1}` }]
+      : [FACILITY_TIER_1],
+    effect: { kind: 'resource-production-quality', resourceType, level: normalizedLevel, quality },
+  };
 }
 
 const RECIPE_RESEARCH_PROJECTS: ResearchProjectDefinition[] = Object.values(FACILITIES).flatMap((facility) => facility.recipes.flatMap((recipe, recipeIndex) => {
@@ -134,10 +170,13 @@ export const RESEARCH_PROJECTS: readonly ResearchProjectDefinition[] = [
   ...RECIPE_RESEARCH_PROJECTS,
 ];
 
-export const RESEARCH_PROJECTS_BY_ID: Readonly<Record<ResearchProjectId, ResearchProjectDefinition>> = Object.fromEntries(
+export const RESEARCH_PROJECTS_BY_ID: Readonly<Record<string, ResearchProjectDefinition>> = Object.fromEntries(
   RESEARCH_PROJECTS.map((project) => [project.id, project]),
-) as Record<ResearchProjectId, ResearchProjectDefinition>;
+) as Record<string, ResearchProjectDefinition>;
 
 export function getResearchProject(projectId: string): ResearchProjectDefinition | null {
-  return (RESEARCH_PROJECTS_BY_ID as Record<string, ResearchProjectDefinition | undefined>)[projectId] ?? null;
+  const fixedProject = RESEARCH_PROJECTS_BY_ID[projectId];
+  if (fixedProject) return fixedProject;
+  const resourceQuality = getResourceQualityResearchLevel(projectId);
+  return resourceQuality ? getResourceQualityResearchProject(resourceQuality.resourceType, resourceQuality.level) : null;
 }

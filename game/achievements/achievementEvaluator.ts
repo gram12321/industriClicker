@@ -16,6 +16,7 @@ export type AchievementEvaluationContext = {
   facilityEfficiencies: readonly number[];
   producedByResource: ReturnType<ResourceFlowLedger['getLifetimeFacilityOutputByResource']>;
   totalProduced: number;
+  highestProducedQuality: number;
   fulfilledOrderCount: number;
   fulfilledOrderQuantity: number;
   largestFulfilledOrderQuantity: number;
@@ -69,6 +70,7 @@ export function createAchievementEvaluationContext(input: {
     facilityEfficiencies: facilityList.map((facility) => facility.getView().facilityEfficiency),
     producedByResource: input.resourceFlow.getLifetimeFacilityOutputByResource(),
     totalProduced: input.resourceFlow.getTotalLifetimeFacilityOutput(),
+    highestProducedQuality: input.resourceFlow.getHighestFacilityOutputQuality(),
     fulfilledOrderCount,
     fulfilledOrderQuantity,
     largestFulfilledOrderQuantity: fulfilledOrders.reduce((largest, order) => Math.max(largest, order.lines.reduce((lineTotal, line) => lineTotal + line.quantity, 0)), 0),
@@ -95,6 +97,7 @@ export function getAchievementCurrentValue(definition: AchievementDefinition, co
     case 'facility-efficiency-count': return context.facilityEfficiencies.filter((efficiency) => efficiency >= (definition.facilityEfficiencyThreshold ?? Infinity)).length;
     case 'resource-produced': return definition.resourceType ? context.producedByResource[definition.resourceType] : 0;
     case 'total-produced': return context.totalProduced;
+    case 'highest-produced-quality': return context.highestProducedQuality;
     case 'fulfilled-order-count': return context.fulfilledOrderCount;
     case 'fulfilled-order-quantity': return context.fulfilledOrderQuantity;
     case 'largest-order-quantity': return context.largestFulfilledOrderQuantity;

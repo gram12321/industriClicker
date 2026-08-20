@@ -79,6 +79,15 @@ export class Market {
     return calculateMarketPrice(definition.localBenchmarkSupply * this.localMarketDepthMultiplier, this.local[resourceType]);
   }
 
+  /** Quotes a local sale using the quality of the inventory being sold. */
+  getLocalSalePrice(resourceType: ResourceType, inventoryQuality: number): number {
+    const definition = RESOURCES[resourceType].market;
+    return calculateMarketPrice(definition.localBenchmarkSupply * this.localMarketDepthMultiplier, {
+      supply: this.local[resourceType].supply,
+      quality: inventoryQuality,
+    });
+  }
+
   /** Returns the largest local purchase that keeps the resulting unit price within the cap. */
   getMaximumLocalPurchaseAmountAtUnitPrice(resourceType: ResourceType, maxUnitPrice: number): number {
     if (!isPositiveFinite(maxUnitPrice)) return 0;
@@ -204,9 +213,12 @@ export class Market {
 
   getLocalSellQuote(resourceType: ResourceType, amount: number, quality: number): MarketTradeResult {
     const entry = this.local[resourceType];
-    const unitPrice = this.getLocalPrice(resourceType);
+    const unitPrice = this.getLocalSalePrice(resourceType, quality);
     if (!isPositiveFinite(amount) || !isPositiveFinite(quality)) return { success: false, amount: 0, unitPrice, quality };
-    const postTradeEntry = { supply: entry.supply + amount, quality: mixQuality(entry, amount, quality) };
+    // Price the entire quote using the quality being sold. Pool quality is mixed only
+    // once the trade executes, so a seller is not penalized for quality they have not
+    // yet added to the market while still receiving the normal supply slippage.
+    const postTradeEntry = { supply: entry.supply + amount, quality };
     const postTradePrice = calculateMarketPrice(RESOURCES[resourceType].market.localBenchmarkSupply * this.localMarketDepthMultiplier, postTradeEntry);
     return { success: true, amount, unitPrice: (unitPrice + postTradePrice) / 2, quality };
   }

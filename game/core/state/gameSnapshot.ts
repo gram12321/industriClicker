@@ -131,7 +131,11 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
       && typeof facility.facilityCondition === 'number'
       && Number.isFinite(facility.facilityCondition)
       && facility.facilityCondition >= 0
-      && facility.facilityCondition <= 1)
+      && facility.facilityCondition <= 1
+      && (facility.recipeInputQ === null || (typeof facility.recipeInputQ === 'number' && Number.isFinite(facility.recipeInputQ) && facility.recipeInputQ > 0))
+      && typeof facility.qualityUpgradeLevel === 'number'
+      && Number.isInteger(facility.qualityUpgradeLevel)
+      && facility.qualityUpgradeLevel >= 1)
     && Array.isArray(value.salesOrders.offered)
     && Array.isArray(value.salesOrders.completed)
     && value.salesOrders.offered.every((order) => isRecord(order) && Array.isArray(order.lines)
