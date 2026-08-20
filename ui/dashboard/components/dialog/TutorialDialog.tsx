@@ -573,6 +573,7 @@ type FirstFacilityStep =
   | "repair"
   | "research"
   | "recipe-card"
+  | "recipe-automation"
   | "recipe-economics";
 
 export function FirstFacilityTutorialDialog({
@@ -665,7 +666,9 @@ export function FirstFacilityTutorialDialog({
                 ? 11
                 : step === "recipe-card"
                   ? 12
-                  : 13;
+                  : step === "recipe-automation"
+                    ? 13
+                    : 14;
   const title =
     step === "overview"
       ? "Your first facility"
@@ -681,6 +684,8 @@ export function FirstFacilityTutorialDialog({
                 ? "First Recipe"
                 : step === "recipe-card"
                   ? "Recipe and production cycle"
+                  : step === "recipe-automation"
+                    ? "Automatic production"
                   : "Recipe economics";
   const spotlight =
     step === "research" && focusLayout ? (
@@ -717,6 +722,7 @@ export function FirstFacilityTutorialDialog({
       step === "repair" ||
       step === "footprint" ||
       step === "recipe-card" ||
+      step === "recipe-automation" ||
       step === "recipe-economics" ? null : (
       <FullScreenDimmer onDismiss={onDismiss} />
     );
@@ -778,15 +784,16 @@ export function FirstFacilityTutorialDialog({
         clock time because facility efficiency changes how quickly work is
         completed.
       </Text>
-      <Text style={styles.dialogDescription}>
-        The facility will automaticly run its production whenever there is
-        avalible input resources, unless you pause it.{`\n`}You can add more
-        recipes to the production cycle. The facility runs the recipes in that
-        cycle repeatedly. You can try that now, to activate the production
-        cycle, but as you only have one recipe avalible, it will just repeat the
-        same recipe over and over.
-      </Text>
     </>
+  );
+  const recipeAutomationContent = (
+    <Text style={styles.dialogDescription}>
+      The facility will automatically run its production whenever the required
+      input resources are available, unless you pause it. You can add more
+      recipes to the production cycle, and the facility will run them in order,
+      repeating the cycle continuously. You can try that now, but since you
+      currently have only one recipe available, it will repeat that recipe.
+    </Text>
   );
   const recipeEconomicsContent = (
     <>
@@ -798,12 +805,19 @@ export function FirstFacilityTutorialDialog({
           name={APP_ICONS.repair}
           size={15}
         />{" "}
-        Decay cost/min shows the ongoing Construction Materials cost from wear
-        and tear. Net gain/min is the value left after those running costs.
+        Decay cost/min shows the ongoing{" "}
+        <TooltipResourceIcon resourceType={ResourceType.ConstructionMaterials} />{" "}
+        Construction Materials cost from wear and tear. Net gain/min is the
+        value left after those running costs.
       </Text>
       <Text style={styles.dialogDescription}>
-        These values depend on the local market prices, the facility’s
-        research, and its upgrades, so they can change as your company develops.
+        These values depend on{" "}
+        <TooltipMaterialIcon color={colors.primary} label="Local market" name={APP_ICONS.localMarket} size={15} />{" "}
+        local market prices, company{" "}
+        <TooltipMaterialIcon color={colors.primary} label="Research" name={APP_ICONS.research} size={15} />{" "}
+        research, and facility’s{" "}
+        <TooltipMaterialIcon color={colors.primary} label="Facility upgrades" name={APP_ICONS.upgrade} size={15} />{" "}
+        upgrades, so they can change as your company develops.
       </Text>
       <Text style={styles.dialogDescription}>
         We will explore market prices, research effects, upgrades, and
@@ -816,6 +830,8 @@ export function FirstFacilityTutorialDialog({
       researchContent
     ) : step === "recipe-card" ? (
       recipeCardContent
+    ) : step === "recipe-automation" ? (
+      recipeAutomationContent
     ) : step === "recipe-economics" ? (
       recipeEconomicsContent
     ) : step === "overview" ? (
@@ -955,7 +971,7 @@ export function FirstFacilityTutorialDialog({
               <View style={styles.tutorialDialogContent}>
                 <Text
                   style={styles.sectionEyebrow}
-                >{`STEP ${stepNumber} OF 13`}</Text>
+                >{`STEP ${stepNumber} OF 14`}</Text>
                 {content}
               </View>
             )}

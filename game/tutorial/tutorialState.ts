@@ -6,7 +6,7 @@ export const DEFAULT_TUTORIAL_STATE: TutorialState = { completedWelcome: true };
 
 export type WelcomeTutorialStep = 1 | 2 | 3 | 4 | 5;
 
-export type FirstFacilityTutorialStep = 'overview' | 'header' | 'footprint' | 'efficiency' | 'repair' | 'research' | 'recipe-card' | 'recipe-economics';
+export type FirstFacilityTutorialStep = 'overview' | 'header' | 'footprint' | 'efficiency' | 'repair' | 'research' | 'recipe-card' | 'recipe-automation' | 'recipe-economics';
 
 export type TutorialStage =
   | { kind: 'welcome'; step: WelcomeTutorialStep }
@@ -22,6 +22,7 @@ export type TutorialStage =
   | { kind: 'first-facility-repair' }
   | { kind: 'first-facility-research' }
   | { kind: 'first-facility-recipe-card' }
+  | { kind: 'first-facility-recipe-automation' }
   | { kind: 'first-facility-recipe-economics' };
 
 export type TutorialProductionPresentation = {
@@ -41,6 +42,7 @@ const FIRST_FACILITY_STAGES: Readonly<Record<Extract<TutorialStage['kind'], `fir
   'first-facility-repair': 'repair',
   'first-facility-research': 'research',
   'first-facility-recipe-card': 'recipe-card',
+  'first-facility-recipe-automation': 'recipe-automation',
   'first-facility-recipe-economics': 'recipe-economics',
 };
 
@@ -68,7 +70,8 @@ export function getNextFirstFacilityTutorialStage(stage: TutorialStage): Tutoria
     case 'first-facility-repair': return { kind: 'first-facility-efficiency' };
     case 'first-facility-efficiency': return { kind: 'first-facility-research' };
     case 'first-facility-research': return { kind: 'first-facility-recipe-card' };
-    case 'first-facility-recipe-card': return { kind: 'first-facility-recipe-economics' };
+    case 'first-facility-recipe-card': return { kind: 'first-facility-recipe-automation' };
+    case 'first-facility-recipe-automation': return { kind: 'first-facility-recipe-economics' };
     case 'first-facility-recipe-economics': return null;
     default: return null;
   }
@@ -82,7 +85,8 @@ export function getPreviousFirstFacilityTutorialStage(stage: TutorialStage): Tut
     case 'first-facility-efficiency': return { kind: 'first-facility-repair' };
     case 'first-facility-research': return { kind: 'first-facility-efficiency' };
     case 'first-facility-recipe-card': return { kind: 'first-facility-research' };
-    case 'first-facility-recipe-economics': return { kind: 'first-facility-recipe-card' };
+    case 'first-facility-recipe-automation': return { kind: 'first-facility-recipe-card' };
+    case 'first-facility-recipe-economics': return { kind: 'first-facility-recipe-automation' };
     default: return { kind: 'build-facility' };
   }
 }

@@ -11,6 +11,7 @@ describe('tutorial flow', () => {
       { kind: 'first-facility-efficiency' },
       { kind: 'first-facility-research' },
       { kind: 'first-facility-recipe-card' },
+      { kind: 'first-facility-recipe-automation' },
       { kind: 'first-facility-recipe-economics' },
     ];
 
@@ -21,6 +22,7 @@ describe('tutorial flow', () => {
       'first-facility-efficiency',
       'first-facility-research',
       'first-facility-recipe-card',
+      'first-facility-recipe-automation',
       'first-facility-recipe-economics',
       null,
     ]);
