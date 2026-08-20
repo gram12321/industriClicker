@@ -5,7 +5,7 @@ import { Image, Pressable, ScrollView, View, type StyleProp, type ViewStyle } fr
 import { Avatar, Divider, IconButton, Menu, Portal, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { APP_ICONS, ECONOMY_PHASE_ICONS } from '@/icons';
-import { calculateCompanyPrestigeSummary, getMaximumOpenSalesOrders, type FacilityType, useCompanySessionStore, useGameStore } from '@/game';
+import { calculateCompanyPrestigeSummary, getMaximumOpenSalesOrders, getNextFirstFacilityTutorialStage, getPreviousFirstFacilityTutorialStage, getTutorialProductionPresentation, recoverTutorialStage, type FacilityType, type TutorialStage, useCompanySessionStore, useGameStore } from '@/game';
 import { colors } from '@/theme';
 import { ActiveProcessesOverlay, AdminDashboard, AchievementsView, CollectionDialog, ConstructionConfirmationTutorialDialog, ConstructionTutorialDialog, FacilityChoiceTutorialDialog, FirstFacilityTutorialDialog, GameViewContent, FacilityConstructionDialog, BuildFacilityTutorialDialog, IndustriPediaView, isDevAdminSurfaceAvailable, LeaderboardScreen, PrestigeDialog, ProfileScreen, ResearchView, SettingsScreen, styles, ProductionTutorialDialog, TutorialGuideDialog, LoginView, type GameViewId } from '@/ui';
 import { formatCurrency, formatElapsedTime, formatNumber } from '@/utils';
@@ -13,23 +13,6 @@ import { TooltipMaterialIcon } from '@/ui/dashboard/components/IconTooltip';
 import type { Recipe } from '@/game/recipes';
 
 type ActiveScreen = GameViewId | 'achievements' | 'admin' | 'profile' | 'pedia' | 'settings' | 'leaderboard';
-
-type TutorialStage =
-  | { kind: 'welcome'; step: 1 | 2 | 3 | 4 | 5 }
-  | { kind: 'production' }
-  | { kind: 'build-facility' }
-  | { kind: 'construction' }
-  | { kind: 'facility-choice' }
-  | { kind: 'construction-confirmation' }
-  | { kind: 'first-facility' }
-  | { kind: 'first-facility-header' }
-  | { kind: 'first-facility-footprint' }
-  | { kind: 'first-facility-efficiency' }
-  | { kind: 'first-facility-repair' }
-  | { kind: 'first-facility-research' }
-  | { kind: 'first-facility-recipe-card' }
-  | { kind: 'first-facility-recipe-economics' }
-  | null;
 
 const tabs: Array<{ key: GameViewId; label: string; symbol: string; icon?: string }> = [
   { key: 'company', label: 'Company', symbol: '⌂' },
@@ -55,8 +38,8 @@ function GameShell({ companyName }: { companyName: string }) {
   const [showActiveRecipeInputs, setShowActiveRecipeInputs] = useState(false);
   const [isConstructionYardOpen, setIsConstructionYardOpen] = useState(false);
   const [isPrestigeOpen, setIsPrestigeOpen] = useState(false);
-  const [tutorialStage, setTutorialStage] = useState<TutorialStage>(null);
-  const [lastTutorialStage, setLastTutorialStage] = useState<Exclude<TutorialStage, null>>({ kind: 'welcome', step: 1 });
+  const [tutorialStage, setTutorialStage] = useState<TutorialStage | null>(null);
+  const [lastTutorialStage, setLastTutorialStage] = useState<TutorialStage>({ kind: 'welcome', step: 1 });
   const [hasStartedProductionTutorial, setHasStartedProductionTutorial] = useState(false);
   const [firstBuiltFacilityType, setFirstBuiltFacilityType] = useState<FacilityType | null>(null);
   const [firstFacilityTutorialRecipeName, setFirstFacilityTutorialRecipeName] = useState<Recipe['name'] | null>(null);
@@ -125,27 +108,8 @@ function GameShell({ companyName }: { companyName: string }) {
   const salesOrderAcquisition = getSalesOrderAcquisitionStatus();
   const isTutorialOpen = tutorialStage?.kind === 'welcome';
   const tutorialStep = tutorialStage?.kind === 'welcome' ? tutorialStage.step : 1;
-  const isProductionTutorialOpen = tutorialStage?.kind === 'production';
-  const isBuildFacilityTutorialOpen = tutorialStage?.kind === 'build-facility';
-  const isFirstFacilityTutorialOpen = tutorialStage?.kind === 'first-facility'
-    || tutorialStage?.kind === 'first-facility-header'
-    || tutorialStage?.kind === 'first-facility-footprint'
-    || tutorialStage?.kind === 'first-facility-efficiency'
-    || tutorialStage?.kind === 'first-facility-repair'
-    || tutorialStage?.kind === 'first-facility-research'
-    || tutorialStage?.kind === 'first-facility-recipe-card'
-    || tutorialStage?.kind === 'first-facility-recipe-economics';
-  const firstFacilityTutorialStep = tutorialStage?.kind === 'first-facility' ? 'overview'
-    : tutorialStage?.kind === 'first-facility-header' ? 'header'
-      : tutorialStage?.kind === 'first-facility-footprint' ? 'efficiency'
-        : tutorialStage?.kind === 'first-facility-repair' ? 'repair'
-          : tutorialStage?.kind === 'first-facility-efficiency' ? 'footprint'
-            : tutorialStage?.kind === 'first-facility-research' ? 'research'
-              : tutorialStage?.kind === 'first-facility-recipe-card' ? 'recipe-card'
-                : tutorialStage?.kind === 'first-facility-recipe-economics' ? 'recipe-economics' : null;
-  const firstFacilityTutorialFocus = firstFacilityTutorialStep === 'header' ? 'header'
-    : firstFacilityTutorialStep === 'efficiency' || firstFacilityTutorialStep === 'repair' ? 'efficiency'
-      : firstFacilityTutorialStep === 'research' && firstFacilityRecipeFocusActive ? 'recipe' : null;
+  const tutorialPresentation = getTutorialProductionPresentation(tutorialStage, firstFacilityTutorialRecipeName, firstFacilityRecipeFocusActive);
+  const { firstFacilityFocus: firstFacilityTutorialFocus, firstFacilityStep: firstFacilityTutorialStep, isBuildFacilityTutorial: isBuildFacilityTutorialOpen, isFirstFacilityTutorial: isFirstFacilityTutorialOpen, isProductionTutorial: isProductionTutorialOpen } = tutorialPresentation;
   const isConstructionTutorialOpen = tutorialStage?.kind === 'construction';
   const isFacilityChoiceTutorialOpen = tutorialStage?.kind === 'facility-choice';
   const isConstructionConfirmationTutorialOpen = tutorialStage?.kind === 'construction-confirmation';
@@ -184,14 +148,10 @@ function GameShell({ companyName }: { companyName: string }) {
     }
   };
   const advanceFirstFacilityTutorial = () => {
-    if (tutorialStage?.kind === 'first-facility') setTutorialStage({ kind: 'first-facility-header' });
-    else if (tutorialStage?.kind === 'first-facility-header') setTutorialStage({ kind: 'first-facility-footprint' });
-    else if (tutorialStage?.kind === 'first-facility-footprint') setTutorialStage({ kind: 'first-facility-repair' });
-    else if (tutorialStage?.kind === 'first-facility-repair') setTutorialStage({ kind: 'first-facility-efficiency' });
-    else if (tutorialStage?.kind === 'first-facility-efficiency') setTutorialStage({ kind: 'first-facility-research' });
-    else if (tutorialStage?.kind === 'first-facility-research') setTutorialStage({ kind: 'first-facility-recipe-card' });
-    else if (tutorialStage?.kind === 'first-facility-recipe-card') setTutorialStage({ kind: 'first-facility-recipe-economics' });
-    else if (tutorialStage?.kind === 'first-facility-recipe-economics') void completeWelcomeTutorial();
+    if (!tutorialStage) return;
+    const nextStage = getNextFirstFacilityTutorialStage(tutorialStage);
+    if (nextStage) setTutorialStage(nextStage);
+    else if (tutorialStage.kind === 'first-facility-recipe-economics') void completeWelcomeTutorial();
   };
   const handleFirstFacilityRecipeSelected = (recipeName: Recipe['name']) => {
     setFirstFacilityFocusLayout(null);
@@ -202,25 +162,10 @@ function GameShell({ companyName }: { companyName: string }) {
   const handleFacilityTutorialScroll = () => {
     if (tutorialStage?.kind === 'first-facility-research') setFirstFacilityRecipeFocusActive(false);
   };
-  const retreatFirstFacilityTutorial = () => {
-    if (tutorialStage?.kind === 'first-facility-header') setTutorialStage({ kind: 'first-facility' });
-    else if (tutorialStage?.kind === 'first-facility-footprint') setTutorialStage({ kind: 'first-facility-header' });
-    else if (tutorialStage?.kind === 'first-facility-repair') setTutorialStage({ kind: 'first-facility-footprint' });
-    else if (tutorialStage?.kind === 'first-facility-efficiency') setTutorialStage({ kind: 'first-facility-repair' });
-    else if (tutorialStage?.kind === 'first-facility-research') setTutorialStage({ kind: 'first-facility-efficiency' });
-    else if (tutorialStage?.kind === 'first-facility-recipe-card') setTutorialStage({ kind: 'first-facility-research' });
-    else if (tutorialStage?.kind === 'first-facility-recipe-economics') setTutorialStage({ kind: 'first-facility-recipe-card' });
-    else setTutorialStage({ kind: 'build-facility' });
-  };
+  const retreatFirstFacilityTutorial = () => setTutorialStage(getPreviousFirstFacilityTutorialStage(tutorialStage ?? { kind: 'build-facility' }));
   const reopenTutorial = () => {
     const firstFacility = facilities.getAll()[0];
-    const recoveredStage = lastTutorialStage.kind === 'construction-confirmation' && firstFacility
-      ? { kind: 'first-facility' as const }
-      : lastTutorialStage.kind === 'construction-confirmation' && !pendingConstruction
-        ? { kind: 'build-facility' as const }
-      : lastTutorialStage.kind.startsWith('first-facility') && !firstFacility
-        ? { kind: 'build-facility' as const }
-        : lastTutorialStage;
+    const recoveredStage = recoverTutorialStage(lastTutorialStage, Boolean(firstFacility), Boolean(pendingConstruction));
     if (firstFacility && recoveredStage.kind.startsWith('first-facility')) setFirstBuiltFacilityType(firstFacility.getView().facilityType);
     if (recoveredStage.kind.startsWith('first-facility')) {
       setPendingConstruction(null);
@@ -288,7 +233,7 @@ function GameShell({ companyName }: { companyName: string }) {
                 : activeView === 'settings' ? <SettingsScreen onLogout={logout} />
                   : activeView === 'leaderboard' ? <LeaderboardScreen />
                     : activeView === 'pedia' ? <IndustriPediaView companyPrestige={prestigeSummary.totalPrestige} currentGameTimeMs={lastProcessedAtMs} economyPhase={economyPhase} initialSection={pediaInitialSection} market={market} salesOrders={salesOrders} />
-                    : <GameViewContent achievements={achievements} activeTab={activeView === 'admin' ? 'company' : activeView} buyMarketResource={buyMarketResource} companyName={companyName} companyPrestige={prestigeSummary.totalPrestige} companyStartedAtGameTimeMs={companyStartedAtGameTimeMs} currentGameTimeMs={lastProcessedAtMs} customerPipelineProgress={customerPipelineProgress} facilities={facilities} finance={finance} firstFacilityTutorialFocus={firstFacilityTutorialFocus} firstFacilityTutorialRecipeName={firstFacilityTutorialRecipeName} firstFacilityTutorialStep={firstFacilityTutorialStep} fulfillSalesOrder={fulfillSalesOrder} getResearchAvailability={getResearchAvailability} inventory={inventory} isBuildFacilityTutorial={isBuildFacilityTutorialOpen} isFirstFacilityTutorial={isFirstFacilityTutorialOpen} isProductionTutorial={isProductionTutorialOpen} market={market} maximumOpenOrders={maximumOpenOrders} onAcceptLoanOffer={acceptLoanOffer} onBuildFacilityLayout={setBuildFacilityButtonLayout} onCompanyOverviewLayout={setCompanyOverviewLayout} onFirstFacilityFocusLayout={setFirstFacilityFocusLayout} onFirstFacilityRecipeSelected={handleFirstFacilityRecipeSelected} onExtraLoanPayment={makeExtraLoanPayment} onRemoveLoanOffer={removeLoanOffer} onRemoveUnavailableLoanOffers={removeUnavailableLoanOffers} onRepayLoanInFull={repayLoanInFull} onStartLoanSearch={startLoanSearch} onlyInStock={onlyInStock} openConstructionYard={() => { const wasBuildTutorialOpen = isBuildFacilityTutorialOpen; if (wasBuildTutorialOpen) setTutorialStage(null); setIsConstructionYardOpen(true); if (wasBuildTutorialOpen) setTutorialStage({ kind: 'construction' }); }} rejectSalesOrder={rejectSalesOrder} repairFacility={repairFacility} requestFacilityDestruction={setPendingDestruction} research={research} resourceFlow={resourceFlow} salesOrderAcquisition={salesOrderAcquisition} salesOrders={salesOrders} sellMarketResource={sellMarketResource} setFacilityProductionActive={setFacilityProductionActive} setFacilityProductionCycle={setFacilityProductionCycle} setFacilityWorkers={setFacilityWorkers} setMarketAutomation={setMarketAutomation} setOnlyInStock={setOnlyInStock} setShowActiveRecipeInputs={setShowActiveRecipeInputs} showActiveRecipeInputs={showActiveRecipeInputs} startResearch={startResearch} upgradeFacility={upgradeFacility} />}
+                    : <GameViewContent achievements={achievements} activeTab={activeView === 'admin' ? 'company' : activeView} buyMarketResource={buyMarketResource} companyName={companyName} companyPrestige={prestigeSummary.totalPrestige} companyStartedAtGameTimeMs={companyStartedAtGameTimeMs} currentGameTimeMs={lastProcessedAtMs} customerPipelineProgress={customerPipelineProgress} facilities={facilities} finance={finance} fulfillSalesOrder={fulfillSalesOrder} getResearchAvailability={getResearchAvailability} inventory={inventory} market={market} maximumOpenOrders={maximumOpenOrders} onAcceptLoanOffer={acceptLoanOffer} onBuildFacilityLayout={setBuildFacilityButtonLayout} onCompanyOverviewLayout={setCompanyOverviewLayout} onFirstFacilityFocusLayout={setFirstFacilityFocusLayout} onFirstFacilityRecipeSelected={handleFirstFacilityRecipeSelected} onExtraLoanPayment={makeExtraLoanPayment} onRemoveLoanOffer={removeLoanOffer} onRemoveUnavailableLoanOffers={removeUnavailableLoanOffers} onRepayLoanInFull={repayLoanInFull} onStartLoanSearch={startLoanSearch} onlyInStock={onlyInStock} openConstructionYard={() => { const wasBuildTutorialOpen = isBuildFacilityTutorialOpen; if (wasBuildTutorialOpen) setTutorialStage(null); setIsConstructionYardOpen(true); if (wasBuildTutorialOpen) setTutorialStage({ kind: 'construction' }); }} rejectSalesOrder={rejectSalesOrder} repairFacility={repairFacility} requestFacilityDestruction={setPendingDestruction} research={research} resourceFlow={resourceFlow} salesOrderAcquisition={salesOrderAcquisition} salesOrders={salesOrders} sellMarketResource={sellMarketResource} setFacilityProductionActive={setFacilityProductionActive} setFacilityProductionCycle={setFacilityProductionCycle} setFacilityWorkers={setFacilityWorkers} setMarketAutomation={setMarketAutomation} setOnlyInStock={setOnlyInStock} setShowActiveRecipeInputs={setShowActiveRecipeInputs} showActiveRecipeInputs={showActiveRecipeInputs} startResearch={startResearch} tutorial={tutorialPresentation} upgradeFacility={upgradeFacility} />}
 
         </ScrollView>
         <View style={styles.bottomNavigation}>{(tutorial.completedWelcome ? [...tabs.slice(0, 3), salesTab, researchTab, ...tabs.slice(3)] : tutorialStep === 5 ? [tabs[0], tabs[2]] : [tabs[0]]).map((tab) => <BottomNavigationItem active={activeView === tab.key} highlight={tutorialStep === 5 && activeView !== 'production' && tab.key === 'production'} icon={tab.icon} key={tab.key} label={tab.label} onPress={() => { setActiveView(tab.key); if (tutorial.completedWelcome) return; if (tab.key === 'company') setTutorialStage({ kind: 'welcome', step: tutorialStep }); if (tab.key === 'production') setTutorialStage({ kind: hasStartedProductionTutorial ? 'build-facility' : 'production' }); }} symbol={tab.symbol} />)}</View>

@@ -17,14 +17,11 @@ export type LocalCompany = {
   updatedAt: string;
 };
 
-export type CompanyTutorialState = { completedWelcome: boolean };
-
 export type DeviceSession = {
   selectedProfileId: string | null;
   activeCompanyId: string | null;
 };
 
-export const DEFAULT_COMPANY_TUTORIAL_STATE: CompanyTutorialState = { completedWelcome: true };
 export const EMPTY_DEVICE_SESSION: DeviceSession = { selectedProfileId: null, activeCompanyId: null };
 
 const MAX_DISPLAY_NAME_LENGTH = 32;
