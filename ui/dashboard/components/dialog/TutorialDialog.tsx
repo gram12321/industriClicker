@@ -68,13 +68,13 @@ function TutorialCollapseControl({
   );
 }
 
-function TutorialActions({ onBack, onExit, onNext }: NavigationProps) {
+function TutorialActions({ nextLabel = "Next", onBack, onExit, onNext }: NavigationProps & { nextLabel?: string }) {
   return (
     <View style={styles.tutorialActions}>
       <Button onPress={onBack}>Back</Button>
       <Button onPress={onExit}>Exit tutorial</Button>
       <Button mode="contained" onPress={onNext}>
-        Next
+        {nextLabel}
       </Button>
     </View>
   );
@@ -575,7 +575,48 @@ type FirstFacilityStep =
   | "recipe-card"
   | "recipe-automation"
   | "recipe-economics"
-  | "upgrades";
+  | "upgrades"
+  | "inventory-transition";
+
+export function InventoryTutorialDialog({
+  onBack,
+  onExit,
+  onNext,
+  visible,
+}: NavigationProps & { visible: boolean }) {
+  const [collapsed, setCollapsed] = useState(false);
+  return (
+    <Portal>
+      {visible && (
+        <View pointerEvents="box-none" style={styles.tutorialFirstFacilityOverlay}>
+          <View pointerEvents="auto" style={styles.tutorialFirstFacilityOverlayCard}>
+            <TutorialGuideCharacter />
+            <Text style={styles.tutorialDialogTitle}>Inventory and markets</Text>
+            <TutorialCollapseControl
+              collapsed={collapsed}
+              onPress={() => setCollapsed((value) => !value)}
+            />
+            {!collapsed && (
+              <View style={styles.tutorialDialogContent}>
+                <Text style={styles.sectionEyebrow}>STEP 1 OF 1</Text>
+                <Text style={styles.dialogDescription}>
+                  The resources your facilities produce can be seen in the
+                  Inventory. This is also where you can see resource prices on
+                  the different markets.
+                </Text>
+                <Text style={styles.dialogDescription}>
+                  You can manually buy and sell resources here, and set up
+                  automatic buying and selling orders.
+                </Text>
+              </View>
+            )}
+            <TutorialActions onBack={onBack} onExit={onExit} onNext={onNext} />
+          </View>
+        </View>
+      )}
+    </Portal>
+  );
+}
 
 export function FirstFacilityTutorialDialog({
   facilityType,
@@ -585,6 +626,7 @@ export function FirstFacilityTutorialDialog({
   onDismiss,
   onExit,
   onNext,
+  nextLabel,
   recipeName,
   research,
   step,
@@ -597,6 +639,7 @@ export function FirstFacilityTutorialDialog({
   onDismiss: () => void;
   onExit: () => void;
   onNext: () => void;
+  nextLabel?: string;
   recipeName: Recipe["name"] | null;
   research: ResearchLedger;
   step: FirstFacilityStep;
@@ -669,9 +712,11 @@ export function FirstFacilityTutorialDialog({
                   ? 12
                 : step === "recipe-automation"
                   ? 13
-                  : step === "recipe-economics"
-                    ? 14
-                    : 15;
+                : step === "recipe-economics"
+                  ? 14
+                  : step === "upgrades"
+                    ? 15
+                    : 16;
   const title =
     step === "overview"
       ? "Your first facility"
@@ -691,7 +736,9 @@ export function FirstFacilityTutorialDialog({
                     ? "Automatic production"
                   : step === "recipe-economics"
                     ? "Recipe economics"
-                    : "Facility upgrades";
+                    : step === "upgrades"
+                      ? "Facility upgrades"
+                      : "Your facility is ready";
   const spotlight =
     step === "research" && focusLayout ? (
       <View
@@ -729,7 +776,8 @@ export function FirstFacilityTutorialDialog({
       step === "recipe-card" ||
       step === "recipe-automation" ||
       step === "recipe-economics" ||
-      step === "upgrades" ? null : (
+      step === "upgrades" ||
+      step === "inventory-transition" ? null : (
       <FullScreenDimmer onDismiss={onDismiss} />
     );
   const researchContent = (
@@ -793,13 +841,26 @@ export function FirstFacilityTutorialDialog({
     </>
   );
   const recipeAutomationContent = (
-    <Text style={styles.dialogDescription}>
-      The facility will automatically run its production whenever the required
-      input resources are available, unless you pause it. You can add more
-      recipes to the production cycle, and the facility will run them in order,
-      repeating the cycle continuously. You can try that now, but since you
-      currently have only one recipe available, it will repeat that recipe.
-    </Text>
+    <>
+      <Text style={styles.dialogDescription}>
+        The facility will automatically run its production whenever the required
+        input resources are available, unless you pause it. You can add more
+        recipes to the production cycle, and the facility will run them in order,
+        repeating the cycle continuously. You can try that now, but since you
+        currently have only one recipe available, it will repeat that recipe.
+      </Text>
+      <Text style={styles.dialogDescription}>
+        In the input/output card, the{" "}
+        <TooltipMaterialIcon color={colors.primary} label="Buy resources" name={APP_ICONS.marketBuy} size={15} />{" "}
+        button buys the required input resources for one production round. The{" "}
+        <TooltipMaterialIcon color={colors.primary} label="Automatic resource buying" name={APP_ICONS.marketAutoBuy} size={15} />{" "}
+        button permanently activates automatic buying for the facility’s input
+        resources.
+      </Text>
+      <Text style={styles.dialogDescription}>
+        We will explain automatic resource buying in more detail later.
+      </Text>
+    </>
   );
   const recipeEconomicsContent = (
     <>
@@ -866,6 +927,18 @@ export function FirstFacilityTutorialDialog({
           <TooltipResourceIcon resourceType={ResourceType.IndustrialMachines} />{" "}
           Industrial Machines. When you press an upgrade button, the game
           automatically buys any missing resources from the local market. The cost you see is the total cost of the upgrade, including any market purchases.
+        </Text>
+      </>
+    ) : step === "inventory-transition" ? (
+      <>
+        <Text style={styles.dialogDescription}>
+          The resources your facility produces can be seen in the Inventory.
+          The Inventory is also where you can compare resource prices on the
+          different markets.
+        </Text>
+        <Text style={styles.dialogDescription}>
+          You can manually buy and sell resources here, and set up automatic
+          buying and selling orders.
         </Text>
       </>
     ) : step === "overview" ? (
@@ -1005,11 +1078,11 @@ export function FirstFacilityTutorialDialog({
               <View style={styles.tutorialDialogContent}>
                 <Text
                   style={styles.sectionEyebrow}
-                >{`STEP ${stepNumber} OF 15`}</Text>
+                >{`STEP ${stepNumber} OF 16`}</Text>
                 {content}
               </View>
             )}
-            <TutorialActions onBack={onBack} onExit={onExit} onNext={onNext} />
+            <TutorialActions nextLabel={step === "inventory-transition" ? "Go to Inventory" : undefined} onBack={onBack} onExit={onExit} onNext={onNext} />
           </View>
         </View>
       )}

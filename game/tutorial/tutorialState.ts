@@ -6,7 +6,7 @@ export const DEFAULT_TUTORIAL_STATE: TutorialState = { completedWelcome: true };
 
 export type WelcomeTutorialStep = 1 | 2 | 3 | 4 | 5;
 
-export type FirstFacilityTutorialStep = 'overview' | 'header' | 'footprint' | 'efficiency' | 'repair' | 'research' | 'recipe-card' | 'recipe-automation' | 'recipe-economics' | 'upgrades';
+export type FirstFacilityTutorialStep = 'overview' | 'header' | 'footprint' | 'efficiency' | 'repair' | 'research' | 'recipe-card' | 'recipe-automation' | 'recipe-economics' | 'upgrades' | 'inventory-transition';
 
 export type TutorialStage =
   | { kind: 'welcome'; step: WelcomeTutorialStep }
@@ -24,7 +24,9 @@ export type TutorialStage =
   | { kind: 'first-facility-recipe-card' }
   | { kind: 'first-facility-recipe-automation' }
   | { kind: 'first-facility-recipe-economics' }
-  | { kind: 'first-facility-upgrades' };
+  | { kind: 'first-facility-upgrades' }
+  | { kind: 'first-facility-inventory-transition' }
+  | { kind: 'inventory' };
 
 export type TutorialProductionPresentation = {
   firstFacilityFocus: 'header' | 'efficiency' | 'recipe' | null;
@@ -46,6 +48,7 @@ const FIRST_FACILITY_STAGES: Readonly<Record<Extract<TutorialStage['kind'], `fir
   'first-facility-recipe-automation': 'recipe-automation',
   'first-facility-recipe-economics': 'recipe-economics',
   'first-facility-upgrades': 'upgrades',
+  'first-facility-inventory-transition': 'inventory-transition',
 };
 
 export function getTutorialProductionPresentation(stage: TutorialStage | null, recipeName: Recipe['name'] | null, isRecipeFocusActive: boolean): TutorialProductionPresentation {
@@ -75,13 +78,16 @@ export function getNextFirstFacilityTutorialStage(stage: TutorialStage): Tutoria
     case 'first-facility-recipe-card': return { kind: 'first-facility-recipe-automation' };
     case 'first-facility-recipe-automation': return { kind: 'first-facility-recipe-economics' };
     case 'first-facility-recipe-economics': return { kind: 'first-facility-upgrades' };
-    case 'first-facility-upgrades': return null;
+    case 'first-facility-upgrades': return { kind: 'first-facility-inventory-transition' };
+    case 'first-facility-inventory-transition': return { kind: 'inventory' };
+    case 'inventory': return null;
     default: return null;
   }
 }
 
 export function getPreviousFirstFacilityTutorialStage(stage: TutorialStage): TutorialStage {
   switch (stage.kind) {
+    case 'inventory': return { kind: 'first-facility-inventory-transition' };
     case 'first-facility-header': return { kind: 'first-facility' };
     case 'first-facility-footprint': return { kind: 'first-facility-header' };
     case 'first-facility-repair': return { kind: 'first-facility-footprint' };
@@ -91,6 +97,7 @@ export function getPreviousFirstFacilityTutorialStage(stage: TutorialStage): Tut
     case 'first-facility-recipe-automation': return { kind: 'first-facility-recipe-card' };
     case 'first-facility-recipe-economics': return { kind: 'first-facility-recipe-automation' };
     case 'first-facility-upgrades': return { kind: 'first-facility-recipe-economics' };
+    case 'first-facility-inventory-transition': return { kind: 'first-facility-upgrades' };
     default: return { kind: 'build-facility' };
   }
 }

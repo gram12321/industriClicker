@@ -14,6 +14,8 @@ describe('tutorial flow', () => {
       { kind: 'first-facility-recipe-automation' },
       { kind: 'first-facility-recipe-economics' },
       { kind: 'first-facility-upgrades' },
+      { kind: 'first-facility-inventory-transition' },
+      { kind: 'inventory' },
     ];
 
     expect(stages.map((stage) => getNextFirstFacilityTutorialStage(stage)?.kind ?? null)).toEqual([
@@ -26,6 +28,8 @@ describe('tutorial flow', () => {
       'first-facility-recipe-automation',
       'first-facility-recipe-economics',
       'first-facility-upgrades',
+      'first-facility-inventory-transition',
+      'inventory',
       null,
     ]);
     expect(getPreviousFirstFacilityTutorialStage({ kind: 'first-facility-research' })).toEqual({ kind: 'first-facility-efficiency' });
