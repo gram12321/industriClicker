@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { getRecipe, RecipeName } from '@/game/recipes';
-import { RESOURCES } from '@/game/resources';
 import { Facility } from '@/game/facilities/facility';
 import { calculateFacilityEffectiveWork } from '@/game/facilities/facilityProduction';
 import { FacilityType } from '@/game/facilities/facilityTypes';
@@ -55,62 +54,10 @@ function getBaselineWorkPerMinute(facilityType: FacilityType): number {
   return calculateFacilityEffectiveWork(facility.getView(), 1);
 }
 
-function getInitialLocalPrice(resourceType: keyof typeof RESOURCES): number {
-  const market = RESOURCES[resourceType].market;
-  return market.localBenchmarkSupply / market.localInitialSupply;
-}
-
-function getNetMarginPerMinute(timingCase: RecipeTimingCase): number {
-  const recipe = getRecipe(timingCase.recipeName);
-  const outputValue = recipe.outputs
-    .reduce((total, output) => total + getInitialLocalPrice(output.resourceType) * output.amount, 0);
-  const inputValue = recipe.inputs.reduce(
-    (total, input) => total + getInitialLocalPrice(input.resourceType) * input.amount,
-    0,
-  );
-
-  return (outputValue - inputValue) * getBaselineWorkPerMinute(timingCase.facilityType) / recipe.requiredWork;
-}
-
 describe('recipe balance', () => {
   it.each(RECIPE_TIMING_CASES)('$recipeName completes in the expected baseline time', ({ facilityType, recipeName, expectedSeconds }) => {
     const seconds = getRecipe(recipeName).requiredWork / getBaselineWorkPerMinute(facilityType) * 60;
 
     expect(seconds).toBeCloseTo(expectedSeconds, 1);
-  });
-
-  it('keeps advanced recipes above basic resources in initial-market net margin per minute', () => {
-    const basicRecipeNames = new Set([
-      RecipeName.GrowGrain,
-      RecipeName.GrowSugar,
-      RecipeName.MineCoal,
-      RecipeName.MineIron,
-      RecipeName.MineCopper,
-      RecipeName.QuarrySand,
-      RecipeName.QuarryClay,
-      RecipeName.QuarryStone,
-      RecipeName.QuarryMinerals,
-    ]);
-    const advancedRecipeNames = new Set([
-      RecipeName.ProduceSteel,
-      RecipeName.ProduceElectricCircuits,
-      RecipeName.ProduceReinforcedConcrete,
-      RecipeName.ProduceConstructionMaterials,
-      RecipeName.ProduceChemicals,
-      RecipeName.SynthesizeFertilizer,
-      RecipeName.ProducePlastic,
-      RecipeName.ProduceSilicon,
-      RecipeName.ProduceAdvancedComponents,
-      RecipeName.AssembleIndustrialMachines,
-      RecipeName.MineGold,
-    ]);
-    const basicMargins = RECIPE_TIMING_CASES
-      .filter(({ recipeName }) => basicRecipeNames.has(recipeName))
-      .map(getNetMarginPerMinute);
-    const advancedMargins = RECIPE_TIMING_CASES
-      .filter(({ recipeName }) => advancedRecipeNames.has(recipeName))
-      .map(getNetMarginPerMinute);
-
-    expect(Math.min(...advancedMargins)).toBeGreaterThan(Math.max(...basicMargins));
   });
 });

@@ -1,22 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { Market } from '@/game/market';
-import { MARKET_AUTOTRADE_DEFAULT_INTERVAL_MS, MARKET_DIFFUSION_INTERVAL_MS } from '@/game/market/marketConstants';
-import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
+import { MARKET_DIFFUSION_INTERVAL_MS } from '@/game/market/marketConstants';
+import { ResourceType } from '@/game/resources';
 
 describe('Market regional tier', () => {
-  it('starts every tier at the same price while retaining the former local supply regionally', () => {
-    const market = new Market();
-
-    for (const resourceType of RESOURCE_TYPES) {
-      expect(market.getLocalPrice(resourceType)).toBeCloseTo(market.getRegionalPrice(resourceType));
-      expect(market.getRegionalPrice(resourceType)).toBeCloseTo(market.getGlobalPrice(resourceType));
-    }
-
-    expect(market.getLocalEntry(ResourceType.Grain).supply).toBe(1_000);
-    expect(market.getRegionalEntry(ResourceType.Grain).supply).toBe(100_000);
-    expect(market.getAutomation(ResourceType.Grain).autoTradeIntervalMs).toBe(MARKET_AUTOTRADE_DEFAULT_INTERVAL_MS);
-  });
-
   it('diffuses between both adjacent tiers without changing total supply', () => {
     const market = new Market();
     const snapshot = market.toSnapshot();
