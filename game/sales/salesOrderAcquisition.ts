@@ -28,8 +28,16 @@ export type SalesOrderAcquisitionStatus = SalesOrderAcquisitionDetails & {
 };
 
 type ProductionStatisticsLike = {
-  toSnapshot: () => { producedByResource: Readonly<Record<ResourceType, number>> };
+  getLifetimeFacilityOutputByResource?: () => Readonly<Record<ResourceType, number>>;
+  toSnapshot?: () => unknown;
 };
+
+function getProducedByResource(productionStatistics: ProductionStatisticsLike): Readonly<Record<ResourceType, number>> {
+  const snapshot = productionStatistics.toSnapshot?.() as { producedByResource?: Readonly<Record<ResourceType, number>> } | undefined;
+  return productionStatistics.getLifetimeFacilityOutputByResource?.()
+    ?? snapshot?.producedByResource
+    ?? Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, 0])) as Readonly<Record<ResourceType, number>>;
+}
 
 export type SalesOrderAcquisitionStatusInput = {
   facilities: FacilityCollection;
@@ -58,7 +66,7 @@ export function getSalesOrderAcquisitionStatus(
       research: input.research,
     }).totalAssets * getSalesOrderMaximumCompanyValueFraction(completedResearchProjectIds),
   );
-  const producedByResource = input.productionStatistics.toSnapshot().producedByResource;
+  const producedByResource = getProducedByResource(input.productionStatistics);
   const candidateResourceTypes = getSalesOfferResourceTypes(
     completedResearchProjectIds,
     producedByResource,
@@ -106,7 +114,7 @@ export function getSalesOrderResourceWeight(
   research: ResearchLedger,
   productionStatistics: ProductionStatisticsLike,
 ): number {
-  return productionStatistics.toSnapshot().producedByResource[resourceType] > 0
+  return getProducedByResource(productionStatistics)[resourceType] > 0
     ? getSalesOfferProducedResourceWeight(research.getCompletedProjectIds())
     : 1;
 }

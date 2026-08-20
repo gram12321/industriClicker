@@ -1,13 +1,13 @@
 import { Finance, LOAN_COLLECTION, buildFinanceStatementData, calculateAssets, calculateFacilityAssetValue, calculateLoanSearchEstimate, generateLoanOffers, LENDER_TYPES, refreshLoanOfferAvailability, type LoanOffer, type LoanSearchCriteria } from '@/game/finance';
 import { Inventory, ResourceFlowLedger } from '@/game/inventory';
-import { FACILITIES, FacilityCollection, FacilityMaintenanceStatistics, advanceAllFacilityProduction, calculateFacilityEffectiveWork, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
+import { FACILITIES, FacilityCollection, FacilityMaintenanceStatistics, advanceAllFacilityProduction, calculateFacilityEffectiveWork, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getMissingFacilityMaterials, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
 import { calculateOutputQuality, calculateProductionMaxQ } from '@/game/quality';
 import { getRecipe, type RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
 import { MARKET_DIFFUSION_INTERVAL_MS, MARKET_SALES_ORDER_BID_MULTIPLIER, Market, canAutoBuyMarketResource, canBuyMarketResource, canSellMarketResource, type MarketAutomation } from '@/game/market';
 import type { GameSnapshot } from '@/game/core/state';
 import { BASE_WORK_PER_MINUTE, FOREGROUND_SIMULATION_STEP_MS, REALTIME_WORK_MINUTE_MS, calculateRealtimeAdvance } from '@/game/core/time';
-import { SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP, SalesOrders, calculateSalesOrderAcquisitionChance, calculateSalesOrderAcquisitionDetails, calculateSalesOrderInventoryReadiness, getSalesResourceProfile, type SalesOrderAcquisitionStatus } from '@/game/sales';
+import { SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP, SalesOrders, calculateSalesOrderAcquisitionChance, calculateSalesOrderAcquisitionDetails, calculateSalesOrderInventoryReadiness, getSalesOrderAcquisitionStatus as getSalesOrderAcquisitionStatusForState, getSalesResourceProfile, type SalesOrderAcquisitionStatus } from '@/game/sales';
 import { AchievementLedger, createAchievementEvaluationContext, evaluateAchievementUnlocks, type AchievementCategory } from '@/game/achievements';
 
 import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyAssetsPrestige, calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary, calculateFacilityConditionPrestige } from '@/game/prestige';
@@ -338,10 +338,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const finance = get().finance.clone();
     const missingConstructionMaterials = Math.max(0, definition.constructionMaterialsCost - inventory.getAmount(ResourceType.ConstructionMaterials));
     const missingIndustrialMachines = Math.max(0, definition.industrialMachinesCost - inventory.getAmount(ResourceType.IndustrialMachines));
-    const missingInputs = [
-      { resourceType: ResourceType.ConstructionMaterials, amount: missingConstructionMaterials },
-      { resourceType: ResourceType.IndustrialMachines, amount: missingIndustrialMachines },
-    ].filter((input) => input.amount > 0);
+    const missingInputs = getMissingFacilityMaterials(inventory, { constructionMaterials: definition.constructionMaterialsCost, industrialMachines: definition.industrialMachinesCost });
     if (missingInputs.length === 0) return false;
 
     const trades = missingInputs.map((input) => ({ ...input, trade: market.buyFromLocal(input.resourceType, input.amount) }));
@@ -492,10 +489,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const industrialMachinesRepairCost = getFacilityRepairCost(definition.industrialMachinesCost, facilityView.facilityCondition);
     const missingConstructionMaterials = Math.max(0, constructionMaterialsRepairCost - inventory.getAmount(ResourceType.ConstructionMaterials));
     const missingIndustrialMachines = Math.max(0, industrialMachinesRepairCost - inventory.getAmount(ResourceType.IndustrialMachines));
-    const missingInputs = [
-      { resourceType: ResourceType.ConstructionMaterials, amount: missingConstructionMaterials },
-      { resourceType: ResourceType.IndustrialMachines, amount: missingIndustrialMachines },
-    ].filter((input) => input.amount > 0);
+    const missingInputs = getMissingFacilityMaterials(inventory, { constructionMaterials: constructionMaterialsRepairCost, industrialMachines: industrialMachinesRepairCost });
     const trades = missingInputs.map((input) => ({ ...input, trade: market.buyFromLocal(input.resourceType, input.amount) }));
     const missingInputPurchaseCost = trades.reduce((total, { trade }) => total + trade.amount * trade.unitPrice, 0);
 
@@ -552,10 +546,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const industrialMachinesCost = getFacilityUpgradeResourceCost(definition.industrialMachinesCost, costLevel);
     const missingConstructionMaterials = Math.max(0, constructionMaterialsCost - inventory.getAmount(ResourceType.ConstructionMaterials));
     const missingIndustrialMachines = Math.max(0, industrialMachinesCost - inventory.getAmount(ResourceType.IndustrialMachines));
-    const missingInputs = [
-      { resourceType: ResourceType.ConstructionMaterials, amount: missingConstructionMaterials },
-      { resourceType: ResourceType.IndustrialMachines, amount: missingIndustrialMachines },
-    ].filter((input) => input.amount > 0);
+    const missingInputs = getMissingFacilityMaterials(inventory, { constructionMaterials: constructionMaterialsCost, industrialMachines: industrialMachinesCost });
     const trades = missingInputs.map((input) => ({ ...input, trade: market.buyFromLocal(input.resourceType, input.amount) }));
     const missingInputPurchaseCost = trades.reduce((total, { trade }) => total + trade.amount * trade.unitPrice, 0);
 
@@ -1150,29 +1141,7 @@ export const useGameStore = create<GameState>((set, get) => {
     set({ salesOrders, customerPipelineProgress: 0 });
     return true;
   },
-  getSalesOrderAcquisitionStatus: () => {
-    const research = get().research;
-    const producedByResource = get().resourceFlow.getLifetimeFacilityOutputByResource();
-    const maximumOrderValue = Math.max(
-      SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP,
-      calculateAssets({ finance: get().finance, inventory: get().inventory, market: get().market, facilities: get().facilities, research }).totalAssets * getSalesOrderMaximumCompanyValueFraction(research.getCompletedProjectIds()),
-    );
-    const hasEligibleInventory = getSalesOfferResourceTypes(research.getCompletedProjectIds(), producedByResource).some((resourceType) => calculateSalesOrderInventoryReadiness(get().inventory.getAmount(resourceType), getSalesResourceProfile(resourceType).standardOrderLot) > 0 && getSalesResourceProfile(resourceType).standardOrderLot * get().market.getGlobalPrice(resourceType) <= maximumOrderValue);
-    const inventoryReadinessMultiplier = Math.max(0, ...getSalesOfferResourceTypes(research.getCompletedProjectIds(), producedByResource).map((resourceType) => calculateSalesOrderInventoryReadiness(get().inventory.getAmount(resourceType), getSalesResourceProfile(resourceType).standardOrderLot)));
-    return {
-      ...calculateSalesOrderAcquisitionDetails({
-        openOrderCount: get().salesOrders.getOfferedOrders().length,
-        maximumOpenOrders: getMaximumOpenSalesOrders(research.getCompletedProjectIds()),
-        companyPrestige: calculateCompanyPrestigeSummary(get().prestige.getEvents(), get().lastProcessedAtMs).totalPrestige,
-        economyPhase: get().finance.getEconomyPhase(),
-        hasEligibleInventory,
-        inventoryReadinessMultiplier,
-      }),
-      hasEligibleInventory,
-      inventoryReadinessMultiplier,
-      maximumOrderValue,
-    };
-  },
+  getSalesOrderAcquisitionStatus: () => getSalesOrderAcquisitionStatusForState({ facilities: get().facilities, finance: get().finance, inventory: get().inventory, market: get().market, productionStatistics: get().resourceFlow, prestige: get().prestige, research: get().research, salesOrders: get().salesOrders, currentGameTimeMs: get().lastProcessedAtMs }),
   fulfillSalesOrder: (orderId) => {
     get().advanceRealtime(Date.now());
     const salesOrders = get().salesOrders.clone();

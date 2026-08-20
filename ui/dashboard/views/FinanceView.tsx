@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { PanResponder, Pressable, StyleSheet, View } from "react-native";
 import {
   Button,
@@ -36,6 +36,7 @@ import { getResource } from "@/game/resources";
 import { colors } from "@/theme";
 import { formatCurrency, formatElapsedTime, formatNumber, getColorClass, normalizeToUnitInterval } from "@/utils";
 import { SectionHeading } from "@/ui/dashboard/components/DashboardPrimitives";
+import { useFinanceStatementData } from "./finance/useFinanceStatementData";
 
 type Page = "summary" | "assets" | "liabilities" | "cash-flow" | "funding";
 type StatementData = ReturnType<typeof buildFinanceStatementData>;
@@ -76,9 +77,7 @@ export function FinanceView(props: Props) {
   const [termMax, setTermMax] = useState(1_440);
   const [offerCount, setOfferCount] = useState(3);
   const [message, setMessage] = useState<string | null>(null);
-  const data = useMemo(
-    () =>
-      buildFinanceStatementData({
+  const data = useFinanceStatementData({
         achievements: props.achievements,
         cashFlowGroupDurationMs: cashFlowGroupMs,
         companyStartedAtGameTimeMs: props.companyStartedAtGameTimeMs,
@@ -89,9 +88,7 @@ export function FinanceView(props: Props) {
         market: props.market,
         period,
         research: props.research,
-      }),
-    [cashFlowGroupMs, period, props],
-  );
+      });
   const criteria: LoanSearchCriteria = {
     lenderTypes: selectedTypes,
     amountMin,

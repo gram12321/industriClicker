@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { isGameSnapshot } from '@/game/core/state';
 import { createStartingGameSnapshot, useGameStore } from '@/game/core/stores';
-import { clearLocalData, createCompanyWithSave, createLocalProfile, deleteCompany, listCompaniesForProfile, listLocalProfiles, loadCompanySnapshot, loadDeviceSession, saveCompanySnapshot, saveDeviceSession } from './companyDatabase';
+import { clearLocalData, createCompanyWithSave, createLocalProfile, deleteCompany, listCompaniesForProfile, listLocalProfiles, loadDeviceSession, saveDeviceSession } from './companyDatabase';
+import { loadCompanyGameSave, saveCompanyGameSave } from '@/game/core/persistence';
 import { STARTING_CONDITIONS } from './companyConstants';
 import { DEFAULT_TUTORIAL_STATE, type TutorialState } from '@/game/tutorial';
 import { loadTutorialState, saveTutorialState } from '@/game/tutorial/tutorialDatabase';
@@ -126,15 +127,15 @@ export const useCompanySessionStore = create<CompanySessionState>((set, get) => 
       const outgoing = get().activeCompany;
       if (outgoing) {
         useGameStore.getState().advanceRealtime(Date.now());
-        await saveCompanySnapshot(outgoing.id, useGameStore.getState().createSnapshot());
+        await saveCompanyGameSave(outgoing.id, useGameStore.getState().createSnapshot());
       }
-      const loadedSnapshot = await loadCompanySnapshot(requested.id);
+      const loadedSnapshot = await loadCompanyGameSave(requested.id);
       if (loadedSnapshot && isGameSnapshot(loadedSnapshot)) {
         useGameStore.getState().restoreSnapshot(loadedSnapshot);
       } else {
         const startingSnapshot = createStartingGameSnapshot();
         useGameStore.getState().restoreSnapshot(startingSnapshot);
-        await saveCompanySnapshot(requested.id, startingSnapshot);
+        await saveCompanyGameSave(requested.id, startingSnapshot);
       }
       useGameStore.getState().setStartingConditionId(requested.startingConditionId);
       const tutorial = await loadTutorialState(requested.id);
@@ -187,7 +188,7 @@ export const useCompanySessionStore = create<CompanySessionState>((set, get) => 
     const activeCompany = get().activeCompany;
     if (activeCompany) {
       useGameStore.getState().advanceRealtime(Date.now());
-      await saveCompanySnapshot(activeCompany.id, useGameStore.getState().createSnapshot());
+      await saveCompanyGameSave(activeCompany.id, useGameStore.getState().createSnapshot());
     }
     await saveDeviceSession(EMPTY_DEVICE_SESSION);
     useGameStore.getState().setStartingConditionId(null);
