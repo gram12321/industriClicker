@@ -574,7 +574,8 @@ type FirstFacilityStep =
   | "research"
   | "recipe-card"
   | "recipe-automation"
-  | "recipe-economics";
+  | "recipe-economics"
+  | "upgrades";
 
 export function FirstFacilityTutorialDialog({
   facilityType,
@@ -666,9 +667,11 @@ export function FirstFacilityTutorialDialog({
                 ? 11
                 : step === "recipe-card"
                   ? 12
-                  : step === "recipe-automation"
-                    ? 13
-                    : 14;
+                : step === "recipe-automation"
+                  ? 13
+                  : step === "recipe-economics"
+                    ? 14
+                    : 15;
   const title =
     step === "overview"
       ? "Your first facility"
@@ -686,7 +689,9 @@ export function FirstFacilityTutorialDialog({
                   ? "Recipe and production cycle"
                   : step === "recipe-automation"
                     ? "Automatic production"
-                  : "Recipe economics";
+                  : step === "recipe-economics"
+                    ? "Recipe economics"
+                    : "Facility upgrades";
   const spotlight =
     step === "research" && focusLayout ? (
       <View
@@ -723,7 +728,8 @@ export function FirstFacilityTutorialDialog({
       step === "footprint" ||
       step === "recipe-card" ||
       step === "recipe-automation" ||
-      step === "recipe-economics" ? null : (
+      step === "recipe-economics" ||
+      step === "upgrades" ? null : (
       <FullScreenDimmer onDismiss={onDismiss} />
     );
   const researchContent = (
@@ -834,6 +840,34 @@ export function FirstFacilityTutorialDialog({
       recipeAutomationContent
     ) : step === "recipe-economics" ? (
       recipeEconomicsContent
+    ) : step === "upgrades" ? (
+      <>
+        <Text style={styles.dialogDescription}>
+          <TooltipMaterialIcon color={colors.primary} label="Upgrades" name={APP_ICONS.upgrade} size={15} />{" "}
+          The Upgrades tab lets you improve this facility over time. Each
+          upgrade has a level and a different effect on production.
+        </Text>
+        <Text style={styles.dialogDescription}>
+          <TooltipMaterialIcon color={colors.primary} label="Speed upgrade" name={APP_ICONS.speed} size={15} />{" "}
+          Speed increases how quickly work is completed.{" "}
+          <TooltipMaterialIcon color={colors.primary} label="Output upgrade" name={APP_ICONS.output} size={15} />{" "}
+          Output increases the amount produced.{" "}
+          <TooltipMaterialIcon color={colors.primary} label="Durability upgrade" name={APP_ICONS.durability} size={15} />{" "}
+          Durability reduces wear and tear, while{" "}
+          <TooltipMaterialIcon color={colors.primary} label="Quality upgrade" name={APP_ICONS.quality} size={15} />{" "}
+          Quality raises the facility’s output-quality limit.
+        </Text>
+        <Text style={styles.dialogDescription}>
+          Upgrades cost{" "}
+          <TooltipMaterialIcon color={colors.primary} label="Cash" name={APP_ICONS.currency} size={15} />{" "}
+          cash,{" "}
+          <TooltipResourceIcon resourceType={ResourceType.ConstructionMaterials} />{" "}
+          Construction Materials, and{" "}
+          <TooltipResourceIcon resourceType={ResourceType.IndustrialMachines} />{" "}
+          Industrial Machines. When you press an upgrade button, the game
+          automatically buys any missing resources from the local market. The cost you see is the total cost of the upgrade, including any market purchases.
+        </Text>
+      </>
     ) : step === "overview" ? (
       <>
         <Text style={styles.dialogDescription}>
@@ -971,7 +1005,7 @@ export function FirstFacilityTutorialDialog({
               <View style={styles.tutorialDialogContent}>
                 <Text
                   style={styles.sectionEyebrow}
-                >{`STEP ${stepNumber} OF 14`}</Text>
+                >{`STEP ${stepNumber} OF 15`}</Text>
                 {content}
               </View>
             )}

@@ -6,7 +6,7 @@ export const DEFAULT_TUTORIAL_STATE: TutorialState = { completedWelcome: true };
 
 export type WelcomeTutorialStep = 1 | 2 | 3 | 4 | 5;
 
-export type FirstFacilityTutorialStep = 'overview' | 'header' | 'footprint' | 'efficiency' | 'repair' | 'research' | 'recipe-card' | 'recipe-automation' | 'recipe-economics';
+export type FirstFacilityTutorialStep = 'overview' | 'header' | 'footprint' | 'efficiency' | 'repair' | 'research' | 'recipe-card' | 'recipe-automation' | 'recipe-economics' | 'upgrades';
 
 export type TutorialStage =
   | { kind: 'welcome'; step: WelcomeTutorialStep }
@@ -23,7 +23,8 @@ export type TutorialStage =
   | { kind: 'first-facility-research' }
   | { kind: 'first-facility-recipe-card' }
   | { kind: 'first-facility-recipe-automation' }
-  | { kind: 'first-facility-recipe-economics' };
+  | { kind: 'first-facility-recipe-economics' }
+  | { kind: 'first-facility-upgrades' };
 
 export type TutorialProductionPresentation = {
   firstFacilityFocus: 'header' | 'efficiency' | 'recipe' | null;
@@ -44,6 +45,7 @@ const FIRST_FACILITY_STAGES: Readonly<Record<Extract<TutorialStage['kind'], `fir
   'first-facility-recipe-card': 'recipe-card',
   'first-facility-recipe-automation': 'recipe-automation',
   'first-facility-recipe-economics': 'recipe-economics',
+  'first-facility-upgrades': 'upgrades',
 };
 
 export function getTutorialProductionPresentation(stage: TutorialStage | null, recipeName: Recipe['name'] | null, isRecipeFocusActive: boolean): TutorialProductionPresentation {
@@ -72,7 +74,8 @@ export function getNextFirstFacilityTutorialStage(stage: TutorialStage): Tutoria
     case 'first-facility-research': return { kind: 'first-facility-recipe-card' };
     case 'first-facility-recipe-card': return { kind: 'first-facility-recipe-automation' };
     case 'first-facility-recipe-automation': return { kind: 'first-facility-recipe-economics' };
-    case 'first-facility-recipe-economics': return null;
+    case 'first-facility-recipe-economics': return { kind: 'first-facility-upgrades' };
+    case 'first-facility-upgrades': return null;
     default: return null;
   }
 }
@@ -87,6 +90,7 @@ export function getPreviousFirstFacilityTutorialStage(stage: TutorialStage): Tut
     case 'first-facility-recipe-card': return { kind: 'first-facility-research' };
     case 'first-facility-recipe-automation': return { kind: 'first-facility-recipe-card' };
     case 'first-facility-recipe-economics': return { kind: 'first-facility-recipe-automation' };
+    case 'first-facility-upgrades': return { kind: 'first-facility-recipe-economics' };
     default: return { kind: 'build-facility' };
   }
 }
