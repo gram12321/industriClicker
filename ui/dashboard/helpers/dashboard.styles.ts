@@ -248,6 +248,7 @@ export const styles = StyleSheet.create({
   tutorialFirstFacilityOverlayCard: { backgroundColor: 'rgba(245, 239, 251, 0.96)', borderColor: '#FFD54F', borderRadius: 24, borderWidth: 2, bottom: 84, elevation: 8, left: 24, padding: 24, position: 'absolute', right: 24 },
   tutorialGuideCharacterBehind: { height: 90, left: -46, position: 'absolute', top: -95, width: 90, zIndex: -1 },
   tutorialDialogContent: { alignItems: 'center', gap: 12 },
+  tutorialJumpMenu: { alignSelf: 'flex-start', marginTop: 4 },
   tutorialFirstFacilityCard: { borderColor: '#FFD54F', borderWidth: 3 },
   tutorialFirstFacilityHeader: { borderColor: '#FFD54F', borderRadius: 10, borderWidth: 3 },
   tutorialFirstFacilityHighlight: { borderColor: '#FFD54F', borderRadius: 10, borderWidth: 3, position: 'absolute' },

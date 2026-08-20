@@ -2,7 +2,7 @@ import { Image, Pressable, View } from "react-native";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Button, Dialog, IconButton, Portal, Text } from "react-native-paper";
+import { Button, Dialog, IconButton, Menu, Portal, Text } from "react-native-paper";
 import { colors } from "@/theme";
 import { getFacilityDefinition, type FacilityType } from "@/game/facilities";
 import type { Recipe } from "@/game/recipes";
@@ -20,6 +20,7 @@ import {
   TooltipTextIcon,
 } from "@/ui/dashboard/components/IconTooltip";
 import { formatNumber } from "@/utils";
+import { isDevAdminSurfaceAvailable } from "@/ui/dashboard/helpers/devAdminGate";
 
 const SIMULUCIUS_IMAGES = {
   balance: require("../../../../assets/simulucius/withlaptop.png"),
@@ -31,7 +32,19 @@ type NavigationProps = {
   onBack: () => void;
   onExit: () => void;
   onNext: () => void;
+  onJumpToTutorial?: (tutorial: TutorialJumpTarget) => void;
 };
+type TutorialJumpTarget = "company" | "facility" | "inventory";
+
+function TutorialJumpActions({ onJumpToTutorial }: { onJumpToTutorial?: (tutorial: TutorialJumpTarget) => void }) {
+  const [menuVisible, setMenuVisible] = useState(false);
+  if (!onJumpToTutorial || !isDevAdminSurfaceAvailable()) return null;
+  const jumpTo = (tutorial: TutorialJumpTarget) => {
+    setMenuVisible(false);
+    onJumpToTutorial(tutorial);
+  };
+  return <View style={styles.tutorialJumpMenu}><Menu anchor={<Button compact icon="tools" onPress={() => setMenuVisible(true)}>Dev jumps</Button>} onDismiss={() => setMenuVisible(false)} visible={menuVisible}><Menu.Item onPress={() => jumpTo("company")} title="Company step 1" /><Menu.Item onPress={() => jumpTo("facility")} title="Facility step 1" /><Menu.Item onPress={() => jumpTo("inventory")} title="Inventory step 1" /></Menu></View>;
+}
 
 function TutorialGuideCharacter({
   useBalanceImage = false,
@@ -68,29 +81,29 @@ function TutorialCollapseControl({
   );
 }
 
-function TutorialActions({ nextLabel = "Next", onBack, onExit, onNext }: NavigationProps & { nextLabel?: string }) {
+function TutorialActions({ nextLabel = "Next", onBack, onExit, onJumpToTutorial, onNext }: NavigationProps & { nextLabel?: string }) {
   return (
-    <View style={styles.tutorialActions}>
-      <Button onPress={onBack}>Back</Button>
-      <Button onPress={onExit}>Exit tutorial</Button>
-      <Button mode="contained" onPress={onNext}>
-        {nextLabel}
-      </Button>
-    </View>
+    <>
+      <TutorialJumpActions onJumpToTutorial={onJumpToTutorial} />
+      <View style={styles.tutorialActions}>
+        <Button onPress={onBack}>Back</Button>
+        <Button onPress={onExit}>Exit tutorial</Button>
+        <Button mode="contained" onPress={onNext}>{nextLabel}</Button>
+      </View>
+    </>
   );
 }
 
-function ChoiceActions({ onBack, onExit, onNext }: NavigationProps) {
+function ChoiceActions({ onBack, onExit, onJumpToTutorial, onNext }: NavigationProps) {
   return (
-    <View
-      style={[styles.tutorialActions, styles.tutorialFacilityChoiceActions]}
-    >
-      <Button onPress={onBack}>Back</Button>
-      <Button onPress={onExit}>Exit tutorial</Button>
-      <Button mode="contained" onPress={onNext}>
-        Next
-      </Button>
-    </View>
+    <>
+      <TutorialJumpActions onJumpToTutorial={onJumpToTutorial} />
+      <View style={[styles.tutorialActions, styles.tutorialFacilityChoiceActions]}>
+        <Button onPress={onBack}>Back</Button>
+        <Button onPress={onExit}>Exit tutorial</Button>
+        <Button mode="contained" onPress={onNext}>Next</Button>
+      </View>
+    </>
   );
 }
 
@@ -171,6 +184,7 @@ export function TutorialGuideDialog({
   onBack,
   onDismiss,
   onExit,
+  onJumpToTutorial,
   step,
   visible,
   onNext,
@@ -184,6 +198,7 @@ export function TutorialGuideDialog({
   step: 1 | 2 | 3 | 4 | 5;
   visible: boolean;
   onNext: () => void;
+  onJumpToTutorial?: (tutorial: TutorialJumpTarget) => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const isBalanceStep = step === 2;
@@ -221,15 +236,16 @@ export function TutorialGuideDialog({
     </View>
   );
   const actions = (
-    <View style={styles.tutorialActions}>
+    <>
+      <TutorialJumpActions onJumpToTutorial={onJumpToTutorial} />
+      <View style={styles.tutorialActions}>
       <Button disabled={step === 1} onPress={onBack}>
         Back
       </Button>
       <Button onPress={onExit}>Exit tutorial</Button>
-      <Button mode="contained" onPress={onNext}>
-        Next
-      </Button>
-    </View>
+      <Button mode="contained" onPress={onNext}>Next</Button>
+      </View>
+    </>
   );
   const collapseControl = (
     <TutorialCollapseControl
@@ -349,12 +365,14 @@ export function ProductionTutorialDialog({
   onClose,
   onDismiss,
   onExit,
+  onJumpToTutorial,
 }: {
   visible: boolean;
   onBack: () => void;
   onClose: () => void;
   onDismiss: () => void;
   onExit: () => void;
+  onJumpToTutorial?: (tutorial: TutorialJumpTarget) => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   return (
@@ -382,6 +400,7 @@ export function ProductionTutorialDialog({
             </View>
           </Dialog.Content>
         )}
+        <TutorialJumpActions onJumpToTutorial={onJumpToTutorial} />
         <Dialog.Actions>
           <Button onPress={onBack}>Back</Button>
           <Button onPress={onExit}>Exit tutorial</Button>
@@ -399,6 +418,7 @@ export function BuildFacilityTutorialDialog({
   onBack,
   onDismiss,
   onExit,
+  onJumpToTutorial,
   onNext,
   visible,
 }: {
@@ -407,6 +427,7 @@ export function BuildFacilityTutorialDialog({
   onDismiss: () => void;
   onExit: () => void;
   onNext: () => void;
+  onJumpToTutorial?: (tutorial: TutorialJumpTarget) => void;
   visible: boolean;
 }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -434,7 +455,7 @@ export function BuildFacilityTutorialDialog({
                 </Text>
               </View>
             )}
-            <TutorialActions onBack={onBack} onExit={onExit} onNext={onNext} />
+            <TutorialActions onBack={onBack} onExit={onExit} onJumpToTutorial={onJumpToTutorial} onNext={onNext} />
           </View>
         </View>
       )}
@@ -448,6 +469,7 @@ function FacilityChoiceDialog({
   children,
   onBack,
   onExit,
+  onJumpToTutorial,
   onNext,
   visible,
 }: NavigationProps & {
@@ -476,7 +498,7 @@ function FacilityChoiceDialog({
                 {children}
               </View>
             )}
-            <ChoiceActions onBack={onBack} onExit={onExit} onNext={onNext} />
+            <ChoiceActions onBack={onBack} onExit={onExit} onJumpToTutorial={onJumpToTutorial} onNext={onNext} />
           </View>
         </View>
       )}
@@ -580,15 +602,18 @@ type FirstFacilityStep =
 
 export function InventoryTutorialDialog({
   onBack,
+  onDismiss,
   onExit,
+  onJumpToTutorial,
   onNext,
   visible,
-}: NavigationProps & { visible: boolean }) {
+}: NavigationProps & { onDismiss: () => void; visible: boolean }) {
   const [collapsed, setCollapsed] = useState(false);
   return (
     <Portal>
       {visible && (
         <View pointerEvents="box-none" style={styles.tutorialFirstFacilityOverlay}>
+          <FullScreenDimmer onDismiss={onDismiss} />
           <View pointerEvents="auto" style={styles.tutorialFirstFacilityOverlayCard}>
             <TutorialGuideCharacter />
             <Text style={styles.tutorialDialogTitle}>Inventory and markets</Text>
@@ -610,7 +635,7 @@ export function InventoryTutorialDialog({
                 </Text>
               </View>
             )}
-            <TutorialActions onBack={onBack} onExit={onExit} onNext={onNext} />
+            <TutorialActions onBack={onBack} onExit={onExit} onJumpToTutorial={onJumpToTutorial} onNext={onNext} />
           </View>
         </View>
       )}
@@ -625,6 +650,7 @@ export function FirstFacilityTutorialDialog({
   onBack,
   onDismiss,
   onExit,
+  onJumpToTutorial,
   onNext,
   nextLabel,
   recipeName,
@@ -644,6 +670,7 @@ export function FirstFacilityTutorialDialog({
   research: ResearchLedger;
   step: FirstFacilityStep;
   visible: boolean;
+  onJumpToTutorial?: (tutorial: TutorialJumpTarget) => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   if (!facilityType) return null;
@@ -1082,7 +1109,7 @@ export function FirstFacilityTutorialDialog({
                 {content}
               </View>
             )}
-            <TutorialActions nextLabel={step === "inventory-transition" ? "Go to Inventory" : undefined} onBack={onBack} onExit={onExit} onNext={onNext} />
+            <TutorialActions nextLabel={step === "inventory-transition" ? "Go to Inventory" : undefined} onBack={onBack} onExit={onExit} onJumpToTutorial={onJumpToTutorial} onNext={onNext} />
           </View>
         </View>
       )}
