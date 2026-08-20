@@ -50,7 +50,7 @@ export function ProductionView({
   finance: Finance;
   firstFacilityTutorialFocus?: 'header' | 'efficiency' | 'recipe' | null;
   firstFacilityTutorialRecipeName?: Recipe['name'] | null;
-  firstFacilityTutorialStep?: 'overview' | 'header' | 'footprint' | 'efficiency' | 'repair' | 'research' | null;
+  firstFacilityTutorialStep?: 'overview' | 'header' | 'footprint' | 'efficiency' | 'repair' | 'research' | 'recipe-card' | 'recipe-economics' | null;
   onFirstFacilityRecipeSelected?: (recipeName: Recipe['name']) => void;
   getResearchAvailability: (projectId: ResearchProjectId) => ResearchAvailability;
   inventory: Inventory;
@@ -130,7 +130,7 @@ export function ProductionView({
       const repairPayment = calculateFacilityResourcePayment(finance, inventory, market, repairEuroCost, repairConstructionMaterialsCost, repairIndustrialMachinesCost);
       const canRepair = repairPayment.canAfford && repairEuroCost + repairConstructionMaterialsCost + repairIndustrialMachinesCost > 0;
       const isExpanded = collapsedFacilities[facilityId] !== true;
-      const activeDetailTab = isFirstFacilityTutorial && index === 0 ? (firstFacilityTutorialStep === 'footprint' || firstFacilityTutorialStep === 'research' ? 'recipe' : 'efficiency') : (facilityDetailTabs[facilityId] ?? 'recipe');
+      const activeDetailTab = isFirstFacilityTutorial && index === 0 ? (firstFacilityTutorialStep === 'footprint' || firstFacilityTutorialStep === 'research' || firstFacilityTutorialStep === 'recipe-card' || firstFacilityTutorialStep === 'recipe-economics' ? 'recipe' : 'efficiency') : (facilityDetailTabs[facilityId] ?? 'recipe');
       const productionCycleInputs = getFacilityProductionCycleInputs(facilityView);
       const allInputsAutoBuyEnabled = productionCycleInputs.length > 0 && productionCycleInputs.every((input) => market.getAutomation(input.resourceType).autoBuyEnabled);
       const hasMissingCycleInputs = productionCycleInputs.some((input) => input.amount > inventory.getAmount(input.resourceType));

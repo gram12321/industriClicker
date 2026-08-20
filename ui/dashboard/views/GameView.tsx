@@ -83,7 +83,7 @@ export function GameViewContent({
   finance: Finance;
   firstFacilityTutorialFocus?: 'header' | 'efficiency' | 'recipe' | null;
   firstFacilityTutorialRecipeName?: Recipe['name'] | null;
-  firstFacilityTutorialStep?: 'overview' | 'header' | 'footprint' | 'efficiency' | 'repair' | 'research' | null;
+  firstFacilityTutorialStep?: 'overview' | 'header' | 'footprint' | 'efficiency' | 'repair' | 'research' | 'recipe-card' | 'recipe-economics' | null;
   onFirstFacilityRecipeSelected?: (recipeName: Recipe['name']) => void;
   fulfillSalesOrder: (orderId: string) => boolean;
   inventory: Inventory;
