@@ -132,7 +132,7 @@ function advanceFacilityProduction(
       for (const output of recipe.outputs) {
         const amount = output.amount * facilityView.outputMultiplier;
         inventory.add(output.resourceType, amount);
-        outputs.push({ facilityType: facilityView.facilityType, recipeName: recipe.name, resourceType: output.resourceType, amount });
+        outputs.push({ facilityType: facilityView.facilityType, recipeName: recipe.name, resourceType: output.resourceType, amount, quality: 1 });
       }
       facility.applyConditionLoss(getRecipeProductionConditionLoss(recipe));
       progress = 0;

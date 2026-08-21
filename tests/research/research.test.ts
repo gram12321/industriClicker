@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ACHIEVEMENT_DEFINITIONS } from '@/game/achievements';
 import { FACILITIES } from '@/game/facilities';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
-import { BASE_MAXIMUM_OPEN_SALES_ORDERS, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesOrders, getRecipeResearchProjectId, getSalesOrderBidMultiplier, getSalesOrderBundleMaturityMultiplier, getSalesOrderMaximumCompanyValueFraction, getSalesOrderMinimumPremiumBonus, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, getSalesPressureOfferChanceMultiplier, getSalesRelationshipDecayHalfLifeMultiplier, getSalesRelationshipFailureLossMultiplier, getSalesRelationshipFulfilmentGainMultiplier, RESEARCH_PROJECTS, ResearchLedger } from '@/game/research';
+import { BASE_MAXIMUM_OPEN_SALES_ORDERS, getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, getMaximumOpenSalesOrders, getRecipeResearchProjectId, getResearchProject, getResourceResearchLevel, getResourceResearchMaxQ, getResourceQualityResearchProjectId, getSalesOrderBidMultiplier, getSalesOrderBundleMaturityMultiplier, getSalesOrderMaximumCompanyValueFraction, getSalesOrderMinimumPremiumBonus, getSalesOfferProducedResourceWeight, getSalesOfferResourceTypes, getSalesPressureOfferChanceMultiplier, getSalesRelationshipDecayHalfLifeMultiplier, getSalesRelationshipFailureLossMultiplier, getSalesRelationshipFulfilmentGainMultiplier, RESEARCH_PROJECTS, ResearchLedger } from '@/game/research';
 
 function createProductionTotals(produced: readonly ResourceType[]): Record<ResourceType, number> {
   return RESOURCE_TYPES.reduce((totals, resourceType) => {
@@ -70,6 +70,32 @@ describe('simultaneous research ledger', () => {
     expect(ledger.getActiveProjects().map((project) => project.projectId)).toEqual(['sales-capacity-1', 'bid-value-1']);
     expect(ledger.cancel('bid-value-1')).toMatchObject({ projectId: 'bid-value-1', paidCost: 100 });
     expect(ledger.getActiveProjects().map((project) => project.projectId)).toEqual(['sales-capacity-1']);
+  });
+});
+
+describe('resource-quality research', () => {
+  it('generates an unlimited next project and approaches Q100 with diminishing gains', () => {
+    const firstProjectId = getResourceQualityResearchProjectId(ResourceType.Grain, 1);
+    const secondProjectId = getResourceQualityResearchProjectId(ResourceType.Grain, 2);
+    const distantProjectId = getResourceQualityResearchProjectId(ResourceType.Grain, 1_000);
+    const first = getResearchProject(firstProjectId)!;
+    const second = getResearchProject(secondProjectId)!;
+    const distant = getResearchProject(distantProjectId)!;
+
+    expect(first.effect).toMatchObject({ kind: 'resource-production-quality', resourceType: ResourceType.Grain, level: 1, quality: 2 });
+    expect(second.cost).toBeGreaterThan(first.cost);
+    expect(second.durationMs).toBeGreaterThan(first.durationMs);
+    expect((second.effect as Extract<typeof second.effect, { kind: 'resource-production-quality' }>).quality).toBeGreaterThan(2);
+    expect((distant.effect as Extract<typeof distant.effect, { kind: 'resource-production-quality' }>).quality).toBeLessThan(100);
+    expect((distant.effect as Extract<typeof distant.effect, { kind: 'resource-production-quality' }>).quality).toBeGreaterThan(99);
+  });
+
+  it('uses the highest completed resource-quality level for new production', () => {
+    const completed = [getResourceQualityResearchProjectId(ResourceType.Grain, 1), getResourceQualityResearchProjectId(ResourceType.Grain, 2)];
+
+    expect(getResourceResearchLevel(ResourceType.Grain, completed)).toBe(2);
+    expect(getResourceResearchMaxQ(ResourceType.Grain, completed)).toBeGreaterThan(2);
+    expect(getResourceResearchMaxQ(ResourceType.Bread, completed)).toBe(1);
   });
 });
 

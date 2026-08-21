@@ -1,6 +1,7 @@
 export * from './facility';
 export * from './facilityCollection';
 export * from './facilityConstants';
+export * from './facilityCommandService';
 export * from './facilityEconomics';
 export * from './facilityMaintenanceStatistics';
 export * from './facilityProduction';

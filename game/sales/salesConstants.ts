@@ -5,13 +5,15 @@ import type { SalesCustomerDomain, SalesCustomerType } from './salesTypes';
 export const SALES_ORDER_DURATION_MS = 20 * 60 * 1_000;
 export const SALES_ORDER_MINIMUM_QUANTITY = 1;
 export const SALES_ORDER_MAXIMUM_QUANTITY = 1_000_000;
-export const SALES_ORDER_BASE_ACQUISITION_CHANCE_PER_MINUTE = 1;
+export const SALES_ORDER_BASE_ACQUISITION_RATE_PER_MINUTE = 1;
 export const SALES_ORDER_PENDING_PENALTY_PER_OPEN_ORDER = 0.13;
 export const SALES_ORDER_SELECTION_STOCK_COVERAGE_CAP = 64;
-export const SALES_ORDER_MINIMUM_INVENTORY_LOT_FRACTION = 0.01;
+/** Keeps unstocked resources offerable while making covered inventory more likely. */
+export const SALES_ORDER_UNSTOCKED_INVENTORY_READINESS = 0.25;
 export const SALES_ORDER_SELECTION_MAX_RELATIONSHIP_MULTIPLIER = 2;
 export const SALES_ORDER_PRESTIGE_DISCOVERY_SCALE = 120;
-export const SALES_ORDER_PRESTIGE_DISCOVERY_BASE = 0.65;
+export const SALES_ORDER_PRESTIGE_DISCOVERY_BASE = 0.01;
+export const SALES_ORDER_PRESTIGE_DISCOVERY_MAX = 10;
 export const SALES_ORDER_BASE_COMPANY_VALUE_FRACTION = 0.5;
 export const SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP = 100;
 /**
@@ -51,9 +53,32 @@ export const SALES_ORDER_BUNDLE_PRESTIGE_CONTROL_POINTS = [
   { input: 300, normalized: 1 },
 ] as const;
 
+/** Bid-premium prestige curve: company prestige should remain modest early and become decisive later. */
+export const SALES_ORDER_BID_PRESTIGE_CONTROL_POINTS = [
+  { input: 0, normalized: 0 },
+  { input: 1, normalized: 0.005 },
+  { input: 5, normalized: 0.015 },
+  { input: 20, normalized: 0.05 },
+  { input: 60, normalized: 0.15 },
+  { input: 150, normalized: 0.4 },
+  { input: 300, normalized: 0.7 },
+  { input: 600, normalized: 1 },
+] as const;
+
 export const SALES_ORDER_PRESSURE_OFFER_CHANCE = 0.025;
-export const SALES_ORDER_MAXIMUM_GLOBAL_PREMIUM = 1.5;
-export const SALES_ORDER_MINIMUM_GLOBAL_PREMIUM = -0.25;
+export const SALES_ORDER_PRESTIGE_BONUS_MIN = 0.01;
+export const SALES_ORDER_PRESTIGE_BONUS_MAX = 4;
+export const SALES_ORDER_RELATIONSHIP_BONUS_MIN = 0.01;
+export const SALES_ORDER_RELATIONSHIP_BONUS_MAX = 4;
+export const SALES_ORDER_CUSTOMER_FACTOR_MIN = -0.5;
+export const SALES_ORDER_CUSTOMER_FACTOR_MAX = 0.5;
+/** Presentation ranges for percentage-based sales-card colour cues. */
+export const SALES_ORDER_BID_BONUS_COLOR_MIN_PERCENT = -100;
+export const SALES_ORDER_BID_BONUS_COLOR_MAX_PERCENT = 1_000;
+export const SALES_ORDER_QUALITY_BONUS_COLOR_MIN_PERCENT = 0;
+export const SALES_ORDER_QUALITY_BONUS_COLOR_MAX_PERCENT = 5_000;
+export const SALES_ORDER_LOCAL_COMPARISON_COLOR_MIN_PERCENT = -100;
+export const SALES_ORDER_LOCAL_COMPARISON_COLOR_MAX_PERCENT = 100;
 
 /** Fixed catalogue display ranges. Values outside are clamped only for score colouring. */
 export const SALES_CUSTOMER_PURCHASING_POWER_RANGE = [0.55, 2] as const;
@@ -61,11 +86,11 @@ export const SALES_CUSTOMER_BID_MULTIPLIER_RANGE = [0.55, 1.8] as const;
 
 /** Economy affects both customer frequency and their willingness to pay. */
 export const SALES_ECONOMY_MULTIPLIERS: Readonly<Record<EconomyPhase, { acquisition: number; bid: number }>> = {
-  crash: { acquisition: 0.45, bid: 0.78 },
-  recession: { acquisition: 0.7, bid: 0.9 },
+  crash: { acquisition: 0.33, bid: 0.5 },
+  recession: { acquisition: 0.66, bid: 0.75 },
   stable: { acquisition: 1, bid: 1 },
-  expansion: { acquisition: 1.2, bid: 1.08 },
-  boom: { acquisition: 1.4, bid: 1.18 },
+  expansion: { acquisition: 1.8, bid: 1.25 },
+  boom: { acquisition: 3, bid: 1.5 },
 };
 
 export const SALES_CUSTOMER_DOMAIN_PROFILES: Readonly<Record<SalesCustomerDomain, {

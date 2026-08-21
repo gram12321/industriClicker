@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { PanResponder, Pressable, StyleSheet, View } from "react-native";
 import {
   Button,
@@ -32,9 +32,11 @@ import {
 import type { Inventory } from "@/game/inventory";
 import type { Market } from "@/game/market";
 import type { ResearchLedger } from "@/game/research";
+import { getResource } from "@/game/resources";
 import { colors } from "@/theme";
 import { formatCurrency, formatElapsedTime, formatNumber, getColorClass, normalizeToUnitInterval } from "@/utils";
 import { SectionHeading } from "@/ui/dashboard/components/DashboardPrimitives";
+import { useFinanceStatementData } from "./finance/useFinanceStatementData";
 
 type Page = "summary" | "assets" | "liabilities" | "cash-flow" | "funding";
 type StatementData = ReturnType<typeof buildFinanceStatementData>;
@@ -64,6 +66,7 @@ export function FinanceView(props: Props) {
     useState<(typeof FINANCE_REPORT_PERIODS)[number]["id"]>("all-time");
   const [cashFlowGroupMs, setCashFlowGroupMs] = useState(60_000);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+  const [expandedDetails, setExpandedDetails] = useState<ReadonlySet<string>>(new Set());
   const [searching, setSearching] = useState(false);
   const [selectedTypes, setSelectedTypes] = useState<
     readonly (typeof LENDER_TYPES)[number][]
@@ -74,9 +77,7 @@ export function FinanceView(props: Props) {
   const [termMax, setTermMax] = useState(1_440);
   const [offerCount, setOfferCount] = useState(3);
   const [message, setMessage] = useState<string | null>(null);
-  const data = useMemo(
-    () =>
-      buildFinanceStatementData({
+  const data = useFinanceStatementData({
         achievements: props.achievements,
         cashFlowGroupDurationMs: cashFlowGroupMs,
         companyStartedAtGameTimeMs: props.companyStartedAtGameTimeMs,
@@ -87,9 +88,7 @@ export function FinanceView(props: Props) {
         market: props.market,
         period,
         research: props.research,
-      }),
-    [cashFlowGroupMs, period, props],
-  );
+      });
   const criteria: LoanSearchCriteria = {
     lenderTypes: selectedTypes,
     amountMin,
@@ -104,6 +103,12 @@ export function FinanceView(props: Props) {
   );
   const toggle = (id: string) =>
     setExpanded((current) => {
+      const next = new Set(current);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  const toggleDetail = (id: string) =>
+    setExpandedDetails((current) => {
       const next = new Set(current);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
@@ -129,9 +134,11 @@ export function FinanceView(props: Props) {
           companyStartedAtGameTimeMs={props.companyStartedAtGameTimeMs}
           data={data}
           expanded={expanded}
+          expandedDetails={expandedDetails}
           groupMs={cashFlowGroupMs}
           setGroupMs={setCashFlowGroupMs}
           toggle={toggle}
+          toggleDetail={toggleDetail}
         />
       )}
       {page === "funding" && (
@@ -695,16 +702,20 @@ function CashFlow({
   companyStartedAtGameTimeMs,
   data,
   expanded,
+  expandedDetails,
   groupMs,
   setGroupMs,
   toggle,
+  toggleDetail,
 }: {
   companyStartedAtGameTimeMs: number;
   data: StatementData;
   expanded: ReadonlySet<string>;
+  expandedDetails: ReadonlySet<string>;
   groupMs: number;
   setGroupMs: (value: number) => void;
   toggle: (id: string) => void;
+  toggleDetail: (id: string) => void;
 }) {
   return (
     <View style={s.content}>
@@ -730,13 +741,12 @@ function CashFlow({
         </Surface>
       ) : (
         data.cashFlowRows.map((row) => (
+          <View key={row.id} style={s.cash}>
           <Pressable
             accessibilityLabel={`${expanded.has(row.id) ? "Hide" : "Show"} ${row.description} details`}
             accessibilityRole="button"
             accessibilityState={{ expanded: expanded.has(row.id) }}
-            key={row.id}
             onPress={() => toggle(row.id)}
-            style={s.cash}
           >
             <View style={s.row}>
               <View style={s.cashName}>
@@ -753,6 +763,7 @@ function CashFlow({
                 {formatCurrency(row.amount)}
               </Text>
             </View>
+          </Pressable>
             {expanded.has(row.id) && (
               <View style={s.details}>
                 {row.detailGroups.map((group) => {
@@ -767,41 +778,53 @@ function CashFlow({
                         negative={group.amount < 0}
                         value={formatCurrency(group.amount)}
                       />
-                      {group.details.map((detail) => (
-                        <View key={detail.id} style={s.detailStack}>
-                          <Text style={s.detail}>
-                            • {detail.description}
-                            {detail.count > 1 ? ` ×${detail.count}` : ""}
-                          </Text>
-                          {detail.totalQuantity &&
-                          detail.totalAbsoluteAmount ? (
-                            <>
-                              <Text style={s.detailSubline}>
-                                Total quantity:{" "}
-                                {formatNumber(detail.totalQuantity, {
-                                  smartDecimals: true,
-                                })}
+                      {group.details.map((detail) => {
+                        const totalQuantity = detail.totalQuantity ?? 0;
+                        const totalAbsoluteAmount = detail.totalAbsoluteAmount ?? 0;
+                        const totalQualityQuantity = detail.totalQualityQuantity ?? 0;
+                        const totalQualityAmount = detail.totalQualityAmount ?? 0;
+                        const hasMarketTotals = totalQuantity > 0 && totalAbsoluteAmount > 0;
+                        const hasQualityTotals = totalQualityQuantity > 0 && totalQualityAmount > 0;
+                        return (
+                          <View key={detail.id} style={s.detailStack}>
+                            <Text accessibilityRole="button" accessibilityState={{ expanded: expandedDetails.has(detail.id) }} onPress={() => toggleDetail(detail.id)}>
+                              <Text style={s.detail}>
+                                • {detail.resourceType ? `${getResource(detail.resourceType).icon} ` : ""}{detail.description}
+                                {detail.count > 1 ? ` ×${detail.count}` : ""}
                               </Text>
-                              <Text style={s.detailSubline}>
-                                Average unit price:{" "}
-                                {formatCurrency(
-                                  detail.totalAbsoluteAmount /
-                                    detail.totalQuantity,
+                            </Text>
+                            {expandedDetails.has(detail.id) ? hasMarketTotals ? (
+                              <>
+                                <Text style={s.detailSubline}>
+                                  Total quantity:{" "}
+                                  {formatNumber(totalQuantity, {
+                                    smartDecimals: true,
+                                  })}
+                                </Text>
+                                <Text style={s.detailSubline}>
+                                  Average unit price:{" "}
+                                  {formatCurrency(totalAbsoluteAmount / totalQuantity)}
+                                </Text>
+                                {hasQualityTotals && (
+                                  <Text style={s.detailSubline}>
+                                    Average quality: Q
+                                    {formatNumber(totalQualityAmount / totalQualityQuantity, { decimals: 2, forceDecimals: true })}
+                                  </Text>
                                 )}
-                              </Text>
-                            </>
-                          ) : (
-                            detail.detailLines.map((line, index) => (
-                              <Text
-                                key={`${detail.id}-${index}`}
-                                style={s.detailSubline}
-                              >
-                                {line}
-                              </Text>
-                            ))
-                          )}
-                        </View>
-                      ))}
+                              </>
+                            ) : (
+                              detail.detailLines.map((line, index) => (
+                                <Text
+                                  key={`${detail.id}-${index}`}
+                                  style={s.detailSubline}
+                                >
+                                  {line}
+                                </Text>
+                              ))
+                            ) : null}
+                          </View>
+                        );
+                      })}
                     </View>
                   );
                 })}
@@ -810,7 +833,7 @@ function CashFlow({
             <Text style={s.hint}>
               Balance after: {formatCurrency(row.balance)}
             </Text>
-          </Pressable>
+          </View>
         ))
       )}
     </View>

@@ -1,4 +1,5 @@
 import type { Inventory } from '@/game/inventory';
+import { calculateOutputQuality, calculateWeightedInputQ, type OutputQualityBreakdown } from '@/game/quality';
 import { getRecipe, type Recipe, type RecipeInput, type RecipeName } from '@/game/recipes';
 import type { ResourceType } from '@/game/resources';
 import { FACILITY_PRODUCTION_CONDITION_LOSS_PER_CYCLE, FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT, FACILITY_PRODUCTION_ORDER, FACILITY_STAFF_WORK_PER_WORKER_PER_MINUTE } from './facilityConstants';
@@ -14,7 +15,16 @@ export type ProductionOutput = {
   recipeName: RecipeName;
   resourceType: ResourceType;
   amount: number;
+  quality: number;
 };
+
+/** Calculates the amount-weighted quality of a recipe's consumed inputs. */
+export function calculateRecipeInputQ(recipe: Recipe, inventory: Inventory): number | null {
+  return calculateWeightedInputQ(recipe.inputs.map((input) => ({
+    amount: input.amount,
+    quality: inventory.getQuality(input.resourceType),
+  })));
+}
 
 /** Deterministic production wear for one completed recipe cycle. */
 export function getRecipeProductionConditionLoss(recipe: Recipe): number {
@@ -75,6 +85,7 @@ export function advanceAllFacilityProduction(
   inventory: Inventory,
   getEffectiveWork: (facility: FacilityView, recipeName: RecipeName) => number,
   onInputConsumed?: (input: RecipeInput) => void,
+  resolveOutputQuality?: (resourceType: ResourceType, weightedInputQ: number | null, upgradeMaxQ: number) => OutputQualityBreakdown,
 ): ProductionOutput[] {
   const outputs: ProductionOutput[] = [];
 
@@ -96,6 +107,7 @@ export function advanceAllFacilityProduction(
         if (progress === 0 && !recipe.inputs.every((input) => inventory.has(input.resourceType, input.amount))) break;
 
         if (progress === 0) {
+          facility.setRecipeInputQ(calculateRecipeInputQ(recipe, inventory));
           for (const input of recipe.inputs) {
             if (inventory.remove(input.resourceType, input.amount)) onInputConsumed?.(input);
           }
@@ -108,10 +120,13 @@ export function advanceAllFacilityProduction(
         if (progress + WORK_COMPLETION_EPSILON >= recipe.requiredWork) {
           for (const output of recipe.outputs) {
             const amount = output.amount * facilityView.outputMultiplier;
-            inventory.add(output.resourceType, amount);
-            outputs.push({ facilityType: facilityView.facilityType, recipeName: recipe.name, resourceType: output.resourceType, amount });
+            const qualityBreakdown = resolveOutputQuality?.(output.resourceType, facility.getView().recipeInputQ, facilityView.upgradeMaxQ)
+              ?? calculateOutputQuality({ weightedInputQ: facility.getView().recipeInputQ, researchMaxQ: 1, upgradeMaxQ: facilityView.upgradeMaxQ });
+            inventory.add(output.resourceType, amount, qualityBreakdown.outputQ);
+            outputs.push({ facilityType: facilityView.facilityType, recipeName: recipe.name, resourceType: output.resourceType, amount, quality: qualityBreakdown.outputQ });
           }
           facility.applyConditionLoss(getRecipeProductionConditionLoss(recipe));
+          facility.setRecipeInputQ(null);
           progress = 0;
           if (!facility.advanceProductionCycle()) break;
           currentRecipeName = facility.getView().activeRecipeName ?? currentRecipeName;

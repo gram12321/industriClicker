@@ -3,8 +3,10 @@ import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 're
 import { Button, Dialog, Icon, Portal, Surface, Text } from 'react-native-paper';
 import type { PrestigeEventType } from '@/game/prestige';
 import { calculatePrestigeDecayDetails, normalizeCompanyPrestigeForPresentation, type CompanyPrestigeSummary } from '@/game/prestige';
+import { ACHIEVEMENT_DEFINITIONS } from '@/game/achievements';
 import { colors } from '@/theme';
 import { formatNumber, formatSigned, getColorClass, getNormalizedScoreLabel } from '@/utils';
+import { IconTooltipProvider, TooltipMaterialIcon } from '@/ui/dashboard/components/IconTooltip';
 
 type Filter = 'all' | 'company_balance' | 'company_assets' | 'sales_order' | 'achievement';
 type PrestigeEventGroup = {
@@ -39,7 +41,7 @@ export function PrestigeDialog({ facilityConditions = [], isOpen, onClose, summa
     setExpandedEventDetails((current) => toggleSetItem(current, eventId));
   };
 
-  return <Portal><Dialog dismissable onDismiss={onClose} style={styles.dialog} visible={isOpen}>
+  return <Portal><IconTooltipProvider><Dialog dismissable onDismiss={onClose} style={styles.dialog} visible={isOpen}>
     <Dialog.Title>Company prestige</Dialog.Title>
     <Dialog.Content><ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator style={[styles.dialogScroll, { maxHeight: Math.max(200, height - 190) }]}>
       <Text style={styles.description}>A record of your company’s standing. Prestige has no gameplay effect yet.</Text>
@@ -57,14 +59,15 @@ export function PrestigeDialog({ facilityConditions = [], isOpen, onClose, summa
             </Pressable>
             {isExpanded && <View style={styles.groupEvents}>{group.events.map((event) => {
               const isDetailsExpanded = expandedEventDetails.has(event.id);
-              return <View key={event.id}><Pressable accessibilityLabel={`${isDetailsExpanded ? 'Hide' : 'Show'} prestige details for ${event.description}`} accessibilityRole="button" accessibilityState={{ expanded: isDetailsExpanded }} onPress={() => toggleEventDetails(event.id)}><Surface elevation={0} style={[styles.eventRow, isDetailsExpanded && styles.selectedEventRow]}><View style={styles.eventText}><Text style={styles.eventDescription}>{event.description}</Text><Text style={styles.eventDecay}>{formatEventDecay(event, currentGameTimeMs)}</Text><Text style={styles.tapHint}>{isDetailsExpanded ? 'Tap to hide details' : 'Tap to show details'}</Text></View><Text style={event.currentAmount < 0 ? styles.penaltyAmount : styles.eventAmount}>{formatSigned(event.currentAmount, { smartDecimals: true })}</Text><Icon source={isDetailsExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={colors.muted} /></Surface></Pressable>{isDetailsExpanded && <PrestigeDetails currentGameTimeMs={currentGameTimeMs} event={event} facilityConditions={facilityConditions} />}</View>;
+              const achievement = event.type === 'achievement' ? ACHIEVEMENT_DEFINITIONS.find((definition) => `achievement:${definition.id}` === event.sourceId) : undefined;
+              return <View key={event.id}><Surface elevation={0} style={[styles.eventRow, isDetailsExpanded && styles.selectedEventRow]}>{achievement && <TooltipMaterialIcon color={colors.primary} label={`${achievement.name}: ${achievement.description}`} name={achievement.icon} size={20} style={styles.achievementTooltipIcon} />}<Pressable accessibilityLabel={`${isDetailsExpanded ? 'Hide' : 'Show'} prestige details for ${event.description}`} accessibilityRole="button" accessibilityState={{ expanded: isDetailsExpanded }} onPress={() => toggleEventDetails(event.id)} style={styles.eventPressable}><View style={styles.eventText}><Text style={styles.eventDescription}>{event.description}</Text><Text style={styles.eventDecay}>{formatEventDecay(event, currentGameTimeMs)}</Text><Text style={styles.tapHint}>{isDetailsExpanded ? 'Tap to hide details' : 'Tap to show details'}</Text></View><Text style={event.currentAmount < 0 ? styles.penaltyAmount : styles.eventAmount}>{formatSigned(event.currentAmount, { smartDecimals: true })}</Text><Icon source={isDetailsExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={colors.muted} /></Pressable></Surface>{isDetailsExpanded && <PrestigeDetails currentGameTimeMs={currentGameTimeMs} event={event} facilityConditions={facilityConditions} />}</View>;
             })}</View>}
           </Surface>;
         })}
       </View>
     </ScrollView></Dialog.Content>
     <Dialog.Actions><Button onPress={onClose}>Close</Button></Dialog.Actions>
-  </Dialog></Portal>;
+  </Dialog></IconTooltipProvider></Portal>;
 }
 
 function groupEvents(events: CompanyPrestigeSummary['events'], filter: Filter): PrestigeEventGroup[] {
@@ -123,5 +126,5 @@ function FacilityConditionFormula({ conditions }: { conditions: readonly number[
 }
 
 const styles = StyleSheet.create({
-  content: { gap: 12, paddingBottom: 4 }, description: { color: colors.muted, lineHeight: 21 }, detailsCard: { backgroundColor: colors.paleGreen, borderRadius: 12, marginTop: 6, padding: 12 }, dialog: { maxHeight: '88%' }, dialogScroll: { flexGrow: 0 }, emptyText: { color: colors.muted, paddingVertical: 12, textAlign: 'center' }, eventAmount: { color: colors.primary, fontWeight: '700' }, eventDecay: { color: colors.muted, fontSize: 12, marginTop: 3 }, eventDescription: { color: colors.muted, fontSize: 12, marginTop: 2 }, eventGroup: { backgroundColor: colors.surface, borderRadius: 12, padding: 8 }, eventGroupHeader: { alignItems: 'center', flexDirection: 'row', gap: 12, padding: 4 }, eventList: { gap: 8, paddingBottom: 4 }, eventRow: { alignItems: 'center', backgroundColor: colors.softBackground, borderRadius: 10, flexDirection: 'row', gap: 12, padding: 12 }, eventText: { flex: 1 }, filters: { flexDirection: 'row', gap: 8 }, groupEvents: { gap: 6, marginTop: 8 }, historyHeading: { color: colors.charcoal, marginTop: 4 }, kicker: { color: colors.primary, fontSize: 11, fontWeight: '700', letterSpacing: 1 }, penaltyAmount: { color: colors.error, fontWeight: '700' }, prestigeStanding: { fontSize: 13, fontWeight: '700', textAlign: 'center' }, selectedEventRow: { backgroundColor: colors.paleGreen }, summaryLabel: { color: colors.muted, fontSize: 12 }, summaryRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }, summaryValue: { color: colors.charcoal, fontWeight: '700' }, tapHint: { color: colors.primary, fontSize: 11, fontWeight: '600', marginTop: 5 }, totalCard: { backgroundColor: colors.softBackground, borderRadius: 12, padding: 16 }, totalValue: { color: colors.charcoal, fontSize: 32, fontWeight: '700', lineHeight: 40 },
+  achievementTooltipIcon: { padding: 6 }, content: { gap: 12, paddingBottom: 4 }, description: { color: colors.muted, lineHeight: 21 }, detailsCard: { backgroundColor: colors.paleGreen, borderRadius: 12, marginTop: 6, padding: 12 }, dialog: { maxHeight: '88%' }, dialogScroll: { flexGrow: 0 }, emptyText: { color: colors.muted, paddingVertical: 12, textAlign: 'center' }, eventAmount: { color: colors.primary, fontWeight: '700' }, eventDecay: { color: colors.muted, fontSize: 12, marginTop: 3 }, eventDescription: { color: colors.muted, fontSize: 12, marginTop: 2 }, eventGroup: { backgroundColor: colors.surface, borderRadius: 12, padding: 8 }, eventGroupHeader: { alignItems: 'center', flexDirection: 'row', gap: 12, padding: 4 }, eventList: { gap: 8, paddingBottom: 4 }, eventPressable: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 12 }, eventRow: { alignItems: 'center', backgroundColor: colors.softBackground, borderRadius: 10, flexDirection: 'row', gap: 12, padding: 12 }, eventText: { flex: 1 }, filters: { flexDirection: 'row', gap: 8 }, groupEvents: { gap: 6, marginTop: 8 }, historyHeading: { color: colors.charcoal, marginTop: 4 }, kicker: { color: colors.primary, fontSize: 11, fontWeight: '700', letterSpacing: 1 }, penaltyAmount: { color: colors.error, fontWeight: '700' }, prestigeStanding: { fontSize: 13, fontWeight: '700', textAlign: 'center' }, selectedEventRow: { backgroundColor: colors.paleGreen }, summaryLabel: { color: colors.muted, fontSize: 12 }, summaryRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }, summaryValue: { color: colors.charcoal, fontWeight: '700' }, tapHint: { color: colors.primary, fontSize: 11, fontWeight: '600', marginTop: 5 }, totalCard: { backgroundColor: colors.softBackground, borderRadius: 12, padding: 16 }, totalValue: { color: colors.charcoal, fontSize: 32, fontWeight: '700', lineHeight: 40 },
 });

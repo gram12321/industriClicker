@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import { Button, Card, Menu, Text, TextInput } from 'react-native-paper';
-import { getResource, getResourceIcon, RESOURCE_TYPES, type ResourceType } from '@/game/resources';
+import { getResource, RESOURCE_TYPES, type ResourceType } from '@/game/resources';
 import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS } from '@/icons';
+import { TooltipResourceIcon } from '@/ui/dashboard/components/IconTooltip';
 
 export function InventoryControlCard({
   onSetInventoryAmount,
@@ -33,7 +34,7 @@ export function InventoryControlCard({
         <View style={styles.adminSalesOrderControls}>
           <Menu
             anchor={(
-              <Button icon={() => <Text>{getResourceIcon(selectedResourceType)}</Text>} mode="outlined" onPress={() => setIsResourceMenuOpen(true)}>
+              <Button icon={() => <TooltipResourceIcon resourceType={selectedResourceType} />} mode="outlined" onPress={() => setIsResourceMenuOpen(true)}>
                 {selectedResource.name}
               </Button>
             )}
@@ -43,7 +44,7 @@ export function InventoryControlCard({
             {RESOURCE_TYPES.map((resourceType) => (
               <Menu.Item
                 key={resourceType}
-                leadingIcon={() => <Text>{getResourceIcon(resourceType)}</Text>}
+                leadingIcon={() => <TooltipResourceIcon resourceType={resourceType} />}
                 onPress={() => { setSelectedResourceType(resourceType); setIsResourceMenuOpen(false); }}
                 title={getResource(resourceType).name}
               />

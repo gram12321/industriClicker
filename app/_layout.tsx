@@ -5,8 +5,9 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PaperProvider } from 'react-native-paper';
 
 import { useCompanySessionStore, useGameStore } from '@/game';
-import { saveCompanySnapshot } from '@/game/company/companyDatabase';
+import { saveCompanyGameSave } from '@/game/core/persistence';
 import { paperTheme } from '@/theme';
+import { IconTooltipProvider } from '@/ui/dashboard/components/IconTooltip';
 
 const ACTIVE_SAVE_BATCH_MS = 5_000;
 
@@ -40,7 +41,7 @@ function CompanyGamePersistence({ children }: { children: ReactNode }) {
     const saveNow = (shouldProcessForegroundTime = AppState.currentState !== 'background' && AppState.currentState !== 'inactive') => {
       if (useCompanySessionStore.getState().activeCompany?.id !== activeCompanyId) return Promise.resolve();
       if (shouldProcessForegroundTime) useGameStore.getState().advanceRealtime(Date.now());
-      return saveCompanySnapshot(activeCompanyId, useGameStore.getState().createSnapshot()).catch(() => undefined);
+      return saveCompanyGameSave(activeCompanyId, useGameStore.getState().createSnapshot()).catch(() => undefined);
     };
     const scheduleSave = () => {
       if (saveTimeout) return;
@@ -119,7 +120,9 @@ export default function RootLayout() {
         <LocalSessionBootstrap>
           <CompanyGamePersistence>
             <ForegroundRealtimeClock />
-            <Stack screenOptions={{ headerShown: false }} />
+            <IconTooltipProvider>
+              <Stack screenOptions={{ headerShown: false }} />
+            </IconTooltipProvider>
           </CompanyGamePersistence>
         </LocalSessionBootstrap>
       </PaperProvider>

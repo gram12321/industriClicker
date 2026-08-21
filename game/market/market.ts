@@ -8,9 +8,10 @@ import {
   MARKET_AUTOSELL_DEFAULT_MIN_KEEP,
   MARKET_AUTOSELL_DEFAULT_MIN_PRICE,
   MARKET_DEFAULT_QUALITY,
+  LOCAL_MARKET_NETWORK_EXPANSION_PER_MINUTE,
 } from './marketConstants';
 import { calculateMarketDiffusionDetails, calculateMarketDiffusionInfo, calculateMarketPrice } from './marketDiffusion';
-import type { MarketAutomation, MarketDiffusionDetails, MarketDiffusionInfo, MarketPoolEntry, MarketSnapshot, MarketTradeResult } from './marketTypes';
+import type { LocalMarketNetworkActivation, MarketAutomation, MarketDiffusionDetails, MarketDiffusionInfo, MarketPoolEntry, MarketSnapshot, MarketTradeResult } from './marketTypes';
 
 function isNonNegativeFinite(value: number): boolean { return Number.isFinite(value) && value >= 0; }
 function isPositiveFinite(value: number): boolean { return Number.isFinite(value) && value > 0; }
@@ -58,6 +59,7 @@ export class Market {
   private automation: Record<ResourceType, MarketAutomation>;
   private localMarketDepthMultiplier = 1;
   private localRegionalDiffusionMultiplier = 1;
+  private localMarketNetworkActivations: LocalMarketNetworkActivation[] = [];
 
   constructor(snapshot?: MarketSnapshot) {
     this.local = createPool('local');
@@ -77,6 +79,15 @@ export class Market {
     return calculateMarketPrice(definition.localBenchmarkSupply * this.localMarketDepthMultiplier, this.local[resourceType]);
   }
 
+  /** Quotes a local sale using the quality of the inventory being sold. */
+  getLocalSalePrice(resourceType: ResourceType, inventoryQuality: number): number {
+    const definition = RESOURCES[resourceType].market;
+    return calculateMarketPrice(definition.localBenchmarkSupply * this.localMarketDepthMultiplier, {
+      supply: this.local[resourceType].supply,
+      quality: inventoryQuality,
+    });
+  }
+
   /** Returns the largest local purchase that keeps the resulting unit price within the cap. */
   getMaximumLocalPurchaseAmountAtUnitPrice(resourceType: ResourceType, maxUnitPrice: number): number {
     if (!isPositiveFinite(maxUnitPrice)) return 0;
@@ -87,20 +98,39 @@ export class Market {
     return Math.max(0, Math.min(entry.supply, entry.supply - minimumSupply));
   }
 
-  /** Expands every local pool proportionally, retaining current local prices. */
+  getLocalMarketNetworkActivations(): LocalMarketNetworkActivation[] {
+    return this.localMarketNetworkActivations.map((activation) => ({ ...activation }));
+  }
+
+  /** Applies a completed depth level immediately from each resource's original local market size. Intended for deterministic setup tools. */
   setLocalMarketDepthMultiplier(multiplier: number): boolean {
-    if (!isPositiveFinite(multiplier)) return false;
-    const scale = multiplier / this.localMarketDepthMultiplier;
-    for (const resourceType of RESOURCE_TYPES) this.local[resourceType].supply *= scale;
+    if (!isPositiveFinite(multiplier) || multiplier < this.localMarketDepthMultiplier) return false;
+    const depthIncrease = multiplier - this.localMarketDepthMultiplier;
+    for (const resourceType of RESOURCE_TYPES) this.local[resourceType].supply += RESOURCES[resourceType].market.localInitialSupply * depthIncrease;
     this.localMarketDepthMultiplier = multiplier;
     return true;
   }
 
-  /** Restores a depth multiplier after its already-scaled local pools are loaded. */
-  restoreLocalMarketDepthMultiplier(multiplier: number): boolean {
-    if (!isPositiveFinite(multiplier)) return false;
-    this.localMarketDepthMultiplier = multiplier;
+  startLocalMarketNetworkActivation(projectId: string, totalDepthIncrease: number): boolean {
+    if (!projectId || !isPositiveFinite(totalDepthIncrease) || this.localMarketNetworkActivations.some((activation) => activation.projectId === projectId)) return false;
+    this.localMarketNetworkActivations.push({ projectId, totalDepthIncrease, appliedDepthIncrease: 0 });
     return true;
+  }
+
+  advanceLocalMarketNetworkActivations(elapsedMilliseconds: number): boolean {
+    if (!Number.isFinite(elapsedMilliseconds) || elapsedMilliseconds <= 0 || this.localMarketNetworkActivations.length === 0) return false;
+    const maximumDepthIncrease = LOCAL_MARKET_NETWORK_EXPANSION_PER_MINUTE * elapsedMilliseconds / 60_000;
+    let changed = false;
+    for (const activation of this.localMarketNetworkActivations) {
+      const depthIncrease = Math.min(maximumDepthIncrease, activation.totalDepthIncrease - activation.appliedDepthIncrease);
+      if (depthIncrease <= 0) continue;
+      for (const resourceType of RESOURCE_TYPES) this.local[resourceType].supply += RESOURCES[resourceType].market.localInitialSupply * depthIncrease;
+      this.localMarketDepthMultiplier += depthIncrease;
+      activation.appliedDepthIncrease += depthIncrease;
+      changed = true;
+    }
+    this.localMarketNetworkActivations = this.localMarketNetworkActivations.filter((activation) => activation.appliedDepthIncrease < activation.totalDepthIncrease);
+    return changed;
   }
 
   setLocalRegionalDiffusionMultiplier(multiplier: number): boolean {
@@ -158,19 +188,56 @@ export class Market {
   }
 
   buyFromLocal(resourceType: ResourceType, requestedAmount: number): MarketTradeResult {
-    const unitPrice = this.getLocalPrice(resourceType);
-    if (!isPositiveFinite(requestedAmount) || this.local[resourceType].supply < requestedAmount) return { success: false, amount: 0, unitPrice, quality: this.local[resourceType].quality };
+    const quote = this.getLocalBuyQuote(resourceType, requestedAmount);
+    if (!quote.success) return quote;
     this.local[resourceType].supply -= requestedAmount;
-    return { success: true, amount: requestedAmount, unitPrice, quality: this.local[resourceType].quality };
+    return quote;
   }
 
   sellToLocal(resourceType: ResourceType, amount: number, quality: number): MarketTradeResult {
-    const unitPrice = this.getLocalPrice(resourceType);
-    if (!isPositiveFinite(amount) || !isPositiveFinite(quality)) return { success: false, amount: 0, unitPrice, quality };
+    const quote = this.getLocalSellQuote(resourceType, amount, quality);
+    if (!quote.success) return quote;
     const entry = this.local[resourceType];
     entry.quality = mixQuality(entry, amount, quality);
     entry.supply += amount;
-    return { success: true, amount, unitPrice, quality };
+    return quote;
+  }
+
+  getLocalBuyQuote(resourceType: ResourceType, requestedAmount: number): MarketTradeResult {
+    const entry = this.local[resourceType];
+    const unitPrice = this.getLocalPrice(resourceType);
+    if (!isPositiveFinite(requestedAmount) || entry.supply < requestedAmount) return { success: false, amount: 0, unitPrice, quality: entry.quality };
+    const postTradePrice = calculateMarketPrice(RESOURCES[resourceType].market.localBenchmarkSupply * this.localMarketDepthMultiplier, { ...entry, supply: entry.supply - requestedAmount });
+    return { success: true, amount: requestedAmount, unitPrice: (unitPrice + postTradePrice) / 2, quality: entry.quality };
+  }
+
+  getLocalSellQuote(resourceType: ResourceType, amount: number, quality: number): MarketTradeResult {
+    const entry = this.local[resourceType];
+    const unitPrice = this.getLocalSalePrice(resourceType, quality);
+    if (!isPositiveFinite(amount) || !isPositiveFinite(quality)) return { success: false, amount: 0, unitPrice, quality };
+    // Price the entire quote using the quality being sold. Pool quality is mixed only
+    // once the trade executes, so a seller is not penalized for quality they have not
+    // yet added to the market while still receiving the normal supply slippage.
+    const postTradeEntry = { supply: entry.supply + amount, quality };
+    const postTradePrice = calculateMarketPrice(RESOURCES[resourceType].market.localBenchmarkSupply * this.localMarketDepthMultiplier, postTradeEntry);
+    return { success: true, amount, unitPrice: (unitPrice + postTradePrice) / 2, quality };
+  }
+
+  /** Returns the largest whole-unit local purchase affordable at the supplied cash balance. */
+  getMaximumLocalPurchaseAmountAtCash(resourceType: ResourceType, cashBalance: number): number {
+    const availableSupply = Math.floor(this.local[resourceType].supply);
+    if (!isNonNegativeFinite(cashBalance) || availableSupply <= 0) return 0;
+    const fullQuote = this.getLocalBuyQuote(resourceType, availableSupply);
+    if (fullQuote.success && fullQuote.unitPrice * fullQuote.amount <= cashBalance) return availableSupply;
+    let low = 0;
+    let high = availableSupply;
+    while (low < high) {
+      const candidate = Math.ceil((low + high) / 2);
+      const quote = this.getLocalBuyQuote(resourceType, candidate);
+      if (quote.success && quote.unitPrice * quote.amount <= cashBalance) low = candidate;
+      else high = candidate - 1;
+    }
+    return low;
   }
 
   addToGlobal(resourceType: ResourceType, amount: number, quality: number): boolean {
@@ -202,6 +269,8 @@ export class Market {
       regional: Object.fromEntries(RESOURCE_TYPES.map((type) => [type, { ...this.regional[type] }])) as Record<ResourceType, MarketPoolEntry>,
       global: Object.fromEntries(RESOURCE_TYPES.map((type) => [type, { ...this.global[type] }])) as Record<ResourceType, MarketPoolEntry>,
       automation: Object.fromEntries(RESOURCE_TYPES.map((type) => [type, { ...this.automation[type] }])) as Record<ResourceType, MarketAutomation>,
+      localMarketDepthMultiplier: this.localMarketDepthMultiplier,
+      localMarketNetworkActivations: this.getLocalMarketNetworkActivations(),
     };
   }
 
@@ -224,6 +293,10 @@ export class Market {
       if (global && isNonNegativeFinite(global.supply) && isPositiveFinite(global.quality)) this.global[resourceType] = { ...global };
       if (automation && typeof automation.autoBuyEnabled === 'boolean' && typeof automation.autoSellEnabled === 'boolean'
         && isNonNegativeFinite(automation.autoBuyMaxUnitPrice) && isNonNegativeFinite(automation.autoBuyTargetInventory) && isAutoTradeInterval(automation.autoTradeIntervalMs) && isNonNegativeFinite(automation.autoSellMaxPerMinute) && isNonNegativeFinite(automation.autoSellMinKeep) && isNonNegativeFinite(automation.autoSellMinUnitPrice)) this.automation[resourceType] = { ...automation };
+    }
+    if (isPositiveFinite(snapshot.localMarketDepthMultiplier)) this.localMarketDepthMultiplier = snapshot.localMarketDepthMultiplier;
+    if (Array.isArray(snapshot.localMarketNetworkActivations) && snapshot.localMarketNetworkActivations.every((activation) => typeof activation.projectId === 'string' && activation.projectId.length > 0 && isPositiveFinite(activation.totalDepthIncrease) && isNonNegativeFinite(activation.appliedDepthIncrease) && activation.appliedDepthIncrease < activation.totalDepthIncrease)) {
+      this.localMarketNetworkActivations = snapshot.localMarketNetworkActivations.map((activation) => ({ ...activation }));
     }
   }
 

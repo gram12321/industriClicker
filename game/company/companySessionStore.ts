@@ -1,9 +1,12 @@
 import { create } from 'zustand';
 import { isGameSnapshot } from '@/game/core/state';
 import { createStartingGameSnapshot, useGameStore } from '@/game/core/stores';
-import { clearLocalData, createCompanyWithSave, createLocalProfile, deleteCompany, listCompaniesForProfile, listLocalProfiles, loadCompanySnapshot, loadCompanyTutorialState, loadDeviceSession, saveCompanySnapshot, saveCompanyTutorialState, saveDeviceSession } from './companyDatabase';
+import { clearLocalData, createCompanyWithSave, createLocalProfile, deleteCompany, listCompaniesForProfile, listLocalProfiles, loadDeviceSession, saveDeviceSession } from './companyDatabase';
+import { loadCompanyGameSave, saveCompanyGameSave } from '@/game/core/persistence';
 import { STARTING_CONDITIONS } from './companyConstants';
-import { createLocalId, DEFAULT_COMPANY_TUTORIAL_STATE, EMPTY_DEVICE_SESSION, normalizeDisplayName, type CompanyTutorialState, type LocalCompany, type LocalPlayerProfile, type StartingConditionId, validateDisplayName } from './companyTypes';
+import { DEFAULT_TUTORIAL_STATE, type TutorialState } from '@/game/tutorial';
+import { loadTutorialState, saveTutorialState } from '@/game/tutorial/tutorialDatabase';
+import { createLocalId, EMPTY_DEVICE_SESSION, normalizeDisplayName, type LocalCompany, type LocalPlayerProfile, type StartingConditionId, validateDisplayName } from './companyTypes';
 
 type CompanySessionState = {
   isInitialized: boolean;
@@ -13,7 +16,7 @@ type CompanySessionState = {
   selectedProfile: LocalPlayerProfile | null;
   companies: LocalCompany[];
   activeCompany: LocalCompany | null;
-  tutorial: CompanyTutorialState;
+  tutorial: TutorialState;
   initialize: () => Promise<void>;
   createProfile: (displayName: string) => Promise<boolean>;
   selectProfile: (profileId: string) => Promise<void>;
@@ -34,7 +37,7 @@ export const useCompanySessionStore = create<CompanySessionState>((set, get) => 
   selectedProfile: null,
   companies: [],
   activeCompany: null,
-  tutorial: DEFAULT_COMPANY_TUTORIAL_STATE,
+  tutorial: DEFAULT_TUTORIAL_STATE,
   initialize: async () => {
     set({ isInitialized: false, error: null });
     try {
@@ -66,7 +69,7 @@ export const useCompanySessionStore = create<CompanySessionState>((set, get) => 
       await createLocalProfile(profile);
       const profiles = await listLocalProfiles();
       await saveDeviceSession({ selectedProfileId: profile.id, activeCompanyId: null });
-      set({ isInitialized: true, profiles, selectedProfile: profile, companies: [], activeCompany: null, tutorial: DEFAULT_COMPANY_TUTORIAL_STATE, error: null });
+      set({ isInitialized: true, profiles, selectedProfile: profile, companies: [], activeCompany: null, tutorial: DEFAULT_TUTORIAL_STATE, error: null });
       return true;
     } catch {
       set({ error: 'The local player profile could not be created.' });
@@ -78,7 +81,7 @@ export const useCompanySessionStore = create<CompanySessionState>((set, get) => 
     if (!profile) return;
     const companies = await listCompaniesForProfile(profile.id);
     await saveDeviceSession({ selectedProfileId: profile.id, activeCompanyId: null });
-    set({ isInitialized: true, selectedProfile: profile, companies, activeCompany: null, tutorial: DEFAULT_COMPANY_TUTORIAL_STATE, error: null });
+    set({ isInitialized: true, selectedProfile: profile, companies, activeCompany: null, tutorial: DEFAULT_TUTORIAL_STATE, error: null });
   },
   createCompany: async (displayName, startingConditionId = 'standard') => {
     const selectedProfile = get().selectedProfile;
@@ -124,18 +127,18 @@ export const useCompanySessionStore = create<CompanySessionState>((set, get) => 
       const outgoing = get().activeCompany;
       if (outgoing) {
         useGameStore.getState().advanceRealtime(Date.now());
-        await saveCompanySnapshot(outgoing.id, useGameStore.getState().createSnapshot());
+        await saveCompanyGameSave(outgoing.id, useGameStore.getState().createSnapshot());
       }
-      const loadedSnapshot = await loadCompanySnapshot(requested.id);
+      const loadedSnapshot = await loadCompanyGameSave(requested.id);
       if (loadedSnapshot && isGameSnapshot(loadedSnapshot)) {
         useGameStore.getState().restoreSnapshot(loadedSnapshot);
       } else {
         const startingSnapshot = createStartingGameSnapshot();
         useGameStore.getState().restoreSnapshot(startingSnapshot);
-        await saveCompanySnapshot(requested.id, startingSnapshot);
+        await saveCompanyGameSave(requested.id, startingSnapshot);
       }
       useGameStore.getState().setStartingConditionId(requested.startingConditionId);
-      const tutorial = await loadCompanyTutorialState(requested.id);
+      const tutorial = await loadTutorialState(requested.id);
       await saveDeviceSession({ selectedProfileId: selectedProfile.id, activeCompanyId: requested.id });
       set({ activeCompany: requested, tutorial, error: null });
       return true;
@@ -157,7 +160,7 @@ export const useCompanySessionStore = create<CompanySessionState>((set, get) => 
       await saveDeviceSession({ selectedProfileId: selectedProfile.id, activeCompanyId: null });
       useGameStore.getState().restoreSnapshot(createStartingGameSnapshot());
       useGameStore.getState().setStartingConditionId(null);
-      set({ companies, activeCompany: null, tutorial: DEFAULT_COMPANY_TUTORIAL_STATE, error: null });
+      set({ companies, activeCompany: null, tutorial: DEFAULT_TUTORIAL_STATE, error: null });
       return true;
     } catch {
       set({ error: 'The active company could not be deleted.' });
@@ -172,7 +175,7 @@ export const useCompanySessionStore = create<CompanySessionState>((set, get) => 
       await clearLocalData();
       useGameStore.getState().restoreSnapshot(createStartingGameSnapshot());
       useGameStore.getState().setStartingConditionId(null);
-      set({ profiles: [], selectedProfile: null, companies: [], activeCompany: null, tutorial: DEFAULT_COMPANY_TUTORIAL_STATE, error: null });
+      set({ profiles: [], selectedProfile: null, companies: [], activeCompany: null, tutorial: DEFAULT_TUTORIAL_STATE, error: null });
       return true;
     } catch {
       set({ error: 'All local player data could not be cleared.' });
@@ -185,24 +188,24 @@ export const useCompanySessionStore = create<CompanySessionState>((set, get) => 
     const activeCompany = get().activeCompany;
     if (activeCompany) {
       useGameStore.getState().advanceRealtime(Date.now());
-      await saveCompanySnapshot(activeCompany.id, useGameStore.getState().createSnapshot());
+      await saveCompanyGameSave(activeCompany.id, useGameStore.getState().createSnapshot());
     }
     await saveDeviceSession(EMPTY_DEVICE_SESSION);
     useGameStore.getState().setStartingConditionId(null);
-    set({ isInitialized: true, selectedProfile: null, companies: [], activeCompany: null, tutorial: DEFAULT_COMPANY_TUTORIAL_STATE, error: null });
+    set({ isInitialized: true, selectedProfile: null, companies: [], activeCompany: null, tutorial: DEFAULT_TUTORIAL_STATE, error: null });
   },
   completeWelcomeTutorial: async () => {
     const company = get().activeCompany;
     if (!company) return;
     const tutorial = { completedWelcome: true };
-    await saveCompanyTutorialState(company.id, tutorial);
+    await saveTutorialState(company.id, tutorial);
     set({ tutorial });
   },
   reopenWelcomeTutorial: async () => {
     const company = get().activeCompany;
     if (!company) return;
     const tutorial = { completedWelcome: false };
-    await saveCompanyTutorialState(company.id, tutorial);
+    await saveTutorialState(company.id, tutorial);
     set({ tutorial });
   },
 }));

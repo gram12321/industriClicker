@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createStartingGameSnapshot, useGameStore } from '@/game/core/stores';
+import { isGameSnapshot } from '@/game/core/state';
 import { FACILITIES, FacilityType } from '@/game/facilities';
 import { calculateAssets } from '@/game/finance';
 import { RecipeName } from '@/game/recipes';
@@ -25,6 +26,84 @@ describe('market autobuy', () => {
     expect(useGameStore.getState().inventory.getAmount(ResourceType.Grain)).toBeCloseTo(360);
     expect(useGameStore.getState().market.getLocalPrice(ResourceType.Grain)).toBeLessThanOrEqual(1.25);
     expect(useGameStore.getState().resourceFlow.getSummary(ResourceType.Grain, 5_000, 15_000)).toMatchObject({ market: 360, netChange: 360 });
+  });
+});
+
+describe('market sales', () => {
+  it('rejects snapshots missing the current quality-aware fields', () => {
+    const snapshot = createStartingGameSnapshot(0);
+    expect(isGameSnapshot(snapshot)).toBe(true);
+    const { highestFacilityOutputQuality: _highestFacilityOutputQuality, ...staleResourceFlow } = snapshot.resourceFlow;
+    expect(isGameSnapshot({ ...snapshot, resourceFlow: staleResourceFlow })).toBe(false);
+  });
+
+  it('pays a higher-quality inventory at its own quality-adjusted, slippage-aware price', () => {
+    const state = useGameStore.getState();
+    const snapshot = createStartingGameSnapshot(Date.now());
+    snapshot.inventory.entries[ResourceType.Grain] = { quantity: 10, quality: 1.5 };
+    state.restoreSnapshot(snapshot);
+    const balanceBefore = useGameStore.getState().finance.getBalance();
+    const market = useGameStore.getState().market;
+    const initialUnitPrice = market.getLocalSalePrice(ResourceType.Grain, 1.5);
+    const initialSupply = market.getLocalEntry(ResourceType.Grain).supply;
+    const expectedUnitPrice = (initialUnitPrice + initialUnitPrice * initialSupply / (initialSupply + 10)) / 2;
+
+    expect(state.sellMarketResource(ResourceType.Grain, 10)).toBe(true);
+    expect(useGameStore.getState().finance.getBalance()).toBeCloseTo(balanceBefore + 10 * expectedUnitPrice);
+  });
+
+  it('allows autosell when its inventory-quality price meets the threshold', () => {
+    const state = useGameStore.getState();
+    const snapshot = createStartingGameSnapshot(Date.now());
+    snapshot.inventory.entries[ResourceType.Grain] = { quantity: 100, quality: 2 };
+    state.restoreSnapshot(snapshot);
+    state.setMarketAutomation(ResourceType.Grain, {
+      autoSellEnabled: true,
+      autoSellMaxPerMinute: 60,
+      autoSellMinUnitPrice: 1.5,
+    });
+
+    state.advanceGameTime(5_000);
+
+    expect(useGameStore.getState().inventory.getAmount(ResourceType.Grain)).toBeLessThan(100);
+  });
+
+  it('does not autosell when slippage drops the executable quote below the threshold', () => {
+    const state = useGameStore.getState();
+    const snapshot = createStartingGameSnapshot(Date.now());
+    snapshot.inventory.entries[ResourceType.Grain] = { quantity: 100, quality: 2 };
+    state.restoreSnapshot(snapshot);
+    const market = useGameStore.getState().market;
+    const spotPrice = market.getLocalSalePrice(ResourceType.Grain, 2);
+    const executionPrice = market.getLocalSellQuote(ResourceType.Grain, 5, 2).unitPrice;
+    state.setMarketAutomation(ResourceType.Grain, {
+      autoSellEnabled: true,
+      autoSellMaxPerMinute: 60,
+      autoSellMinUnitPrice: (spotPrice + executionPrice) / 2,
+    });
+
+    state.advanceGameTime(5_000);
+
+    expect(useGameStore.getState().inventory.getAmount(ResourceType.Grain)).toBe(100);
+  });
+});
+
+describe('local market network activation', () => {
+  it('starts a persisted foreground market expansion when the research completes', () => {
+    const state = useGameStore.getState();
+    state.restoreSnapshot(createStartingGameSnapshot(0));
+    state.setAdminBalance(1_000);
+
+    expect(state.buildFacility(FacilityType.Farm)).toBe(true);
+    expect(state.startResearch('local-market-network-1')).toBe(true);
+    state.advanceGameTime(90_000);
+
+    expect(useGameStore.getState().market.getLocalMarketNetworkActivations()).toMatchObject([
+      { projectId: 'local-market-network-1', totalDepthIncrease: 0.2, appliedDepthIncrease: 0 },
+    ]);
+
+    state.advanceGameTime(60_000);
+    expect(useGameStore.getState().market.getLocalEntry(ResourceType.Grain).supply).toBeCloseTo(1_050);
   });
 });
 

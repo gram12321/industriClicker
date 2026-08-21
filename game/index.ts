@@ -12,3 +12,5 @@ export * from './recipes';
 export * from './resources';
 export * from './research';
 export * from './sales';
+export * from './quality';
+export * from './tutorial';

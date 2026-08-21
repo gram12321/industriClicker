@@ -74,6 +74,13 @@ function isMarketAutomationSnapshot(value: unknown): boolean {
     && typeof value.autoSellMinUnitPrice === 'number' && Number.isFinite(value.autoSellMinUnitPrice) && value.autoSellMinUnitPrice >= 0;
 }
 
+function isLocalMarketNetworkActivationSnapshot(value: unknown): boolean {
+  return isRecord(value)
+    && typeof value.projectId === 'string' && value.projectId.length > 0
+    && typeof value.totalDepthIncrease === 'number' && Number.isFinite(value.totalDepthIncrease) && value.totalDepthIncrease > 0
+    && typeof value.appliedDepthIncrease === 'number' && Number.isFinite(value.appliedDepthIncrease) && value.appliedDepthIncrease >= 0 && value.appliedDepthIncrease < value.totalDepthIncrease;
+}
+
 /** Structural guard used by the company-scoped SQLite save adapter. */
 export function isGameSnapshot(value: unknown): value is GameSnapshot {
   if (!isRecord(value) || !isRecord(value.finance) || !isRecord(value.inventory) || !ResourceFlowLedger.isSnapshot(value.resourceFlow)
@@ -109,6 +116,9 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
     && isRecord(value.market.regional)
     && isRecord(value.market.global)
     && isRecord(marketAutomation)
+    && typeof value.market.localMarketDepthMultiplier === 'number' && Number.isFinite(value.market.localMarketDepthMultiplier) && value.market.localMarketDepthMultiplier >= 1
+    && Array.isArray(value.market.localMarketNetworkActivations)
+    && value.market.localMarketNetworkActivations.every(isLocalMarketNetworkActivationSnapshot)
     && RESOURCE_TYPES.every((resourceType) => isMarketAutomationSnapshot(marketAutomation[resourceType]))
     && Array.isArray(value.facilities.facilities)
     && value.facilities.facilities.every((facility) => isRecord(facility)
@@ -121,7 +131,11 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
       && typeof facility.facilityCondition === 'number'
       && Number.isFinite(facility.facilityCondition)
       && facility.facilityCondition >= 0
-      && facility.facilityCondition <= 1)
+      && facility.facilityCondition <= 1
+      && (facility.recipeInputQ === null || (typeof facility.recipeInputQ === 'number' && Number.isFinite(facility.recipeInputQ) && facility.recipeInputQ > 0))
+      && typeof facility.qualityUpgradeLevel === 'number'
+      && Number.isInteger(facility.qualityUpgradeLevel)
+      && facility.qualityUpgradeLevel >= 1)
     && Array.isArray(value.salesOrders.offered)
     && Array.isArray(value.salesOrders.completed)
     && value.salesOrders.offered.every((order) => isRecord(order) && Array.isArray(order.lines)

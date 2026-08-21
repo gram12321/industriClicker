@@ -15,14 +15,23 @@ export type MarketAutomation = {
   autoSellMinUnitPrice: number;
 };
 
+export type LocalMarketNetworkActivation = {
+  projectId: string;
+  totalDepthIncrease: number;
+  appliedDepthIncrease: number;
+};
+
 export type MarketSnapshot = {
   local: Record<ResourceType, MarketPoolEntry>;
   regional: Record<ResourceType, MarketPoolEntry>;
   global: Record<ResourceType, MarketPoolEntry>;
   automation: Record<ResourceType, MarketAutomation>;
+  localMarketDepthMultiplier: number;
+  localMarketNetworkActivations: LocalMarketNetworkActivation[];
 };
 
 export type MarketTradeMultiplier = number | 'all';
+/** The execution price is the average of the local price before and after the trade. */
 export type MarketTradeResult = { success: boolean; amount: number; unitPrice: number; quality: number };
 export type MarketDiffusionDirection = 'to-local' | 'to-regional' | 'to-global' | 'none';
 export type MarketDiffusionInfo = { direction: MarketDiffusionDirection; amount: number };
@@ -40,4 +49,9 @@ export type MarketDiffusionDetails = MarketDiffusionInfo & {
   diffusionMultiplier: number;
   rawAmount: number;
   equilibriumCappedAmount: number;
+  /** Conserved quality average once this adjacent pair has fully mixed. */
+  equilibriumQuality: number;
+  /** Signed quality change per foreground minute in each pool. */
+  lowerQualityChangePerMinute: number;
+  higherQualityChangePerMinute: number;
 };

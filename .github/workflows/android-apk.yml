@@ -32,7 +32,7 @@ jobs:
       - name: Prepare artifact directory
         run: mkdir -p artifacts
 
-      - name: Build APK
+      - name: Build APK locally on the GitHub runner
         run: npx eas-cli@latest build --platform android --profile preview --local --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}

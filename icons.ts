@@ -18,7 +18,7 @@ export const RESOURCE_ICONS: Readonly<Record<ResourceType, string>> = {
   [ResourceType.Bricks]: '🧱',
   [ResourceType.Cement]: '🪣',
   [ResourceType.ReinforcedConcrete]: '🏗️',
-  [ResourceType.ConstructionMaterials]: '📦',
+  [ResourceType.ConstructionMaterials]: '🧰',
   [ResourceType.Sand]: '⏳',
   [ResourceType.Clay]: '🏺',
   [ResourceType.Stone]: '🪨',
@@ -73,6 +73,7 @@ export const APP_ICONS = {
   fulfilled: 'check-circle-outline',
   globalMarket: 'earth',
   help: 'book-open-variant',
+  inputQuality: 'arrow-down-bold-circle-outline',
   logout: 'logout',
   localMarket: 'storefront-outline',
   marketAutoBuy: 'cart-arrow-down',
@@ -99,6 +100,7 @@ export const APP_ICONS = {
   play: 'play-circle-outline',
   prestige: 'trophy-outline',
   production: 'cog-outline',
+  repair: 'wrench',
   purchasingPower: 'cash-multiple',
   quality: 'star',
   relationship: 'handshake-outline',
@@ -114,6 +116,15 @@ export const APP_ICONS = {
   upgrade: 'arrow-up-bold-circle-outline',
   work: 'progress-clock',
 } as const;
+
+export type AppIconKey = keyof typeof APP_ICONS;
+
+/** Human-readable labels used when an app icon is tapped for help. */
+export function getAppIconLabel(iconKey: AppIconKey): string {
+  return iconKey
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/^./, (character) => character.toUpperCase());
+}
 
 export const ECONOMY_PHASE_ICONS: Readonly<Record<EconomyPhase, string>> = {
   crash: 'weather-lightning-rainy',

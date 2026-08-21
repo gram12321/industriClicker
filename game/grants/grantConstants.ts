@@ -2,3 +2,5 @@
 export const FIRST_FACILITY_RECIPE_RESEARCH_GRANT_ID = 'first-facility-recipe-research';
 /** The first facility's free recipe research progresses ten times faster. */
 export const FIRST_FACILITY_RECIPE_RESEARCH_WORK_SPEED_MULTIPLIER = 10;
+/** The first facility's free recipe research never takes longer than ten seconds. */
+export const FIRST_FACILITY_RECIPE_RESEARCH_MAX_DURATION_MS = 10_000;

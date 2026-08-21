@@ -6,13 +6,16 @@ import type { Finance } from '@/game/finance';
 import { FACILITIES, type FacilityCollection } from '@/game/facilities';
 import { getRecipe } from '@/game/recipes';
 import { calculateDiminishingBonus } from '@/game/core/math/scaling';
-import { RESEARCH_PROJECTS, describeResearchEffect, type ResearchChainId, type ResearchLedger, type ResearchProjectDefinition, type ResearchProjectId } from '@/game/research';
+import { RESEARCH_PROJECTS, describeResearchEffect, getResearchProject, getResourceQualityResearchProjectId, getResourceResearchLevel, type ResearchChainId, type ResearchLedger, type ResearchProjectDefinition, type ResearchProjectId } from '@/game/research';
+import { RESOURCE_TYPES } from '@/game/resources';
+import { LOCAL_MARKET_NETWORK_EXPANSION_PER_MINUTE, type Market } from '@/game/market';
 import type { GateRequirement } from '@/game/gates';
 import type { ResearchAvailability } from '@/game/core/stores';
 import { colors } from '@/theme';
-import { APP_ICONS, RECIPE_ICONS } from '@/icons';
+import { APP_ICONS, RECIPE_ICONS, RESOURCE_ICONS } from '@/icons';
 import { formatCurrency as formatCurrencyWithSymbol, formatDuration, formatElapsedTime, getColorClass } from '@/utils';
 import { SectionHeading } from '@/ui/dashboard/components/DashboardPrimitives';
+import { TooltipMaterialIcon, TooltipTextIcon } from '@/ui/dashboard/components/IconTooltip';
 import { styles as dashboardStyles } from '@/ui/dashboard/helpers/dashboard.styles';
 
 const CHAIN_DETAILS: Record<ResearchChainId, { eyebrow: string; icon: string; title: string; subtitle: string }> = {
@@ -27,9 +30,10 @@ const CHAIN_DETAILS: Record<ResearchChainId, { eyebrow: string; icon: string; ti
   'market-diffusion-network': { eyebrow: 'MARKET', icon: 'transit-connection-variant', title: 'Market diffusion network', subtitle: 'Increase the rate at which local and regional markets rebalance.' },
   'research-capacity': { eyebrow: 'RESEARCH', icon: 'flask-plus-outline', title: 'Research capacity', subtitle: 'Unlock additional research slots so projects can run simultaneously.' },
   'recipe-unlocks': { eyebrow: 'RECIPES', icon: 'flask-outline', title: 'Recipe research', subtitle: 'Unlock production recipes for your facilities.' },
+  'resource-quality': { eyebrow: 'QUALITY', icon: APP_ICONS.quality, title: 'Resource quality', subtitle: 'Raise each resource’s produced quality through an unlimited research chain.' },
 };
 
-type ResearchGroupId = 'capital-grants' | 'sales' | 'research-capacity' | 'recipe-unlocks';
+type ResearchGroupId = 'capital-grants' | 'sales' | 'research-capacity' | 'recipe-unlocks' | 'resource-quality';
 type ResearchGroup = { eyebrow: string; icon: string; id: ResearchGroupId; title: string; subtitle: string; chainIds: readonly ResearchChainId[] };
 
 const RESEARCH_GROUPS: readonly ResearchGroup[] = [
@@ -37,9 +41,10 @@ const RESEARCH_GROUPS: readonly ResearchGroup[] = [
   { id: 'sales', chainIds: ['sales-capacity', 'sales-order-value-limit', 'sales-targeting', 'bid-value', 'relationship-management', 'sales-intelligence', 'market-diffusion-network', 'local-market-network'], eyebrow: 'SALES', icon: 'handshake-outline', title: 'Sales research', subtitle: 'Grow your pipeline, improve trust outcomes, sharpen offers, and improve market reach.' },
   { id: 'research-capacity', chainIds: ['research-capacity'], eyebrow: 'RESEARCH', icon: 'flask-plus-outline', title: 'Research capacity', subtitle: 'Unlock additional research slots so projects can run simultaneously.' },
   { id: 'recipe-unlocks', chainIds: ['recipe-unlocks'], eyebrow: 'RECIPES', icon: 'flask-outline', title: 'Recipe research', subtitle: 'Unlock production recipes for your facilities.' },
+  { id: 'resource-quality', chainIds: ['resource-quality'], eyebrow: 'QUALITY', icon: APP_ICONS.quality, title: 'Resource quality', subtitle: 'Raise each resource’s produced quality through an unlimited research chain.' },
 ];
 
-type ResearchSeries = { completedCount: number; project: ResearchProjectDefinition; projects: readonly ResearchProjectDefinition[] };
+type ResearchSeries = { completedCount: number; project: ResearchProjectDefinition; projects: readonly ResearchProjectDefinition[]; unlimited: boolean };
 
 const formatCurrency = (value: number) => formatCurrencyWithSymbol(value).replace(/\s*€/u, '');
 
@@ -50,7 +55,7 @@ function isRecipeProjectForConstructedFacility(project: ResearchProjectDefinitio
 }
 
 function CurrencyValue({ value }: { value: number }) {
-  return <View style={localStyles.iconValueRow}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.coin} size={15} /><Text style={dashboardStyles.cardDescription}>{formatCurrency(value)}</Text></View>;
+  return <View style={localStyles.iconValueRow}><TooltipMaterialIcon color={colors.muted} label="Currency" name={APP_ICONS.coin} size={15} /><Text style={dashboardStyles.cardDescription}>{formatCurrency(value)}</Text></View>;
 }
 
 function isRequirementFulfilled(requirement: GateRequirement, availability: ResearchAvailability): boolean {
@@ -72,14 +77,31 @@ function getResearchSeries(projects: readonly ResearchProjectDefinition[], compl
   for (const project of projects) {
     const seriesId = project.effect.kind === 'recipe-unlock' || project.effect.kind === 'recipe-work-speed-bonus'
       ? project.effect.recipeName
+      : project.effect.kind === 'resource-production-quality'
+        ? project.effect.resourceType
       : project.chainId;
     projectsBySeries.set(seriesId, [...(projectsBySeries.get(seriesId) ?? []), project]);
   }
 
   return Array.from(projectsBySeries.values()).map((seriesProjects) => {
     const orderedProjects = [...seriesProjects].sort((left, right) => left.tier - right.tier);
+    const resourceQuality = orderedProjects[0]?.effect.kind === 'resource-production-quality' ? orderedProjects[0].effect : null;
+    if (resourceQuality) {
+      return { completedCount: getResourceResearchLevel(resourceQuality.resourceType, completedIds), project: orderedProjects[0], projects: orderedProjects, unlimited: true };
+    }
     const completedCount = orderedProjects.filter((project) => completedIds.includes(project.id)).length;
-    return { completedCount, project: orderedProjects.find((project) => !completedIds.includes(project.id)) ?? orderedProjects[orderedProjects.length - 1], projects: orderedProjects };
+    return { completedCount, project: orderedProjects.find((project) => !completedIds.includes(project.id)) ?? orderedProjects[orderedProjects.length - 1], projects: orderedProjects, unlimited: false };
+  });
+}
+
+function getProjectsForGroup(group: ResearchGroup, completedIds: readonly string[], facilities: FacilityCollection, showOnlyConstructedRecipes: boolean): ResearchProjectDefinition[] {
+  const fixedProjects = RESEARCH_PROJECTS.filter((project) => group.chainIds.includes(project.chainId)
+    && (project.chainId !== 'recipe-unlocks' || !showOnlyConstructedRecipes || isRecipeProjectForConstructedFacility(project, facilities)));
+  if (!group.chainIds.includes('resource-quality')) return fixedProjects;
+  return RESOURCE_TYPES.filter((resourceType) => !showOnlyConstructedRecipes || Object.values(FACILITIES).some((facility) => facilities.has(facility.type) && facility.recipes.some((recipe) => recipe.outputs.some((output) => output.resourceType === resourceType)))).flatMap((resourceType) => {
+    const nextLevel = getResourceResearchLevel(resourceType, completedIds) + 1;
+    const project = getResearchProject(getResourceQualityResearchProjectId(resourceType, nextLevel));
+    return project ? [project] : [];
   });
 }
 
@@ -91,7 +113,9 @@ function getRecipeProjectIcon(project: ResearchProjectDefinition): string | null
 
 function ProjectIcon({ project }: { project: ResearchProjectDefinition }) {
   const recipeIcon = getRecipeProjectIcon(project);
-  return recipeIcon ? <Text>{recipeIcon}</Text> : <MaterialCommunityIcons color={colors.primary} name={CHAIN_DETAILS[project.chainId].icon as never} size={20} />;
+  const resourceIcon = project.effect.kind === 'resource-production-quality' ? RESOURCE_ICONS[project.effect.resourceType] : null;
+  if (resourceIcon) return <TooltipTextIcon label={project.name}>{resourceIcon}</TooltipTextIcon>;
+  return recipeIcon ? <TooltipTextIcon label={project.name}>{recipeIcon}</TooltipTextIcon> : <TooltipMaterialIcon color={colors.primary} label={CHAIN_DETAILS[project.chainId].title} name={CHAIN_DETAILS[project.chainId].icon} size={20} />;
 }
 
 export function ResearchView({
@@ -100,6 +124,7 @@ export function ResearchView({
   getAvailability,
   onCancel,
   onStart,
+  market,
   research,
 }: {
   facilities: FacilityCollection;
@@ -107,21 +132,24 @@ export function ResearchView({
   getAvailability: (projectId: ResearchProjectId) => ResearchAvailability;
   onCancel: (projectId: ResearchProjectId) => boolean;
   onStart: (projectId: ResearchProjectId) => boolean;
+  market: Market;
   research: ResearchLedger;
 }) {
   const [selectedGroup, setSelectedGroup] = useState<ResearchGroupId | 'all'>('all');
   const [showOnlyConstructedRecipes, setShowOnlyConstructedRecipes] = useState(true);
   const [expandedProjectIds, setExpandedProjectIds] = useState<Record<string, boolean>>({});
   const activeProjects = research.getActiveProjects().flatMap((active) => {
-    const project = RESEARCH_PROJECTS.find((candidate) => candidate.id === active.projectId);
+    const project = getResearchProject(active.projectId);
     return project ? [{ active, project }] : [];
   });
   const activeProjectIds = new Set(activeProjects.map(({ project }) => project.id));
+  const localMarketNetworkActivations = market.getLocalMarketNetworkActivations();
   const completedIds = research.getCompletedProjectIds();
   const completedCount = completedIds.length;
-  const completion = RESEARCH_PROJECTS.length === 0 ? 0 : completedCount / RESEARCH_PROJECTS.length;
+  const finiteCompletedCount = completedIds.filter((projectId) => RESEARCH_PROJECTS.some((project) => project.id === projectId)).length;
+  const completion = RESEARCH_PROJECTS.length === 0 ? 0 : finiteCompletedCount / RESEARCH_PROJECTS.length;
   const visibleGroups = selectedGroup === 'all' ? RESEARCH_GROUPS : RESEARCH_GROUPS.filter((group) => group.id === selectedGroup);
-  const visibleSeriesCount = getResearchSeries(RESEARCH_PROJECTS, completedIds).length;
+  const visibleSeriesCount = RESEARCH_GROUPS.reduce((count, group) => count + getResearchSeries(getProjectsForGroup(group, completedIds, facilities, showOnlyConstructedRecipes), completedIds).length, 0);
 
   return (
     <View style={localStyles.layout}>
@@ -132,21 +160,21 @@ export function ResearchView({
         <View style={localStyles.overviewHeader}>
           <View style={localStyles.overviewTitle}>
             <Text style={dashboardStyles.cardKicker}>PROGRESS OVERVIEW</Text>
-            <Text variant="titleLarge">{`${completedCount} of ${RESEARCH_PROJECTS.length} completed`}</Text>
+            <Text variant="titleLarge">{`${completedCount} completed · quality research is unlimited`}</Text>
           </View>
           <View>
             <Text style={[localStyles.completionPercent, { color: getColorClass(completion) }]}>{`${Math.round(completion * 100)}%`}</Text>
             <Text style={localStyles.completionLabel}>Complete</Text>
           </View>
         </View>
-        <ProgressBar accessible accessibilityLabel={`${completedCount} of ${RESEARCH_PROJECTS.length} research projects completed`} color={getColorClass(completion)} progress={completion} style={localStyles.overviewProgress} />
+        <ProgressBar accessible accessibilityLabel={`${finiteCompletedCount} of ${RESEARCH_PROJECTS.length} finite research projects completed`} color={getColorClass(completion)} progress={completion} style={localStyles.overviewProgress} />
       </View>
       {activeProjects.map(({ active, project }) => (
         <View key={project.id} style={localStyles.researchCard}>
           <View style={localStyles.cardBody}>
             <Text style={dashboardStyles.cardKicker}>ACTIVE PROJECT</Text>
             <View style={localStyles.projectNameRow}><ProjectIcon project={project} /><Text style={localStyles.activeTitle} variant="titleLarge">{project.name}</Text></View>
-            <View style={localStyles.iconValueRow}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={[dashboardStyles.cardDescription, localStyles.timeLabel, { color: getColorClass(Math.min(1, active.progressMs / active.durationMs)) }]}>{`${formatElapsedTime(active.progressMs)} / ${formatElapsedTime(active.durationMs)}`}</Text></View>
+            <View style={localStyles.iconValueRow}><TooltipMaterialIcon color={colors.muted} label="Elapsed research time" name={APP_ICONS.elapsedTime} size={15} /><Text style={[dashboardStyles.cardDescription, localStyles.timeLabel, { color: getColorClass(Math.min(1, active.progressMs / active.durationMs)) }]}>{`${formatElapsedTime(active.progressMs)} / ${formatElapsedTime(active.durationMs)}`}</Text></View>
             <View style={localStyles.progressTrack}>
               <ProgressBar accessible accessibilityLabel={`${project.name} progress ${formatElapsedTime(active.progressMs)} of ${formatElapsedTime(active.durationMs)}`} color={getColorClass(Math.min(1, active.progressMs / active.durationMs))} progress={Math.min(1, active.progressMs / active.durationMs)} style={localStyles.progress} />
             </View>
@@ -156,15 +184,31 @@ export function ResearchView({
           </View>
         </View>
       ))}
+      {localMarketNetworkActivations.map((activation) => {
+        const project = getResearchProject(activation.projectId);
+        const progress = Math.min(1, activation.appliedDepthIncrease / activation.totalDepthIncrease);
+        const durationMs = activation.totalDepthIncrease / LOCAL_MARKET_NETWORK_EXPANSION_PER_MINUTE * 60_000;
+        const elapsedMs = activation.appliedDepthIncrease / LOCAL_MARKET_NETWORK_EXPANSION_PER_MINUTE * 60_000;
+        const title = `${project?.name ?? 'Local Market Network'} activation`;
+        return <View key={activation.projectId} style={localStyles.researchCard}>
+          <View style={localStyles.cardBody}>
+            <Text style={dashboardStyles.cardKicker}>MARKET ACTIVATION</Text>
+            <View style={localStyles.projectNameRow}><TooltipMaterialIcon color={colors.primary} label="Local market" name="storefront-outline" size={20} /><Text style={localStyles.activeTitle} variant="titleLarge">{title}</Text></View>
+            <View style={localStyles.iconValueRow}><TooltipMaterialIcon color={colors.muted} label="Elapsed market activation time" name={APP_ICONS.elapsedTime} size={15} /><Text style={[dashboardStyles.cardDescription, localStyles.timeLabel, { color: getColorClass(progress) }]}>{`${formatElapsedTime(elapsedMs)} / ${formatElapsedTime(durationMs)}`}</Text></View>
+            <View style={localStyles.progressTrack}><ProgressBar accessible accessibilityLabel={`${title} progress ${formatElapsedTime(elapsedMs)} of ${formatElapsedTime(durationMs)}`} color={getColorClass(progress)} progress={progress} style={localStyles.progress} /></View>
+            <Text style={[dashboardStyles.cardDescription, localStyles.activationNote]}>Adding local market stock and benchmark capacity at 5% of each resource’s initial local supply per minute.</Text>
+          </View>
+        </View>;
+      })}
       <View style={[localStyles.researchCard, localStyles.filters]}>
         <Button compact icon="view-grid-outline" mode={selectedGroup === 'all' ? 'contained' : 'outlined'} onPress={() => setSelectedGroup('all')}>{`All (${visibleSeriesCount})`}</Button>
         {RESEARCH_GROUPS.map((group) => {
-          const seriesCount = getResearchSeries(RESEARCH_PROJECTS.filter((project) => group.chainIds.includes(project.chainId)), completedIds).length;
+          const seriesCount = getResearchSeries(getProjectsForGroup(group, completedIds, facilities, showOnlyConstructedRecipes), completedIds).length;
           return <Button compact icon={group.icon} key={group.id} mode={selectedGroup === group.id ? 'contained' : 'outlined'} onPress={() => setSelectedGroup(group.id)}>{`${group.title} (${seriesCount})`}</Button>;
         })}
       </View>
       {visibleGroups.map((group) => {
-        const chainProjects = RESEARCH_PROJECTS.filter((project) => group.chainIds.includes(project.chainId) && (project.chainId !== 'recipe-unlocks' || !showOnlyConstructedRecipes || isRecipeProjectForConstructedFacility(project, facilities)));
+        const chainProjects = getProjectsForGroup(group, completedIds, facilities, showOnlyConstructedRecipes);
         const displayedSeries = getResearchSeries(chainProjects, completedIds)
           .sort((left, right) => Number(activeProjectIds.has(right.project.id)) - Number(activeProjectIds.has(left.project.id))
             || Number(getAvailability(right.project.id).startable) - Number(getAvailability(left.project.id).startable)
@@ -174,7 +218,7 @@ export function ResearchView({
             <View style={localStyles.chainHeading}>
               <SectionHeading eyebrow={group.eyebrow} title={group.title} subtitle={group.subtitle} />
             </View>
-            {group.id === 'recipe-unlocks' && <Button compact mode={showOnlyConstructedRecipes ? 'contained' : 'outlined'} onPress={() => setShowOnlyConstructedRecipes((current) => !current)}>{showOnlyConstructedRecipes ? 'Constructed facilities only' : 'All facility recipes'}</Button>}
+            {(group.id === 'recipe-unlocks' || group.id === 'resource-quality') && <Button compact mode={showOnlyConstructedRecipes ? 'contained' : 'outlined'} onPress={() => setShowOnlyConstructedRecipes((current) => !current)}>{showOnlyConstructedRecipes ? 'Constructed facilities only' : group.id === 'resource-quality' ? 'All resources' : 'All facility recipes'}</Button>}
             {displayedSeries.map((series) => (
               <View key={series.project.id} style={localStyles.projectCardWrap}>
                 <ResearchProjectCard
@@ -187,6 +231,7 @@ export function ResearchView({
                   project={series.project}
                   seriesCompletedCount={series.completedCount}
                   seriesProjectCount={series.projects.length}
+                  seriesUnlimited={series.unlimited}
                 />
               </View>
             ))}
@@ -198,7 +243,7 @@ export function ResearchView({
   );
 }
 
-function ResearchProjectCard({ activeProjectIds, availability, completed, expanded, onStart, onToggleExpanded, project, seriesCompletedCount, seriesProjectCount }: {
+function ResearchProjectCard({ activeProjectIds, availability, completed, expanded, onStart, onToggleExpanded, project, seriesCompletedCount, seriesProjectCount, seriesUnlimited }: {
   activeProjectIds: ReadonlySet<ResearchProjectId>;
   availability: ResearchAvailability;
   completed: boolean;
@@ -208,17 +253,18 @@ function ResearchProjectCard({ activeProjectIds, availability, completed, expand
   project: ResearchProjectDefinition;
   seriesCompletedCount: number;
   seriesProjectCount: number;
+  seriesUnlimited: boolean;
 }) {
   const isActive = activeProjectIds.has(project.id);
   const status = completed ? 'Completed' : isActive ? 'In progress' : availability.startable ? 'Ready to start' : 'Locked';
   const recipeTimeComparison = getRecipeTimeComparison(project);
-  const requirementRows = project.requirements.map((requirement) => { const fulfilled = isRequirementFulfilled(requirement, availability); return <View key={`checked-${requirement.kind}-${getRequirementDescription(requirement)}`} style={localStyles.requirementRow}><MaterialCommunityIcons color={fulfilled ? colors.primary : colors.error} name={fulfilled ? 'check-circle-outline' : 'close-circle-outline'} size={16} /><Text style={localStyles.requirementText}>{getRequirementDescription(requirement)}</Text></View>; });
+  const requirementRows = project.requirements.map((requirement) => { const fulfilled = isRequirementFulfilled(requirement, availability); return <View key={`checked-${requirement.kind}-${getRequirementDescription(requirement)}`} style={localStyles.requirementRow}><TooltipMaterialIcon color={fulfilled ? colors.primary : colors.error} label={fulfilled ? 'Requirement met' : 'Requirement not met'} name={fulfilled ? 'check-circle-outline' : 'close-circle-outline'} size={16} /><Text style={localStyles.requirementText}>{getRequirementDescription(requirement)}</Text></View>; });
   return (
     <View style={[localStyles.researchCard, !completed && !isActive && !availability.startable && localStyles.lockedCard]}>
       <View style={localStyles.cardBody}>
         <View style={localStyles.projectHeader}><View style={localStyles.projectTitle}><View style={localStyles.projectNameRow}><ProjectIcon project={project} /><Text variant="titleMedium">{project.name}</Text></View><View style={localStyles.iconValueRow}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.coin} size={15} /><Text style={dashboardStyles.cardDescription}>{availability.usesFreeGrant ? 'Free tutorial grant · 10× faster' : formatCurrency(availability.cost)}</Text><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={dashboardStyles.cardDescription}>{formatElapsedTime(availability.durationMs)}</Text></View></View><Text style={[localStyles.status, completed ? localStyles.completedStatus : availability.startable ? localStyles.readyStatus : localStyles.lockedStatus]}>{status}</Text></View>
-        <View style={localStyles.seriesProgressHeader}><Text style={dashboardStyles.cardKicker}>RESEARCH CHAIN</Text><Text style={dashboardStyles.cardKicker}>{`${seriesCompletedCount} / ${seriesProjectCount}`}</Text></View>
-        <View style={localStyles.seriesProgressTrack}><ProgressBar accessible accessibilityLabel={`${seriesCompletedCount} of ${seriesProjectCount} research projects completed in this chain`} color={getColorClass(seriesProjectCount === 0 ? 0 : seriesCompletedCount / seriesProjectCount)} progress={seriesProjectCount === 0 ? 0 : seriesCompletedCount / seriesProjectCount} style={localStyles.seriesProgress} /></View>
+        <View style={localStyles.seriesProgressHeader}><Text style={dashboardStyles.cardKicker}>RESEARCH CHAIN</Text><Text style={dashboardStyles.cardKicker}>{seriesUnlimited ? `Level ${seriesCompletedCount}` : `${seriesCompletedCount} / ${seriesProjectCount}`}</Text></View>
+        {seriesUnlimited ? <Text style={dashboardStyles.cardDescription}>No final level. Each completed level unlocks the next.</Text> : <View style={localStyles.seriesProgressTrack}><ProgressBar accessible accessibilityLabel={`${seriesCompletedCount} of ${seriesProjectCount} research projects completed in this chain`} color={getColorClass(seriesProjectCount === 0 ? 0 : seriesCompletedCount / seriesProjectCount)} progress={seriesProjectCount === 0 ? 0 : seriesCompletedCount / seriesProjectCount} style={localStyles.seriesProgress} /></View>}
         {recipeTimeComparison && <View style={localStyles.recipeTimeComparison}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={dashboardStyles.cardDescription}>Recipe time: {recipeTimeComparison.before} → {recipeTimeComparison.after}</Text></View>}
         {!expanded ? <Button compact onPress={onToggleExpanded}>Show details</Button> : <><Text style={[dashboardStyles.cardDescription, localStyles.reward]}>{`Completion reward: ${describeResearchEffect(project.effect)}`}</Text><Text style={[dashboardStyles.cardKicker, localStyles.requirementsHeading]}>REQUIREMENTS</Text>{requirementRows}{!completed && !isActive && !availability.startable && availability.unmetReasons.map((reason) => <Text accessibilityLabel={`Locked condition: ${reason}`} key={reason} style={localStyles.unmetRequirement}>{reason}</Text>)}{completed && <Text style={localStyles.completedStatus}>Reward applied permanently.</Text>}{!completed && !isActive && <Button accessibilityLabel={`Start ${project.name}`} disabled={!availability.startable} mode="contained" onPress={() => onStart(project.id)} style={localStyles.startButton}>Start research</Button>}<Button compact onPress={onToggleExpanded}>Hide details</Button></>}
       </View>
@@ -237,6 +283,7 @@ function getRequirementDescription(requirement: GateRequirement): string {
 
 const localStyles = StyleSheet.create({
   activeTitle: { marginTop: 4 },
+  activationNote: { color: colors.muted, marginTop: 12 },
   balanceHint: { color: colors.muted, marginTop: 4, textAlign: 'right' },
   cancelButton: { marginTop: 12 },
   cancelNote: { color: colors.muted, fontSize: 12, lineHeight: 18 },

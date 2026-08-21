@@ -20,6 +20,7 @@ export type AchievementMetric =
   | 'repair-value-euros'
   | 'facility-efficiency-count'
   | 'resource-produced'
+  | 'highest-produced-quality'
   | 'total-produced'
   | 'fulfilled-order-count'
   | 'fulfilled-order-quantity'
@@ -90,7 +91,7 @@ export function createResourceProductionAchievements(resourceType: ResourceType,
 }
 
 export const ACHIEVEMENT_DEFINITIONS: readonly AchievementDefinition[] = [
-  ...createTieredAchievements({ seriesId: 'facility_portfolio', category: 'facilities', name: 'Industrial Footprint', description: 'Own {threshold} facilities.', icon: 'factory', metric: 'facility-count', thresholds: [1, 3, 6, 10, 15] }).map((achievement, index) => index === 0 ? { ...achievement, description: 'Own your first facility. Receive 10 Water and 10 Electricity.', rewards: [{ resourceType: ResourceType.Water, amount: 10 }, { resourceType: ResourceType.Electricity, amount: 10 }] } : achievement),
+  ...createTieredAchievements({ seriesId: 'facility_portfolio', category: 'facilities', name: 'Industrial Footprint', description: 'Own {threshold} facilities.', icon: 'factory', metric: 'facility-count', thresholds: [1, 3, 6, 10, 15] }),
   ...createTieredAchievements({ seriesId: 'facility_upgrades', category: 'facilities', name: 'Moderniser', description: 'Buy {threshold} facility upgrades.', icon: 'trending-up', metric: 'upgrade-levels', thresholds: [1, 5, 15, 30, 60] }),
   ...createTieredAchievements({ seriesId: 'facility_upgrade_depth', category: 'facilities', name: 'Integrated Industry', description: 'Have {threshold} facilities and at least 6 upgrades per facility.', icon: 'factory-cog', metric: 'facility-upgrade-depth', thresholds: [1, 2, 3, 4, 5], prestigeAmounts: [0.3, 1.2, 4.5, 8, 12] }),
   ...createTieredAchievements({ seriesId: 'condition_repaired', category: 'facilities', name: 'Restoration Works', description: 'Restore {threshold}% facility condition.', icon: 'wrench', metric: 'condition-repaired', thresholds: [10, 50, 100, 250, 500] }),
@@ -101,6 +102,7 @@ export const ACHIEVEMENT_DEFINITIONS: readonly AchievementDefinition[] = [
   ].map(({ tier, count, efficiency }) => ({ id: `facility_efficiency_tier_${tier}`, seriesId: 'facility_efficiency', category: 'facilities' as const, tier, name: `Operational Excellence ${tier}`, description: `Have ${count} facilities at ${Math.round(efficiency * 100)}% efficiency or higher at once.`, icon: 'gauge', metric: 'facility-efficiency-count' as const, threshold: count, facilityEfficiencyThreshold: efficiency, prestigeAmount: ACHIEVEMENT_TIER_PRESTIGE[Math.min(tier - 1, ACHIEVEMENT_TIER_PRESTIGE.length - 1)].amount, prestigeHalfLifeForegroundHours: ACHIEVEMENT_TIER_PRESTIGE[Math.min(tier - 1, ACHIEVEMENT_TIER_PRESTIGE.length - 1)].halfLifeForegroundHours })),
   ...RESOURCE_TYPES.flatMap((resourceType) => createResourceProductionAchievements(resourceType, RESOURCES[resourceType].name, getResourceIcon(resourceType))),
   ...createTieredAchievements({ seriesId: 'total_production', category: 'production', name: 'Production Line', description: 'Complete {threshold} total output.', icon: 'package-variant', metric: 'total-produced', thresholds: [1, 100, 1_000] }),
+  ...createTieredAchievements({ seriesId: 'highest_produced_quality', category: 'production', name: 'Quality Standard', description: 'Produce any resource at Q{threshold} or higher.', icon: 'star', metric: 'highest-produced-quality', thresholds: [2, 5, 10, 20, 35, 50, 65, 80, 95, 99] }),
   ...createTieredAchievements({ seriesId: 'fulfilled_orders', category: 'sales', name: 'Order Closer', description: 'Fulfil {threshold} customer orders.', icon: 'handshake-outline', metric: 'fulfilled-order-count', thresholds: [1, 10, 50] }),
   ...createTieredAchievements({ seriesId: 'fulfilled_quantity', category: 'sales', name: 'Reliable Supplier', description: 'Deliver {threshold} order units.', icon: 'truck-delivery-outline', metric: 'fulfilled-order-quantity', thresholds: [10, 100, 1_000] }),
   ...createTieredAchievements({ seriesId: 'largest_order', category: 'sales', name: 'Big Deal', description: 'Fulfil one order for {threshold} units.', icon: 'briefcase-outline', metric: 'largest-order-quantity', thresholds: [3, 6, 10] }),
