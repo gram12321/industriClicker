@@ -1,0 +1,46 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare artifact directory
+        run: mkdir -p artifacts
+
+      - name: Build APK locally on the GitHub runner
+        run: npx eas-cli@latest build --platform android --profile preview --local --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EAS_LOCAL_BUILD_ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: industri-clicker-android-apk
+          path: artifacts/**/*.apk
+          if-no-files-found: error
