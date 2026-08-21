@@ -8,6 +8,8 @@ export const SALES_ORDER_MAXIMUM_QUANTITY = 1_000_000;
 export const SALES_ORDER_BASE_ACQUISITION_RATE_PER_MINUTE = 1;
 export const SALES_ORDER_PENDING_PENALTY_PER_OPEN_ORDER = 0.13;
 export const SALES_ORDER_SELECTION_STOCK_COVERAGE_CAP = 64;
+/** Coverage offset that softens the inventory bonus for very small stock amounts. */
+export const SALES_ORDER_SELECTION_STOCK_COVERAGE_THRESHOLD = 0.1;
 /** Keeps unstocked resources offerable while making covered inventory more likely. */
 export const SALES_ORDER_UNSTOCKED_INVENTORY_READINESS = 0.25;
 export const SALES_ORDER_SELECTION_MAX_RELATIONSHIP_MULTIPLIER = 2;

@@ -57,12 +57,12 @@ describe('sales orders', () => {
     expect(calculateSalesOrderBidPremium({ ...input, economyPhase: 'boom' })).toBeCloseTo(0.605);
   });
 
-  it('samples probabilistic arrivals without capping high acquisition rates', () => {
+  it('samples at most one probabilistic arrival per acquisition check', () => {
     const samples = Array.from({ length: 100 }, (_, index) => sampleSalesOrderArrivalCount(1.5, `arrival-${index}`));
 
     expect(sampleSalesOrderArrivalCount(1.5, 'repeatable')).toBe(sampleSalesOrderArrivalCount(1.5, 'repeatable'));
     expect(samples).toContain(0);
-    expect(samples.some((count) => count >= 2)).toBe(true);
+    expect(samples.every((count) => count === 0 || count === 1)).toBe(true);
   });
 
   it('uses broad base target ranges for every customer domain', () => {
@@ -159,7 +159,8 @@ describe('sales orders', () => {
 
   it('keeps unstocked resources offerable while inventory coverage raises readiness', () => {
     expect(getOfferableSalesOrderResourceTypes({ candidateResourceTypes: [ResourceType.Water], globalPrices: prices(1), maximumOrderValue: 10_000 })).toEqual([ResourceType.Water]);
-    expect(calculateSalesOrderInventoryReadiness(0, 500)).toBeGreaterThan(0);
+    expect(calculateSalesOrderInventoryReadiness(0, 500)).toBeCloseTo(0.25);
+    expect(calculateSalesOrderInventoryReadiness(10, 500)).toBeCloseTo(0.2802, 4);
     expect(calculateSalesOrderInventoryReadiness(10, 500)).toBeGreaterThan(calculateSalesOrderInventoryReadiness(0, 500));
   });
 
@@ -268,11 +269,12 @@ describe('sales orders', () => {
     expect(calculateSalesCustomerAccessibility('government-procurement', 1_000)).toBeCloseTo(0.6836, 4);
   });
 
-  it('keeps a generated order at or below the company-value cap after lot rounding', () => {
+  it('creates at most one generated order per acquisition check and keeps it within the company-value cap', () => {
     const orders = new SalesOrders();
-    const result = orders.advanceTime({ currentGameTimeMs: 60_000, elapsedMilliseconds: 60_000 * 100, maximumOpenOrders: 2, maximumOrderValue: 1_000, companyPrestige: 0, economyPhase: 'stable', inventoryValue: 1_000, inventoryByResource: quantities(ResourceType.Grain, 1_000), globalPrices: prices(0.01), globalSupplies: benchmarkSupplies(), candidateResourceTypes: [ResourceType.Grain], getResourceWeight: () => 1, bidResearchMultiplier: 1 });
+    const result = orders.advanceTime({ currentGameTimeMs: 60_000, elapsedMilliseconds: 60_000 * 100_000, maximumOpenOrders: 2, maximumOrderValue: 1_000, companyPrestige: 0, economyPhase: 'stable', inventoryValue: 1_000, inventoryByResource: quantities(ResourceType.Grain, 1_000), globalPrices: prices(0.01), globalSupplies: benchmarkSupplies(), candidateResourceTypes: [ResourceType.Grain], getResourceWeight: () => 1, bidResearchMultiplier: 1 });
 
-    expect(result.ordersCreated).toBeGreaterThan(0);
+    expect(result.ordersCreated).toBe(1);
+    expect(orders.getOfferedOrders()).toHaveLength(1);
     expect(orders.getOfferedOrders()[0].reward).toBeLessThanOrEqual(1_000);
   });
 
