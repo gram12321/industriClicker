@@ -1,7 +1,7 @@
 import type { PrestigeEvent } from './prestige';
 import { FINANCE_INITIAL_BALANCE } from '@/game/company/companyConstants';
 import { safeNonNegative } from '@/utils';
-import { PRESTIGE_CASH_WEIGHT, PRESTIGE_EVENT_MIN_AMOUNT, PRESTIGE_DECAY_PROJECTION_FOREGROUND_HOURS, PRESTIGE_FOREGROUND_HOUR_MS, PRESTIGE_PRESENTATION_SCALE, PRESTIGE_ROUNDING_FACTOR } from './prestigeConstants';
+import { PRESTIGE_CASH_WEIGHT, PRESTIGE_EVENT_MIN_AMOUNT, PRESTIGE_DECAY_PROJECTION_FOREGROUND_HOURS, PRESTIGE_FOREGROUND_HOUR_MS, PRESTIGE_PRESENTATION_SCALE, PRESTIGE_ROUNDING_FACTOR, PRESTIGE_SALES_ORDER_MINIMUM_AMOUNT, PRESTIGE_SALES_ORDER_MINIMUM_REWARD, PRESTIGE_SALES_ORDER_REFERENCE_AMOUNT, PRESTIGE_SALES_ORDER_REFERENCE_REWARD } from './prestigeConstants';
 
 type CompanyCapitalInput = {
   cashBalance: number;
@@ -44,14 +44,17 @@ export function calculateCompanyAssetsPrestige(input: Pick<CompanyCapitalInput, 
   return roundPrestige(Math.log(1 + Math.max(0, netWorth) / FINANCE_INITIAL_BALANCE));
 }
 
-export function calculateSalesOrderPrestige(reward: number, premiumPercent = 0): number {
+export function calculateSalesOrderPrestige(reward: number, _premiumPercent = 0): number {
   if (!Number.isFinite(reward) || reward <= 0) {
     return 0;
   }
 
-  // Prestige deliberately has no fixed maximum. Finite inputs keep this logarithmic
-  // formula finite; a cap adds no safety and would silently limit late-game progression.
-  return roundPrestige((0.1 + 0.15 * Math.log(1 + reward)) * (1 + Math.max(0, premiumPercent) / 500));
+  // Order prestige is anchored to the smallest configured offer and a €1m reference
+  // order. It remains unbounded above the reference because company assets and order
+  // caps have no global ceiling.
+  const rewardRatio = Math.log10(Math.max(PRESTIGE_SALES_ORDER_MINIMUM_REWARD, reward) / PRESTIGE_SALES_ORDER_MINIMUM_REWARD);
+  const referenceRatio = Math.log10(PRESTIGE_SALES_ORDER_REFERENCE_REWARD / PRESTIGE_SALES_ORDER_MINIMUM_REWARD);
+  return roundPrestige(PRESTIGE_SALES_ORDER_MINIMUM_AMOUNT + (PRESTIGE_SALES_ORDER_REFERENCE_AMOUNT - PRESTIGE_SALES_ORDER_MINIMUM_AMOUNT) * rewardRatio / referenceRatio);
 }
 
 /** Maps unbounded positive prestige to a monotonic 0–1 presentation score. */

@@ -14,16 +14,16 @@ import { RESOURCE_TYPES, type ResourceType } from '@/game/resources';
 import {
   SalesOrders,
   calculateSalesOrderAcquisitionDetails,
-  calculateSalesOrderInventoryReadiness,
-  getEligibleSalesOrderResourceTypes,
+  calculateSalesOrderInventoryValueReadiness,
+  getOfferableSalesOrderResourceTypes,
   type SalesOrderAcquisitionDetails,
 } from './salesOrders';
-import { getSalesResourceProfile } from './salesCustomers';
 import { SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP } from './salesConstants';
 
 export type SalesOrderAcquisitionStatus = SalesOrderAcquisitionDetails & {
-  hasEligibleInventory: boolean;
+  hasOfferableResources: boolean;
   inventoryReadinessMultiplier: number;
+  inventoryValue: number;
   maximumOrderValue: number;
 };
 
@@ -56,39 +56,30 @@ export function getSalesOrderAcquisitionStatus(
   input: SalesOrderAcquisitionStatusInput,
 ): SalesOrderAcquisitionStatus {
   const completedResearchProjectIds = input.research.getCompletedProjectIds();
+  const assets = calculateAssets({
+    finance: input.finance,
+    inventory: input.inventory,
+    market: input.market,
+    facilities: input.facilities,
+    research: input.research,
+  });
   const maximumOrderValue = Math.max(
     SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP,
-    calculateAssets({
-      finance: input.finance,
-      inventory: input.inventory,
-      market: input.market,
-      facilities: input.facilities,
-      research: input.research,
-    }).totalAssets * getSalesOrderMaximumCompanyValueFraction(completedResearchProjectIds),
+    assets.totalAssets * getSalesOrderMaximumCompanyValueFraction(completedResearchProjectIds),
   );
   const producedByResource = getProducedByResource(input.productionStatistics);
   const candidateResourceTypes = getSalesOfferResourceTypes(
     completedResearchProjectIds,
     producedByResource,
   );
-  const inventoryByResource = Object.fromEntries(
-    RESOURCE_TYPES.map((resourceType) => [resourceType, input.inventory.getAmount(resourceType)]),
-  ) as Record<ResourceType, number>;
-  const inventoryReadinessMultiplier = Math.max(
-    0,
-    ...candidateResourceTypes.map((resourceType) => calculateSalesOrderInventoryReadiness(
-      inventoryByResource[resourceType],
-      getSalesResourceProfile(resourceType).standardOrderLot,
-    )),
-  );
-  const eligibleResources = getEligibleSalesOrderResourceTypes({
+  const offerableResources = getOfferableSalesOrderResourceTypes({
     candidateResourceTypes,
-    inventoryByResource,
     globalPrices: Object.fromEntries(
       RESOURCE_TYPES.map((resourceType) => [resourceType, input.market.getGlobalPrice(resourceType)]),
     ) as Record<ResourceType, number>,
     maximumOrderValue,
   });
+  const inventoryReadinessMultiplier = calculateSalesOrderInventoryValueReadiness(assets.inventory, maximumOrderValue);
 
   return {
     ...calculateSalesOrderAcquisitionDetails({
@@ -99,11 +90,12 @@ export function getSalesOrderAcquisitionStatus(
         input.currentGameTimeMs,
       ).totalPrestige,
       economyPhase: input.finance.getEconomyPhase(),
-      hasEligibleInventory: eligibleResources.length > 0,
+      hasOfferableResources: offerableResources.length > 0,
       inventoryReadinessMultiplier,
     }),
-    hasEligibleInventory: eligibleResources.length > 0,
+    hasOfferableResources: offerableResources.length > 0,
     inventoryReadinessMultiplier,
+    inventoryValue: assets.inventory,
     maximumOrderValue,
   };
 }

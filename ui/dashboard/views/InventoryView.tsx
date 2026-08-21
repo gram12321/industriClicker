@@ -118,7 +118,7 @@ export function InventoryView({
   const openSettings = (resourceType: (typeof RESOURCE_TYPES)[number]) => {
     const automation = market.getAutomation(resourceType);
     setSettingsDraft({
-      minKeep: String(getSalesResourceProfile(resourceType).standardOrderLot),
+      minKeep: String(automation.autoSellMinKeep || getSalesResourceProfile(resourceType).standardOrderLot),
       maxSell: String(automation.autoSellMaxPerMinute),
       maxBuyPrice: String(automation.autoBuyMaxUnitPrice),
       minSellPrice: String(automation.autoSellMinUnitPrice),

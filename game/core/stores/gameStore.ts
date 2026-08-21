@@ -7,7 +7,7 @@ import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
 import { MARKET_DIFFUSION_INTERVAL_MS, MARKET_SALES_ORDER_BID_MULTIPLIER, Market, canAutoBuyMarketResource, canBuyMarketResource, canSellMarketResource, type MarketAutomation } from '@/game/market';
 import type { GameSnapshot } from '@/game/core/state';
 import { BASE_WORK_PER_MINUTE, FOREGROUND_SIMULATION_STEP_MS, REALTIME_WORK_MINUTE_MS, calculateRealtimeAdvance } from '@/game/core/time';
-import { SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP, SalesOrders, calculateSalesOrderAcquisitionChance, calculateSalesOrderAcquisitionDetails, calculateSalesOrderInventoryReadiness, getSalesOrderAcquisitionStatus as getSalesOrderAcquisitionStatusForState, getSalesResourceProfile, type SalesOrderAcquisitionStatus } from '@/game/sales';
+import { SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP, SalesOrders, calculateSalesOrderAcquisitionRate, calculateSalesOrderAcquisitionDetails, calculateSalesOrderInventoryValueReadiness, getOfferableSalesOrderResourceTypes, getSalesOrderAcquisitionStatus as getSalesOrderAcquisitionStatusForState, type SalesOrderAcquisitionStatus } from '@/game/sales';
 import { AchievementLedger, createAchievementEvaluationContext, evaluateAchievementUnlocks, type AchievementCategory } from '@/game/achievements';
 
 import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyAssetsPrestige, calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary, calculateFacilityConditionPrestige } from '@/game/prestige';
@@ -709,21 +709,28 @@ export const useGameStore = create<GameState>((set, get) => {
 
       const currentSalesOrders = salesOrders ?? get().salesOrders;
       const currentPrestige = calculateCompanyPrestigeSummary(get().prestige.getEvents(), stepEndGameTimeMs).totalPrestige;
-      const companyAssets = calculateAssets({ finance: marketFinance ?? get().finance, inventory, market: market ?? get().market, facilities, research }).totalAssets;
+      const assetStatement = calculateAssets({ finance: marketFinance ?? get().finance, inventory, market: market ?? get().market, facilities, research });
+      const companyAssets = assetStatement.totalAssets;
       const maximumOrderValue = Math.max(
         SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP,
         companyAssets * getSalesOrderMaximumCompanyValueFraction(research.getCompletedProjectIds()),
       );
       const producedByResource = resourceFlow.getLifetimeFacilityOutputByResource();
-      const offerChance = calculateSalesOrderAcquisitionChance({
+      const salesCandidateResourceTypes = getSalesOfferResourceTypes(research.getCompletedProjectIds(), producedByResource);
+      const offerableSalesResourceTypes = getOfferableSalesOrderResourceTypes({
+        candidateResourceTypes: salesCandidateResourceTypes,
+        globalPrices: Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, (market ?? get().market).getGlobalPrice(resourceType)])) as Record<ResourceType, number>,
+        maximumOrderValue,
+      });
+      const offerRate = calculateSalesOrderAcquisitionRate({
         openOrderCount: currentSalesOrders.getOfferedOrders().length,
         maximumOpenOrders: getMaximumOpenSalesOrders(research.getCompletedProjectIds()),
         companyPrestige: currentPrestige,
         economyPhase: (marketFinance ?? get().finance).getEconomyPhase(),
-        hasEligibleInventory: getSalesOfferResourceTypes(research.getCompletedProjectIds(), producedByResource).some((resourceType) => calculateSalesOrderInventoryReadiness(inventory.getAmount(resourceType), getSalesResourceProfile(resourceType).standardOrderLot) > 0 && getSalesResourceProfile(resourceType).standardOrderLot * (market ?? get().market).getGlobalPrice(resourceType) <= maximumOrderValue),
-        inventoryReadinessMultiplier: Math.max(0, ...getSalesOfferResourceTypes(research.getCompletedProjectIds(), producedByResource).map((resourceType) => calculateSalesOrderInventoryReadiness(inventory.getAmount(resourceType), getSalesResourceProfile(resourceType).standardOrderLot))),
+        hasOfferableResources: offerableSalesResourceTypes.length > 0,
+        inventoryReadinessMultiplier: calculateSalesOrderInventoryValueReadiness(assetStatement.inventory, maximumOrderValue),
       });
-      customerPipelineProgress += (stepMs / 1_000) * offerChance / 60;
+      customerPipelineProgress += (stepMs / 1_000) * offerRate / 60;
 
       for (const resourceType of RESOURCE_TYPES) {
         const activeMarket = market ?? get().market;
@@ -757,28 +764,23 @@ export const useGameStore = create<GameState>((set, get) => {
         }
       }
 
-      const totalSalesMs = unprocessedWorkMs + stepMs;
-      const completedSalesMinutes = Math.floor(totalSalesMs / REALTIME_WORK_MINUTE_MS);
-      unprocessedWorkMs = totalSalesMs - completedSalesMinutes * REALTIME_WORK_MINUTE_MS;
-
-      if (completedSalesMinutes > 0) {
-        salesOrders ??= get().salesOrders.clone();
-        const activeMarket = market ?? get().market;
-        const completedResearchProjectIds = research.getCompletedProjectIds();
-        let ordersCreated = 0;
-        for (let minute = 0; minute < completedSalesMinutes; minute += 1) {
-          const result = salesOrders.advanceTime({
-            currentGameTimeMs: stepEndGameTimeMs - (completedSalesMinutes - minute - 1) * REALTIME_WORK_MINUTE_MS,
+      salesOrders ??= get().salesOrders.clone();
+      const salesMarket = market ?? get().market;
+      const completedResearchProjectIds = research.getCompletedProjectIds();
+      const result = salesOrders.advanceTime({
+            currentGameTimeMs: stepEndGameTimeMs,
+            elapsedMilliseconds: stepMs,
             maximumOpenOrders: getMaximumOpenSalesOrders(completedResearchProjectIds),
             maximumOrderValue,
             companyAssets,
-            inventoryReadinessMultiplier: Math.max(0, ...getSalesOfferResourceTypes(research.getCompletedProjectIds(), producedByResource).map((resourceType) => calculateSalesOrderInventoryReadiness(inventory.getAmount(resourceType), getSalesResourceProfile(resourceType).standardOrderLot))),
+            inventoryValue: assetStatement.inventory,
             companyPrestige: calculateCompanyPrestigeSummary(get().prestige.getEvents(), stepEndGameTimeMs).totalPrestige,
             economyPhase: (marketFinance ?? get().finance).getEconomyPhase(),
             inventoryByResource: Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, inventory.getAmount(resourceType)])) as Record<ResourceType, number>,
-            globalPrices: Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, activeMarket.getGlobalPrice(resourceType)])) as Record<ResourceType, number>,
-            globalSupplies: Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, activeMarket.getGlobalEntry(resourceType).supply])) as Record<ResourceType, number>,
-            candidateResourceTypes: getSalesOfferResourceTypes(research.getCompletedProjectIds(), producedByResource),
+            inventoryQualityByResource: Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, inventory.getQuality(resourceType)])) as Record<ResourceType, number>,
+            globalPrices: Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, salesMarket.getGlobalPrice(resourceType)])) as Record<ResourceType, number>,
+            globalSupplies: Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, salesMarket.getGlobalEntry(resourceType).supply])) as Record<ResourceType, number>,
+            candidateResourceTypes: salesCandidateResourceTypes,
             getResourceWeight: (resourceType) => producedByResource[resourceType] > 0 ? getSalesOfferProducedResourceWeight(research.getCompletedProjectIds()) : 1,
             bidResearchMultiplier: getSalesOrderBidMultiplier(research.getCompletedProjectIds(), MARKET_SALES_ORDER_BID_MULTIPLIER),
             relationshipDecayHalfLifeMultiplier: getSalesRelationshipDecayHalfLifeMultiplier(completedResearchProjectIds),
@@ -788,18 +790,12 @@ export const useGameStore = create<GameState>((set, get) => {
             bundleMaturityMultiplier: getSalesOrderBundleMaturityMultiplier(completedResearchProjectIds),
             minimumPremiumBonus: getSalesOrderMinimumPremiumBonus(completedResearchProjectIds),
           });
-          ordersCreated += result.ordersCreated;
-        }
-        elapsedMinutes += completedSalesMinutes;
-
-        if (ordersCreated > 0) {
-          customerPipelineProgress = 0;
-        }
-      }
+      if (result.ordersCreated > 0) customerPipelineProgress = 0;
 
       remainingMs -= stepMs;
     }
 
+    elapsedMinutes = Math.floor(elapsedMs / REALTIME_WORK_MINUTE_MS);
     const previousGameTimeMs = get().lastProcessedAtMs;
     const nextGameTimeMs = previousGameTimeMs + elapsedMs;
     const financeForLoanProcessing = marketFinance ?? get().finance.clone();
@@ -1166,7 +1162,7 @@ export const useGameStore = create<GameState>((set, get) => {
       if (!inventory.remove(line.resourceType, line.quantity) || !market.addToGlobal(line.resourceType, line.quantity, quality)) return false;
     }
     const completedResearchProjectIds = get().research.getCompletedProjectIds();
-    if (!finance.applyTransaction({ amount: order.reward, description: `Customer order fulfilled: ${order.customerName}`, detailLines: order.lines.map((line) => { const quality = deliveredQualities.get(line.resourceType) ?? 1; const premiumMultiplier = 1 + line.premiumPercent / 100; const qualityMultiplier = quality; const calculatedUnitPrice = line.globalReferenceUnitPrice * premiumMultiplier * qualityMultiplier; return `Delivered ${line.quantity} ${line.resourceType} at Q${quality.toFixed(2)} · €${line.globalReferenceUnitPrice.toFixed(2)} base × ${premiumMultiplier.toFixed(2)} premium × ${qualityMultiplier.toFixed(2)} quality = €${calculatedUnitPrice.toFixed(2)}/unit`; }), kind: 'operating', source: 'order-sale', occurredAtGameTimeMs: currentGameTimeMs })
+    if (!finance.applyTransaction({ amount: order.reward, description: `Customer order fulfilled: ${order.customerName}`, detailLines: order.lines.map((line) => { const quality = deliveredQualities.get(line.resourceType) ?? 1; const qualityAdjustedUnitPrice = line.bidUnitPrice * line.qualityMultiplier; return `Delivered ${line.quantity} ${line.resourceType} at Q${quality.toFixed(2)} · offer quality Q${line.qualityMultiplier.toFixed(2)} · €${line.bidUnitPrice.toFixed(2)} bid × ${line.qualityMultiplier.toFixed(2)} quality = €${qualityAdjustedUnitPrice.toFixed(2)}/unit`; }), kind: 'operating', source: 'order-sale', occurredAtGameTimeMs: currentGameTimeMs })
       || !salesOrders.fulfill(order.id, currentGameTimeMs, calculateCompanyPrestigeSummary(get().prestige.getEvents(), currentGameTimeMs).totalPrestige, getSalesRelationshipDecayHalfLifeMultiplier(completedResearchProjectIds), getSalesRelationshipFulfilmentGainMultiplier(completedResearchProjectIds), getSalesRelationshipFailureLossMultiplier(completedResearchProjectIds))) {
       return false;
     }
