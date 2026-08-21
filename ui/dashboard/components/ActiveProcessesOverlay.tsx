@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ComponentProps } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button, ProgressBar, Text } from 'react-native-paper';
@@ -14,7 +14,15 @@ import { clamp, formatDuration, formatElapsedTime, formatNumber, getColorClass }
 import { formatRecipeName } from '@/ui/dashboard/helpers/recipeFormatters';
 import { TooltipMaterialIcon, TooltipTextIcon } from '@/ui/dashboard/components/IconTooltip';
 
-type ActiveProcess = { icon: string; id: string; isRecipe?: boolean; label: string; progress: number; timing: string; title: string };
+type ProcessCategory = 'production' | 'research' | 'finance' | 'sales';
+type ActiveProcess = { category: ProcessCategory; icon: string; id: string; isRecipe?: boolean; label: string; progress: number; timing: string; title: string };
+
+const PROCESS_FILTERS: ReadonlyArray<{ category: ProcessCategory; icon: ComponentProps<typeof MaterialCommunityIcons>['name']; label: string }> = [
+  { category: 'production', icon: APP_ICONS.production, label: 'Production' },
+  { category: 'research', icon: APP_ICONS.research, label: 'Research' },
+  { category: 'finance', icon: APP_ICONS.bank, label: 'Finance' },
+  { category: 'sales', icon: APP_ICONS.salesOrders, label: 'Sales' },
+];
 
 export function ActiveProcessesOverlay({ customerPipelineProgress, facilities, finance, initiallyOpen = false, inventory, maximumOpenOrders, onCompleteProcess, research, salesOrders, showInstantCompletion }: {
   customerPipelineProgress: number;
@@ -29,8 +37,19 @@ export function ActiveProcessesOverlay({ customerPipelineProgress, facilities, f
   showInstantCompletion?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(initiallyOpen);
+  const [visibleCategories, setVisibleCategories] = useState<ReadonlySet<ProcessCategory>>(() => new Set(PROCESS_FILTERS.map(({ category }) => category)));
   const processes = getActiveProcesses({ customerPipelineProgress, facilities, finance, inventory, maximumOpenOrders, research, salesOrders });
-  const processCountLabel = processes.length === 1 ? '1 active process' : `${processes.length} active processes`;
+  const visibleProcesses = processes.filter((process) => visibleCategories.has(process.category));
+  const processCountLabel = visibleProcesses.length === 1 ? '1 active process' : `${visibleProcesses.length} active processes`;
+
+  function toggleCategory(category: ProcessCategory) {
+    setVisibleCategories((current) => {
+      const next = new Set(current);
+      if (next.has(category)) next.delete(category);
+      else next.add(category);
+      return next;
+    });
+  }
 
   return <View pointerEvents="box-none" style={localStyles.container}>
     {isOpen && <View style={localStyles.panel}>
@@ -40,10 +59,18 @@ export function ActiveProcessesOverlay({ customerPipelineProgress, facilities, f
           <MaterialCommunityIcons color={colors.muted} name={APP_ICONS.close} size={20} />
         </Pressable>
       </View>
-      {processes.length === 0
+      <View accessibilityLabel="Active process filters" style={localStyles.filterRow}>
+        {PROCESS_FILTERS.map(({ category, icon, label }) => {
+          const isVisible = visibleCategories.has(category);
+          return <Pressable accessibilityLabel={`${isVisible ? 'Hide' : 'Show'} ${label.toLowerCase()} processes`} accessibilityRole="button" accessibilityState={{ selected: isVisible }} key={category} onPress={() => toggleCategory(category)} style={[localStyles.filterButton, isVisible && localStyles.filterButtonActive]}>
+            <MaterialCommunityIcons color={isVisible ? colors.primary : colors.muted} name={icon} size={18} />
+          </Pressable>;
+        })}
+      </View>
+      {visibleProcesses.length === 0
         ? <Text style={localStyles.emptyText}>No timed processes are running.</Text>
         : <ScrollView contentContainerStyle={localStyles.processList} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-          {processes.map((process) => <View key={process.id} style={localStyles.process}>
+          {visibleProcesses.map((process) => <View key={process.id} style={localStyles.process}>
             <View style={localStyles.processHeader}>
               {process.isRecipe ? <TooltipTextIcon label={process.label}>{process.icon}</TooltipTextIcon> : <TooltipMaterialIcon color={colors.primary} label={process.label} name={process.icon} size={18} />}
               <View style={localStyles.processCopy}><Text numberOfLines={1} style={localStyles.processTitle}>{process.title}</Text><Text numberOfLines={1} style={localStyles.processLabel}>{process.label}</Text></View>
@@ -73,18 +100,19 @@ function getActiveProcesses({ customerPipelineProgress, facilities, finance, inv
     const progress = clamp(recipeProgress / recipe.requiredWork, 0, 1);
     const workPerMinute = calculateFacilityEffectiveWork(facilityView, BASE_WORK_PER_MINUTE, getRecipeResearchWorkSpeedMultiplier(recipe.name, research.getCompletedProjectIds()));
     const minutesRemaining = workPerMinute > 0 ? (recipe.requiredWork - recipeProgress) / workPerMinute : 0;
-    return [{ id: facilityView.id, icon: RECIPE_ICONS[recipe.name], isRecipe: true, label: formatRecipeName(recipe), progress, timing: `${formatNumber(progress * 100, { decimals: 0 })}% · ${formatDuration(minutesRemaining)} left`, title: facilityView.displayName }];
+    return [{ category: 'production' as const, id: facilityView.id, icon: RECIPE_ICONS[recipe.name], isRecipe: true, label: formatRecipeName(recipe), progress, timing: `${formatNumber(progress * 100, { decimals: 0 })}% · ${formatDuration(minutesRemaining)} left`, title: facilityView.displayName }];
   });
 
   const researchProcesses = research.getActiveProjects().flatMap((activeResearch) => {
     const project = getResearchProject(activeResearch.projectId);
     if (!project) return [];
     const progress = clamp(activeResearch.progressMs / activeResearch.durationMs, 0, 1);
-    return [{ id: `research-${project.id}`, icon: APP_ICONS.research, label: 'Research', progress, timing: `${formatElapsedTime(Math.max(0, activeResearch.durationMs - activeResearch.progressMs))} left`, title: project.name }];
+    return [{ category: 'research' as const, id: `research-${project.id}`, icon: APP_ICONS.research, label: 'Research', progress, timing: `${formatElapsedTime(Math.max(0, activeResearch.durationMs - activeResearch.progressMs))} left`, title: project.name }];
   });
 
   const activeLoanSearch = finance.getActiveLoanSearch();
   const lenderSearchProcess = activeLoanSearch ? [{
+    category: 'finance' as const,
     id: 'lender-search',
     icon: APP_ICONS.bank,
     label: `${activeLoanSearch.criteria.offerCount} offers requested`,
@@ -96,6 +124,7 @@ function getActiveProcesses({ customerPipelineProgress, facilities, finance, inv
   const openOrders = salesOrders.getOfferedOrders().length;
   const pipelineProgress = Math.max(0, customerPipelineProgress);
   const pipelineProcess = openOrders < maximumOpenOrders ? [{
+    category: 'sales' as const,
     id: 'customer-pipeline',
     icon: APP_ICONS.salesOrders,
     label: `${formatNumber(openOrders)} of ${formatNumber(maximumOpenOrders)} order slots filled`,
@@ -139,8 +168,11 @@ const localStyles = StyleSheet.create({
   container: { alignItems: 'flex-end', bottom: 86, position: 'absolute', right: 12, zIndex: 15 },
   emptyText: { color: colors.muted, lineHeight: 20, marginTop: 12 },
   eyebrow: { color: colors.primary, fontSize: 10, fontWeight: '700', letterSpacing: 1 },
-  panel: { backgroundColor: colors.surface, borderRadius: 16, elevation: 8, marginBottom: 10, maxHeight: 340, padding: 14, shadowColor: '#000000', shadowOffset: { height: 3, width: 0 }, shadowOpacity: 0.18, shadowRadius: 8, width: 300 },
+  panel: { backgroundColor: colors.surface, borderRadius: 16, elevation: 8, marginBottom: 10, maxHeight: 460, padding: 14, shadowColor: '#000000', shadowOffset: { height: 3, width: 0 }, shadowOpacity: 0.18, shadowRadius: 8, width: 300 },
   panelHeading: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  filterButton: { alignItems: 'center', borderColor: '#D7E2DE', borderRadius: 18, borderWidth: 1, height: 36, justifyContent: 'center', width: 36 },
+  filterButtonActive: { backgroundColor: colors.paleGreen, borderColor: colors.primary },
+  filterRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
   process: { borderTopColor: '#E2E8E5', borderTopWidth: 1, gap: 7, paddingTop: 10 },
   processCopy: { flex: 1, gap: 1 },
   processHeader: { alignItems: 'center', flexDirection: 'row', gap: 8 },

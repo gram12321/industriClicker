@@ -269,7 +269,7 @@ function FacilityResourceSummary({ getQualityBreakdown, inputQ, inventory, outpu
   const outputQualityDetails = recipe.outputs.map((output) => ({ output, breakdown: getQualityBreakdown(output.resourceType, weightedInputQ, upgradeMaxQ) }));
   const qualityNumber = (value: number) => formatNumber(value, { decimals: 2, forceDecimals: true });
   const inputQualitySummary = inputQualityDetails.map(({ resourceType, quality }) => `${getResource(resourceType).icon}Q${qualityNumber(quality)}`).join(', ');
-  const outputQualitySummary = outputQualityDetails.map(({ output }) => `${getResource(output.resourceType).icon}Q${inputMaxQ === null ? '—' : qualityNumber(inputMaxQ)}`).join(', ');
+  const outputQualitySummary = inputMaxQ === null ? '' : outputQualityDetails.map(({ output }) => `${getResource(output.resourceType).icon}Q${qualityNumber(inputMaxQ)}`).join(', ');
   const researchQualitySummary = outputQualityDetails.map(({ breakdown }) => `Q${qualityNumber(breakdown.researchMaxQ)}`).join(', ');
   const productionQualitySummary = outputQualityDetails.map(({ breakdown }) => `Q${qualityNumber(breakdown.productionMaxQ)}`).join(', ');
 
@@ -279,11 +279,9 @@ function FacilityResourceSummary({ getQualityBreakdown, inputQ, inventory, outpu
     <View style={styles.facilityResourceGroup}><Text style={styles.facilityResourceLabel}>Output</Text><View style={styles.facilityResourceItems}>{outputQualityDetails.map(({ output, breakdown }) => <Text key={output.resourceType} accessibilityLabel={`${getResource(output.resourceType).name} ${formatNumber(output.amount * outputMultiplier, { smartDecimals: true })} at quality ${qualityNumber(breakdown.outputQ)}`} style={[styles.facilityResourceValue, styles.facilityResourceOutput]}><TooltipResourceIcon resourceType={output.resourceType} /> {formatNumber(output.amount * outputMultiplier, { smartDecimals: true })} · Q{qualityNumber(breakdown.outputQ)}</Text>)}</View></View>
     <View accessibilityLabel={`Quality limits: ${inputQualitySummary || 'no inputs'} to ${outputQualitySummary || 'no outputs'}; research ${researchQualitySummary || 'none'}; upgrade Q${qualityNumber(upgradeMaxQ)}; production ${productionQualitySummary || 'none'}`} style={styles.facilityResourceQuality}>
       <Text style={styles.facilityResourceQualityLabel}>Quality Limits:</Text>
-      <MaterialCommunityIcons color={colors.muted} name={APP_ICONS.inputQuality} size={12} />
+      {inputMaxQ !== null && <MaterialCommunityIcons color={colors.muted} name={APP_ICONS.inputQuality} size={12} />}
       <Text style={styles.facilityResourceQualityText}>{inputQualityDetails.length === 0 ? 'No inputs' : inputQualitySummary}</Text>
-      <Text style={styles.facilityResourceQualityText}>→</Text>
-      <Text style={styles.facilityResourceQualityText}>{outputQualitySummary || '—'}</Text>
-      <Text style={styles.facilityResourceQualityText}>-</Text>
+      {inputMaxQ !== null && <><Text style={styles.facilityResourceQualityText}>→</Text><Text style={styles.facilityResourceQualityText}>{outputQualitySummary}</Text><Text style={styles.facilityResourceQualityText}>-</Text></>}
       <MaterialCommunityIcons color={colors.muted} name={APP_ICONS.research} size={12} />
       <Text style={styles.facilityResourceQualityText}>{researchQualitySummary || '—'}</Text>
       <Text style={styles.facilityResourceQualityText}>-</Text>

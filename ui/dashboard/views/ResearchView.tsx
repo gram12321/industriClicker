@@ -12,7 +12,7 @@ import { LOCAL_MARKET_NETWORK_EXPANSION_PER_MINUTE, type Market } from '@/game/m
 import type { GateRequirement } from '@/game/gates';
 import type { ResearchAvailability } from '@/game/core/stores';
 import { colors } from '@/theme';
-import { APP_ICONS, RECIPE_ICONS } from '@/icons';
+import { APP_ICONS, RECIPE_ICONS, RESOURCE_ICONS } from '@/icons';
 import { formatCurrency as formatCurrencyWithSymbol, formatDuration, formatElapsedTime, getColorClass } from '@/utils';
 import { SectionHeading } from '@/ui/dashboard/components/DashboardPrimitives';
 import { TooltipMaterialIcon, TooltipTextIcon } from '@/ui/dashboard/components/IconTooltip';
@@ -30,7 +30,7 @@ const CHAIN_DETAILS: Record<ResearchChainId, { eyebrow: string; icon: string; ti
   'market-diffusion-network': { eyebrow: 'MARKET', icon: 'transit-connection-variant', title: 'Market diffusion network', subtitle: 'Increase the rate at which local and regional markets rebalance.' },
   'research-capacity': { eyebrow: 'RESEARCH', icon: 'flask-plus-outline', title: 'Research capacity', subtitle: 'Unlock additional research slots so projects can run simultaneously.' },
   'recipe-unlocks': { eyebrow: 'RECIPES', icon: 'flask-outline', title: 'Recipe research', subtitle: 'Unlock production recipes for your facilities.' },
-  'resource-quality': { eyebrow: 'QUALITY', icon: APP_ICONS.quality, title: 'Resource quality', subtitle: 'Raise each resourceâ€™s produced quality through an unlimited research chain.' },
+  'resource-quality': { eyebrow: 'QUALITY', icon: APP_ICONS.quality, title: 'Resource quality', subtitle: 'Raise each resource’s produced quality through an unlimited research chain.' },
 };
 
 type ResearchGroupId = 'capital-grants' | 'sales' | 'research-capacity' | 'recipe-unlocks' | 'resource-quality';
@@ -41,12 +41,12 @@ const RESEARCH_GROUPS: readonly ResearchGroup[] = [
   { id: 'sales', chainIds: ['sales-capacity', 'sales-order-value-limit', 'sales-targeting', 'bid-value', 'relationship-management', 'sales-intelligence', 'market-diffusion-network', 'local-market-network'], eyebrow: 'SALES', icon: 'handshake-outline', title: 'Sales research', subtitle: 'Grow your pipeline, improve trust outcomes, sharpen offers, and improve market reach.' },
   { id: 'research-capacity', chainIds: ['research-capacity'], eyebrow: 'RESEARCH', icon: 'flask-plus-outline', title: 'Research capacity', subtitle: 'Unlock additional research slots so projects can run simultaneously.' },
   { id: 'recipe-unlocks', chainIds: ['recipe-unlocks'], eyebrow: 'RECIPES', icon: 'flask-outline', title: 'Recipe research', subtitle: 'Unlock production recipes for your facilities.' },
-  { id: 'resource-quality', chainIds: ['resource-quality'], eyebrow: 'QUALITY', icon: APP_ICONS.quality, title: 'Resource quality', subtitle: 'Raise each resourceâ€™s produced quality through an unlimited research chain.' },
+  { id: 'resource-quality', chainIds: ['resource-quality'], eyebrow: 'QUALITY', icon: APP_ICONS.quality, title: 'Resource quality', subtitle: 'Raise each resource’s produced quality through an unlimited research chain.' },
 ];
 
 type ResearchSeries = { completedCount: number; project: ResearchProjectDefinition; projects: readonly ResearchProjectDefinition[]; unlimited: boolean };
 
-const formatCurrency = (value: number) => formatCurrencyWithSymbol(value).replace(/\s*â‚¬/u, '');
+const formatCurrency = (value: number) => formatCurrencyWithSymbol(value).replace(/\s*€/u, '');
 
 function isRecipeProjectForConstructedFacility(project: ResearchProjectDefinition, facilities: FacilityCollection): boolean {
   if (project.effect.kind !== 'recipe-unlock' && project.effect.kind !== 'recipe-work-speed-bonus') return false;
@@ -113,6 +113,8 @@ function getRecipeProjectIcon(project: ResearchProjectDefinition): string | null
 
 function ProjectIcon({ project }: { project: ResearchProjectDefinition }) {
   const recipeIcon = getRecipeProjectIcon(project);
+  const resourceIcon = project.effect.kind === 'resource-production-quality' ? RESOURCE_ICONS[project.effect.resourceType] : null;
+  if (resourceIcon) return <TooltipTextIcon label={project.name}>{resourceIcon}</TooltipTextIcon>;
   return recipeIcon ? <TooltipTextIcon label={project.name}>{recipeIcon}</TooltipTextIcon> : <TooltipMaterialIcon color={colors.primary} label={CHAIN_DETAILS[project.chainId].title} name={CHAIN_DETAILS[project.chainId].icon} size={20} />;
 }
 
@@ -158,7 +160,7 @@ export function ResearchView({
         <View style={localStyles.overviewHeader}>
           <View style={localStyles.overviewTitle}>
             <Text style={dashboardStyles.cardKicker}>PROGRESS OVERVIEW</Text>
-            <Text variant="titleLarge">{`${completedCount} completed Â· quality research is unlimited`}</Text>
+            <Text variant="titleLarge">{`${completedCount} completed · quality research is unlimited`}</Text>
           </View>
           <View>
             <Text style={[localStyles.completionPercent, { color: getColorClass(completion) }]}>{`${Math.round(completion * 100)}%`}</Text>
@@ -177,8 +179,8 @@ export function ResearchView({
               <ProgressBar accessible accessibilityLabel={`${project.name} progress ${formatElapsedTime(active.progressMs)} of ${formatElapsedTime(active.durationMs)}`} color={getColorClass(Math.min(1, active.progressMs / active.durationMs))} progress={Math.min(1, active.progressMs / active.durationMs)} style={localStyles.progress} />
             </View>
             <View style={[localStyles.iconValueRow, localStyles.paidCost]}><Text style={dashboardStyles.cardDescription}>Cost paid:</Text><CurrencyValue value={active.paidCost} /></View>
-            <Button accessibilityLabel={`Cancel ${project.name} and refund ${formatCurrency(active.paidCost)}`} icon="close" mode="outlined" onPress={() => onCancel(project.id)} style={localStyles.cancelButton}>Cancel and refund <MaterialCommunityIcons color={colors.primary} name={APP_ICONS.coin} size={15} /> {formatCurrency(active.paidCost).replace(/\s*â‚¬/u, '')}</Button>
-            <Text style={localStyles.cancelNote}>Cancellation refunds the full cost and resets this projectâ€™s progress.</Text>
+            <Button accessibilityLabel={`Cancel ${project.name} and refund ${formatCurrency(active.paidCost)}`} icon="close" mode="outlined" onPress={() => onCancel(project.id)} style={localStyles.cancelButton}>Cancel and refund <MaterialCommunityIcons color={colors.primary} name={APP_ICONS.coin} size={15} /> {formatCurrency(active.paidCost).replace(/\s*€/u, '')}</Button>
+            <Text style={localStyles.cancelNote}>Cancellation refunds the full cost and resets this project’s progress.</Text>
           </View>
         </View>
       ))}
@@ -194,7 +196,7 @@ export function ResearchView({
             <View style={localStyles.projectNameRow}><TooltipMaterialIcon color={colors.primary} label="Local market" name="storefront-outline" size={20} /><Text style={localStyles.activeTitle} variant="titleLarge">{title}</Text></View>
             <View style={localStyles.iconValueRow}><TooltipMaterialIcon color={colors.muted} label="Elapsed market activation time" name={APP_ICONS.elapsedTime} size={15} /><Text style={[dashboardStyles.cardDescription, localStyles.timeLabel, { color: getColorClass(progress) }]}>{`${formatElapsedTime(elapsedMs)} / ${formatElapsedTime(durationMs)}`}</Text></View>
             <View style={localStyles.progressTrack}><ProgressBar accessible accessibilityLabel={`${title} progress ${formatElapsedTime(elapsedMs)} of ${formatElapsedTime(durationMs)}`} color={getColorClass(progress)} progress={progress} style={localStyles.progress} /></View>
-            <Text style={[dashboardStyles.cardDescription, localStyles.activationNote]}>Adding local market stock and benchmark capacity at 5% of each resourceâ€™s initial local supply per minute.</Text>
+            <Text style={[dashboardStyles.cardDescription, localStyles.activationNote]}>Adding local market stock and benchmark capacity at 5% of each resource’s initial local supply per minute.</Text>
           </View>
         </View>;
       })}
@@ -260,10 +262,10 @@ function ResearchProjectCard({ activeProjectIds, availability, completed, expand
   return (
     <View style={[localStyles.researchCard, !completed && !isActive && !availability.startable && localStyles.lockedCard]}>
       <View style={localStyles.cardBody}>
-        <View style={localStyles.projectHeader}><View style={localStyles.projectTitle}><View style={localStyles.projectNameRow}><ProjectIcon project={project} /><Text variant="titleMedium">{project.name}</Text></View><View style={localStyles.iconValueRow}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.coin} size={15} /><Text style={dashboardStyles.cardDescription}>{availability.usesFreeGrant ? 'Free tutorial grant Â· 10Ã— faster' : formatCurrency(availability.cost)}</Text><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={dashboardStyles.cardDescription}>{formatElapsedTime(availability.durationMs)}</Text></View></View><Text style={[localStyles.status, completed ? localStyles.completedStatus : availability.startable ? localStyles.readyStatus : localStyles.lockedStatus]}>{status}</Text></View>
+        <View style={localStyles.projectHeader}><View style={localStyles.projectTitle}><View style={localStyles.projectNameRow}><ProjectIcon project={project} /><Text variant="titleMedium">{project.name}</Text></View><View style={localStyles.iconValueRow}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.coin} size={15} /><Text style={dashboardStyles.cardDescription}>{availability.usesFreeGrant ? 'Free tutorial grant · 10× faster' : formatCurrency(availability.cost)}</Text><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={dashboardStyles.cardDescription}>{formatElapsedTime(availability.durationMs)}</Text></View></View><Text style={[localStyles.status, completed ? localStyles.completedStatus : availability.startable ? localStyles.readyStatus : localStyles.lockedStatus]}>{status}</Text></View>
         <View style={localStyles.seriesProgressHeader}><Text style={dashboardStyles.cardKicker}>RESEARCH CHAIN</Text><Text style={dashboardStyles.cardKicker}>{seriesUnlimited ? `Level ${seriesCompletedCount}` : `${seriesCompletedCount} / ${seriesProjectCount}`}</Text></View>
         {seriesUnlimited ? <Text style={dashboardStyles.cardDescription}>No final level. Each completed level unlocks the next.</Text> : <View style={localStyles.seriesProgressTrack}><ProgressBar accessible accessibilityLabel={`${seriesCompletedCount} of ${seriesProjectCount} research projects completed in this chain`} color={getColorClass(seriesProjectCount === 0 ? 0 : seriesCompletedCount / seriesProjectCount)} progress={seriesProjectCount === 0 ? 0 : seriesCompletedCount / seriesProjectCount} style={localStyles.seriesProgress} /></View>}
-        {recipeTimeComparison && <View style={localStyles.recipeTimeComparison}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={dashboardStyles.cardDescription}>Recipe time: {recipeTimeComparison.before} â†’ {recipeTimeComparison.after}</Text></View>}
+        {recipeTimeComparison && <View style={localStyles.recipeTimeComparison}><MaterialCommunityIcons color={colors.muted} name={APP_ICONS.elapsedTime} size={15} /><Text style={dashboardStyles.cardDescription}>Recipe time: {recipeTimeComparison.before} → {recipeTimeComparison.after}</Text></View>}
         {!expanded ? <Button compact onPress={onToggleExpanded}>Show details</Button> : <><Text style={[dashboardStyles.cardDescription, localStyles.reward]}>{`Completion reward: ${describeResearchEffect(project.effect)}`}</Text><Text style={[dashboardStyles.cardKicker, localStyles.requirementsHeading]}>REQUIREMENTS</Text>{requirementRows}{!completed && !isActive && !availability.startable && availability.unmetReasons.map((reason) => <Text accessibilityLabel={`Locked condition: ${reason}`} key={reason} style={localStyles.unmetRequirement}>{reason}</Text>)}{completed && <Text style={localStyles.completedStatus}>Reward applied permanently.</Text>}{!completed && !isActive && <Button accessibilityLabel={`Start ${project.name}`} disabled={!availability.startable} mode="contained" onPress={() => onStart(project.id)} style={localStyles.startButton}>Start research</Button>}<Button compact onPress={onToggleExpanded}>Hide details</Button></>}
       </View>
     </View>

@@ -63,7 +63,7 @@ export function calculateInputMaxQ(weightedInputQ: number | null): number {
   return weightedInputQ === null ? Number.POSITIVE_INFINITY : Math.max(1, weightedInputQ + QUALITY_INPUT_BONUS);
 }
 
-/** Applies the four canonical quality ceilings to one facility output. */
+/** Applies the applicable quality ceilings to one facility output. */
 export function calculateOutputQuality(limits: Partial<QualityLimits> & { weightedInputQ?: number | null }): OutputQualityBreakdown {
   const inputMaxQ = limits.inputMaxQ ?? calculateInputMaxQ(limits.weightedInputQ ?? null);
   const researchCandidate = limits.researchMaxQ ?? QUALITY_NUMERIC_CEILING;
@@ -72,6 +72,6 @@ export function calculateOutputQuality(limits: Partial<QualityLimits> & { weight
   const researchMaxQ = Number.isFinite(researchCandidate) && researchCandidate > 0 ? researchCandidate : QUALITY_NUMERIC_CEILING;
   const upgradeMaxQ = Number.isFinite(upgradeCandidate) && upgradeCandidate > 0 ? upgradeCandidate : QUALITY_NUMERIC_CEILING;
   const productionMaxQ = Number.isFinite(productionCandidate) && productionCandidate > 0 ? productionCandidate : QUALITY_NUMERIC_CEILING;
-  const outputQ = Math.min(researchMaxQ, inputMaxQ, upgradeMaxQ, productionMaxQ, QUALITY_NUMERIC_CEILING);
+  const outputQ = Math.min(researchMaxQ, ...(Number.isFinite(inputMaxQ) ? [inputMaxQ] : []), upgradeMaxQ, productionMaxQ, QUALITY_NUMERIC_CEILING);
   return { inputMaxQ, researchMaxQ, upgradeMaxQ, productionMaxQ, outputQ };
 }
