@@ -1,7 +1,8 @@
 import { RESOURCES, RESOURCE_TYPES, type ResourceType } from '@/game/resources';
 import {
   MARKET_AUTOBUY_DEFAULT_MAX_PRICE_MULTIPLIER,
-  MARKET_AUTOBUY_DEFAULT_TARGET_INVENTORY,
+  MARKET_AUTOBUY_DEFAULT_AT_INVENTORY,
+  MARKET_AUTOBUY_DEFAULT_TO_INVENTORY,
   MARKET_AUTOTRADE_DEFAULT_INTERVAL_MS,
   MARKET_AUTOSELL_DEFAULT_MAX_PER_MINUTE,
   MARKET_AUTOTRADE_INTERVAL_OPTIONS,
@@ -14,6 +15,7 @@ import { calculateMarketDiffusionDetails, calculateMarketDiffusionInfo, calculat
 import type { LocalMarketNetworkActivation, MarketAutomation, MarketDiffusionDetails, MarketDiffusionInfo, MarketPoolEntry, MarketSnapshot, MarketTradeResult } from './marketTypes';
 
 function isNonNegativeFinite(value: number): boolean { return Number.isFinite(value) && value >= 0; }
+function isValidAutoBuyAt(value: number | 'any'): boolean { return value === 'any' || isNonNegativeFinite(value); }
 function isPositiveFinite(value: number): boolean { return Number.isFinite(value) && value > 0; }
 function isAutoTradeInterval(value: number): boolean { return MARKET_AUTOTRADE_INTERVAL_OPTIONS.some((option) => option.milliseconds === value); }
 
@@ -41,7 +43,8 @@ function createAutomation(local: Record<ResourceType, MarketPoolEntry>): Record<
     automation[resourceType] = {
       autoBuyEnabled: false,
       autoBuyMaxUnitPrice: price * MARKET_AUTOBUY_DEFAULT_MAX_PRICE_MULTIPLIER,
-      autoBuyTargetInventory: MARKET_AUTOBUY_DEFAULT_TARGET_INVENTORY,
+      autoBuyAtInventory: MARKET_AUTOBUY_DEFAULT_AT_INVENTORY,
+      autoBuyToInventory: MARKET_AUTOBUY_DEFAULT_TO_INVENTORY,
       autoSellEnabled: false,
       autoTradeIntervalMs: MARKET_AUTOTRADE_DEFAULT_INTERVAL_MS,
       autoSellMaxPerMinute: MARKET_AUTOSELL_DEFAULT_MAX_PER_MINUTE,
@@ -258,7 +261,9 @@ export class Market {
   setAutomation(resourceType: ResourceType, updates: Partial<MarketAutomation>): boolean {
     const current = this.automation[resourceType];
     const next = { ...current, ...updates };
-    if (!isNonNegativeFinite(next.autoBuyMaxUnitPrice) || !isNonNegativeFinite(next.autoBuyTargetInventory) || !isAutoTradeInterval(next.autoTradeIntervalMs) || !isNonNegativeFinite(next.autoSellMaxPerMinute) || !isNonNegativeFinite(next.autoSellMinKeep) || !isNonNegativeFinite(next.autoSellMinUnitPrice)) return false;
+    if (!isNonNegativeFinite(next.autoBuyMaxUnitPrice) || !isValidAutoBuyAt(next.autoBuyAtInventory) || !isNonNegativeFinite(next.autoBuyToInventory)
+      || (next.autoBuyAtInventory !== 'any' && next.autoBuyAtInventory > next.autoBuyToInventory)
+      || !isAutoTradeInterval(next.autoTradeIntervalMs) || !isNonNegativeFinite(next.autoSellMaxPerMinute) || !isNonNegativeFinite(next.autoSellMinKeep) || !isNonNegativeFinite(next.autoSellMinUnitPrice)) return false;
     this.automation[resourceType] = next;
     return true;
   }
@@ -292,7 +297,9 @@ export class Market {
       if (regional && isNonNegativeFinite(regional.supply) && isPositiveFinite(regional.quality)) this.regional[resourceType] = { ...regional };
       if (global && isNonNegativeFinite(global.supply) && isPositiveFinite(global.quality)) this.global[resourceType] = { ...global };
       if (automation && typeof automation.autoBuyEnabled === 'boolean' && typeof automation.autoSellEnabled === 'boolean'
-        && isNonNegativeFinite(automation.autoBuyMaxUnitPrice) && isNonNegativeFinite(automation.autoBuyTargetInventory) && isAutoTradeInterval(automation.autoTradeIntervalMs) && isNonNegativeFinite(automation.autoSellMaxPerMinute) && isNonNegativeFinite(automation.autoSellMinKeep) && isNonNegativeFinite(automation.autoSellMinUnitPrice)) this.automation[resourceType] = { ...automation };
+        && isNonNegativeFinite(automation.autoBuyMaxUnitPrice) && isValidAutoBuyAt(automation.autoBuyAtInventory) && isNonNegativeFinite(automation.autoBuyToInventory)
+        && (automation.autoBuyAtInventory === 'any' || automation.autoBuyAtInventory <= automation.autoBuyToInventory)
+        && isAutoTradeInterval(automation.autoTradeIntervalMs) && isNonNegativeFinite(automation.autoSellMaxPerMinute) && isNonNegativeFinite(automation.autoSellMinKeep) && isNonNegativeFinite(automation.autoSellMinUnitPrice)) this.automation[resourceType] = { ...automation };
     }
     if (isPositiveFinite(snapshot.localMarketDepthMultiplier)) this.localMarketDepthMultiplier = snapshot.localMarketDepthMultiplier;
     if (Array.isArray(snapshot.localMarketNetworkActivations) && snapshot.localMarketNetworkActivations.every((activation) => typeof activation.projectId === 'string' && activation.projectId.length > 0 && isPositiveFinite(activation.totalDepthIncrease) && isNonNegativeFinite(activation.appliedDepthIncrease) && activation.appliedDepthIncrease < activation.totalDepthIncrease)) {

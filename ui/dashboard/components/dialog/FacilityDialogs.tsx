@@ -173,7 +173,7 @@ export function FacilityConstructionDialog(props: {
   return <>
     <ConfirmConstrution facilityType={props.pendingConstruction} finance={props.finance} inventory={props.inventory} isConstructionTutorial={props.isConstructionTutorial} market={props.market} onBuyMissingConstructionInputs={props.onBuyMissingConstructionInputs} onConfirm={props.onConfirmConstruction} onDismiss={props.onDismissConstruction} />
     <BuildFacilityDialog finance={props.finance} inventory={props.inventory} isConstructionTutorial={props.isConstructionTutorial} isFacilitySelectionEnabled={props.isFacilitySelectionEnabled} market={props.market} onDismiss={props.onCloseConstructionYard} onSelectFacility={props.onSelectFacility} visible={props.isConstructionYardOpen} />
-    <DestructionDialog facilities={props.facilities} facilityId={props.pendingDestruction} market={props.market} onConfirm={props.onConfirmDestruction} onDismiss={props.onDismissDestruction} />
+    <DestructionDialog facilities={props.facilities} facilityId={props.pendingDestruction} finance={props.finance} market={props.market} onConfirm={props.onConfirmDestruction} onDismiss={props.onDismissDestruction} />
   </>;
 }
 function BuildFacilityDialog({
@@ -357,12 +357,14 @@ function ConfirmConstrution({
 function DestructionDialog({
   facilities,
   facilityId,
+  finance,
   market,
   onConfirm,
   onDismiss,
 }: {
   facilities: FacilityCollection;
   facilityId: string | null;
+  finance: Finance;
   market: Market;
   onConfirm: () => void;
   onDismiss: () => void;
@@ -371,7 +373,7 @@ function DestructionDialog({
   if (!facility) {
     return null;
   }
-  const bookValue = calculateFacilityAssetValue(facility, market);
+  const bookValue = calculateFacilityAssetValue(facility, market, finance);
   const proceeds = bookValue * LOAN_COLLECTION.voluntaryFacilitySaleRate;
 
   return (

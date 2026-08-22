@@ -11,11 +11,13 @@ const WORK_COMPLETION_EPSILON = 1e-9;
 export type FacilityProductionStatus = 'not-started' | 'paused' | 'missing-inputs' | 'producing';
 
 export type ProductionOutput = {
+  facilityId: string;
   facilityType: FacilityView['facilityType'];
   recipeName: RecipeName;
   resourceType: ResourceType;
   amount: number;
   quality: number;
+  sourceCostPerUnit: number;
 };
 
 /** Calculates the amount-weighted quality of a recipe's consumed inputs. */
@@ -24,6 +26,14 @@ export function calculateRecipeInputQ(recipe: Recipe, inventory: Inventory): num
     amount: input.amount,
     quality: inventory.getQuality(input.resourceType),
   })));
+}
+
+/** Direct material cost captured when a recipe cycle consumes its inputs. */
+export function calculateRecipeInputSourceCost(recipe: Recipe, inventory: Inventory): number {
+  return recipe.inputs.reduce(
+    (total, input) => total + input.amount * inventory.getEntry(input.resourceType).sourceCostPerUnit,
+    0,
+  );
 }
 
 /** Deterministic production wear for one completed recipe cycle. */
@@ -108,6 +118,7 @@ export function advanceAllFacilityProduction(
 
         if (progress === 0) {
           facility.setRecipeInputQ(calculateRecipeInputQ(recipe, inventory));
+          facility.setRecipeInputSourceCost(calculateRecipeInputSourceCost(recipe, inventory));
           for (const input of recipe.inputs) {
             if (inventory.remove(input.resourceType, input.amount)) onInputConsumed?.(input);
           }
@@ -118,15 +129,23 @@ export function advanceAllFacilityProduction(
         remainingStepFraction = Math.max(0, remainingStepFraction - appliedWork / effectiveWork);
 
         if (progress + WORK_COMPLETION_EPSILON >= recipe.requiredWork) {
+          const totalOutputAmount = recipe.outputs.reduce(
+            (total, output) => total + output.amount * facilityView.outputMultiplier,
+            0,
+          );
+          const outputSourceCostPerUnit = totalOutputAmount > 0
+            ? (facility.getView().recipeInputSourceCost ?? 0) / totalOutputAmount
+            : 0;
           for (const output of recipe.outputs) {
             const amount = output.amount * facilityView.outputMultiplier;
             const qualityBreakdown = resolveOutputQuality?.(output.resourceType, facility.getView().recipeInputQ, facilityView.upgradeMaxQ)
               ?? calculateOutputQuality({ weightedInputQ: facility.getView().recipeInputQ, researchMaxQ: 1, upgradeMaxQ: facilityView.upgradeMaxQ });
-            inventory.add(output.resourceType, amount, qualityBreakdown.outputQ);
-            outputs.push({ facilityType: facilityView.facilityType, recipeName: recipe.name, resourceType: output.resourceType, amount, quality: qualityBreakdown.outputQ });
+            inventory.add(output.resourceType, amount, qualityBreakdown.outputQ, outputSourceCostPerUnit);
+            outputs.push({ facilityId: facilityView.id, facilityType: facilityView.facilityType, recipeName: recipe.name, resourceType: output.resourceType, amount, quality: qualityBreakdown.outputQ, sourceCostPerUnit: outputSourceCostPerUnit });
           }
           facility.applyConditionLoss(getRecipeProductionConditionLoss(recipe));
           facility.setRecipeInputQ(null);
+          facility.setRecipeInputSourceCost(null);
           progress = 0;
           if (!facility.advanceProductionCycle()) break;
           currentRecipeName = facility.getView().activeRecipeName ?? currentRecipeName;

@@ -15,6 +15,7 @@ export type FacilitySnapshot = {
   isActive: boolean;
   recipeProgress: Partial<Record<RecipeName, number>>;
   recipeInputQ: number | null;
+  recipeInputSourceCost: number | null;
   qualityUpgradeLevel: number;
   speedUpgradeLevel?: number;
   outputUpgradeLevel?: number;
@@ -37,6 +38,7 @@ export type FacilityView = {
   isActive: boolean;
   recipeProgress: Readonly<Partial<Record<RecipeName, number>>>;
   recipeInputQ: number | null;
+  recipeInputSourceCost: number | null;
   qualityUpgradeLevel: number;
   upgradeMaxQ: number;
   speedUpgradeLevel: number;
@@ -65,6 +67,7 @@ export class Facility {
   private active = false;
   private recipeProgress: Partial<Record<RecipeName, number>> = {};
   private recipeInputQ: number | null = null;
+  private recipeInputSourceCost: number | null = null;
   private qualityUpgradeLevel = 1;
   private speedUpgradeLevel = 0;
   private outputUpgradeLevel = 0;
@@ -101,6 +104,7 @@ export class Facility {
       isActive: this.active,
       recipeProgress: { ...this.recipeProgress },
       recipeInputQ: this.recipeInputQ,
+      recipeInputSourceCost: this.recipeInputSourceCost,
       qualityUpgradeLevel: this.qualityUpgradeLevel,
       upgradeMaxQ: calculateUpgradeMaxQ(this.qualityUpgradeLevel),
       speedUpgradeLevel: this.speedUpgradeLevel,
@@ -158,6 +162,7 @@ export class Facility {
       this.productionCycleIndex = 0;
       this.active = false;
       this.recipeInputQ = null;
+      this.recipeInputSourceCost = null;
       return true;
     }
 
@@ -188,6 +193,7 @@ export class Facility {
     this.activeRecipeName = this.productionCycle[0] ?? null;
     this.active = this.activeRecipeName !== null;
     this.recipeInputQ = null;
+    this.recipeInputSourceCost = null;
     return true;
   }
 
@@ -242,6 +248,13 @@ export class Facility {
     this.recipeInputQ = inputQ !== null && Number.isFinite(inputQ) && inputQ > 0 ? inputQ : null;
   }
 
+  /** Records direct-material source cost paid for the in-progress cycle. */
+  setRecipeInputSourceCost(sourceCost: number | null): void {
+    this.recipeInputSourceCost = sourceCost !== null && Number.isFinite(sourceCost) && sourceCost >= 0
+      ? sourceCost
+      : null;
+  }
+
   toSnapshot(): FacilitySnapshot {
     return {
       id: this.id,
@@ -252,6 +265,7 @@ export class Facility {
       isActive: this.active,
       recipeProgress: { ...this.recipeProgress },
       recipeInputQ: this.recipeInputQ,
+      recipeInputSourceCost: this.recipeInputSourceCost,
       qualityUpgradeLevel: this.qualityUpgradeLevel,
       speedUpgradeLevel: this.speedUpgradeLevel,
       outputUpgradeLevel: this.outputUpgradeLevel,
@@ -282,6 +296,10 @@ export class Facility {
     const recipeInputQ = snapshot.recipeInputQ;
     this.recipeInputQ = typeof recipeInputQ === 'number' && Number.isFinite(recipeInputQ) && recipeInputQ > 0
       ? recipeInputQ
+      : null;
+    const recipeInputSourceCost = snapshot.recipeInputSourceCost;
+    this.recipeInputSourceCost = typeof recipeInputSourceCost === 'number' && Number.isFinite(recipeInputSourceCost) && recipeInputSourceCost >= 0
+      ? recipeInputSourceCost
       : null;
     this.qualityUpgradeLevel = isValidUpgradeLevel(snapshot.qualityUpgradeLevel) ? Math.max(1, snapshot.qualityUpgradeLevel) : 1;
     this.speedUpgradeLevel = isValidUpgradeLevel(snapshot.speedUpgradeLevel) ? snapshot.speedUpgradeLevel : 0;

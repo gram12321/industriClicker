@@ -7,7 +7,8 @@ export type MarketPoolKind = 'local' | 'regional' | 'global';
 export type MarketAutomation = {
   autoBuyEnabled: boolean;
   autoBuyMaxUnitPrice: number;
-  autoBuyTargetInventory: number;
+  autoBuyAtInventory: number | 'any';
+  autoBuyToInventory: number;
   autoSellEnabled: boolean;
   autoTradeIntervalMs: MarketAutoTradeIntervalMs;
   autoSellMaxPerMinute: number;

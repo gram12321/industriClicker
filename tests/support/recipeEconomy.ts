@@ -132,7 +132,7 @@ function advanceFacilityProduction(
       for (const output of recipe.outputs) {
         const amount = output.amount * facilityView.outputMultiplier;
         inventory.add(output.resourceType, amount);
-        outputs.push({ facilityType: facilityView.facilityType, recipeName: recipe.name, resourceType: output.resourceType, amount, quality: 1 });
+        outputs.push({ facilityId: facilityView.id, facilityType: facilityView.facilityType, recipeName: recipe.name, resourceType: output.resourceType, amount, quality: 1, sourceCostPerUnit: 0 });
       }
       facility.applyConditionLoss(getRecipeProductionConditionLoss(recipe));
       progress = 0;
@@ -329,7 +329,7 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
         break;
       }
       totalInputCost += trade.amount * trade.unitPrice;
-      inventory.add(input.resourceType, trade.amount, trade.quality);
+        inventory.add(input.resourceType, trade.amount, trade.quality, trade.unitPrice);
     }
 
     let completedOutput = false;
@@ -518,7 +518,7 @@ export function simulateRecipeEconomyChain({
             break;
           }
           totalInputCost += trade.amount * trade.unitPrice;
-          inventory.add(input.resourceType, trade.amount, trade.quality);
+          inventory.add(input.resourceType, trade.amount, trade.quality, trade.unitPrice);
         }
 
         if (!canProduce) {

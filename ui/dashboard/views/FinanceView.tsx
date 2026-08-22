@@ -403,13 +403,17 @@ function Assets({ data }: { data: StatementData }) {
           value={formatCurrency(assets.inventory)}
         />
         <Row
-          label="Condition-adjusted facilities"
+          label="Facility book value"
           value={formatCurrency(assets.facilities)}
         />
         <Text style={s.hint}>
-          Facility value uses land, materials at local prices, upgrades, and
-          present condition.
+          Historical construction and upgrades, less current condition wear.
         </Text>
+        <Row label="Facility capital invested" value={formatCurrency(assets.facilityCapitalInvestment)} />
+        <Row label="Facility wear & tear" value={`-${formatCurrency(assets.facilityWearAndTear)}`} />
+        <Row label="Facility market revaluation" value={`${assets.facilityMarketRevaluation < 0 ? '-' : '+'}${formatCurrency(Math.abs(assets.facilityMarketRevaluation))}`} />
+        <Row label="Current facility market value" value={formatCurrency(assets.facilityMarketValue)} />
+        <Row label="Lifetime facility maintenance" value={formatCurrency(assets.facilityMaintenanceExpense)} />
         <Row
           label="Capitalized research"
           value={formatCurrency(assets.research)}

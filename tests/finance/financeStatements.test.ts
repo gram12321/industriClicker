@@ -4,7 +4,7 @@ import { FacilityCollection } from '@/game/facilities/facilityCollection';
 import { getFacilityDefinition } from '@/game/facilities/facilityConstants';
 import { getFacilityUpgradeInvestmentCost, getFacilityUpgradeResourceInvestmentCost } from '@/game/facilities/facilityUpgrades';
 import { FacilityType } from '@/game/facilities/facilityTypes';
-import { calculateFacilityAssetValue, buildFinanceStatementData, Finance } from '@/game/finance';
+import { calculateFacilityAssetBreakdown, calculateFacilityAssetValue, buildFinanceStatementData, Finance } from '@/game/finance';
 import { AchievementLedger } from '@/game/achievements';
 import { Inventory } from '@/game/inventory';
 import { ResearchLedger } from '@/game/research';
@@ -23,22 +23,67 @@ describe('calculateFacilityAssetValue', () => {
     facility.upgradeConditionDecay();
     facility.upgradeConditionDecay();
     facility.upgradeConditionDecay();
+    facility.upgradeQuality();
+    facility.upgradeQuality();
 
     const expectedUpgradeInvestment = getFacilityUpgradeInvestmentCost(definition.upgradeCost, 2)
       + getFacilityUpgradeInvestmentCost(definition.upgradeCost, 1)
       + getFacilityUpgradeInvestmentCost(definition.upgradeCost, 3)
+      + getFacilityUpgradeInvestmentCost(definition.upgradeCost, 2)
       + (getFacilityUpgradeResourceInvestmentCost(definition.constructionMaterialsCost, 2)
         + getFacilityUpgradeResourceInvestmentCost(definition.constructionMaterialsCost, 1)
-        + getFacilityUpgradeResourceInvestmentCost(definition.constructionMaterialsCost, 3)) * market.getLocalPrice(ResourceType.ConstructionMaterials)
+        + getFacilityUpgradeResourceInvestmentCost(definition.constructionMaterialsCost, 3)
+        + getFacilityUpgradeResourceInvestmentCost(definition.constructionMaterialsCost, 2)) * market.getLocalPrice(ResourceType.ConstructionMaterials)
       + (getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, 2)
         + getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, 1)
-        + getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, 3)) * market.getLocalPrice(ResourceType.IndustrialMachines);
-    const expectedValue = definition.landCost
+        + getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, 3)
+        + getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, 2)) * market.getLocalPrice(ResourceType.IndustrialMachines);
+    const expectedConstructionValue = definition.landCost
       + definition.constructionMaterialsCost * market.getLocalPrice(ResourceType.ConstructionMaterials)
-      + definition.industrialMachinesCost * market.getLocalPrice(ResourceType.IndustrialMachines)
-      + expectedUpgradeInvestment;
+      + definition.industrialMachinesCost * market.getLocalPrice(ResourceType.IndustrialMachines);
+    const expectedValue = expectedConstructionValue + expectedUpgradeInvestment;
+    const finance = new Finance();
+    expect(finance.applyTransaction({ amount: 0, description: 'Farm construction', detailLines: [], facilityAccounting: { facilityId: facility.id, classification: 'construction', historicalValue: expectedConstructionValue }, kind: 'investing', source: 'facility-construction', occurredAtGameTimeMs: 0 })).toBe(true);
+    expect(finance.applyTransaction({ amount: 0, description: 'Farm upgrades', detailLines: [], facilityAccounting: { facilityId: facility.id, classification: 'upgrade', historicalValue: expectedUpgradeInvestment }, kind: 'investing', source: 'facility-upgrade', occurredAtGameTimeMs: 0 })).toBe(true);
+    expect(finance.getFacilityAccounting(facility.id)).toEqual({ constructionInvestment: expectedConstructionValue, upgradeInvestment: expectedUpgradeInvestment, maintenanceExpense: 0 });
+    const breakdown = calculateFacilityAssetBreakdown(facility, market, finance);
 
-    expect(calculateFacilityAssetValue(facility, market)).toBe(expectedValue);
+    expect(calculateFacilityAssetValue(facility, market, finance)).toBe(expectedValue);
+    expect(breakdown).toMatchObject({ bookValue: expectedValue, capitalInvestment: expectedValue, constructionInvestment: expectedConstructionValue, currentMarketValue: expectedValue, currentReplacementValue: expectedValue, marketRevaluation: 0, upgradeInvestment: expectedUpgradeInvestment, wearAndTear: 0 });
+
+    const wornSnapshot = facility.toSnapshot();
+    wornSnapshot.facilityCondition = 0.5;
+    const wornBreakdown = calculateFacilityAssetBreakdown(Facility.fromSnapshot(wornSnapshot), market, finance);
+
+    expect(wornBreakdown).toMatchObject({ bookValue: expectedValue * 0.5, conditionMultiplier: 0.5, currentMarketValue: expectedValue * 0.5, marketRevaluation: 0, wearAndTear: expectedValue * 0.5 });
+
+    expect(market.buyFromLocal(ResourceType.ConstructionMaterials, 1).success).toBe(true);
+    expect(calculateFacilityAssetBreakdown(facility, market, finance).marketRevaluation).toBeGreaterThan(0);
+  });
+});
+
+describe('facility operating performance', () => {
+  it('separates operating profit from capital investment within a report period', () => {
+    const finance = new Finance();
+    expect(finance.applyTransaction({ amount: 0, description: 'Farm construction', detailLines: [], facilityAccounting: { facilityId: 'farm-1', classification: 'construction', historicalValue: 100 }, kind: 'investing', source: 'facility-construction', occurredAtGameTimeMs: 0 })).toBe(true);
+    expect(finance.applyTransaction({ amount: 0, description: 'Farm output', detailLines: [], facilityPerformance: { facilityId: 'farm-1', outputValue: 30, directInputCost: 12 }, kind: 'operating', source: 'facility-production', occurredAtGameTimeMs: 30_000 })).toBe(true);
+    expect(finance.applyTransaction({ amount: 0, description: 'Farm repair', detailLines: [], facilityAccounting: { facilityId: 'farm-1', classification: 'maintenance', historicalValue: 3 }, kind: 'operating', source: 'facility-repair', occurredAtGameTimeMs: 45_000 })).toBe(true);
+
+    expect(finance.getFacilityPerformance('farm-1', 'minute', 60_000)).toEqual({
+      outputValue: 30,
+      directInputCost: 12,
+      maintenanceExpense: 3,
+      capitalInvestment: 100,
+      operatingProfit: 15,
+      investmentAdjustedResult: -85,
+    });
+    expect(finance.getFacilityPerformance('farm-1', 'minute', 120_000)).toMatchObject({
+      outputValue: 0,
+      directInputCost: 0,
+      maintenanceExpense: 0,
+      capitalInvestment: 0,
+      operatingProfit: 0,
+    });
   });
 });
 

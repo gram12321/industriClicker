@@ -4,7 +4,7 @@ This is the concise, code-verified status guide. Use `CONTEXT.md` for vocabulary
 
 ## Runtime and Player Surfaces
 
-The Expo Router app presents a local company-selection screen and a mobile dashboard with Company, Inventory, Facilities, Finance, Sales, Research, Achievements, Profile, Settings, Leaderboard placeholder, and IndustriPedia views. React Native Paper provides the touch-first UI; Zustand owns active runtime state; Expo SQLite stores company-keyed snapshots.
+The Expo Router app presents a local company-selection screen and a mobile dashboard with Company, Inventory, Facilities, Finance, Sales, Research, Achievements, Profile, Settings, Leaderboard placeholder, and IndustriPedia views. React Native Paper provides the touch-first UI; Zustand owns active runtime state; Expo SQLite stores company-keyed snapshots. Inventory stores quantity, quality, and quantity-weighted source cost; facility production carries direct input cost into completed output and records timestamped Finance-owned facility performance.
 
 ## Implemented Behavior
 
@@ -18,7 +18,7 @@ The Expo Router app presents a local company-selection screen and a mobile dashb
 
 ### Economy and Persistence
 
-- Finance records typed transactions, loans, lender searches, economy phases, debt collection, and prestige-relevant events.
+- Finance records typed transactions, loans, lender searches, economy phases, debt collection, and prestige-relevant events. Facility construction, upgrades, and repairs carry Finance-owned historical facility accounting entries; company facility assets use historical capital less condition wear, with current-price revaluation reported separately.
 - Local, regional, and global market pools have deterministic price, trade, and diffusion rules.
 - A valid current `GameSnapshot` is saved per company. There is intentionally no backwards-compatibility or migration layer: incompatible pre-alpha saves may be discarded.
 

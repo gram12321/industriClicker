@@ -12,7 +12,7 @@ import {
   FACILITY_REPAIR_MATERIAL_COST_RATE,
   getFacilityDefinition,
 } from './facilityConstants';
-import { calculateFacilityEffectiveWork, getRecipeProductionConditionLoss } from './facilityProduction';
+import { calculateFacilityEffectiveWork, calculateRecipeInputSourceCost, getRecipeProductionConditionLoss } from './facilityProduction';
 import { getFacilityConditionEfficiency, type FacilityUpgradeKind } from './facilityUpgrades';
 
 function clamp(value: number, minimum: number, maximum: number): number {
@@ -113,6 +113,43 @@ export function calculateFacilityNetGainPerMinute(
 ): number {
   return valuePerMinute
     - decayMaterialCostPerMinute * market.getLocalPrice(ResourceType.ConstructionMaterials);
+}
+
+/** Current market value of one completed recipe cycle's outputs. */
+export function calculateRecipeOutputValue(
+  recipe: Recipe,
+  market: Market,
+  outputMultiplier: number,
+  getOutputQuality?: (resourceType: ResourceType) => number,
+): number {
+  return recipe.outputs.reduce(
+    (total, output) => total + output.amount * outputMultiplier * (getOutputQuality
+      ? market.getLocalSalePrice(output.resourceType, getOutputQuality(output.resourceType))
+      : market.getLocalPrice(output.resourceType)),
+    0,
+  );
+}
+
+/** Historical direct-material cost of one recipe cycle, captured at input consumption when available. */
+export function calculateRecipeDirectInputCost(
+  recipe: Recipe,
+  inventory: Inventory,
+  capturedInputCost: number | null = null,
+): number {
+  return capturedInputCost ?? calculateRecipeInputSourceCost(recipe, inventory);
+}
+
+/** Contribution margin for one completed recipe cycle before facility overhead. */
+export function calculateRecipeContributionMargin(
+  recipe: Recipe,
+  market: Market,
+  inventory: Inventory,
+  outputMultiplier: number,
+  getOutputQuality?: (resourceType: ResourceType) => number,
+  capturedInputCost: number | null = null,
+): number {
+  return calculateRecipeOutputValue(recipe, market, outputMultiplier, getOutputQuality)
+    - calculateRecipeDirectInputCost(recipe, inventory, capturedInputCost);
 }
 
 /** Projects the recurring economics at a selected post-repair condition without mutating the live facility. */

@@ -9,7 +9,12 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Industrial clicker | The game genre and setting direction. |
 | Resource | A typed item the player can gain, spend, transform, and hold in inventory. |
 | Grain, Bread, Water, Electricity, Sugar, Fruit, Eggs, Meat, Milk, Wool, Cake, Premium Cake, Meat Pie, Coal, Iron, Copper, Gold, Minerals, Steel, Electric Circuits, Chemicals, Fertilizer, Plastic, Silicon, Advanced Components, Industrial Machines, Bricks, Cement, Reinforced Concrete, Construction Materials, Sand, Clay, Stone | Current resource names. |
-| Inventory | Player-owned resource quantities and their associated quality. |
+| Inventory | Player-owned resource quantities, quality, and quantity-weighted historical source cost per unit. |
+| Source cost | The historical euro cost per unit carried by inventory. Market purchases use their executed unit price; facility output carries the direct-material cost of inputs consumed for its completed recipe cycle. |
+| Direct material cost | The source cost of recipe inputs consumed to make facility output. Maintenance and facility capital investment are excluded in the current model. |
+| Contribution margin | Per-cycle output value at current market prices less historical direct input cost. It excludes facility overhead and is not operating profit. |
+| Facility operating profit | Selected-period output market value less direct input cost and repair expense. It excludes capital investment, which appears separately in investment-adjusted result. |
+| Investment-adjusted result | Facility operating profit less construction and upgrade investment made in the selected period. |
 | Resource flow | A categorized, signed change to a player-owned resource: facility output/input, market trade, customer-order delivery, facility spending, or reward. |
 | Inventory flow period | The shared Inventory reporting window: last 15 seconds, 1 minute, 15 minutes, 1 hour, or all company time. It uses foreground logical game time. |
 | Facility maintenance statistics | Lifetime repaired-condition, largest-repair, and repair-value facts owned by Facilities. |
@@ -31,7 +36,10 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Finance | Company balance, classified append-only ledger, debt, credit history, and derived financial statements. |
 | Finance transaction | A signed cash movement with an accounting kind, source, nested detail lines, and logical foreground-game timestamp. |
 | Finance report period | A rolling foreground-time window: last 1 minute, 15 minutes, 1 hour, 10 hours, 24 hours, or all time. |
-| Asset value | A derived euro value of cash, inventory at current local-market prices, condition-scaled facilities, or completed research. |
+| Asset value | A derived euro value of cash, inventory at current local-market prices, facilities at historical capital cost less condition wear, or completed research. |
+| Facility capital investment | The historical construction and upgrade value recorded in Finance when a facility consumes its land, Construction Materials, and Industrial Machines. |
+| Facility maintenance expense | The historical value of repairs recorded in Finance for one facility. It is tracked separately from capital investment. |
+| Facility market revaluation | The informational difference between a facility's historical-cost book value and its condition-adjusted replacement value at current local-market prices. It does not change company assets. |
 | Finance payment cycle | One foreground minute used for loan repayment and financing comparisons. |
 | 52-cycle loan cost | The fee-inclusive loan cost rate normalized over 52 finance payment cycles; it is a comparison metric, not an annual rate. |
 | Loan offer / loan | A lender's deterministic financing proposal / an accepted loan with foreground-minute repayment attempts. |
