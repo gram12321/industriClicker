@@ -6,8 +6,8 @@ Verified repository facts for Industri Clicker. Product choices belong in [desig
 
 - Stage: pre-alpha foundation.
 - Product: single-player, mobile-first industrial clicker for Android.
-- Implemented foundation: dashboard shell, local player/company selection, company-keyed local saves, standard-start onboarding, tutorial-guide placeholder, inventory with categorized foreground-time flow history, local/regional/global market, facilities, classified finance statements and rolling cash flow, local loans and credit ratings, customer orders and relationships, foreground production with multi-output recipes, the canonical four-ceiling quality domain (InputMaxQ, ResearchMaxQ, UpgradeMaxQ, ProductionMaxQ), unlimited per-resource quality research, per-facility quality upgrades, tiered company achievements, company prestige, local-first progression gates and grants, foreground research, IndustriPedia, and local saves.
-- Deferred: offline catch-up, broader workforce systems and maintenance interactions, and cloud services.
+- Implemented foundation: dashboard shell, local player/company selection, company-keyed local saves, standard-start onboarding, tutorial-guide placeholder, inventory with categorized foreground-time flow history and weighted source cost, local/regional/global market, facilities, classified finance statements and rolling cash flow with Finance-owned facility historical investment, maintenance, and period-performance records, local loans and credit ratings, customer orders and relationships, foreground production with multi-output recipes and direct-material output cost, the canonical four-ceiling quality domain (InputMaxQ, ResearchMaxQ, UpgradeMaxQ, ProductionMaxQ), unlimited per-resource quality research, per-facility quality upgrades, tiered company achievements, company prestige, local-first progression gates and grants, foreground research, Repair Technician research with per-facility automatic repair thresholds, IndustriPedia, and local saves.
+- Deferred: offline catch-up, broader workforce systems and maintenance interactions beyond the Repair Technician automation chain, and cloud services.
 
 ## Code Size
 

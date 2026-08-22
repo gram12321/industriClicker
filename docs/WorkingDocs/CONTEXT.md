@@ -9,7 +9,12 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Industrial clicker | The game genre and setting direction. |
 | Resource | A typed item the player can gain, spend, transform, and hold in inventory. |
 | Grain, Bread, Water, Electricity, Sugar, Fruit, Eggs, Meat, Milk, Wool, Cake, Premium Cake, Meat Pie, Coal, Iron, Copper, Gold, Minerals, Steel, Electric Circuits, Chemicals, Fertilizer, Plastic, Silicon, Advanced Components, Industrial Machines, Bricks, Cement, Reinforced Concrete, Construction Materials, Sand, Clay, Stone | Current resource names. |
-| Inventory | Player-owned resource quantities and their associated quality. |
+| Inventory | Player-owned resource quantities, quality, and quantity-weighted historical source cost per unit. |
+| Source cost | The historical euro cost per unit carried by inventory. Market purchases use their executed unit price; facility output carries the direct-material cost of inputs consumed for its completed recipe cycle. |
+| Direct material cost | The source cost of recipe inputs consumed to make facility output. Maintenance and facility capital investment are excluded in the current model. |
+| Contribution margin | Per-cycle output value at current market prices less historical direct input cost. It excludes facility overhead and is not operating profit. |
+| Facility operating profit | Selected-period output market value less direct input cost and repair expense. It excludes capital investment, which appears separately in investment-adjusted result. |
+| Investment-adjusted result | Facility operating profit less construction and upgrade investment made in the selected period. |
 | Resource flow | A categorized, signed change to a player-owned resource: facility output/input, market trade, customer-order delivery, facility spending, or reward. |
 | Inventory flow period | The shared Inventory reporting window: last 15 seconds, 1 minute, 15 minutes, 1 hour, or all company time. It uses foreground logical game time. |
 | Facility maintenance statistics | Lifetime repaired-condition, largest-repair, and repair-value facts owned by Facilities. |
@@ -31,7 +36,10 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Finance | Company balance, classified append-only ledger, debt, credit history, and derived financial statements. |
 | Finance transaction | A signed cash movement with an accounting kind, source, nested detail lines, and logical foreground-game timestamp. |
 | Finance report period | A rolling foreground-time window: last 1 minute, 15 minutes, 1 hour, 10 hours, 24 hours, or all time. |
-| Asset value | A derived euro value of cash, inventory at current local-market prices, condition-scaled facilities, or completed research. |
+| Asset value | A derived euro value of cash, inventory at current local-market prices, facilities at historical capital cost less condition wear, or completed research. |
+| Facility capital investment | The historical construction and upgrade value recorded in Finance when a facility consumes its land, Construction Materials, and Industrial Machines. |
+| Facility maintenance expense | The historical value of repairs recorded in Finance for one facility. It is tracked separately from capital investment. |
+| Facility market revaluation | The informational difference between a facility's historical-cost book value and its condition-adjusted replacement value at current local-market prices. It does not change company assets. |
 | Finance payment cycle | One foreground minute used for loan repayment and financing comparisons. |
 | 52-cycle loan cost | The fee-inclusive loan cost rate normalized over 52 finance payment cycles; it is a comparison metric, not an annual rate. |
 | Loan offer / loan | A lender's deterministic financing proposal / an accepted loan with foreground-minute repayment attempts. |
@@ -41,11 +49,13 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Economy phase | The persistent crash, recession, stable, expansion, or boom state. It changes deterministically every 10 foreground minutes with a bias toward stable. It adjusts new customer-order frequency, new customer bid premiums, and future loan interest offers. |
 | Customer order | A customer-specific, atomic bundle of one or more inventory-ready resource lines, with locked global reference prices, bids, premiums, market-pressure volume multipliers, lot-sized quantities, expiry, and full-fulfilment requirement. The domain target value scales with company prestige and receives a modest relationship volume bonus; live global shortage or oversupply can then adjust a line's requested lots within a bounded range, but its reward cannot exceed the derived company-value cap. An order is not a future contract. |
 | Customer catalogue | A deterministic local stand-in for the future shared customer registry. Each domain generates a variable number of buyers until its market share reaches 100%, using a skewed, domain-scaled market-share draw. Definitions include a home domain, customer type, generated operating domains, market share, purchasing power, and bid profile. Company-specific relationship and order history remain in the company snapshot. |
-| Customer type | A buyer-behaviour profile separate from a home domain. Private Customer, Retail Chain, Construction Contractor, Industrial Enterprise, Utility Operator, and Government Procurement control frequency, target-value tendency, global premium tendency, bundle appetite, market-share tendency, and allowed operating domains. |
+| Customer type | A buyer-behaviour profile separate from a home domain. Local Businesses, Retail Chain, Construction Contractor, Industrial Enterprise, Utility Operator, and Government Procurement control frequency, target-value tendency, global premium tendency, bundle appetite, market-share tendency, and allowed operating domains. |
 | Customer relationship | A normalized 0–1 company-specific score, displayed to players as 0–100. Its Reputation baseline comes from prestige recognition minus a larger-account adjustment for customer market share. The remaining difference is retained order history: fulfilments add to it; rejections and expiries remove from it; foreground-time decay pulls it back toward Reputation. |
 | Speed upgrade / Output upgrade | Facility levels that respectively improve work speed or recipe output and consume euros, Construction Materials, and Industrial Machines. |
 | Assigned workers / Required workers | The local worker count and calculated staffing target for a facility. |
 | Facility condition | A persisted 0–1 measure of a constructed facility's wear state. It begins at 1 and decreases during foreground time and completed production cycles. |
+| Repair threshold / repair target | The condition percentages used by a facility's optional auto-repair rule: when condition falls to or below the threshold, it repairs up to the target. |
+| Repair Technician research | A five-tier research chain that unlocks threshold-based auto-repair and raises the number of facilities allowed to use it. |
 | Recipe condition-wear multiplier | A static per-recipe balance value that scales production wear without following live market prices. |
 | Facility efficiency | The production-speed multiplier formed from staffing efficiency and facility condition. |
 | Company prestige | A company-standing value derived from prestige events. It improves customer discovery, bid quality, relationship baselines, and customer-order target value. |

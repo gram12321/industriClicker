@@ -13,5 +13,15 @@ describe('Inventory', () => {
     }
 
     expect(inventory.getAmount(ResourceType.Fertilizer)).toBe(0);
+    expect(inventory.getEntry(ResourceType.Fertilizer).sourceCostPerUnit).toBe(0);
+  });
+
+  it('uses a quantity-weighted average source cost for additions', () => {
+    const inventory = new Inventory();
+
+    inventory.add(ResourceType.Stone, 1, 1, 1);
+    inventory.add(ResourceType.Stone, 1, 1, 2);
+
+    expect(inventory.getEntry(ResourceType.Stone).sourceCostPerUnit).toBe(1.5);
   });
 });

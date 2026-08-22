@@ -15,12 +15,16 @@ export type FacilitySnapshot = {
   isActive: boolean;
   recipeProgress: Partial<Record<RecipeName, number>>;
   recipeInputQ: number | null;
+  recipeInputSourceCost: number | null;
   qualityUpgradeLevel: number;
   speedUpgradeLevel?: number;
   outputUpgradeLevel?: number;
   conditionDecayUpgradeLevel?: number;
   assignedWorkers?: number;
   facilityCondition: number;
+  autoRepairEnabled: boolean;
+  autoRepairThreshold: number;
+  autoRepairTarget: number;
 };
 
 /** Immutable facility state and derived values for game rules and UI rendering. */
@@ -34,6 +38,7 @@ export type FacilityView = {
   isActive: boolean;
   recipeProgress: Readonly<Partial<Record<RecipeName, number>>>;
   recipeInputQ: number | null;
+  recipeInputSourceCost: number | null;
   qualityUpgradeLevel: number;
   upgradeMaxQ: number;
   speedUpgradeLevel: number;
@@ -47,6 +52,9 @@ export type FacilityView = {
   facilityCondition: number;
   conditionEfficiency: number;
   facilityEfficiency: number;
+  autoRepairEnabled: boolean;
+  autoRepairThreshold: number;
+  autoRepairTarget: number;
   speedUpgradeWorkSpeedMultiplier: number;
   outputMultiplier: number;
 };
@@ -59,12 +67,16 @@ export class Facility {
   private active = false;
   private recipeProgress: Partial<Record<RecipeName, number>> = {};
   private recipeInputQ: number | null = null;
+  private recipeInputSourceCost: number | null = null;
   private qualityUpgradeLevel = 1;
   private speedUpgradeLevel = 0;
   private outputUpgradeLevel = 0;
   private conditionDecayUpgradeLevel = 0;
   private assignedWorkers = 0;
   private facilityCondition = 1;
+  private autoRepairEnabled = false;
+  private autoRepairThreshold = 0.7;
+  private autoRepairTarget = 1;
 
   constructor(
     public readonly id: string,
@@ -92,6 +104,7 @@ export class Facility {
       isActive: this.active,
       recipeProgress: { ...this.recipeProgress },
       recipeInputQ: this.recipeInputQ,
+      recipeInputSourceCost: this.recipeInputSourceCost,
       qualityUpgradeLevel: this.qualityUpgradeLevel,
       upgradeMaxQ: calculateUpgradeMaxQ(this.qualityUpgradeLevel),
       speedUpgradeLevel: this.speedUpgradeLevel,
@@ -105,6 +118,9 @@ export class Facility {
       facilityCondition: this.facilityCondition,
       conditionEfficiency: getFacilityConditionEfficiency(this.facilityCondition),
       facilityEfficiency,
+      autoRepairEnabled: this.autoRepairEnabled,
+      autoRepairThreshold: this.autoRepairThreshold,
+      autoRepairTarget: this.autoRepairTarget,
       speedUpgradeWorkSpeedMultiplier: getSpeedUpgradeWorkSpeedMultiplier(this.speedUpgradeLevel),
       outputMultiplier: getOutputUpgradeMultiplier(this.outputUpgradeLevel),
     };
@@ -146,10 +162,22 @@ export class Facility {
       this.productionCycleIndex = 0;
       this.active = false;
       this.recipeInputQ = null;
+      this.recipeInputSourceCost = null;
       return true;
     }
 
     return this.setProductionCycle([recipeName]);
+  }
+
+  setAutoRepair(enabled: boolean, threshold: number, target: number): boolean {
+    if (typeof enabled !== 'boolean' || !Number.isFinite(threshold) || !Number.isFinite(target)) return false;
+    const normalizedThreshold = Math.min(1, Math.max(0, threshold));
+    const normalizedTarget = Math.min(1, Math.max(0, target));
+    if (normalizedTarget <= normalizedThreshold) return false;
+    this.autoRepairEnabled = enabled;
+    this.autoRepairThreshold = normalizedThreshold;
+    this.autoRepairTarget = normalizedTarget;
+    return true;
   }
 
   upgradeQuality(): void {
@@ -165,6 +193,7 @@ export class Facility {
     this.activeRecipeName = this.productionCycle[0] ?? null;
     this.active = this.activeRecipeName !== null;
     this.recipeInputQ = null;
+    this.recipeInputSourceCost = null;
     return true;
   }
 
@@ -196,9 +225,10 @@ export class Facility {
     return true;
   }
 
-  repairCondition(): boolean {
-    if (this.facilityCondition >= 1) return false;
-    this.facilityCondition = 1;
+  repairCondition(targetCondition = 1): boolean {
+    const target = Number.isFinite(targetCondition) ? Math.min(1, Math.max(0, targetCondition)) : 1;
+    if (target <= this.facilityCondition) return false;
+    this.facilityCondition = target;
     return true;
   }
 
@@ -218,6 +248,13 @@ export class Facility {
     this.recipeInputQ = inputQ !== null && Number.isFinite(inputQ) && inputQ > 0 ? inputQ : null;
   }
 
+  /** Records direct-material source cost paid for the in-progress cycle. */
+  setRecipeInputSourceCost(sourceCost: number | null): void {
+    this.recipeInputSourceCost = sourceCost !== null && Number.isFinite(sourceCost) && sourceCost >= 0
+      ? sourceCost
+      : null;
+  }
+
   toSnapshot(): FacilitySnapshot {
     return {
       id: this.id,
@@ -228,12 +265,16 @@ export class Facility {
       isActive: this.active,
       recipeProgress: { ...this.recipeProgress },
       recipeInputQ: this.recipeInputQ,
+      recipeInputSourceCost: this.recipeInputSourceCost,
       qualityUpgradeLevel: this.qualityUpgradeLevel,
       speedUpgradeLevel: this.speedUpgradeLevel,
       outputUpgradeLevel: this.outputUpgradeLevel,
       conditionDecayUpgradeLevel: this.conditionDecayUpgradeLevel,
       assignedWorkers: this.assignedWorkers,
       facilityCondition: this.facilityCondition,
+      autoRepairEnabled: this.autoRepairEnabled,
+      autoRepairThreshold: this.autoRepairThreshold,
+      autoRepairTarget: this.autoRepairTarget,
     };
   }
 
@@ -256,6 +297,10 @@ export class Facility {
     this.recipeInputQ = typeof recipeInputQ === 'number' && Number.isFinite(recipeInputQ) && recipeInputQ > 0
       ? recipeInputQ
       : null;
+    const recipeInputSourceCost = snapshot.recipeInputSourceCost;
+    this.recipeInputSourceCost = typeof recipeInputSourceCost === 'number' && Number.isFinite(recipeInputSourceCost) && recipeInputSourceCost >= 0
+      ? recipeInputSourceCost
+      : null;
     this.qualityUpgradeLevel = isValidUpgradeLevel(snapshot.qualityUpgradeLevel) ? Math.max(1, snapshot.qualityUpgradeLevel) : 1;
     this.speedUpgradeLevel = isValidUpgradeLevel(snapshot.speedUpgradeLevel) ? snapshot.speedUpgradeLevel : 0;
     this.outputUpgradeLevel = isValidUpgradeLevel(snapshot.outputUpgradeLevel) ? snapshot.outputUpgradeLevel : 0;
@@ -266,6 +311,9 @@ export class Facility {
     this.facilityCondition = isValidFacilityCondition(snapshot.facilityCondition)
       ? snapshot.facilityCondition
       : 1;
+    this.autoRepairEnabled = snapshot.autoRepairEnabled;
+    this.autoRepairThreshold = snapshot.autoRepairThreshold;
+    this.autoRepairTarget = snapshot.autoRepairTarget;
 
     for (const recipe of getFacilityDefinition(this.facilityType).recipes) {
       const progress = snapshot.recipeProgress[recipe.name];

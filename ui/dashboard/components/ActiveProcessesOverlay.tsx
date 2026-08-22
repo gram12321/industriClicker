@@ -129,7 +129,7 @@ function getActiveProcesses({ customerPipelineProgress, facilities, finance, inv
     icon: APP_ICONS.salesOrders,
     label: `${formatNumber(openOrders)} of ${formatNumber(maximumOpenOrders)} order slots filled`,
     progress: clamp(pipelineProgress, 0, 1),
-    timing: pipelineProgress >= 1 ? 'New customer expected' : `${formatNumber(pipelineProgress * 100, { decimals: 0 })}% toward next check`,
+    timing: pipelineProgress >= 1 ? 'Expected arrival interval exceeded' : `${formatNumber(pipelineProgress * 100, { decimals: 0 })}% through expected interval`,
     title: 'Customer acquisition',
   }] : [];
 

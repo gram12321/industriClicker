@@ -47,6 +47,32 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+function isFinanceTransactionSnapshot(value: unknown): boolean {
+  if (!isRecord(value) || typeof value.source !== 'string') return false;
+  const facilitySource = value.source === 'facility-construction' || value.source === 'facility-upgrade' || value.source === 'facility-repair';
+  if (value.source === 'facility-production') {
+    return value.facilityAccounting === undefined
+      && isRecord(value.facilityPerformance)
+      && typeof value.facilityPerformance.facilityId === 'string'
+      && value.facilityPerformance.facilityId.length > 0
+      && typeof value.facilityPerformance.outputValue === 'number'
+      && Number.isFinite(value.facilityPerformance.outputValue)
+      && value.facilityPerformance.outputValue >= 0
+      && typeof value.facilityPerformance.directInputCost === 'number'
+      && Number.isFinite(value.facilityPerformance.directInputCost)
+      && value.facilityPerformance.directInputCost >= 0;
+  }
+  if (!facilitySource) return value.facilityAccounting === undefined && value.facilityPerformance === undefined;
+  if (!isRecord(value.facilityAccounting) || value.facilityPerformance !== undefined) return false;
+  const expectedClassification = value.source === 'facility-construction' ? 'construction' : value.source === 'facility-upgrade' ? 'upgrade' : 'maintenance';
+  return typeof value.facilityAccounting.facilityId === 'string'
+    && value.facilityAccounting.facilityId.length > 0
+    && value.facilityAccounting.classification === expectedClassification
+    && typeof value.facilityAccounting.historicalValue === 'number'
+    && Number.isFinite(value.facilityAccounting.historicalValue)
+    && value.facilityAccounting.historicalValue > 0;
+}
+
 function isGameTimeSnapshot(value: unknown): value is GameTimeSnapshot {
   return isRecord(value)
     && typeof value.companyStartedAtGameTimeMs === 'number'
@@ -67,7 +93,9 @@ function isMarketAutomationSnapshot(value: unknown): boolean {
     && typeof value.autoBuyEnabled === 'boolean'
     && typeof value.autoSellEnabled === 'boolean'
     && typeof value.autoBuyMaxUnitPrice === 'number' && Number.isFinite(value.autoBuyMaxUnitPrice) && value.autoBuyMaxUnitPrice >= 0
-    && typeof value.autoBuyTargetInventory === 'number' && Number.isFinite(value.autoBuyTargetInventory) && value.autoBuyTargetInventory >= 0
+    && ((typeof value.autoBuyAtInventory === 'number' && Number.isFinite(value.autoBuyAtInventory) && value.autoBuyAtInventory >= 0) || value.autoBuyAtInventory === 'any')
+    && typeof value.autoBuyToInventory === 'number' && Number.isFinite(value.autoBuyToInventory)
+    && (value.autoBuyAtInventory === 'any' || value.autoBuyToInventory >= value.autoBuyAtInventory)
     && typeof value.autoTradeIntervalMs === 'number' && MARKET_AUTOTRADE_INTERVAL_OPTIONS.some((option) => option.milliseconds === value.autoTradeIntervalMs)
     && typeof value.autoSellMaxPerMinute === 'number' && Number.isFinite(value.autoSellMaxPerMinute) && value.autoSellMaxPerMinute >= 0
     && typeof value.autoSellMinKeep === 'number' && Number.isFinite(value.autoSellMinKeep) && value.autoSellMinKeep >= 0
@@ -81,6 +109,13 @@ function isLocalMarketNetworkActivationSnapshot(value: unknown): boolean {
     && typeof value.appliedDepthIncrease === 'number' && Number.isFinite(value.appliedDepthIncrease) && value.appliedDepthIncrease >= 0 && value.appliedDepthIncrease < value.totalDepthIncrease;
 }
 
+function isInventoryEntrySnapshot(value: unknown): boolean {
+  return isRecord(value)
+    && typeof value.quantity === 'number' && Number.isFinite(value.quantity) && value.quantity >= 0
+    && typeof value.quality === 'number' && Number.isFinite(value.quality) && value.quality > 0
+    && typeof value.sourceCostPerUnit === 'number' && Number.isFinite(value.sourceCostPerUnit) && value.sourceCostPerUnit >= 0;
+}
+
 /** Structural guard used by the company-scoped SQLite save adapter. */
 export function isGameSnapshot(value: unknown): value is GameSnapshot {
   if (!isRecord(value) || !isRecord(value.finance) || !isRecord(value.inventory) || !ResourceFlowLedger.isSnapshot(value.resourceFlow)
@@ -91,9 +126,13 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
   }
 
   const marketAutomation = value.market.automation;
+  const inventoryEntries = isRecord(value.inventory) && isRecord(value.inventory.entries) ? value.inventory.entries : null;
+  const financeTransactions: unknown[] = Array.isArray(value.finance.transactions) ? value.finance.transactions : [];
+  const facilitySnapshots: unknown[] = Array.isArray(value.facilities.facilities) ? value.facilities.facilities : [];
 
   return typeof value.finance.balance === 'number'
     && Array.isArray(value.finance.transactions)
+    && financeTransactions.every(isFinanceTransactionSnapshot)
     && Array.isArray(value.finance.loans)
     && Array.isArray(value.finance.lenders)
     && (value.finance.activeLoanSearch === null || isRecord(value.finance.activeLoanSearch))
@@ -111,7 +150,8 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
     && Array.isArray(value.finance.collectionNotices)
     && (value.finance.pendingRestructureOffer === null || isRecord(value.finance.pendingRestructureOffer))
     && typeof value.finance.nextCollectionNoticeNumber === 'number'
-    && isRecord(value.inventory.entries)
+    && inventoryEntries !== null
+    && RESOURCE_TYPES.every((resourceType) => isInventoryEntrySnapshot(inventoryEntries[resourceType]))
     && isRecord(value.market.local)
     && isRecord(value.market.regional)
     && isRecord(value.market.global)
@@ -121,7 +161,7 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
     && value.market.localMarketNetworkActivations.every(isLocalMarketNetworkActivationSnapshot)
     && RESOURCE_TYPES.every((resourceType) => isMarketAutomationSnapshot(marketAutomation[resourceType]))
     && Array.isArray(value.facilities.facilities)
-    && value.facilities.facilities.every((facility) => isRecord(facility)
+    && facilitySnapshots.every((facility) => isRecord(facility)
       && Array.isArray(facility.productionCycle)
       && facility.productionCycle.every((recipeName) => Object.values(RecipeName).includes(recipeName as RecipeName))
       && typeof facility.productionCycleIndex === 'number'
@@ -132,10 +172,18 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
       && Number.isFinite(facility.facilityCondition)
       && facility.facilityCondition >= 0
       && facility.facilityCondition <= 1
+      && typeof facility.autoRepairEnabled === 'boolean'
+      && typeof facility.autoRepairThreshold === 'number' && Number.isFinite(facility.autoRepairThreshold) && facility.autoRepairThreshold >= 0 && facility.autoRepairThreshold < 1
+      && typeof facility.autoRepairTarget === 'number' && Number.isFinite(facility.autoRepairTarget) && facility.autoRepairTarget > facility.autoRepairThreshold && facility.autoRepairTarget <= 1
       && (facility.recipeInputQ === null || (typeof facility.recipeInputQ === 'number' && Number.isFinite(facility.recipeInputQ) && facility.recipeInputQ > 0))
+      && (typeof facility.recipeInputSourceCost === 'number' && Number.isFinite(facility.recipeInputSourceCost) && facility.recipeInputSourceCost >= 0 || facility.recipeInputSourceCost === null)
       && typeof facility.qualityUpgradeLevel === 'number'
       && Number.isInteger(facility.qualityUpgradeLevel)
       && facility.qualityUpgradeLevel >= 1)
+    && facilitySnapshots.every((facility) => isRecord(facility) && financeTransactions.some((transaction) => isRecord(transaction)
+      && isRecord(transaction.facilityAccounting)
+      && transaction.facilityAccounting.classification === 'construction'
+      && transaction.facilityAccounting.facilityId === facility.id))
     && Array.isArray(value.salesOrders.offered)
     && Array.isArray(value.salesOrders.completed)
     && value.salesOrders.offered.every((order) => isRecord(order) && Array.isArray(order.lines)

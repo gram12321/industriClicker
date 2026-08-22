@@ -8,6 +8,18 @@ export const SALES_ORDER_MAXIMUM_QUANTITY = 1_000_000;
 export const SALES_ORDER_BASE_ACQUISITION_RATE_PER_MINUTE = 1;
 export const SALES_ORDER_PENDING_PENALTY_PER_OPEN_ORDER = 0.13;
 export const SALES_ORDER_SELECTION_STOCK_COVERAGE_CAP = 64;
+/** Coverage offset that softens the inventory bonus for very small stock amounts. */
+export const SALES_ORDER_SELECTION_STOCK_COVERAGE_THRESHOLD = 0.1;
+/** Number of normal candidate rolls before the separate cap-safe fallback. */
+export const SALES_ORDER_GENERATION_RETRY_COUNT = 10;
+export const SALES_ORDER_CUSTOMER_SIZE_SCALING = {
+  assetScale: 1_000,
+  prestigeScale: 50,
+  smallTypeEarlyBonus: 3,
+  largeTypeEarlyFloor: 0.3,
+  largeTypeMaturityBonus: 1.7,
+  retrySmallTypeBonus: 0.75,
+} as const;
 /** Keeps unstocked resources offerable while making covered inventory more likely. */
 export const SALES_ORDER_UNSTOCKED_INVENTORY_READINESS = 0.25;
 export const SALES_ORDER_SELECTION_MAX_RELATIONSHIP_MULTIPLIER = 2;
@@ -125,8 +137,8 @@ export const SALES_CUSTOMER_TYPE_PROFILES: Readonly<Record<SalesCustomerType, {
   globalPremiumBaseline: number;
   marketShareScale: number;
 }>> = {
-  'private-customer': { label: 'Private Customer', description: 'Small, single-domain consumer demand with a strong preference for one resource.', allowedOperatingDomains: ['food', 'raw-materials', 'industrial-inputs', 'construction-materials', 'electronics', 'utilities'], crossDomainChance: 0, bundleAppetite: 0.08, frequencyMultiplier: 1.25, targetValueMultiplier: [0.25, 0.7], prestigeScale: 1, prestigeExponent: 1, accessibilityFloor: 1, globalPremiumBaseline: 0.13, marketShareScale: 0.22 },
-  'retail-chain': { label: 'Retail Chain', description: 'Recurring retail demand; most chains specialise in one retail domain while some span two.', allowedOperatingDomains: ['food', 'electronics', 'construction-materials'], crossDomainChance: 0.28, bundleAppetite: 0.28, frequencyMultiplier: 1.08, targetValueMultiplier: [0.75, 1.45], prestigeScale: 8, prestigeExponent: 2, accessibilityFloor: 0.2, globalPremiumBaseline: 0.08, marketShareScale: 0.65 },
+  'private-customer': { label: 'Local Businesses', description: 'Small, owner-operated local business with a strong preference for one resource.', allowedOperatingDomains: ['food', 'raw-materials', 'industrial-inputs', 'construction-materials', 'electronics', 'utilities'], crossDomainChance: 0, bundleAppetite: 0.08, frequencyMultiplier: 1.25, targetValueMultiplier: [0.2, 0.5], prestigeScale: 1, prestigeExponent: 1, accessibilityFloor: 1, globalPremiumBaseline: 0.13, marketShareScale: 0.22 },
+  'retail-chain': { label: 'Retail Chain', description: 'Recurring retail demand; most chains specialise in one retail domain while some span two.', allowedOperatingDomains: ['food', 'electronics', 'construction-materials'], crossDomainChance: 0.28, bundleAppetite: 0.28, frequencyMultiplier: 1.08, targetValueMultiplier: [0.55, 1.1], prestigeScale: 8, prestigeExponent: 2, accessibilityFloor: 0.2, globalPremiumBaseline: 0.08, marketShareScale: 0.65 },
   'construction-contractor': { label: 'Construction Contractor', description: 'Project procurement centred on construction, raw materials, industrial inputs, and utilities.', allowedOperatingDomains: ['raw-materials', 'industrial-inputs', 'construction-materials', 'utilities'], crossDomainChance: 0.62, bundleAppetite: 0.68, frequencyMultiplier: 0.78, targetValueMultiplier: [1.1, 2.5], prestigeScale: 30, prestigeExponent: 2.5, accessibilityFloor: 0.03, globalPremiumBaseline: 0.065, marketShareScale: 1.05 },
   'industrial-enterprise': { label: 'Industrial Enterprise', description: 'Large, varied industrial procurement across compatible operational domains.', allowedOperatingDomains: ['raw-materials', 'industrial-inputs', 'construction-materials', 'electronics', 'utilities'], crossDomainChance: 0.72, bundleAppetite: 0.82, frequencyMultiplier: 0.62, targetValueMultiplier: [1.3, 3.2], prestigeScale: 50, prestigeExponent: 3, accessibilityFloor: 0.01, globalPremiumBaseline: 0.05, marketShareScale: 1.55 },
   'utility-operator': { label: 'Utility Operator', description: 'High-volume utility and industrial-input procurement.', allowedOperatingDomains: ['industrial-inputs', 'utilities'], crossDomainChance: 0.7, bundleAppetite: 0.74, frequencyMultiplier: 0.9, targetValueMultiplier: [1.2, 3], prestigeScale: 20, prestigeExponent: 2.5, accessibilityFloor: 0.05, globalPremiumBaseline: 0.04, marketShareScale: 1.35 },

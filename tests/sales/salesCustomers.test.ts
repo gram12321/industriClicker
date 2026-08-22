@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { ResourceType } from '@/game/resources';
-import { SALES_CUSTOMER_DOMAINS, SALES_CUSTOMER_TYPE_PROFILES, SALES_CUSTOMER_TYPES, advanceSalesCustomerRelationship, calculateSalesCustomerRelationshipBaseline, calculateSalesCustomerRelationshipChange, calculateSalesCustomerRelationshipDetails, createSalesCustomerState, getSalesCustomerCatalogue, getSalesCustomerRelationshipLabel, getSalesResourceProfile } from '@/game/sales';
+import { SALES_CUSTOMER_DOMAINS, SALES_CUSTOMER_TYPE_PROFILES, SALES_CUSTOMER_TYPES, advanceSalesCustomerRelationship, calculateSalesCustomerRelationshipBaseline, calculateSalesCustomerRelationshipChange, calculateSalesCustomerRelationshipDetails, createSalesCustomerState, generateSalesCustomerName, getSalesCustomerCatalogue, getSalesCustomerRelationshipLabel, getSalesResourceProfile } from '@/game/sales';
 
 describe('sales customer catalogue', () => {
+  it('uses the customer type for the name form and the home domain for its vocabulary', () => {
+    expect(generateSalesCustomerName({ seed: 'food-local', domain: 'food', customerType: 'private-customer' })).toMatch(/'s (Drinks & Juices|Liquor Store|Delicatessen|Food Import|Provisions|Grocers)$/);
+    expect(generateSalesCustomerName({ seed: 'construction-local', domain: 'construction-materials', customerType: 'private-customer' })).toMatch(/'s (Building Supplies|Civil Materials|Construction Supply|Project Materials|Infrastructure|Site Supply)$/);
+    expect(generateSalesCustomerName({ seed: 'food-chain', domain: 'food', customerType: 'retail-chain' })).not.toContain("'s");
+    expect(SALES_CUSTOMER_TYPE_PROFILES['private-customer'].label).toBe('Local Businesses');
+  });
+
   it('is deterministic and generates variable customer counts that normalize market share within each domain', () => {
     const catalogue = getSalesCustomerCatalogue();
 

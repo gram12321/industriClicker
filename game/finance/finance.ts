@@ -1,8 +1,11 @@
 import { FINANCE_INITIAL_BALANCE } from '@/game/company/companyConstants';
-import { ADVANCED_LOAN_CONFIG, ECONOMY_PHASES, ECONOMY_TRANSITION, LOAN_COLLECTION, LOAN_PAYMENT_INTERVAL_MS, LOAN_TERMS, type EconomyPhase, type FinanceTransactionKind, type FinanceTransactionSource, type LenderType } from './financeConstants';
+import { ADVANCED_LOAN_CONFIG, ECONOMY_PHASES, ECONOMY_TRANSITION, FINANCE_REPORT_PERIODS, LOAN_COLLECTION, LOAN_PAYMENT_INTERVAL_MS, LOAN_TERMS, type EconomyPhase, type FinanceReportPeriod, type FinanceTransactionKind, type FinanceTransactionSource, type LenderType } from './financeConstants';
 import { createInitialLenders, estimatePrepaymentPenalty, type Lender, type LoanSearchCriteria, type LoanSearchEstimate } from './loanService';
 
-export type FinanceTransaction = { id: string; amount: number; description: string; detailLines: string[]; kind: FinanceTransactionKind; source: FinanceTransactionSource; balanceAfter: number; occurredAtGameTimeMs: number };
+export type FacilityAccountingEntry = { facilityId: string; classification: 'construction' | 'upgrade' | 'maintenance'; historicalValue: number };
+export type FacilityPerformanceEntry = { facilityId: string; outputValue: number; directInputCost: number };
+export type FacilityPerformance = { outputValue: number; directInputCost: number; maintenanceExpense: number; capitalInvestment: number; operatingProfit: number; investmentAdjustedResult: number };
+export type FinanceTransaction = { id: string; amount: number; description: string; detailLines: string[]; kind: FinanceTransactionKind; source: FinanceTransactionSource; balanceAfter: number; occurredAtGameTimeMs: number; facilityAccounting?: FacilityAccountingEntry; facilityPerformance?: FacilityPerformanceEntry };
 export type LoanStatus = 'active' | 'repaid' | 'defaulted';
 export type Loan = { id: string; lenderId: string; lenderName: string; lenderType: LenderType; principal: number; remainingBalance: number; annualInterestRate: number; periodicInterestRate: number; paymentAmount: number; originationFee: number; totalPeriods: number; remainingPeriods: number; nextPaymentAtGameTimeMs: number; missedPayments: number; totalPaid: number; status: LoanStatus };
 export type LoanOffer = { id: string; lenderId: string; lenderName: string; lenderType: LenderType; principal: number; durationPeriods: number; annualInterestRate: number; periodicInterestRate: number; paymentAmount: number; originationFee: number; totalRepayment: number; totalInterest: number; totalCost: number; isAvailable: boolean; unavailableReason: string | null; paymentIntervalMs: number };
@@ -17,7 +20,19 @@ export type FinanceAdvanceResult = { changed: boolean; collectionNotices: LoanCo
 export type FinanceSnapshot = { balance: number; transactions: FinanceTransaction[]; loans: Loan[]; lenders: Lender[]; activeLoanSearch: ActiveLoanSearch | null; loanSearchOffers: LoanOffer[]; lastLoanSearchResult: LoanSearchResult | null; economyPhase: EconomyPhase; lastEconomyPhasePeriod: number; onTimeLoanPayments: number; missedLoanPayments: number; paidOffLoans: number; loanDefaults: number; consecutiveNegativePeriods: number; nextTransactionNumber: number; nextLoanNumber: number; collectionNotices: LoanCollectionNotice[]; pendingRestructureOffer: DebtRestructureOffer | null; nextCollectionNoticeNumber: number };
 
 function nonNegative(value: number): boolean { return Number.isFinite(value) && value >= 0; }
-function transactionClone(transaction: FinanceTransaction): FinanceTransaction { return { ...transaction, detailLines: [...transaction.detailLines] }; }
+function isValidFacilityAccountingEntry(entry: FacilityAccountingEntry | undefined, source: FinanceTransactionSource): boolean {
+  if (!entry) return true;
+  const expectedSource = entry.classification === 'construction' ? 'facility-construction' : entry.classification === 'upgrade' ? 'facility-upgrade' : 'facility-repair';
+  return entry.facilityId.trim().length > 0 && Number.isFinite(entry.historicalValue) && entry.historicalValue > 0 && source === expectedSource;
+}
+function isValidFacilityPerformanceEntry(entry: FacilityPerformanceEntry | undefined, source: FinanceTransactionSource): boolean {
+  if (!entry) return source !== 'facility-production';
+  return source === 'facility-production'
+    && entry.facilityId.trim().length > 0
+    && Number.isFinite(entry.outputValue) && entry.outputValue >= 0
+    && Number.isFinite(entry.directInputCost) && entry.directInputCost >= 0;
+}
+function transactionClone(transaction: FinanceTransaction): FinanceTransaction { return { ...transaction, detailLines: [...transaction.detailLines], ...(transaction.facilityAccounting ? { facilityAccounting: { ...transaction.facilityAccounting } } : {}), ...(transaction.facilityPerformance ? { facilityPerformance: { ...transaction.facilityPerformance } } : {}) }; }
 function loanClone(loan: Loan): Loan { return { ...loan }; }
 function lenderClone(lender: Lender): Lender { return { ...lender }; }
 function criteriaClone(criteria: LoanSearchCriteria): LoanSearchCriteria { return { ...criteria, lenderTypes: [...criteria.lenderTypes] }; }
@@ -54,6 +69,36 @@ export class Finance {
   getBalance(): number { return this.balance; }
   canAfford(cost: number): boolean { return nonNegative(cost) && this.balance >= cost; }
   getTransactions(): FinanceTransaction[] { return this.transactions.map(transactionClone); }
+  getFacilityAccounting(facilityId: string) {
+    return this.transactions.reduce((totals, transaction) => {
+      const entry = transaction.facilityAccounting;
+      if (!entry || entry.facilityId !== facilityId) return totals;
+      if (entry.classification === 'construction') totals.constructionInvestment += entry.historicalValue;
+      if (entry.classification === 'upgrade') totals.upgradeInvestment += entry.historicalValue;
+      if (entry.classification === 'maintenance') totals.maintenanceExpense += entry.historicalValue;
+      return totals;
+    }, { constructionInvestment: 0, upgradeInvestment: 0, maintenanceExpense: 0 });
+  }
+  getFacilityPerformance(facilityId: string, period: FinanceReportPeriod, currentGameTimeMs: number): FacilityPerformance {
+    const durationMs = FINANCE_REPORT_PERIODS.find((candidate) => candidate.id === period)?.durationMs ?? null;
+    const startGameTimeMs = durationMs === null ? Number.NEGATIVE_INFINITY : currentGameTimeMs - durationMs;
+    const totals = this.transactions.reduce((current, transaction) => {
+      if (transaction.occurredAtGameTimeMs < startGameTimeMs || transaction.occurredAtGameTimeMs > currentGameTimeMs) return current;
+      const accounting = transaction.facilityAccounting;
+      if (accounting?.facilityId === facilityId) {
+        if (accounting.classification === 'maintenance') current.maintenanceExpense += accounting.historicalValue;
+        if (accounting.classification === 'construction' || accounting.classification === 'upgrade') current.capitalInvestment += accounting.historicalValue;
+      }
+      const performance = transaction.facilityPerformance;
+      if (performance?.facilityId === facilityId) {
+        current.outputValue += performance.outputValue;
+        current.directInputCost += performance.directInputCost;
+      }
+      return current;
+    }, { outputValue: 0, directInputCost: 0, maintenanceExpense: 0, capitalInvestment: 0 });
+    const operatingProfit = totals.outputValue - totals.directInputCost - totals.maintenanceExpense;
+    return { ...totals, operatingProfit, investmentAdjustedResult: operatingProfit - totals.capitalInvestment };
+  }
   getLoans(): Loan[] { return this.loans.map(loanClone); }
   getLenders(): Lender[] { return this.lenders.map(lenderClone); }
   getActiveLoanSearch(): ActiveLoanSearch | null { return this.activeLoanSearch ? searchClone(this.activeLoanSearch) : null; }
@@ -66,11 +111,11 @@ export class Finance {
   acknowledgeCollectionNotice(noticeId: string): boolean { const count = this.collectionNotices.length; this.collectionNotices = this.collectionNotices.filter((notice) => notice.id !== noticeId); return count !== this.collectionNotices.length; }
 
   applyTransaction(input: FinanceTransactionInput): boolean {
-    if (!Number.isFinite(input.amount) || input.description.trim().length === 0 || !Number.isFinite(input.occurredAtGameTimeMs) || input.detailLines.some((line) => line.trim().length === 0)) return false;
+    if (!Number.isFinite(input.amount) || input.description.trim().length === 0 || !Number.isFinite(input.occurredAtGameTimeMs) || input.detailLines.some((line) => line.trim().length === 0) || !isValidFacilityAccountingEntry(input.facilityAccounting, input.source) || !isValidFacilityPerformanceEntry(input.facilityPerformance, input.source)) return false;
     const balanceAfter = this.balance + input.amount;
     if (!nonNegative(balanceAfter)) return false;
     this.balance = balanceAfter;
-    this.transactions.push({ ...input, id: `finance-${this.nextTransactionNumber}`, balanceAfter, detailLines: [...input.detailLines] });
+    this.transactions.push({ ...input, id: `finance-${this.nextTransactionNumber}`, balanceAfter, detailLines: [...input.detailLines], ...(input.facilityAccounting ? { facilityAccounting: { ...input.facilityAccounting } } : {}), ...(input.facilityPerformance ? { facilityPerformance: { ...input.facilityPerformance } } : {}) });
     this.nextTransactionNumber += 1;
     return true;
   }

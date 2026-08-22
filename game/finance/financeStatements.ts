@@ -13,7 +13,7 @@ import { calculateCreditRating, calculateLoanLimitBreakdown, type CreditRating, 
 
 export type IncomeStatement = { income: number; expenses: number; netIncome: number; incomeDetails: FinanceBreakdown[]; expenseDetails: FinanceBreakdown[] };
 export type FinanceBreakdown = { label: string; amount: number };
-export type AssetsStatement = { cash: number; inventory: number; facilities: number; research: number; currentAssets: number; fixedAssets: number; intangibleAssets: number; totalAssets: number };
+export type AssetsStatement = { cash: number; inventory: number; facilities: number; facilityCapitalInvestment: number; facilityWearAndTear: number; facilityMarketValue: number; facilityMarketRevaluation: number; facilityMaintenanceExpense: number; research: number; currentAssets: number; fixedAssets: number; intangibleAssets: number; totalAssets: number };
 export type LiabilitiesEquityStatement = { loans: Loan[]; totalLiabilities: number; contributedCapital: number; retainedEarnings: number; assetRevaluation: number; totalEquity: number };
 export type CashFlowDetail = { id: string; description: string; detailLines: string[]; count: number; resourceType?: ResourceType; totalQuantity?: number; totalAbsoluteAmount?: number; totalQualityQuantity?: number; totalQualityAmount?: number };
 export type CashFlowDetailGroup = { id: string; label: string; amount: number; details: CashFlowDetail[] };
@@ -27,6 +27,7 @@ const SOURCE_LABELS: Record<FinanceTransaction['source'], string> = {
   'facility-construction': 'Facility construction',
   'facility-upgrade': 'Facility upgrades',
   'facility-repair': 'Facility repairs',
+  'facility-production': 'Facility production',
   'research-investment': 'Research investment',
   'research-refund': 'Research refunds',
   'research-grant': 'Research grants',
@@ -43,14 +44,14 @@ const SOURCE_LABELS: Record<FinanceTransaction['source'], string> = {
   'loan-restructure': 'Loan restructuring',
 };
 
-/** Current book value used consistently by the balance sheet and facility sales. */
-export function calculateFacilityAssetValue(facility: Facility, market: Market): number {
+/** Historical-cost and current-market facility values used by finance and facility sales. */
+export function calculateFacilityAssetBreakdown(facility: Facility, market: Market, finance: Finance) {
   const view = facility.getView();
   const definition = getFacilityDefinition(view.facilityType);
-  const replacementCost = definition.landCost
+  const currentConstructionValue = definition.landCost
     + definition.constructionMaterialsCost * market.getLocalPrice(ResourceType.ConstructionMaterials)
-    + definition.industrialMachinesCost * market.getLocalPrice(ResourceType.IndustrialMachines)
-    + getFacilityUpgradeInvestmentCost(definition.upgradeCost, view.speedUpgradeLevel)
+    + definition.industrialMachinesCost * market.getLocalPrice(ResourceType.IndustrialMachines);
+  const currentUpgradeValue = getFacilityUpgradeInvestmentCost(definition.upgradeCost, view.speedUpgradeLevel)
     + getFacilityUpgradeInvestmentCost(definition.upgradeCost, view.outputUpgradeLevel)
     + getFacilityUpgradeInvestmentCost(definition.upgradeCost, view.conditionDecayUpgradeLevel)
     + getFacilityUpgradeInvestmentCost(definition.upgradeCost, Math.max(0, view.qualityUpgradeLevel - 1))
@@ -62,7 +63,32 @@ export function calculateFacilityAssetValue(facility: Facility, market: Market):
     + getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, view.outputUpgradeLevel) * market.getLocalPrice(ResourceType.IndustrialMachines)
     + getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, view.conditionDecayUpgradeLevel) * market.getLocalPrice(ResourceType.IndustrialMachines)
     + getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, Math.max(0, view.qualityUpgradeLevel - 1)) * market.getLocalPrice(ResourceType.IndustrialMachines);
-  return replacementCost * Math.max(0.1, view.facilityCondition);
+  const accounting = finance.getFacilityAccounting(facility.id);
+  const capitalInvestment = accounting.constructionInvestment + accounting.upgradeInvestment;
+  const currentReplacementValue = currentConstructionValue + currentUpgradeValue;
+  const conditionMultiplier = Math.max(0.1, view.facilityCondition);
+  const bookValue = capitalInvestment * conditionMultiplier;
+  const currentMarketValue = currentReplacementValue * conditionMultiplier;
+
+  return {
+    bookValue,
+    capitalInvestment,
+    conditionMultiplier,
+    constructionInvestment: accounting.constructionInvestment,
+    currentConstructionValue,
+    currentMarketValue,
+    currentReplacementValue,
+    currentUpgradeValue,
+    maintenanceExpense: accounting.maintenanceExpense,
+    marketRevaluation: currentMarketValue - bookValue,
+    upgradeInvestment: accounting.upgradeInvestment,
+    wearAndTear: capitalInvestment - bookValue,
+  };
+}
+
+/** Current book value used consistently by the balance sheet and facility sales. */
+export function calculateFacilityAssetValue(facility: Facility, market: Market, finance: Finance): number {
+  return calculateFacilityAssetBreakdown(facility, market, finance).bookValue;
 }
 
 function periodStart(period: FinanceReportPeriod, currentGameTimeMs: number): number {
@@ -85,10 +111,16 @@ function toBreakdowns(transactions: FinanceTransaction[]): FinanceBreakdown[] {
 
 export function calculateAssets(input: { finance: Finance; inventory: Inventory; market: Market; facilities: FacilityCollection; research: ResearchLedger }): AssetsStatement {
   const inventory = RESOURCE_TYPES.reduce((total, resourceType) => total + input.inventory.getAmount(resourceType) * input.market.getLocalPrice(resourceType), 0);
-  const facilities = input.facilities.getAll().reduce((total, facility) => total + calculateFacilityAssetValue(facility, input.market), 0);
+  const facilityBreakdowns = input.facilities.getAll().map((facility) => calculateFacilityAssetBreakdown(facility, input.market, input.finance));
+  const facilities = facilityBreakdowns.reduce((total, breakdown) => total + breakdown.bookValue, 0);
+  const facilityCapitalInvestment = facilityBreakdowns.reduce((total, breakdown) => total + breakdown.capitalInvestment, 0);
+  const facilityWearAndTear = facilityBreakdowns.reduce((total, breakdown) => total + breakdown.wearAndTear, 0);
+  const facilityMarketValue = facilityBreakdowns.reduce((total, breakdown) => total + breakdown.currentMarketValue, 0);
+  const facilityMarketRevaluation = facilityBreakdowns.reduce((total, breakdown) => total + breakdown.marketRevaluation, 0);
+  const facilityMaintenanceExpense = facilityBreakdowns.reduce((total, breakdown) => total + breakdown.maintenanceExpense, 0);
   const research = input.research.getCompletedProjects().reduce((total, completed) => total + (getResearchProject(completed.projectId)?.cost ?? 0), 0);
   const cash = input.finance.getBalance();
-  return { cash, inventory, facilities, research, currentAssets: cash + inventory, fixedAssets: facilities, intangibleAssets: research, totalAssets: cash + inventory + facilities + research };
+  return { cash, inventory, facilities, facilityCapitalInvestment, facilityWearAndTear, facilityMarketValue, facilityMarketRevaluation, facilityMaintenanceExpense, research, currentAssets: cash + inventory, fixedAssets: facilities, intangibleAssets: research, totalAssets: cash + inventory + facilities + research };
 }
 
 export function buildFinanceStatementData(input: { finance: Finance; inventory: Inventory; market: Market; facilities: FacilityCollection; research: ResearchLedger; achievements: AchievementLedger; currentGameTimeMs: number; companyStartedAtGameTimeMs: number; period: FinanceReportPeriod; cashFlowGroupDurationMs?: number }): FinanceStatementData {

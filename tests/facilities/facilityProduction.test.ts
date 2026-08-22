@@ -7,10 +7,11 @@ import { FacilityCollection } from '@/game/facilities/facilityCollection';
 import {
   calculateFacilityDecayMaterialCostPerMinute,
   calculateFacilityNetGainPerMinute,
+  calculateRecipeContributionMargin,
   calculateFacilityResourcePayment,
   calculateRecipeValuePerMinute,
 } from '@/game/facilities/facilityEconomics';
-import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateRecipeInputQ, getFacilityProductionCycleInputs, getRecipeProductionConditionLoss } from '@/game/facilities/facilityProduction';
+import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateRecipeInputQ, calculateRecipeInputSourceCost, getFacilityProductionCycleInputs, getRecipeProductionConditionLoss } from '@/game/facilities/facilityProduction';
 import { calculateOutputQuality, calculateProductionMaxQ } from '@/game/quality';
 import { Market } from '@/game/market';
 import { FacilityType } from '@/game/facilities/facilityTypes';
@@ -98,6 +99,42 @@ describe('facility condition wear', () => {
 });
 
 describe('facility economics', () => {
+  it('uses the supplied input and output quality for recipe value', () => {
+    const market = new Market();
+    const recipe = getRecipe(RecipeName.GrowGrain);
+    const workPerMinute = 1.2;
+
+    const valuePerMinute = calculateRecipeValuePerMinute(
+      recipe,
+      market,
+      1,
+      workPerMinute,
+      () => 2,
+      () => 5,
+    );
+    const expectedCycleValue = recipe.outputs.reduce(
+      (total, output) => total + output.amount * market.getLocalSalePrice(output.resourceType, 5),
+      0,
+    ) - recipe.inputs.reduce(
+      (total, input) => total + input.amount * market.getLocalSalePrice(input.resourceType, 2),
+      0,
+    );
+
+    expect(valuePerMinute).toBeCloseTo(expectedCycleValue * workPerMinute / recipe.requiredWork);
+  });
+
+  it('separates current output value from historical direct input cost', () => {
+    const market = new Market();
+    const inventory = new Inventory();
+    const recipe = getRecipe(RecipeName.GrowGrain);
+    for (const input of recipe.inputs) inventory.add(input.resourceType, input.amount, 1, 2);
+
+    const margin = calculateRecipeContributionMargin(recipe, market, inventory, 1);
+    const outputValue = recipe.outputs.reduce((total, output) => total + output.amount * market.getLocalPrice(output.resourceType), 0);
+    const inputCost = recipe.inputs.reduce((total, input) => total + input.amount * 2, 0);
+    expect(margin).toBeCloseTo(outputValue - inputCost);
+  });
+
   it('keeps displayed net gain aligned with recipe value and repair-material decay', () => {
     const market = new Market();
     const recipe = getRecipe(RecipeName.GrowGrain);
@@ -134,6 +171,20 @@ describe('advanceAllFacilityProduction', () => {
     expect(calculateOutputQuality({ researchMaxQ: 3, weightedInputQ: inputQ }).outputQ).toBe(3);
     expect(calculateOutputQuality({ researchMaxQ: 20, weightedInputQ: inputQ, upgradeMaxQ: 2 }).outputQ).toBe(2);
     expect(calculateOutputQuality({ researchMaxQ: 20, weightedInputQ: inputQ, upgradeMaxQ: 20, productionMaxQ: 2 }).outputQ).toBe(2);
+  });
+
+  it('carries direct material source cost into completed output', () => {
+    const { facilities } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    const inventory = new Inventory();
+    const recipe = getRecipe(RecipeName.GrowGrain);
+    for (const input of recipe.inputs) inventory.add(input.resourceType, input.amount, 1, 2);
+
+    const inputSourceCost = 2 * recipe.inputs.reduce((total, input) => total + input.amount, 0);
+    expect(calculateRecipeInputSourceCost(recipe, inventory)).toBeCloseTo(inputSourceCost);
+    advanceAllFacilityProduction(facilities, inventory, () => recipe.requiredWork);
+
+    const totalOutput = recipe.outputs.reduce((total, output) => total + output.amount, 0);
+    expect(inventory.getEntry(ResourceType.Grain).sourceCostPerUnit).toBeCloseTo(inputSourceCost / totalOutput);
   });
 
   it('retains the consumed input quality when inventory changes before completion', () => {

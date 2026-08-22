@@ -90,7 +90,8 @@ export function InventoryView({
     maxSell: '',
     maxBuyPrice: '',
     minSellPrice: '',
-    buyTarget: '',
+    buyAt: '',
+    buyTo: '',
     tradeIntervalMs: MARKET_AUTOTRADE_DEFAULT_INTERVAL_MS,
   });
   const sliderWidthRef = useRef(0);
@@ -122,7 +123,8 @@ export function InventoryView({
       maxSell: String(automation.autoSellMaxPerMinute),
       maxBuyPrice: String(automation.autoBuyMaxUnitPrice),
       minSellPrice: String(automation.autoSellMinUnitPrice),
-      buyTarget: String(automation.autoBuyTargetInventory),
+      buyAt: automation.autoBuyAtInventory === 'any' ? 'Any' : String(automation.autoBuyAtInventory),
+      buyTo: String(automation.autoBuyToInventory),
       tradeIntervalMs: automation.autoTradeIntervalMs,
     });
     setSettingsResource(resourceType);
@@ -132,13 +134,16 @@ export function InventoryView({
     const values = Object.fromEntries(
       Object.entries(settingsDraft).map(([key, value]) => [key, Number(value)]),
     );
-    if (Object.values(values).some((value) => !Number.isFinite(value) || value < 0)) return;
+    const buyAt = settingsDraft.buyAt.trim().toLowerCase() === 'any' ? 'any' : Number(settingsDraft.buyAt);
+    if (Object.entries(values).some(([key, value]) => key !== 'buyAt' && (!Number.isFinite(value) || value < 0))
+      || (buyAt !== 'any' && (!Number.isFinite(buyAt) || buyAt < 0))) return;
     setMarketAutomation(settingsResource, {
       autoSellMinKeep: values.minKeep,
       autoTradeIntervalMs: settingsDraft.tradeIntervalMs,
       autoSellMaxPerMinute: values.maxSell,
       autoBuyMaxUnitPrice: values.maxBuyPrice,
-      autoBuyTargetInventory: values.buyTarget,
+      autoBuyAtInventory: buyAt,
+      autoBuyToInventory: values.buyTo,
       autoSellMinUnitPrice: values.minSellPrice,
     });
     setSettingsResource(null);
@@ -300,6 +305,9 @@ export function InventoryView({
               >
                 {formatNumber(entry.quality, { smartDecimals: true })}
               </Text>
+              <Text style={styles.detailValue}>
+                {formatCurrency(entry.sourceCostPerUnit)}/unit
+              </Text>
             </View>
           </Pressable>
           {isSelected && (
@@ -370,17 +378,37 @@ export function InventoryView({
             style={styles.marketAutomationInput}
             value={settingsDraft.maxSell}
           />
-          <TextInput
-            dense
-            keyboardType="decimal-pad"
-            label="Autobuy target inventory"
-            mode="outlined"
-            onChangeText={(value) =>
-              setSettingsDraft((draft) => ({ ...draft, buyTarget: value }))
-            }
-            style={styles.marketAutomationInput}
-            value={settingsDraft.buyTarget}
-          />
+          <View style={localStyles.marketAutomationRow}>
+            <TextInput
+              dense
+              keyboardType="decimal-pad"
+              label="Autobuy buy at"
+              mode="outlined"
+              onChangeText={(value) =>
+                setSettingsDraft((draft) => ({ ...draft, buyAt: value }))
+              }
+              style={[styles.marketAutomationInput, localStyles.marketAutomationInput]}
+              value={settingsDraft.buyAt}
+            />
+            <TextInput
+              dense
+              keyboardType="decimal-pad"
+              label="Autobuy buy to"
+              mode="outlined"
+              onChangeText={(value) =>
+                setSettingsDraft((draft) => ({ ...draft, buyTo: value }))
+              }
+              style={[styles.marketAutomationInput, localStyles.marketAutomationInput]}
+              value={settingsDraft.buyTo}
+            />
+          </View>
+          <Button
+            compact
+            mode={settingsDraft.buyAt.trim().toLowerCase() === 'any' ? 'contained' : 'outlined'}
+            onPress={() => setSettingsDraft((draft) => ({ ...draft, buyAt: 'Any' }))}
+          >
+            Buy at Any inventory level
+          </Button>
           <Text variant="labelLarge">Autotrade interval</Text>
           <Menu
             anchor={
@@ -412,28 +440,30 @@ export function InventoryView({
               />
             ))}
           </Menu>
-          <TextInput
-            dense
-            keyboardType="decimal-pad"
-            label="Maximum autobuy price"
-            mode="outlined"
-            onChangeText={(value) =>
-              setSettingsDraft((draft) => ({ ...draft, maxBuyPrice: value }))
-            }
-            style={styles.marketAutomationInput}
-            value={settingsDraft.maxBuyPrice}
-          />
-          <TextInput
-            dense
-            keyboardType="decimal-pad"
-            label="Minimum autosell price"
-            mode="outlined"
-            onChangeText={(value) =>
-              setSettingsDraft((draft) => ({ ...draft, minSellPrice: value }))
-            }
-            style={styles.marketAutomationInput}
-            value={settingsDraft.minSellPrice}
-          />
+          <View style={localStyles.marketAutomationRow}>
+            <TextInput
+              dense
+              keyboardType="decimal-pad"
+              label="Maximum autobuy price"
+              mode="outlined"
+              onChangeText={(value) =>
+                setSettingsDraft((draft) => ({ ...draft, maxBuyPrice: value }))
+              }
+              style={[styles.marketAutomationInput, localStyles.marketAutomationInput]}
+              value={settingsDraft.maxBuyPrice}
+            />
+            <TextInput
+              dense
+              keyboardType="decimal-pad"
+              label="Minimum autosell price"
+              mode="outlined"
+              onChangeText={(value) =>
+                setSettingsDraft((draft) => ({ ...draft, minSellPrice: value }))
+              }
+              style={[styles.marketAutomationInput, localStyles.marketAutomationInput]}
+              value={settingsDraft.minSellPrice}
+            />
+          </View>
         </Dialog.Content>
         <Dialog.Actions>
           <Button onPress={() => setSettingsResource(null)}>Cancel</Button>
@@ -498,6 +528,8 @@ const localStyles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
+  marketAutomationRow: { flexDirection: 'row', gap: 8 },
+  marketAutomationInput: { flex: 1, minWidth: 0 },
 });
 
 function MarketCard({

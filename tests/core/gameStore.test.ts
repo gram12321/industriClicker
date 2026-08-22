@@ -10,7 +10,7 @@ import { getRecipeResearchProjectId, getResearchProject } from '@/game/research'
 import { ResourceType } from '@/game/resources';
 
 describe('market autobuy', () => {
-  it('partially buys toward its target without exceeding the configured post-purchase price cap', () => {
+  it('buys from the configured threshold to the configured inventory target', () => {
     const state = useGameStore.getState();
     state.restoreSnapshot(createStartingGameSnapshot(0));
     state.setAdminBalance(1_000_000);
@@ -18,7 +18,8 @@ describe('market autobuy', () => {
     state.setMarketAutomation(ResourceType.Grain, {
       autoBuyEnabled: true,
       autoBuyMaxUnitPrice: 1.25,
-      autoBuyTargetInventory: 500,
+      autoBuyAtInventory: 10,
+      autoBuyToInventory: 500,
     });
 
     state.advanceGameTime(5_000);
@@ -27,20 +28,95 @@ describe('market autobuy', () => {
     expect(useGameStore.getState().market.getLocalPrice(ResourceType.Grain)).toBeLessThanOrEqual(1.25);
     expect(useGameStore.getState().resourceFlow.getSummary(ResourceType.Grain, 5_000, 15_000)).toMatchObject({ market: 360, netChange: 360 });
   });
+
+  it('does not create an autobuy finance transaction while above the buy-at threshold', () => {
+    const state = useGameStore.getState();
+    const snapshot = createStartingGameSnapshot(0);
+    snapshot.inventory.entries[ResourceType.Grain].quantity = 11;
+    state.restoreSnapshot(snapshot);
+    state.setAdminBalance(1_000_000);
+    state.setMarketAutomation(ResourceType.Grain, {
+      autoBuyEnabled: true,
+      autoBuyAtInventory: 10,
+      autoBuyToInventory: 20,
+    });
+
+    state.advanceGameTime(5_000);
+
+    expect(useGameStore.getState().inventory.getAmount(ResourceType.Grain)).toBe(11);
+    expect(useGameStore.getState().finance.getTransactions().filter((transaction) => transaction.source === 'market-purchase')).toHaveLength(0);
+  });
+
+  it('allows Any as the autobuy threshold', () => {
+    const state = useGameStore.getState();
+    const snapshot = createStartingGameSnapshot(0);
+    snapshot.inventory.entries[ResourceType.Grain].quantity = 11;
+    state.restoreSnapshot(snapshot);
+    state.setAdminBalance(1_000_000);
+    state.setMarketAutomation(ResourceType.Grain, {
+      autoBuyEnabled: true,
+      autoBuyAtInventory: 'any',
+      autoBuyToInventory: 20,
+    });
+
+    state.advanceGameTime(5_000);
+
+    expect(useGameStore.getState().inventory.getAmount(ResourceType.Grain)).toBeGreaterThan(11);
+  });
+
+  it('buys the largest affordable amount when cash cannot reach the buy-to target', () => {
+    const state = useGameStore.getState();
+    state.restoreSnapshot(createStartingGameSnapshot(0));
+    state.setAdminBalance(100);
+    state.setMarketAutomation(ResourceType.Grain, {
+      autoBuyEnabled: true,
+      autoBuyAtInventory: 0,
+      autoBuyToInventory: 500,
+    });
+
+    state.advanceGameTime(5_000);
+
+    const currentState = useGameStore.getState();
+    expect(currentState.inventory.getAmount(ResourceType.Grain)).toBeGreaterThan(0);
+    expect(currentState.inventory.getAmount(ResourceType.Grain)).toBeLessThan(500);
+    expect(currentState.finance.getBalance()).toBeGreaterThanOrEqual(0);
+    expect(currentState.finance.getTransactions().filter((transaction) => transaction.source === 'market-purchase')).toHaveLength(1);
+  });
 });
 
 describe('market sales', () => {
-  it('rejects snapshots missing the current quality-aware fields', () => {
+  it('rejects snapshots missing current inventory or resource-flow fields', () => {
     const snapshot = createStartingGameSnapshot(0);
     expect(isGameSnapshot(snapshot)).toBe(true);
     const { highestFacilityOutputQuality: _highestFacilityOutputQuality, ...staleResourceFlow } = snapshot.resourceFlow;
     expect(isGameSnapshot({ ...snapshot, resourceFlow: staleResourceFlow })).toBe(false);
+    const { sourceCostPerUnit: _sourceCostPerUnit, ...staleInventoryEntry } = snapshot.inventory.entries[ResourceType.Grain];
+    expect(isGameSnapshot({
+      ...snapshot,
+      inventory: { entries: { ...snapshot.inventory.entries, [ResourceType.Grain]: staleInventoryEntry } },
+    })).toBe(false);
+  });
+
+  it('rejects facility saves without Finance-owned historical accounting', () => {
+    const state = useGameStore.getState();
+    const definition = FACILITIES[FacilityType.Farm];
+    state.restoreSnapshot(createStartingGameSnapshot(0));
+    state.setAdminBalance(1_000);
+    state.setInventoryAmount(ResourceType.ConstructionMaterials, definition.constructionMaterialsCost);
+    state.setInventoryAmount(ResourceType.IndustrialMachines, definition.industrialMachinesCost);
+    expect(state.buildFacility(FacilityType.Farm)).toBe(true);
+
+    const snapshot = useGameStore.getState().createSnapshot();
+    expect(isGameSnapshot(snapshot)).toBe(true);
+    const staleTransactions = snapshot.finance.transactions.map(({ facilityAccounting: _facilityAccounting, ...transaction }) => transaction);
+
+    expect(isGameSnapshot({ ...snapshot, finance: { ...snapshot.finance, transactions: staleTransactions } })).toBe(false);
   });
 
   it('pays a higher-quality inventory at its own quality-adjusted, slippage-aware price', () => {
     const state = useGameStore.getState();
     const snapshot = createStartingGameSnapshot(Date.now());
-    snapshot.inventory.entries[ResourceType.Grain] = { quantity: 10, quality: 1.5 };
+    snapshot.inventory.entries[ResourceType.Grain] = { quantity: 10, quality: 1.5, sourceCostPerUnit: 0 };
     state.restoreSnapshot(snapshot);
     const balanceBefore = useGameStore.getState().finance.getBalance();
     const market = useGameStore.getState().market;
@@ -55,7 +131,7 @@ describe('market sales', () => {
   it('allows autosell when its inventory-quality price meets the threshold', () => {
     const state = useGameStore.getState();
     const snapshot = createStartingGameSnapshot(Date.now());
-    snapshot.inventory.entries[ResourceType.Grain] = { quantity: 100, quality: 2 };
+    snapshot.inventory.entries[ResourceType.Grain] = { quantity: 100, quality: 2, sourceCostPerUnit: 0 };
     state.restoreSnapshot(snapshot);
     state.setMarketAutomation(ResourceType.Grain, {
       autoSellEnabled: true,
@@ -71,7 +147,7 @@ describe('market sales', () => {
   it('does not autosell when slippage drops the executable quote below the threshold', () => {
     const state = useGameStore.getState();
     const snapshot = createStartingGameSnapshot(Date.now());
-    snapshot.inventory.entries[ResourceType.Grain] = { quantity: 100, quality: 2 };
+    snapshot.inventory.entries[ResourceType.Grain] = { quantity: 100, quality: 2, sourceCostPerUnit: 0 };
     state.restoreSnapshot(snapshot);
     const market = useGameStore.getState().market;
     const spotPrice = market.getLocalSalePrice(ResourceType.Grain, 2);
@@ -205,6 +281,44 @@ describe('facility construction inputs', () => {
 
     expect(state.repairFacility('farm-1')).toBe(true);
     expect(useGameStore.getState().facilities.get('farm-1')!.getView().facilityCondition).toBe(1);
+    expect(useGameStore.getState().inventory.getAmount(ResourceType.ConstructionMaterials)).toBe(0);
+    expect(useGameStore.getState().inventory.getAmount(ResourceType.IndustrialMachines)).toBe(0);
+  });
+
+  it('repairs only to the selected target condition', () => {
+    const state = useGameStore.getState();
+    state.restoreSnapshot(createStartingGameSnapshot(0));
+
+    expect(state.buildFacility(FacilityType.Farm)).toBe(true);
+    useGameStore.getState().facilities.get('farm-1')!.applyConditionLoss(0.5);
+    state.setAdminBalance(10_000);
+
+    expect(state.repairFacility('farm-1', 0.75)).toBe(true);
+    expect(useGameStore.getState().facilities.get('farm-1')!.getView().facilityCondition).toBe(0.75);
+    expect(useGameStore.getState().facilityMaintenance.getRepairedCondition()).toBeCloseTo(0.25);
+  });
+
+  it('gates auto-repair behind Repair Technician research and repairs eligible facilities during foreground time', () => {
+    const state = useGameStore.getState();
+    state.restoreSnapshot(createStartingGameSnapshot(0));
+    state.setAdminBalance(10_000);
+
+    expect(state.buildFacility(FacilityType.Farm)).toBe(true);
+    const farm = useGameStore.getState().facilities.get('farm-1')!;
+    farm.applyConditionLoss(0.5);
+    state.setInventoryAmount(ResourceType.ConstructionMaterials, 0);
+    state.setInventoryAmount(ResourceType.IndustrialMachines, 0);
+    expect(state.setFacilityAutoRepair('farm-1', true, 0.7, 1)).toBe(false);
+
+    const snapshot = state.createSnapshot();
+    snapshot.research.completed.push({ projectId: 'repair-technician-1', completedAtGameTimeMs: 0 });
+    state.restoreSnapshot(snapshot);
+    expect(state.setFacilityAutoRepair('farm-1', true, 0.7, 1)).toBe(true);
+
+    state.advanceGameTime(1_000);
+
+    expect(useGameStore.getState().facilities.get('farm-1')!.getView().facilityCondition).toBe(1);
+    expect(useGameStore.getState().facilityMaintenance.getRepairedCondition()).toBeGreaterThan(0.49);
     expect(useGameStore.getState().inventory.getAmount(ResourceType.ConstructionMaterials)).toBe(0);
     expect(useGameStore.getState().inventory.getAmount(ResourceType.IndustrialMachines)).toBe(0);
   });

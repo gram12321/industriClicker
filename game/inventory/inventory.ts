@@ -7,6 +7,8 @@ const INVENTORY_QUANTITY_TOLERANCE = 1e-9;
 export type InventoryEntry = {
   quantity: number;
   quality: number;
+  /** Quantity-weighted direct source cost in euros per unit. */
+  sourceCostPerUnit: number;
 };
 
 /** Plain, JSON-safe representation stored by the company-scoped SQLite save adapter. */
@@ -16,7 +18,7 @@ export type InventorySnapshot = {
 
 function createEmptyEntries(): Record<ResourceType, InventoryEntry> {
   return RESOURCE_TYPES.reduce((entries, resourceType) => {
-    entries[resourceType] = { quantity: 0, quality: INVENTORY_DEFAULT_RESOURCE_QUALITY };
+    entries[resourceType] = { quantity: 0, quality: INVENTORY_DEFAULT_RESOURCE_QUALITY, sourceCostPerUnit: 0 };
     return entries;
   }, {} as Record<ResourceType, InventoryEntry>);
 }
@@ -58,17 +60,23 @@ export class Inventory {
     return isValidQuantity(amount) && this.getAmount(resourceType) + INVENTORY_QUANTITY_TOLERANCE >= amount;
   }
 
-  add(resourceType: ResourceType, amount: number, quality = INVENTORY_DEFAULT_RESOURCE_QUALITY): boolean {
+  add(
+    resourceType: ResourceType,
+    amount: number,
+    quality = INVENTORY_DEFAULT_RESOURCE_QUALITY,
+    sourceCostPerUnit = 0,
+  ): boolean {
     if (!isValidQuantity(amount)) {
       return false;
     }
 
-    if (!Number.isFinite(quality) || quality <= 0) {
+    if (!Number.isFinite(quality) || quality <= 0 || !Number.isFinite(sourceCostPerUnit) || sourceCostPerUnit < 0) {
       return false;
     }
 
     const entry = this.entries[resourceType];
     entry.quality = (entry.quantity * entry.quality + amount * quality) / (entry.quantity + amount);
+    entry.sourceCostPerUnit = (entry.quantity * entry.sourceCostPerUnit + amount * sourceCostPerUnit) / (entry.quantity + amount);
     entry.quantity += amount;
     return true;
   }
@@ -78,7 +86,9 @@ export class Inventory {
       return false;
     }
 
-    this.entries[resourceType].quantity = Math.max(0, this.entries[resourceType].quantity - amount);
+    const entry = this.entries[resourceType];
+    entry.quantity = Math.max(0, entry.quantity - amount);
+    if (entry.quantity === 0) entry.sourceCostPerUnit = 0;
     return true;
   }
 
@@ -87,7 +97,9 @@ export class Inventory {
       return false;
     }
 
-    this.entries[resourceType].quantity = amount;
+    const entry = this.entries[resourceType];
+    entry.quantity = amount;
+    if (amount === 0) entry.sourceCostPerUnit = 0;
     return true;
   }
 
@@ -122,6 +134,9 @@ export class Inventory {
         quality: Number.isFinite(entry.quality) && entry.quality > 0
           ? entry.quality
           : INVENTORY_DEFAULT_RESOURCE_QUALITY,
+        sourceCostPerUnit: Number.isFinite(entry.sourceCostPerUnit) && entry.sourceCostPerUnit >= 0
+          ? entry.sourceCostPerUnit
+          : 0,
       };
     }
   }
