@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getResource, ResourceType, RESOURCE_TYPES } from '@/game/resources';
 import { MARKET_SALES_ORDER_BID_MULTIPLIER } from '@/game/market';
-import { SALES_CUSTOMER_DOMAIN_PROFILES, SALES_ORDER_DURATION_MS, SalesOrders, calculateSalesCustomerAccessibility, calculateSalesOrderAcquisitionRate, calculateSalesOrderAcquisitionDetails, calculateSalesOrderBaseTargetValue, calculateSalesOrderBidPremium, calculateSalesOrderBundleLineCount, calculateSalesOrderCustomerTypeMaturity, calculateSalesOrderCustomerSelectionWeight, calculateSalesOrderDomainSelectionWeight, calculateSalesOrderEstimatedWaitMinutes, calculateSalesOrderInventoryReadiness, calculateSalesOrderInventoryValueReadiness, calculateSalesOrderMarketVolumeMultiplier, calculateSalesOrderResourceSelectionWeight, calculateSalesOrderTargetValue, getOfferableSalesOrderResourceTypes, sampleSalesOrderArrivalCount } from '@/game/sales';
+import { SALES_CUSTOMER_DOMAIN_PROFILES, SALES_ORDER_DURATION_MS, SalesOrders, calculateSalesCustomerAccessibility, calculateSalesOrderAcquisitionRate, calculateSalesOrderAcquisitionDetails, calculateSalesOrderBaseTargetValue, calculateSalesOrderBidPremium, calculateSalesOrderBundleLineCount, calculateSalesOrderCustomerSizeFitMultiplier, calculateSalesOrderCustomerTypeMaturity, calculateSalesOrderCustomerSelectionWeight, calculateSalesOrderDomainSelectionWeight, calculateSalesOrderEstimatedWaitMinutes, calculateSalesOrderInventoryReadiness, calculateSalesOrderInventoryValueReadiness, calculateSalesOrderMarketVolumeMultiplier, calculateSalesOrderResourceSelectionWeight, calculateSalesOrderTargetValue, getOfferableSalesOrderResourceTypes, sampleSalesOrderArrivalCount } from '@/game/sales';
 
 function quantities(resourceType: ResourceType, amount: number): Record<ResourceType, number> {
   return RESOURCE_TYPES.reduce((result, candidate) => { result[candidate] = candidate === resourceType ? amount : 0; return result; }, {} as Record<ResourceType, number>);
@@ -262,6 +262,16 @@ describe('sales orders', () => {
     expect(lateGovernmentAccess).toBeGreaterThan(earlyGovernmentAccess * 20);
   });
 
+  it('favors small customer types for immature companies and large types as the company matures', () => {
+    const earlyPrivate = calculateSalesOrderCustomerSizeFitMultiplier({ customerType: 'private-customer', companyAssets: 0, companyPrestige: 0, relationship: 0 });
+    const earlyIndustrial = calculateSalesOrderCustomerSizeFitMultiplier({ customerType: 'industrial-enterprise', companyAssets: 0, companyPrestige: 0, relationship: 0 });
+    const maturePrivate = calculateSalesOrderCustomerSizeFitMultiplier({ customerType: 'private-customer', companyAssets: 10_000, companyPrestige: 1_000, relationship: 1 });
+    const matureIndustrial = calculateSalesOrderCustomerSizeFitMultiplier({ customerType: 'industrial-enterprise', companyAssets: 10_000, companyPrestige: 1_000, relationship: 1 });
+
+    expect(earlyPrivate).toBeGreaterThan(earlyIndustrial);
+    expect(matureIndustrial).toBeGreaterThan(maturePrivate);
+  });
+
   it('calibrates major customer access to the project prestige scale', () => {
     expect(calculateSalesCustomerAccessibility('government-procurement', 20)).toBeCloseTo(0.0028, 4);
     expect(calculateSalesCustomerAccessibility('government-procurement', 100)).toBeCloseTo(0.0644, 4);
@@ -276,6 +286,15 @@ describe('sales orders', () => {
     expect(result.ordersCreated).toBe(1);
     expect(orders.getOfferedOrders()).toHaveLength(1);
     expect(orders.getOfferedOrders()[0].reward).toBeLessThanOrEqual(1_000);
+  });
+
+  it('uses a cap-safe fallback after repeated oversized bid candidates', () => {
+    const orders = new SalesOrders();
+    const result = orders.advanceTime({ currentGameTimeMs: 60_000, elapsedMilliseconds: 60_000 * 1_000, maximumOpenOrders: 2, maximumOrderValue: 100, companyAssets: 1, companyPrestige: 0, economyPhase: 'stable', inventoryValue: 0, inventoryByResource: quantities(ResourceType.Water, 0), globalPrices: prices(0.1), globalSupplies: benchmarkSupplies(), candidateResourceTypes: [ResourceType.Water], getResourceWeight: () => 1, bidResearchMultiplier: 10 });
+
+    expect(result.ordersCreated).toBe(1);
+    expect(orders.getOfferedOrders()[0].reward).toBeLessThanOrEqual(100);
+    expect(orders.getOfferedOrders()[0].lines[0].quantity).toBe(500);
   });
 
   it('scales target offer value with prestige and gives a modest repeat-customer volume bonus', () => {

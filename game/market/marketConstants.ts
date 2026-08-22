@@ -8,7 +8,8 @@ export const MARKET_DIFFUSION_REFERENCE_INTERVAL_MS = 60_000;
 export const MARKET_DIFFUSION_INTERVAL_MS = 5_000;
 /** Each active Local Market Network tier adds this share of every resource's initial local supply per foreground minute. */
 export const LOCAL_MARKET_NETWORK_EXPANSION_PER_MINUTE = 0.05;
-export const MARKET_SALES_ORDER_BID_MULTIPLIER = 1.2;
+/** Sales orders now start from the reference market price; premiums are applied by the sales bid model. */
+export const MARKET_SALES_ORDER_BID_MULTIPLIER = 1;
 export const MARKET_AUTOSELL_DEFAULT_MAX_PER_MINUTE = 50;
 export const MARKET_AUTOTRADE_INTERVAL_OPTIONS = [
   { label: 'Every 5 seconds', milliseconds: 5_000 },
