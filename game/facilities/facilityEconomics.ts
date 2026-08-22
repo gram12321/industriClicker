@@ -62,16 +62,22 @@ export function calculateRecipeValuePerMinute(
   market: Market,
   outputMultiplier: number,
   workPerMinute: number,
+  getInputQuality?: (resourceType: ResourceType) => number,
+  getOutputQuality?: (resourceType: ResourceType) => number,
 ): number {
   if (recipe.requiredWork <= 0) return 0;
 
   const cyclesPerMinute = workPerMinute / recipe.requiredWork;
   const outputValue = recipe.outputs.reduce(
-    (total, output) => total + output.amount * outputMultiplier * market.getLocalPrice(output.resourceType),
+    (total, output) => total + output.amount * outputMultiplier * (getOutputQuality
+      ? market.getLocalSalePrice(output.resourceType, getOutputQuality(output.resourceType))
+      : market.getLocalPrice(output.resourceType)),
     0,
   );
   const inputValue = recipe.inputs.reduce(
-    (total, input) => total + input.amount * market.getLocalPrice(input.resourceType),
+    (total, input) => total + input.amount * (getInputQuality
+      ? market.getLocalSalePrice(input.resourceType, getInputQuality(input.resourceType))
+      : market.getLocalPrice(input.resourceType)),
     0,
   );
 
@@ -141,6 +147,8 @@ export function calculateProjectedFacilityUpgradeNetGainPerMinute(
   market: Market,
   recipeResearchWorkSpeedMultiplier: number,
   upgradeKind: FacilityUpgradeKind,
+  getInputQuality?: (resourceType: ResourceType) => number,
+  getOutputQuality?: (resourceType: ResourceType) => number,
 ): number {
   const projectedFacility = Facility.fromSnapshot(facility.toSnapshot());
   if (upgradeKind === 'speed') projectedFacility.upgradeSpeed();
@@ -159,6 +167,8 @@ export function calculateProjectedFacilityUpgradeNetGainPerMinute(
     market,
     projectedView.outputMultiplier,
     projectedEffectiveWork,
+    getInputQuality,
+    getOutputQuality,
   );
   const projectedDecayCostPerMinute = calculateFacilityDecayMaterialCostPerMinute(
     definition.constructionMaterialsCost,

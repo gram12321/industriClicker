@@ -98,6 +98,30 @@ describe('facility condition wear', () => {
 });
 
 describe('facility economics', () => {
+  it('uses the supplied input and output quality for recipe value', () => {
+    const market = new Market();
+    const recipe = getRecipe(RecipeName.GrowGrain);
+    const workPerMinute = 1.2;
+
+    const valuePerMinute = calculateRecipeValuePerMinute(
+      recipe,
+      market,
+      1,
+      workPerMinute,
+      () => 2,
+      () => 5,
+    );
+    const expectedCycleValue = recipe.outputs.reduce(
+      (total, output) => total + output.amount * market.getLocalSalePrice(output.resourceType, 5),
+      0,
+    ) - recipe.inputs.reduce(
+      (total, input) => total + input.amount * market.getLocalSalePrice(input.resourceType, 2),
+      0,
+    );
+
+    expect(valuePerMinute).toBeCloseTo(expectedCycleValue * workPerMinute / recipe.requiredWork);
+  });
+
   it('keeps displayed net gain aligned with recipe value and repair-material decay', () => {
     const market = new Market();
     const recipe = getRecipe(RecipeName.GrowGrain);

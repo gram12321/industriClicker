@@ -358,11 +358,6 @@ export class SalesOrders {
     const baseTargetValue = calculateSalesOrderBaseTargetValue({ baseRange: domain.targetOrderValue, companyPrestige: input.companyPrestige, randomValue: baseTargetRoll });
     const customerTypeMultiplier = type.targetValueMultiplier[0] + (type.targetValueMultiplier[1] - type.targetValueMultiplier[0]) * getDeterministicUnitInterval(`${generationSeed}:type-value`);
     const customerTypeMaturity = calculateSalesOrderCustomerTypeMaturity(customer.customerType, input.companyPrestige);
-    const companyValueMultiplier = calculateSalesOrderCompanyValueMultiplier(input.companyAssets);
-    const prestigeProgress = Math.max(0, input.companyPrestige) / (Math.max(0, input.companyPrestige) + SALES_ORDER_VOLUME_SCALING.prestigeScale);
-    const prestigeMultiplier = 1 + (SALES_ORDER_VOLUME_SCALING.maximumPrestigeMultiplier - 1) * prestigeProgress;
-    const effectiveCustomerTypeMultiplier = 1 + (Math.max(0, customerTypeMultiplier) - 1) * customerTypeMaturity;
-    const relationshipMultiplier = 1 + clamp(state.relationship, 0, 1) * (SALES_ORDER_VOLUME_SCALING.maximumRelationshipMultiplier - 1);
     const targetValueBeforeCap = calculateSalesOrderTargetValue({ baseTargetValue, companyAssets: input.companyAssets, companyPrestige: input.companyPrestige, customerType: customer.customerType, customerTypeMultiplier, relationship: state.relationship });
     const targetValue = Math.min(maximumOrderValue, targetValueBeforeCap);
     const lines: SalesOrderLine[] = [];
