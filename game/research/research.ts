@@ -48,6 +48,13 @@ export function getResourceResearchMaxQ(resourceType: ResourceType, completedPro
   }, 1);
 }
 
+export function getFacilityAutoRepairLimit(completedProjectIds: readonly string[]): number {
+  return completedProjectIds.reduce((maximum, projectId) => {
+    const effect = getResearchProject(projectId)?.effect;
+    return effect?.kind === 'facility-auto-repair' ? Math.max(maximum, effect.maximumFacilities) : maximum;
+  }, 0);
+}
+
 export function getResourceResearchLevel(resourceType: ResourceType, completedProjectIds: readonly string[]): number {
   return completedProjectIds.reduce((level, projectId) => {
     const effect = getResearchProject(projectId)?.effect;

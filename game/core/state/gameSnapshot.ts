@@ -132,6 +132,9 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
       && Number.isFinite(facility.facilityCondition)
       && facility.facilityCondition >= 0
       && facility.facilityCondition <= 1
+      && typeof facility.autoRepairEnabled === 'boolean'
+      && typeof facility.autoRepairThreshold === 'number' && Number.isFinite(facility.autoRepairThreshold) && facility.autoRepairThreshold >= 0 && facility.autoRepairThreshold < 1
+      && typeof facility.autoRepairTarget === 'number' && Number.isFinite(facility.autoRepairTarget) && facility.autoRepairTarget > facility.autoRepairThreshold && facility.autoRepairTarget <= 1
       && (facility.recipeInputQ === null || (typeof facility.recipeInputQ === 'number' && Number.isFinite(facility.recipeInputQ) && facility.recipeInputQ > 0))
       && typeof facility.qualityUpgradeLevel === 'number'
       && Number.isInteger(facility.qualityUpgradeLevel)

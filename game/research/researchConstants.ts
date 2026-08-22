@@ -17,13 +17,14 @@ const BASE_RESEARCH_PROJECT_IDS = [
   'local-market-network-1', 'local-market-network-2', 'local-market-network-3', 'local-market-network-4', 'local-market-network-5', 'local-market-network-6', 'local-market-network-7', 'local-market-network-8', 'local-market-network-9', 'local-market-network-10',
   'market-diffusion-network-1', 'market-diffusion-network-2', 'market-diffusion-network-3', 'market-diffusion-network-4', 'market-diffusion-network-5', 'market-diffusion-network-6', 'market-diffusion-network-7', 'market-diffusion-network-8', 'market-diffusion-network-9', 'market-diffusion-network-10',
   'research-capacity-1', 'research-capacity-2', 'research-capacity-3', 'research-capacity-4', 'research-capacity-5', 'research-capacity-6', 'research-capacity-7', 'research-capacity-8', 'research-capacity-9', 'research-capacity-10',
+  'repair-technician-1', 'repair-technician-2', 'repair-technician-3', 'repair-technician-4', 'repair-technician-5',
 ] as const;
 
 export type RecipeResearchProjectId = `recipe-${RecipeName}` | `recipe-${RecipeName}-level-${number}`;
 export type ResourceQualityResearchProjectId = `resource-quality-${ResourceType}-level-${number}`;
 export type ResearchProjectId = (typeof BASE_RESEARCH_PROJECT_IDS)[number] | RecipeResearchProjectId | ResourceQualityResearchProjectId;
 export const RESEARCH_PROJECT_IDS: readonly ResearchProjectId[] = [...BASE_RESEARCH_PROJECT_IDS, ...Object.values(RecipeName).flatMap((recipeName) => [getRecipeResearchProjectId(recipeName), ...Array.from({ length: 10 }, (_, index) => getRecipeResearchLevelProjectId(recipeName, index + 1))])];
-export type ResearchChainId = 'capital-grants' | 'sales-capacity' | 'sales-order-value-limit' | 'sales-targeting' | 'bid-value' | 'relationship-management' | 'sales-intelligence' | 'local-market-network' | 'market-diffusion-network' | 'research-capacity' | 'recipe-unlocks' | 'resource-quality';
+export type ResearchChainId = 'capital-grants' | 'sales-capacity' | 'sales-order-value-limit' | 'sales-targeting' | 'bid-value' | 'relationship-management' | 'sales-intelligence' | 'local-market-network' | 'market-diffusion-network' | 'research-capacity' | 'repair-technician' | 'recipe-unlocks' | 'resource-quality';
 
 export type ResearchProjectDefinition = {
   id: ResearchProjectId;
@@ -167,6 +168,11 @@ export const RESEARCH_PROJECTS: readonly ResearchProjectDefinition[] = [
   { id: 'research-capacity-8', chainId: 'research-capacity', tier: 8, name: 'Research Capacity VIII', cost: 720_000, durationMs: 57_600_000, requirements: [{ kind: 'research', projectId: 'research-capacity-7', label: 'Research Capacity VII' }], effect: { kind: 'research-capacity', additionalSlots: 1 } },
   { id: 'research-capacity-9', chainId: 'research-capacity', tier: 9, name: 'Research Capacity IX', cost: 2_000_000, durationMs: 115_200_000, requirements: [{ kind: 'research', projectId: 'research-capacity-8', label: 'Research Capacity VIII' }], effect: { kind: 'research-capacity', additionalSlots: 1 } },
   { id: 'research-capacity-10', chainId: 'research-capacity', tier: 10, name: 'Research Capacity X', cost: 6_000_000, durationMs: 230_400_000, requirements: [{ kind: 'research', projectId: 'research-capacity-9', label: 'Research Capacity IX' }], effect: { kind: 'research-capacity', additionalSlots: 1 } },
+  { id: 'repair-technician-1', chainId: 'repair-technician', tier: 1, name: 'Repair Technician I', cost: 1_000, durationMs: 180_000, requirements: [FACILITY_TIER_1], effect: { kind: 'facility-auto-repair', maximumFacilities: 1 } },
+  { id: 'repair-technician-2', chainId: 'repair-technician', tier: 2, name: 'Repair Technician II', cost: 5_000, durationMs: 480_000, requirements: [{ kind: 'research', projectId: 'repair-technician-1', label: 'Repair Technician I' }, ORDERS_TIER_1], effect: { kind: 'facility-auto-repair', maximumFacilities: 2 } },
+  { id: 'repair-technician-3', chainId: 'repair-technician', tier: 3, name: 'Repair Technician III', cost: 15_000, durationMs: 1_200_000, requirements: [{ kind: 'research', projectId: 'repair-technician-2', label: 'Repair Technician II' }, CASH_TIER_1], effect: { kind: 'facility-auto-repair', maximumFacilities: 3 } },
+  { id: 'repair-technician-4', chainId: 'repair-technician', tier: 4, name: 'Repair Technician IV', cost: 45_000, durationMs: 3_000_000, requirements: [{ kind: 'research', projectId: 'repair-technician-3', label: 'Repair Technician III' }, PRESTIGE_TIER_1], effect: { kind: 'facility-auto-repair', maximumFacilities: 4 } },
+  { id: 'repair-technician-5', chainId: 'repair-technician', tier: 5, name: 'Repair Technician V', cost: 125_000, durationMs: 7_200_000, requirements: [{ kind: 'research', projectId: 'repair-technician-4', label: 'Repair Technician IV' }, ORDERS_TIER_2], effect: { kind: 'facility-auto-repair', maximumFacilities: 5 } },
   ...RECIPE_RESEARCH_PROJECTS,
 ];
 

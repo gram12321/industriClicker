@@ -21,6 +21,9 @@ export type FacilitySnapshot = {
   conditionDecayUpgradeLevel?: number;
   assignedWorkers?: number;
   facilityCondition: number;
+  autoRepairEnabled: boolean;
+  autoRepairThreshold: number;
+  autoRepairTarget: number;
 };
 
 /** Immutable facility state and derived values for game rules and UI rendering. */
@@ -47,6 +50,9 @@ export type FacilityView = {
   facilityCondition: number;
   conditionEfficiency: number;
   facilityEfficiency: number;
+  autoRepairEnabled: boolean;
+  autoRepairThreshold: number;
+  autoRepairTarget: number;
   speedUpgradeWorkSpeedMultiplier: number;
   outputMultiplier: number;
 };
@@ -65,6 +71,9 @@ export class Facility {
   private conditionDecayUpgradeLevel = 0;
   private assignedWorkers = 0;
   private facilityCondition = 1;
+  private autoRepairEnabled = false;
+  private autoRepairThreshold = 0.7;
+  private autoRepairTarget = 1;
 
   constructor(
     public readonly id: string,
@@ -105,6 +114,9 @@ export class Facility {
       facilityCondition: this.facilityCondition,
       conditionEfficiency: getFacilityConditionEfficiency(this.facilityCondition),
       facilityEfficiency,
+      autoRepairEnabled: this.autoRepairEnabled,
+      autoRepairThreshold: this.autoRepairThreshold,
+      autoRepairTarget: this.autoRepairTarget,
       speedUpgradeWorkSpeedMultiplier: getSpeedUpgradeWorkSpeedMultiplier(this.speedUpgradeLevel),
       outputMultiplier: getOutputUpgradeMultiplier(this.outputUpgradeLevel),
     };
@@ -152,6 +164,17 @@ export class Facility {
     return this.setProductionCycle([recipeName]);
   }
 
+  setAutoRepair(enabled: boolean, threshold: number, target: number): boolean {
+    if (typeof enabled !== 'boolean' || !Number.isFinite(threshold) || !Number.isFinite(target)) return false;
+    const normalizedThreshold = Math.min(1, Math.max(0, threshold));
+    const normalizedTarget = Math.min(1, Math.max(0, target));
+    if (normalizedTarget <= normalizedThreshold) return false;
+    this.autoRepairEnabled = enabled;
+    this.autoRepairThreshold = normalizedThreshold;
+    this.autoRepairTarget = normalizedTarget;
+    return true;
+  }
+
   upgradeQuality(): void {
     this.qualityUpgradeLevel += 1;
   }
@@ -196,9 +219,10 @@ export class Facility {
     return true;
   }
 
-  repairCondition(): boolean {
-    if (this.facilityCondition >= 1) return false;
-    this.facilityCondition = 1;
+  repairCondition(targetCondition = 1): boolean {
+    const target = Number.isFinite(targetCondition) ? Math.min(1, Math.max(0, targetCondition)) : 1;
+    if (target <= this.facilityCondition) return false;
+    this.facilityCondition = target;
     return true;
   }
 
@@ -234,6 +258,9 @@ export class Facility {
       conditionDecayUpgradeLevel: this.conditionDecayUpgradeLevel,
       assignedWorkers: this.assignedWorkers,
       facilityCondition: this.facilityCondition,
+      autoRepairEnabled: this.autoRepairEnabled,
+      autoRepairThreshold: this.autoRepairThreshold,
+      autoRepairTarget: this.autoRepairTarget,
     };
   }
 
@@ -266,6 +293,9 @@ export class Facility {
     this.facilityCondition = isValidFacilityCondition(snapshot.facilityCondition)
       ? snapshot.facilityCondition
       : 1;
+    this.autoRepairEnabled = snapshot.autoRepairEnabled;
+    this.autoRepairThreshold = snapshot.autoRepairThreshold;
+    this.autoRepairTarget = snapshot.autoRepairTarget;
 
     for (const recipe of getFacilityDefinition(this.facilityType).recipes) {
       const progress = snapshot.recipeProgress[recipe.name];

@@ -46,6 +46,8 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Speed upgrade / Output upgrade | Facility levels that respectively improve work speed or recipe output and consume euros, Construction Materials, and Industrial Machines. |
 | Assigned workers / Required workers | The local worker count and calculated staffing target for a facility. |
 | Facility condition | A persisted 0–1 measure of a constructed facility's wear state. It begins at 1 and decreases during foreground time and completed production cycles. |
+| Repair threshold / repair target | The condition percentages used by a facility's optional auto-repair rule: when condition falls to or below the threshold, it repairs up to the target. |
+| Repair Technician research | A five-tier research chain that unlocks threshold-based auto-repair and raises the number of facilities allowed to use it. |
 | Recipe condition-wear multiplier | A static per-recipe balance value that scales production wear without following live market prices. |
 | Facility efficiency | The production-speed multiplier formed from staffing efficiency and facility condition. |
 | Company prestige | A company-standing value derived from prestige events. It improves customer discovery, bid quality, relationship baselines, and customer-order target value. |

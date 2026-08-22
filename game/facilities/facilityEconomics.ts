@@ -13,7 +13,7 @@ import {
   getFacilityDefinition,
 } from './facilityConstants';
 import { calculateFacilityEffectiveWork, getRecipeProductionConditionLoss } from './facilityProduction';
-import type { FacilityUpgradeKind } from './facilityUpgrades';
+import { getFacilityConditionEfficiency, type FacilityUpgradeKind } from './facilityUpgrades';
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value));
@@ -113,6 +113,54 @@ export function calculateFacilityNetGainPerMinute(
 ): number {
   return valuePerMinute
     - decayMaterialCostPerMinute * market.getLocalPrice(ResourceType.ConstructionMaterials);
+}
+
+/** Projects the recurring economics at a selected post-repair condition without mutating the live facility. */
+export function calculateProjectedFacilityConditionEconomics(
+  facility: Facility,
+  targetCondition: number,
+  recipe: Recipe,
+  market: Market,
+  recipeResearchWorkSpeedMultiplier: number,
+  getInputQuality?: (resourceType: ResourceType) => number,
+  getOutputQuality?: (resourceType: ResourceType) => number,
+): { decayMaterialCostPerMinute: number; netGainPerMinute: number; valuePerMinute: number } {
+  const facilityView = facility.getView();
+  const projectedCondition = Math.max(facilityView.facilityCondition, clamp(targetCondition, 0, 1));
+  const conditionEfficiency = getFacilityConditionEfficiency(projectedCondition);
+  const projectedView = {
+    ...facilityView,
+    facilityCondition: projectedCondition,
+    conditionEfficiency,
+    facilityEfficiency: facilityView.staffingEfficiency * conditionEfficiency,
+  };
+  const definition = getFacilityDefinition(projectedView.facilityType);
+  const effectiveWorkPerMinute = calculateFacilityEffectiveWork(
+    projectedView,
+    BASE_WORK_PER_MINUTE,
+    recipeResearchWorkSpeedMultiplier,
+  );
+  const valuePerMinute = calculateRecipeValuePerMinute(
+    recipe,
+    market,
+    projectedView.outputMultiplier,
+    effectiveWorkPerMinute,
+    getInputQuality,
+    getOutputQuality,
+  );
+  const decayMaterialCostPerMinute = calculateFacilityDecayMaterialCostPerMinute(
+    definition.constructionMaterialsCost,
+    projectedView.facilityCondition,
+    projectedView.conditionDecayMultiplier * projectedView.overstaffingConditionDecayMultiplier,
+    effectiveWorkPerMinute,
+    recipe,
+  );
+
+  return {
+    decayMaterialCostPerMinute,
+    netGainPerMinute: calculateFacilityNetGainPerMinute(valuePerMinute, decayMaterialCostPerMinute, market),
+    valuePerMinute,
+  };
 }
 
 /** Projects the incremental market value per minute from one facility quality upgrade. */

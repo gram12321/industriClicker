@@ -109,8 +109,9 @@ export function getFacilityConditionEfficiency(facilityCondition: number): numbe
   return 1 - calculateAsymmetricalScaler01(1 - condition);
 }
 
-/** Repair cost for one construction input, proportional to the missing condition. */
-export function getFacilityRepairCost(constructionInputCost: number, facilityCondition: number): number {
-  const missingCondition = Number.isFinite(facilityCondition) ? Math.min(1, Math.max(0, 1 - facilityCondition)) : 1;
-  return Math.max(0, constructionInputCost) * missingCondition * FACILITY_REPAIR_MATERIAL_COST_RATE;
+/** Repair cost for one construction input, proportional to the restored condition. */
+export function getFacilityRepairCost(constructionInputCost: number, facilityCondition: number, targetCondition = 1): number {
+  const current = Number.isFinite(facilityCondition) ? Math.min(1, Math.max(0, facilityCondition)) : 0;
+  const target = Number.isFinite(targetCondition) ? Math.min(1, Math.max(current, targetCondition)) : 1;
+  return Math.max(0, constructionInputCost) * (target - current) * FACILITY_REPAIR_MATERIAL_COST_RATE;
 }

@@ -209,6 +209,44 @@ describe('facility construction inputs', () => {
     expect(useGameStore.getState().inventory.getAmount(ResourceType.IndustrialMachines)).toBe(0);
   });
 
+  it('repairs only to the selected target condition', () => {
+    const state = useGameStore.getState();
+    state.restoreSnapshot(createStartingGameSnapshot(0));
+
+    expect(state.buildFacility(FacilityType.Farm)).toBe(true);
+    useGameStore.getState().facilities.get('farm-1')!.applyConditionLoss(0.5);
+    state.setAdminBalance(10_000);
+
+    expect(state.repairFacility('farm-1', 0.75)).toBe(true);
+    expect(useGameStore.getState().facilities.get('farm-1')!.getView().facilityCondition).toBe(0.75);
+    expect(useGameStore.getState().facilityMaintenance.getRepairedCondition()).toBeCloseTo(0.25);
+  });
+
+  it('gates auto-repair behind Repair Technician research and repairs eligible facilities during foreground time', () => {
+    const state = useGameStore.getState();
+    state.restoreSnapshot(createStartingGameSnapshot(0));
+    state.setAdminBalance(10_000);
+
+    expect(state.buildFacility(FacilityType.Farm)).toBe(true);
+    const farm = useGameStore.getState().facilities.get('farm-1')!;
+    farm.applyConditionLoss(0.5);
+    state.setInventoryAmount(ResourceType.ConstructionMaterials, 0);
+    state.setInventoryAmount(ResourceType.IndustrialMachines, 0);
+    expect(state.setFacilityAutoRepair('farm-1', true, 0.7, 1)).toBe(false);
+
+    const snapshot = state.createSnapshot();
+    snapshot.research.completed.push({ projectId: 'repair-technician-1', completedAtGameTimeMs: 0 });
+    state.restoreSnapshot(snapshot);
+    expect(state.setFacilityAutoRepair('farm-1', true, 0.7, 1)).toBe(true);
+
+    state.advanceGameTime(1_000);
+
+    expect(useGameStore.getState().facilities.get('farm-1')!.getView().facilityCondition).toBe(1);
+    expect(useGameStore.getState().facilityMaintenance.getRepairedCondition()).toBeGreaterThan(0.49);
+    expect(useGameStore.getState().inventory.getAmount(ResourceType.ConstructionMaterials)).toBe(0);
+    expect(useGameStore.getState().inventory.getAmount(ResourceType.IndustrialMachines)).toBe(0);
+  });
+
   it('makes the first facility recipe research free and ten times faster', () => {
     const state = useGameStore.getState();
     state.restoreSnapshot(createStartingGameSnapshot(0));

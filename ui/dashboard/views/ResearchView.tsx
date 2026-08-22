@@ -29,17 +29,19 @@ const CHAIN_DETAILS: Record<ResearchChainId, { eyebrow: string; icon: string; ti
   'local-market-network': { eyebrow: 'MARKET', icon: 'storefront-outline', title: 'Local market network', subtitle: 'Expand local market depth so each trade shifts prices less.' },
   'market-diffusion-network': { eyebrow: 'MARKET', icon: 'transit-connection-variant', title: 'Market diffusion network', subtitle: 'Increase the rate at which local and regional markets rebalance.' },
   'research-capacity': { eyebrow: 'RESEARCH', icon: 'flask-plus-outline', title: 'Research capacity', subtitle: 'Unlock additional research slots so projects can run simultaneously.' },
+  'repair-technician': { eyebrow: 'MAINTENANCE', icon: 'wrench-clock-outline', title: 'Repair automation', subtitle: 'Let your technicians monitor condition and repair selected facilities automatically.' },
   'recipe-unlocks': { eyebrow: 'RECIPES', icon: 'flask-outline', title: 'Recipe research', subtitle: 'Unlock production recipes for your facilities.' },
   'resource-quality': { eyebrow: 'QUALITY', icon: APP_ICONS.quality, title: 'Resource quality', subtitle: 'Raise each resource’s produced quality through an unlimited research chain.' },
 };
 
-type ResearchGroupId = 'capital-grants' | 'sales' | 'research-capacity' | 'recipe-unlocks' | 'resource-quality';
+type ResearchGroupId = 'capital-grants' | 'sales' | 'research-capacity' | 'maintenance' | 'recipe-unlocks' | 'resource-quality';
 type ResearchGroup = { eyebrow: string; icon: string; id: ResearchGroupId; title: string; subtitle: string; chainIds: readonly ResearchChainId[] };
 
 const RESEARCH_GROUPS: readonly ResearchGroup[] = [
   { id: 'capital-grants', chainIds: ['capital-grants'], eyebrow: 'CAPITAL', icon: 'bank-outline', title: 'Capital grants', subtitle: 'Fund staged company investment with one-time research grants.' },
   { id: 'sales', chainIds: ['sales-capacity', 'sales-order-value-limit', 'sales-targeting', 'bid-value', 'relationship-management', 'sales-intelligence', 'market-diffusion-network', 'local-market-network'], eyebrow: 'SALES', icon: 'handshake-outline', title: 'Sales research', subtitle: 'Grow your pipeline, improve trust outcomes, sharpen offers, and improve market reach.' },
   { id: 'research-capacity', chainIds: ['research-capacity'], eyebrow: 'RESEARCH', icon: 'flask-plus-outline', title: 'Research capacity', subtitle: 'Unlock additional research slots so projects can run simultaneously.' },
+  { id: 'maintenance', chainIds: ['repair-technician'], eyebrow: 'MAINTENANCE', icon: 'wrench-clock-outline', title: 'Repair automation', subtitle: 'Unlock more facilities that can use threshold-based auto-repair.' },
   { id: 'recipe-unlocks', chainIds: ['recipe-unlocks'], eyebrow: 'RECIPES', icon: 'flask-outline', title: 'Recipe research', subtitle: 'Unlock production recipes for your facilities.' },
   { id: 'resource-quality', chainIds: ['resource-quality'], eyebrow: 'QUALITY', icon: APP_ICONS.quality, title: 'Resource quality', subtitle: 'Raise each resource’s produced quality through an unlimited research chain.' },
 ];

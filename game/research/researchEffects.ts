@@ -19,6 +19,7 @@ export type ResearchEffect =
   | { kind: 'research-capacity'; additionalSlots: number }
   | { kind: 'recipe-unlock'; recipeName: RecipeName }
   | { kind: 'recipe-work-speed-bonus'; recipeName: RecipeName; level: number }
+  | { kind: 'facility-auto-repair'; maximumFacilities: number }
   | { kind: 'resource-production-quality'; resourceType: ResourceType; level: number; quality: number };
 
 export function describeResearchEffect(effect: ResearchEffect): string {
@@ -40,6 +41,7 @@ export function describeResearchEffect(effect: ResearchEffect): string {
     case 'research-capacity': return `Additional simultaneous research projects: ${effect.additionalSlots}`;
     case 'recipe-unlock': return `Unlock recipe: ${getRecipeDisplayName(effect.recipeName)}`;
     case 'recipe-work-speed-bonus': return `Recipe work speed bonus: ${getRecipeDisplayName(effect.recipeName)} level ${effect.level}`;
+    case 'facility-auto-repair': return `Auto-repair enabled for up to ${effect.maximumFacilities} facilities`;
     case 'resource-production-quality': return `${getResource(effect.resourceType).name} production quality: Q${effect.quality.toFixed(2)}`;
   }
 }

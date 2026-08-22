@@ -18,7 +18,6 @@ import {
   getFacilityDefinition,
   getFacilityProductionCycleInputs,
   getFacilityProductionStatus,
-  getFacilityRepairCost,
   getFacilityUpgradeCost,
   getFacilityUpgradeResourceCost,
   getOutputUpgradeMultiplier,
@@ -30,7 +29,7 @@ import {
 import type { Inventory, ResourceFlowLedger } from '@/game/inventory';
 import type { Market, MarketAutomation } from '@/game/market';
 import { getRecipe, type Recipe } from '@/game/recipes';
-import { getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResourceResearchMaxQ, type ResearchLedger, type ResearchProjectId } from '@/game/research';
+import { getFacilityAutoRepairLimit, getRecipeResearchProjectId, getRecipeResearchWorkSpeedMultiplier, getResourceResearchMaxQ, type ResearchLedger, type ResearchProjectId } from '@/game/research';
 import { calculateInputMaxQ, calculateOutputQuality, calculateProductionMaxQ, calculateUpgradeMaxQ, type OutputQualityBreakdown } from '@/game/quality';
 import { BASE_WORK_PER_MINUTE } from '@/game/core/time';
 import type { TutorialProductionPresentation } from '@/game/tutorial';
@@ -38,6 +37,7 @@ import { getResource, ResourceType } from '@/game/resources';
 import { clamp, formatCurrency, formatDuration, formatNumber, formatPercent, getColorClass } from '@/utils';
 import { DetailRow, SectionHeading, WorkMetric } from '@/ui/dashboard/components/DashboardPrimitives';
 import { TooltipAppIcon, TooltipMaterialIcon, TooltipResourceIcon, TooltipTextIcon } from '@/ui/dashboard/components/IconTooltip';
+import { FacilityRepairDialog } from '@/ui/dashboard/components/dialog/FacilityDialogs';
 import { formatRecipeName } from '@/ui/dashboard/helpers/recipeFormatters';
 import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS, RECIPE_ICONS } from '@/icons';
@@ -46,7 +46,7 @@ import type { ResearchAvailability } from '@/game/core/stores';
 type FacilityDetailTab = 'efficiency' | 'recipe' | 'upgrades';
 
 export function ProductionView({
-  buyMarketResource, facilities, finance, getResearchAvailability, inventory, market, onBuildFacilityLayout, onFirstFacilityFocusLayout, onFirstFacilityRecipeSelected, openConstructionYard, repairFacility, requestFacilityDestruction, research, resourceFlow, setFacilityProductionActive, setFacilityProductionCycle, setFacilityWorkers, setMarketAutomation, startResearch, tutorial, upgradeFacility,
+  buyMarketResource, facilities, finance, getResearchAvailability, inventory, market, onBuildFacilityLayout, onFirstFacilityFocusLayout, onFirstFacilityRecipeSelected, openConstructionYard, repairFacility, requestFacilityDestruction, research, resourceFlow, setFacilityAutoRepair, setFacilityProductionActive, setFacilityProductionCycle, setFacilityWorkers, setMarketAutomation, startResearch, tutorial, upgradeFacility,
 }: {
   facilities: FacilityCollection;
   buyMarketResource: (resourceType: Recipe['inputs'][number]['resourceType'], amount: number) => boolean;
@@ -63,8 +63,9 @@ export function ProductionView({
   requestFacilityDestruction: (facilityId: string) => void;
   setFacilityProductionActive: (facilityId: string, active: boolean) => boolean;
   setFacilityProductionCycle: (facilityId: string, recipeNames: readonly Recipe['name'][]) => boolean;
+  setFacilityAutoRepair: (facilityId: string, enabled: boolean, threshold: number, target: number) => boolean;
   setFacilityWorkers: (facilityId: string, workerCount: number) => boolean;
-  repairFacility: (facilityId: string) => boolean;
+  repairFacility: (facilityId: string, targetCondition?: number) => boolean;
   setMarketAutomation: (resourceType: Recipe['inputs'][number]['resourceType'], updates: Partial<MarketAutomation>) => boolean;
   startResearch: (projectId: ResearchProjectId) => boolean;
   tutorial: TutorialProductionPresentation;
@@ -74,6 +75,7 @@ export function ProductionView({
   const [collapsedFacilities, setCollapsedFacilities] = useState<Record<string, boolean>>({});
   const [collapsedProductionCycles, setCollapsedProductionCycles] = useState<Record<string, boolean>>({});
   const [facilityDetailTabs, setFacilityDetailTabs] = useState<Record<string, FacilityDetailTab>>({});
+  const [repairFacilityId, setRepairFacilityId] = useState<string | null>(null);
   const completedResearchProjectIds = research.getCompletedProjectIds();
   const producedByResource = resourceFlow.getLifetimeFacilityOutputByResource();
   const buildFacilityButtonRef = useRef<View>(null);
@@ -140,11 +142,6 @@ export function ProductionView({
       const projectedSpeedNetGain = activeRecipe && getActiveOutputQuality ? calculateProjectedFacilityUpgradeNetGainPerMinute(facility, activeRecipe, market, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds), 'speed', (resourceType) => inventory.getQuality(resourceType), getActiveOutputQuality) : undefined;
       const projectedOutputNetGain = activeRecipe && getActiveOutputQuality ? calculateProjectedFacilityUpgradeNetGainPerMinute(facility, activeRecipe, market, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds), 'output', (resourceType) => inventory.getQuality(resourceType), getActiveOutputQuality) : undefined;
       const projectedConditionNetGain = activeRecipe && getActiveOutputQuality ? calculateProjectedFacilityUpgradeNetGainPerMinute(facility, activeRecipe, market, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds), 'condition', (resourceType) => inventory.getQuality(resourceType), getActiveOutputQuality) : undefined;
-      const repairEuroCost = getFacilityRepairCost(definition.landCost, facilityCondition);
-      const repairConstructionMaterialsCost = getFacilityRepairCost(definition.constructionMaterialsCost, facilityCondition);
-      const repairIndustrialMachinesCost = getFacilityRepairCost(definition.industrialMachinesCost, facilityCondition);
-      const repairPayment = calculateFacilityResourcePayment(finance, inventory, market, repairEuroCost, repairConstructionMaterialsCost, repairIndustrialMachinesCost);
-      const canRepair = repairPayment.canAfford && repairEuroCost + repairConstructionMaterialsCost + repairIndustrialMachinesCost > 0;
       const isExpanded = collapsedFacilities[facilityId] !== true;
       const activeDetailTab = isFirstFacilityTutorial && index === 0 ? (firstFacilityStep === 'upgrades' || firstFacilityStep === 'inventory-transition' ? 'upgrades' : firstFacilityStep === 'footprint' || firstFacilityStep === 'research' || firstFacilityStep === 'recipe-card' || firstFacilityStep === 'recipe-automation' || firstFacilityStep === 'recipe-economics' ? 'recipe' : 'efficiency') : (facilityDetailTabs[facilityId] ?? 'recipe');
       const productionCycleInputs = getFacilityProductionCycleInputs(facilityView);
@@ -222,8 +219,8 @@ export function ProductionView({
               </View>
               <View style={styles.facilityEfficiencyCard}>
               <View style={styles.facilityUpgradeHeader}><TooltipMaterialIcon color={colors.primary} label="Repair" name={APP_ICONS.repair} size={15} /><Text style={styles.facilityUpgradeLabel}>Repair</Text></View>
-                <Text style={styles.facilityRepairCost}>{`Cost: ${formatCurrency(repairPayment.cashCost)}\n${formatCurrency(repairEuroCost)} · `}<TooltipResourceIcon resourceType={ResourceType.ConstructionMaterials} />{` Construction Materials: ${formatNumber(repairConstructionMaterialsCost, { smartDecimals: true })} · `}<TooltipResourceIcon resourceType={ResourceType.IndustrialMachines} />{` Industrial Machines: ${formatNumber(repairIndustrialMachinesCost, { smartDecimals: true })}`}</Text>
-                <View style={styles.facilityUpgradeAction}><Text style={styles.facilityStaffingDetail}>Restore to 100%</Text><IconButton accessibilityLabel={`Repair ${facilityName} for ${formatCurrency(repairPayment.cashCost)}, ${formatNumber(repairConstructionMaterialsCost, { smartDecimals: true })} Construction Materials, and ${formatNumber(repairIndustrialMachinesCost, { smartDecimals: true })} Industrial Machines`} disabled={!canRepair} icon={APP_ICONS.repair} mode="contained" onPress={() => repairFacility(facilityId)} size={16} /></View>
+                <Text style={styles.facilityRepairCost}>Choose a target condition and preview its cost, value, and net gain.</Text>
+                <View style={styles.facilityUpgradeAction}><Text style={styles.facilityStaffingDetail}>{facilityCondition >= 1 ? 'Configure auto-repair' : 'Set repair target'}</Text><IconButton accessibilityLabel={`Choose a repair target for ${facilityName}`} icon={APP_ICONS.repair} mode="contained" onPress={() => setRepairFacilityId(facilityId)} size={16} /></View>
               </View>
             </View>
             <View style={styles.facilityConditionSummary}>
@@ -247,7 +244,7 @@ export function ProductionView({
             </View>
           </View>}
         </>}
-      </Card.Content></Card></View>;
+      </Card.Content></Card><FacilityRepairDialog activeRecipe={activeRecipe ?? null} autoRepairLimit={getFacilityAutoRepairLimit(completedResearchProjectIds)} facility={facility} finance={finance} getInputQuality={(resourceType) => inventory.getQuality(resourceType)} getOutputQuality={getActiveOutputQuality} inventory={inventory} market={market} onDismiss={() => setRepairFacilityId(null)} onRepair={(targetCondition) => { if (repairFacility(facilityId, targetCondition)) setRepairFacilityId(null); }} onSetAutoRepair={(enabled, threshold, target) => setFacilityAutoRepair(facilityId, enabled, threshold, target)} recipeResearchWorkSpeedMultiplier={activeRecipe ? getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds) : 1} visible={repairFacilityId === facilityId} /></View>;
     })}
     {builtFacilities.length === 0 && <DetailRow label="Constructed facilities" value="None yet" />}
   </>;
