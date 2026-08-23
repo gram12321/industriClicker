@@ -2,6 +2,7 @@ import { type FinanceSnapshot } from '../../finance/finance';
 import { type InventorySnapshot } from '../../inventory/inventory';
 import { ResourceFlowLedger } from '../../inventory/resourceFlow';
 import { type FacilityCollectionSnapshot } from '../../facilities/facilityCollection';
+import { getFacilityMaxStaffWage } from '../../facilities/facilityConstants';
 import { isFacilityMaintenanceStatisticsSnapshot, type FacilityMaintenanceStatisticsSnapshot } from '../../facilities/facilityMaintenanceStatistics';
 import { type SalesOrdersSnapshot } from '../../sales/salesOrders';
 import { isAchievementLedgerSnapshot, type AchievementLedgerSnapshot } from '../../achievements/achievement';
@@ -49,7 +50,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isFinanceTransactionSnapshot(value: unknown): boolean {
   if (!isRecord(value) || typeof value.source !== 'string') return false;
-  const facilitySource = value.source === 'facility-construction' || value.source === 'facility-upgrade' || value.source === 'facility-repair' || value.source === 'facility-staff-wage';
+  const facilitySource = value.source === 'facility-construction' || value.source === 'facility-upgrade' || value.source === 'facility-repair' || value.source === 'facility-staff-wage' || value.source === 'facility-staffing';
   if (value.source === 'facility-production') {
     return value.facilityAccounting === undefined
       && isRecord(value.facilityPerformance)
@@ -64,7 +65,7 @@ function isFinanceTransactionSnapshot(value: unknown): boolean {
   }
   if (!facilitySource) return value.facilityAccounting === undefined && value.facilityPerformance === undefined;
   if (!isRecord(value.facilityAccounting) || value.facilityPerformance !== undefined) return false;
-  const expectedClassification = value.source === 'facility-construction' ? 'construction' : value.source === 'facility-upgrade' ? 'upgrade' : value.source === 'facility-repair' ? 'maintenance' : 'staff-wage';
+  const expectedClassification = value.source === 'facility-construction' ? 'construction' : value.source === 'facility-upgrade' ? 'upgrade' : value.source === 'facility-repair' ? 'maintenance' : value.source === 'facility-staffing' ? 'staffing' : 'staff-wage';
   return typeof value.facilityAccounting.facilityId === 'string'
     && value.facilityAccounting.facilityId.length > 0
     && value.facilityAccounting.classification === expectedClassification
@@ -114,6 +115,36 @@ function isInventoryEntrySnapshot(value: unknown): boolean {
     && typeof value.quantity === 'number' && Number.isFinite(value.quantity) && value.quantity >= 0
     && typeof value.quality === 'number' && Number.isFinite(value.quality) && value.quality > 0
     && typeof value.sourceCostPerUnit === 'number' && Number.isFinite(value.sourceCostPerUnit) && value.sourceCostPerUnit >= 0;
+}
+
+function isPendingStaffingChangeSnapshot(value: unknown): boolean {
+  if (value === null) return true;
+  if (!isRecord(value)) return false;
+  return typeof value.targetWorkers === 'number' && Number.isInteger(value.targetWorkers) && value.targetWorkers >= 0
+    && typeof value.initialWorkers === 'number' && Number.isInteger(value.initialWorkers) && value.initialWorkers >= 0
+    && typeof value.startedAtGameTimeMs === 'number' && Number.isFinite(value.startedAtGameTimeMs) && value.startedAtGameTimeMs >= 0
+    && typeof value.completesAtGameTimeMs === 'number' && Number.isFinite(value.completesAtGameTimeMs) && value.completesAtGameTimeMs > value.startedAtGameTimeMs;
+}
+
+function isStaffTrainingSnapshot(value: unknown): boolean {
+  if (value === null) return true;
+  if (!isRecord(value)) return false;
+  return typeof value.workers === 'number' && Number.isInteger(value.workers) && value.workers > 0
+    && typeof value.startedAtGameTimeMs === 'number' && Number.isFinite(value.startedAtGameTimeMs) && value.startedAtGameTimeMs >= 0
+    && typeof value.completesAtGameTimeMs === 'number' && Number.isFinite(value.completesAtGameTimeMs) && value.completesAtGameTimeMs > value.startedAtGameTimeMs;
+}
+
+function isFacilityStaffSnapshot(value: Record<string, unknown>): boolean {
+  const assignedWorkers = value.assignedWorkers;
+  const training = value.staffTraining;
+  const pendingStaffingChange = value.pendingStaffingChange;
+  return typeof assignedWorkers === 'number' && Number.isInteger(assignedWorkers) && assignedWorkers >= 0
+    && typeof value.staffQualityProgress === 'number' && Number.isFinite(value.staffQualityProgress) && value.staffQualityProgress >= 0
+    && (value.staffQualityTrend === 'rising' || value.staffQualityTrend === 'falling' || value.staffQualityTrend === 'steady')
+    && isPendingStaffingChangeSnapshot(pendingStaffingChange)
+    && isStaffTrainingSnapshot(training)
+    && !(pendingStaffingChange !== null && training !== null)
+    && (training === null || (isRecord(training) && typeof training.workers === 'number' && training.workers <= assignedWorkers));
 }
 
 /** Structural guard used by the company-scoped SQLite save adapter. */
@@ -175,14 +206,16 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
       && typeof facility.staffWagePerWorkerPerMinute === 'number'
       && Number.isFinite(facility.staffWagePerWorkerPerMinute)
       && facility.staffWagePerWorkerPerMinute >= 0
+      && facility.staffWagePerWorkerPerMinute <= getFacilityMaxStaffWage()
       && typeof facility.autoRepairEnabled === 'boolean'
       && typeof facility.autoRepairThreshold === 'number' && Number.isFinite(facility.autoRepairThreshold) && facility.autoRepairThreshold >= 0 && facility.autoRepairThreshold < 1
       && typeof facility.autoRepairTarget === 'number' && Number.isFinite(facility.autoRepairTarget) && facility.autoRepairTarget > facility.autoRepairThreshold && facility.autoRepairTarget <= 1
       && (facility.recipeInputQ === null || (typeof facility.recipeInputQ === 'number' && Number.isFinite(facility.recipeInputQ) && facility.recipeInputQ > 0))
       && (typeof facility.recipeInputSourceCost === 'number' && Number.isFinite(facility.recipeInputSourceCost) && facility.recipeInputSourceCost >= 0 || facility.recipeInputSourceCost === null)
-      && typeof facility.qualityUpgradeLevel === 'number'
-      && Number.isInteger(facility.qualityUpgradeLevel)
-      && facility.qualityUpgradeLevel >= 1)
+       && typeof facility.qualityUpgradeLevel === 'number'
+       && Number.isInteger(facility.qualityUpgradeLevel)
+       && facility.qualityUpgradeLevel >= 1
+       && isFacilityStaffSnapshot(facility))
     && facilitySnapshots.every((facility) => isRecord(facility) && financeTransactions.some((transaction) => isRecord(transaction)
       && isRecord(transaction.facilityAccounting)
       && transaction.facilityAccounting.classification === 'construction'

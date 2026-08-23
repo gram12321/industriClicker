@@ -16,14 +16,15 @@ Canonical shared names only. Product direction is in [design.md](design.md), rul
 | Direct material cost | Source cost of inputs consumed by one recipe cycle; it excludes maintenance, wages, and capital investment. |
 | Production maintenance allocation | Projected cash, Construction Materials, and Industrial Machines repair burden caused by one completed production cycle's wear. Passive or idle wear remains facility maintenance and is not assigned to output. |
 | Contribution margin | Current output value minus direct material cost; it is not facility operating profit. |
-| Facility operating profit | Selected-period output value minus output source cost and staff wages; actual repair settlements remain visible as maintenance expense, while production-caused wear is already in output source cost. |
+| Facility operating profit | Selected-period output value minus output source cost, staff wages, and staffing/training expense; actual repair settlements remain visible as maintenance expense, while production-caused wear is already in output source cost. |
 | Resource quality | Quantity-weighted Q value on inventory and market reservoirs. It affects sale value and is one input to future facility-output quality. |
 | Quality research / quality upgrade | Resource-level research / facility-instance upgrade that raises an output-quality ceiling. |
 | Recipe | Named production transformation with inputs, outputs, and required work. Exact relationships are in `VariableRelationshipMap.md`. |
 | Production cycle | An ordered, repeating list of researched recipes owned by one facility instance. |
 | Facility | Numbered player-owned production unit. Current types: Farm, Animal Farm, Bakery, Small Utility Works, Mine, Quarry, Industrial Processing Factory, Chemical Plant, Electronics Factory, Assembly Plant, Construction Factory, Water Well, and Power Plant. |
 | Facility condition | Persisted 0–1 wear state affecting facility efficiency. |
-| Assigned workers / required workers | Facility staff count / calculated staffing target; each assigned worker receives the configured staff wage. |
+| Assigned workers / required workers | Facility staff count / calculated staffing target; each assigned worker receives the configured staff wage. Workers in training are temporarily unavailable for production and experience. |
+| Staff Quality | Facility knowledge level shared by the assigned staff group; training raises it, wage payment drives it over time, and firing removes the fired workers' proportional pooled knowledge share. |
 | Facility maintenance statistics | Lifetime repaired condition, largest repair, and repair-value facts owned by Facilities. |
 | Repair threshold / target | Auto-repair trigger and selected post-repair condition. |
 | Speed / output / condition / quality upgrade | Independent facility upgrade tracks; construction resources are Construction Materials and Industrial Machines. |
@@ -32,7 +33,7 @@ Canonical shared names only. Product direction is in [design.md](design.md), rul
 | Finance transaction | Signed cash movement with source, accounting kind, detail lines, and foreground logical timestamp. |
 | Facility capital investment | Historical construction and upgrade value recorded by Finance. |
 | Facility maintenance expense | Historical repair value recorded separately from capital investment. |
-| Facility staff wage | Player-set euro wage per assigned worker per foreground minute; paid foreground charges are Finance operating expenses. |
+| Facility staff wage | Player-set euro wage per assigned worker per foreground minute; paid foreground charges are Finance operating expenses. If wages cannot be paid, production, training, and wage-driven experience/quality progression pause. |
 | Facility market revaluation | Informational difference between historical-cost book value and condition-adjusted replacement value at current local prices. |
 | Asset value | Derived value of cash, inventory, facilities, or completed research. |
 | Finance payment cycle | One foreground game minute used for loan repayment. |

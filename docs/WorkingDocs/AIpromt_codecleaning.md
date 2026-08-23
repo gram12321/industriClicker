@@ -4,6 +4,8 @@ Use this guide for behavior-preserving cleanup of Industri Clicker.
 
 ## Cleanup Targets
 
+ We are looking for illogical or inefficient coding. Simplification or overimplementation. We are looking if it's implemented similarly to the rest of the codebase and obeys project rules and architecture.
+
 - Illogical ownership between React Native UI, game logic, Zustand state, Expo SQLite adapters, types, and constants.
 - Duplicate rules, dead code, unused imports, stale exports, or obsolete placeholders.
 - Unnecessary rerenders, repeated calculations, or persistence writes on frequent taps.

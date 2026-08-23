@@ -1,6 +1,6 @@
 import { Finance, LOAN_COLLECTION, buildFinanceStatementData, calculateAssets, calculateFacilityAssetValue, calculateLoanSearchEstimate, generateLoanOffers, LENDER_TYPES, refreshLoanOfferAvailability, type LoanOffer, type LoanSearchCriteria } from '@/game/finance';
 import { Inventory, ResourceFlowLedger } from '@/game/inventory';
-import { FACILITIES, FacilityCollection, FacilityMaintenanceStatistics, advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateFacilityProductionMaintenanceCost, FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_FIRE_COST_WAGE_MINUTES, FACILITY_FIRE_DURATION_PER_WORKER_MS, FACILITY_HIRE_COST_WAGE_MINUTES, FACILITY_HIRE_DURATION_PER_WORKER_MS, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_REPAIR_DURATION_PER_CONDITION_MS, FACILITY_STAFFING_BATCH_EXPONENT, FACILITY_STAFF_TRAINING_COST_WAGE_MINUTES, FACILITY_STAFF_TRAINING_DURATION_PER_WORKER_MS, getFacilityDefinition, getFacilityMissingInputs, getMissingFacilityMaterials, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, getStaffQualityWorkMultiplier, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
+import { FACILITIES, FacilityCollection, FacilityMaintenanceStatistics, advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateFacilityProductionMaintenanceCost, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_REPAIR_DURATION_PER_CONDITION_MS, getFacilityDefinition, getFacilityMissingInputs, getMissingFacilityMaterials, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, getStaffingChangeCost, getStaffingChangeDurationMs, getStaffTrainingCost, getStaffTrainingDurationMs, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
 import { calculateOutputQuality, calculateProductionMaxQ } from '@/game/quality';
 import { getRecipe, type RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
@@ -66,6 +66,7 @@ type GameState = {
   setFacilityProductionActive: (facilityId: string, active: boolean) => boolean;
   setFacilityWorkers: (facilityId: string, workerCount: number) => boolean;
   setFacilityStaffWage: (facilityId: string, wagePerWorkerPerMinute: number) => boolean;
+  setFacilityStaffing: (facilityId: string, workerCount: number, wagePerWorkerPerMinute: number) => boolean;
   trainFacilityStaff: (facilityId: string, workerCount: number) => boolean;
   setFacilityAutoRepair: (facilityId: string, enabled: boolean, threshold: number, target: number) => boolean;
   repairFacility: (facilityId: string, targetCondition?: number) => boolean;
@@ -530,10 +531,9 @@ export const useGameStore = create<GameState>((set, get) => {
     const workerDifference = Math.abs(workerCount - currentWorkers);
     if (!Number.isInteger(workerCount) || workerCount < 0 || workerDifference === 0) return false;
     const isHiring = workerCount > currentWorkers;
-    const wage = Math.max(1, facility.getView().staffWagePerWorkerPerMinute);
-    const batchMultiplier = Math.pow(workerDifference, FACILITY_STAFFING_BATCH_EXPONENT);
-    const cost = wage * (isHiring ? FACILITY_HIRE_COST_WAGE_MINUTES : FACILITY_FIRE_COST_WAGE_MINUTES) * batchMultiplier;
-    const duration = (isHiring ? FACILITY_HIRE_DURATION_PER_WORKER_MS : FACILITY_FIRE_DURATION_PER_WORKER_MS) * batchMultiplier;
+    const wage = facility.getView().staffWagePerWorkerPerMinute;
+    const cost = getStaffingChangeCost(currentWorkers, workerCount, wage);
+    const duration = getStaffingChangeDurationMs(currentWorkers, workerCount);
     const finance = get().finance.clone();
     if (!finance.applyTransaction({ amount: -cost, description: `${isHiring ? 'Hiring' : 'Severance'} for ${facility.getView().displayName}`, detailLines: [`Workers: ${workerDifference}`, `Completes in ${(duration / 60_000).toFixed(2)} min`], facilityAccounting: { facilityId, classification: 'staffing', historicalValue: cost }, kind: 'operating', source: 'facility-staffing', occurredAtGameTimeMs: get().lastProcessedAtMs }) || !facility.scheduleStaffingChange(workerCount, get().lastProcessedAtMs, get().lastProcessedAtMs + duration)) return false;
     set({ facilities, finance });
@@ -551,14 +551,29 @@ export const useGameStore = create<GameState>((set, get) => {
     set({ facilities });
     return true;
   },
+  setFacilityStaffing: (facilityId, workerCount, wagePerWorkerPerMinute) => {
+    get().advanceRealtime(Date.now());
+    const facilities = get().facilities.clone();
+    const facility = facilities.get(facilityId);
+    if (!facility || !Number.isInteger(workerCount) || workerCount < 0 || !facility.setStaffWagePerWorkerPerMinute(wagePerWorkerPerMinute)) return false;
+    const currentWorkers = facility.getView().assignedWorkers;
+    if (workerCount === currentWorkers) { set({ facilities }); return true; }
+    const cost = getStaffingChangeCost(currentWorkers, workerCount, wagePerWorkerPerMinute);
+    const duration = getStaffingChangeDurationMs(currentWorkers, workerCount);
+    const finance = get().finance.clone();
+    const isHiring = workerCount > currentWorkers;
+    if (!finance.applyTransaction({ amount: -cost, description: `${isHiring ? 'Hiring' : 'Severance'} for ${facility.getView().displayName}`, detailLines: [`Workers: ${Math.abs(workerCount - currentWorkers)}`, `Completes in ${(duration / 60_000).toFixed(2)} min`], facilityAccounting: { facilityId, classification: 'staffing', historicalValue: cost }, kind: 'operating', source: 'facility-staffing', occurredAtGameTimeMs: get().lastProcessedAtMs }) || !facility.scheduleStaffingChange(workerCount, get().lastProcessedAtMs, get().lastProcessedAtMs + duration)) return false;
+    set({ facilities, finance });
+    return true;
+  },
   trainFacilityStaff: (facilityId, workerCount) => {
     get().advanceRealtime(Date.now());
     const facilities = get().facilities.clone();
     const facility = facilities.get(facilityId);
     if (!facility || !Number.isInteger(workerCount) || workerCount <= 0) return false;
     const view = facility.getView();
-    const duration = FACILITY_STAFF_TRAINING_DURATION_PER_WORKER_MS * workerCount;
-    const cost = FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE * FACILITY_STAFF_TRAINING_COST_WAGE_MINUTES * getStaffQualityWorkMultiplier(view.staffQuality) * workerCount;
+    const duration = getStaffTrainingDurationMs(workerCount);
+    const cost = getStaffTrainingCost(view.staffQuality, workerCount);
     const finance = get().finance.clone();
     const startedAt = get().lastProcessedAtMs;
     if (!finance.applyTransaction({ amount: -cost, description: `Staff training for ${view.displayName}`, detailLines: [`Workers: ${workerCount}`, `Completes in ${(duration / 60_000).toFixed(2)} min`], facilityAccounting: { facilityId, classification: 'staffing', historicalValue: cost }, kind: 'operating', source: 'facility-staffing', occurredAtGameTimeMs: startedAt }) || !facility.scheduleStaffTraining(workerCount, startedAt, startedAt + duration)) return false;
@@ -719,8 +734,6 @@ export const useGameStore = create<GameState>((set, get) => {
       if (hasConstructedFacility) {
         for (const facility of facilities.getAll()) {
           facility.processStaffingChange(stepEndGameTimeMs);
-          facility.processStaffTraining(stepEndGameTimeMs);
-          facility.advanceStaffQuality(stepMs / REALTIME_WORK_MINUTE_MS);
         }
         facilities.applyPassiveConditionLoss((stepMs / REALTIME_WORK_MINUTE_MS) * FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE);
         for (const facility of facilities.getAll()) facility.processRepair(stepEndGameTimeMs);
@@ -730,11 +743,18 @@ export const useGameStore = create<GameState>((set, get) => {
         for (const facility of facilities.getAll()) {
           const facilityView = facility.getView();
           const staffWageExpense = facilityView.assignedWorkers * facilityView.staffWagePerWorkerPerMinute * stepMs / REALTIME_WORK_MINUTE_MS;
-          if (staffWageExpense <= 0) continue;
-          marketFinance ??= get().finance.clone();
-          if (!marketFinance.applyTransaction({ amount: -staffWageExpense, description: `Staff wages for ${facilityView.displayName}`, detailLines: [`Workers: ${facilityView.assignedWorkers}`, `Wage: €${facilityView.staffWagePerWorkerPerMinute.toFixed(2)} per worker/min`], facilityAccounting: { facilityId: facility.id, classification: 'staff-wage', historicalValue: staffWageExpense }, kind: 'operating', source: 'facility-staff-wage', occurredAtGameTimeMs: stepEndGameTimeMs })) {
-            facility.setProductionActive(false);
+          let wagesPaid = true;
+          if (staffWageExpense > 0) {
+            marketFinance ??= get().finance.clone();
+            wagesPaid = marketFinance.applyTransaction({ amount: -staffWageExpense, description: `Staff wages for ${facilityView.displayName}`, detailLines: [`Workers: ${facilityView.assignedWorkers}`, `Wage: €${facilityView.staffWagePerWorkerPerMinute.toFixed(2)} per worker/min`], facilityAccounting: { facilityId: facility.id, classification: 'staff-wage', historicalValue: staffWageExpense }, kind: 'operating', source: 'facility-staff-wage', occurredAtGameTimeMs: stepEndGameTimeMs });
           }
+          if (!wagesPaid) {
+            facility.setProductionActive(false);
+            facility.pauseStaffTraining(stepMs);
+            continue;
+          }
+          facility.processStaffTraining(stepEndGameTimeMs);
+          facility.advanceStaffQuality(stepMs / REALTIME_WORK_MINUTE_MS);
         }
       }
 
@@ -842,7 +862,7 @@ export const useGameStore = create<GameState>((set, get) => {
         for (const facility of facilities.getAll()) {
           if (consideredAutoRepairs >= autoRepairLimit) break;
           const facilityView = facility.getView();
-          if (!facilityView.autoRepairEnabled || facilityView.pendingRepair || facilityView.pendingStaffingChange || facilityView.staffTraining || facilityView.facilityCondition > facilityView.autoRepairThreshold || facilityView.autoRepairTarget <= facilityView.facilityCondition) continue;
+          if (!facilityView.autoRepairEnabled || facilityView.pendingRepair || facilityView.facilityCondition > facilityView.autoRepairThreshold || facilityView.autoRepairTarget <= facilityView.facilityCondition) continue;
           consideredAutoRepairs += 1;
           market ??= get().market.clone();
           marketFinance ??= get().finance.clone();

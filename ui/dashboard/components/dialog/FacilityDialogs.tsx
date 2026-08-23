@@ -5,7 +5,7 @@ import { Button, Card, Dialog, IconButton, List, Portal, SegmentedButtons, Text,
 import { colors } from '@/theme';
 import { LOAN_COLLECTION, calculateFacilityAssetValue, type Finance } from '@/game/finance';
 import { Facility, type FacilityCollection, type FacilityType } from '@/game/facilities';
-import { calculateFacilityResourcePayment, calculateProjectedFacilityConditionEconomics, FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_FIRE_COST_WAGE_MINUTES, FACILITY_FIRE_DURATION_PER_WORKER_MS, FACILITY_GROUPS, FACILITY_HIRE_COST_WAGE_MINUTES, FACILITY_HIRE_DURATION_PER_WORKER_MS, FACILITY_REPAIR_DURATION_PER_CONDITION_MS, FACILITY_REPAIR_EFFICIENCY_MULTIPLIER, FACILITY_STAFFING_BATCH_EXPONENT, FACILITY_STAFF_TRAINING_COST_WAGE_MINUTES, FACILITY_STAFF_TRAINING_DURATION_PER_WORKER_MS, getFacilityDefinition, getFacilityEfficiency, getFacilityMaxStaffWage, getFacilityRepairCost, getStaffingEfficiency, getStaffQualityFromProgress, getStaffQualityWorkMultiplier } from '@/game/facilities';
+import { calculateFacilityResourcePayment, calculateProjectedFacilityConditionEconomics, FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_GROUPS, FACILITY_REPAIR_DURATION_PER_CONDITION_MS, FACILITY_REPAIR_EFFICIENCY_MULTIPLIER, FACILITY_STAFF_TRAINING_QUALITY_PROGRESS_PER_WORKER, getFacilityDefinition, getFacilityEfficiency, getFacilityMaxStaffWage, getFacilityRepairCost, getStaffingChangeCost, getStaffingChangeDurationMs, getStaffTrainingCost, getStaffTrainingDurationMs, getStaffingEfficiency, getStaffQualityFromProgress, getStaffQualityWorkMultiplier } from '@/game/facilities';
 import type { Inventory } from '@/game/inventory';
 import type { Market } from '@/game/market';
 import { ResourceType } from '@/game/resources';
@@ -204,8 +204,7 @@ export function FacilityStaffWageDialog({
   getOutputQuality,
   market,
   onDismiss,
-  onSetWorkers,
-  onSetStaffWage,
+  onSetStaffing,
   recipeResearchWorkSpeedMultiplier,
   visible,
 }: {
@@ -216,8 +215,7 @@ export function FacilityStaffWageDialog({
   getOutputQuality?: (resourceType: ResourceType) => number;
   market: Market;
   onDismiss: () => void;
-  onSetWorkers: (workerCount: number) => boolean;
-  onSetStaffWage: (wagePerWorkerPerMinute: number) => boolean;
+  onSetStaffing: (workerCount: number, wagePerWorkerPerMinute: number) => boolean;
   recipeResearchWorkSpeedMultiplier: number;
   visible: boolean;
 }) {
@@ -252,13 +250,8 @@ export function FacilityStaffWageDialog({
   }, [visible]);
 
   const saveStaffing = () => {
-    const workersSaved = selectedWorkers === facilityView.assignedWorkers || onSetWorkers(selectedWorkers);
-    if (!workersSaved) {
-      setStaffingActionMessage('Staffing change was denied. Check cash and active facility activities.');
-      return;
-    }
-    if (!onSetStaffWage(selectedWage)) {
-      setStaffingActionMessage('Wage change was denied. Check the wage limit or active facility activities.');
+    if (!onSetStaffing(selectedWorkers, selectedWage)) {
+      setStaffingActionMessage('Staffing change was denied. Check cash, the wage limit, and active facility activities.');
       return;
     }
     setStaffingActionMessage(null);
@@ -284,10 +277,9 @@ export function FacilityStaffWageDialog({
   const selectedStaffEfficiency = getStaffingEfficiency(selectedWorkers, facilityView.requiredWorkers, selectedWage, facilityView.staffQuality);
   const selectedFacilityEfficiency = getFacilityEfficiency(selectedStaffEfficiency, facilityView.facilityCondition);
   const staffingDelta = Math.abs(selectedWorkers - facilityView.assignedWorkers);
-  const staffingBatchMultiplier = Math.pow(staffingDelta, FACILITY_STAFFING_BATCH_EXPONENT);
   const staffingIsHiring = selectedWorkers > facilityView.assignedWorkers;
-  const staffingDurationMs = staffingDelta > 0 ? (staffingIsHiring ? FACILITY_HIRE_DURATION_PER_WORKER_MS : FACILITY_FIRE_DURATION_PER_WORKER_MS) * staffingBatchMultiplier : 0;
-  const staffingCost = staffingDelta > 0 ? Math.max(FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, selectedWage) * (staffingIsHiring ? FACILITY_HIRE_COST_WAGE_MINUTES : FACILITY_FIRE_COST_WAGE_MINUTES) * staffingBatchMultiplier : 0;
+  const staffingDurationMs = getStaffingChangeDurationMs(facilityView.assignedWorkers, selectedWorkers);
+  const staffingCost = getStaffingChangeCost(facilityView.assignedWorkers, selectedWorkers, selectedWage);
   const pendingStaffingSeconds = facilityView.pendingStaffingChange ? Math.max(0, facilityView.pendingStaffingChange.completesAtGameTimeMs - currentGameTimeMs) / 1_000 : 0;
   const staffQualityColor = getColorClass(Math.min(1, facilityView.staffQuality / 100));
   const efficiencyColor = getColorClass(Math.min(1, selectedStaffEfficiency));
@@ -336,10 +328,10 @@ export function FacilityStaffTrainingDialog({ currentGameTimeMs, facility, onDis
   const [trainingActionMessage, setTrainingActionMessage] = useState<string | null>(null);
   const additionalWorkers = Math.max(0, trainingWorkers - activeTrainingWorkers);
   const trainingSeconds = facilityView.staffTraining ? Math.max(0, facilityView.staffTraining.completesAtGameTimeMs - currentGameTimeMs) / 1_000 : 0;
-  const trainingCost = FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE * FACILITY_STAFF_TRAINING_COST_WAGE_MINUTES * getStaffQualityWorkMultiplier(facilityView.staffQuality) * additionalWorkers;
-  const trainingDurationMs = FACILITY_STAFF_TRAINING_DURATION_PER_WORKER_MS * additionalWorkers;
+  const trainingCost = getStaffTrainingCost(facilityView.staffQuality, additionalWorkers);
+  const trainingDurationMs = getStaffTrainingDurationMs(additionalWorkers);
   const trainingEfficiency = getStaffingEfficiency(Math.max(0, facilityView.assignedWorkers - trainingWorkers), facilityView.requiredWorkers, facilityView.staffWagePerWorkerPerMinute, facilityView.staffQuality);
-  const projectedTrainingQuality = getStaffQualityFromProgress(facilityView.staffQualityProgress + additionalWorkers * 0.25);
+  const projectedTrainingQuality = getStaffQualityFromProgress(facilityView.staffQualityProgress + trainingWorkers * FACILITY_STAFF_TRAINING_QUALITY_PROGRESS_PER_WORKER);
 
   useEffect(() => {
     if (visible) {

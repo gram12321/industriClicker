@@ -31,6 +31,18 @@ export function calculateQualityFromProgress(progress: number): number {
   return Math.min(QUALITY_NUMERIC_CEILING, 1 + (QUALITY_NUMERIC_CEILING - 1) * (1 - remainingFraction));
 }
 
+/** Converts a quality value back into progress on the shared diminishing-return curve. */
+export function calculateProgressFromQuality(quality: number): number {
+  const invertibleCeiling = Math.max(1, QUALITY_NUMERIC_CEILING - Number.EPSILON * QUALITY_NUMERIC_CEILING);
+  const target = Number.isFinite(quality) ? Math.max(1, Math.min(invertibleCeiling, quality)) : 1;
+  if (target <= 1) return 0;
+
+  return Math.pow(
+    -Math.log(1 - (target - 1) / (QUALITY_NUMERIC_CEILING - 1)) / QUALITY_LEVEL_CURVE_RATE,
+    1 / QUALITY_LEVEL_CURVE_SHAPE,
+  );
+}
+
 /** Research quality for a completed resource-quality level. Level 0 is the Q1 baseline. */
 export function calculateResearchMaxQ(level: number): number {
   return calculateQualityFromProgress(Math.floor(finiteNonNegative(level)));

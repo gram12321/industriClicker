@@ -140,6 +140,60 @@ describe('market sales', () => {
     expect(isGameSnapshot({ ...snapshot, finance: { ...snapshot.finance, transactions: staleTransactions } })).toBe(false);
   });
 
+  it('persists staffing transactions and current staff state as a valid snapshot', () => {
+    const state = useGameStore.getState();
+    const definition = FACILITIES[FacilityType.Farm];
+    state.restoreSnapshot(createStartingGameSnapshot(0));
+    state.setAdminBalance(10_000);
+    state.setInventoryAmount(ResourceType.ConstructionMaterials, definition.constructionMaterialsCost);
+    state.setInventoryAmount(ResourceType.IndustrialMachines, definition.industrialMachinesCost);
+    expect(state.buildFacility(FacilityType.Farm)).toBe(true);
+    expect(state.setFacilityStaffing('farm-1', 3, 1)).toBe(true);
+
+    const snapshot = useGameStore.getState().createSnapshot();
+    expect(isGameSnapshot(snapshot)).toBe(true);
+    expect(snapshot.finance.transactions.some((transaction) => transaction.source === 'facility-staffing')).toBe(true);
+    expect(snapshot.facilities.facilities[0]?.pendingStaffingChange?.targetWorkers).toBe(3);
+  });
+
+  it('keeps staffing and wage unchanged when an atomic staffing command cannot pay', () => {
+    const state = useGameStore.getState();
+    const definition = FACILITIES[FacilityType.Farm];
+    state.restoreSnapshot(createStartingGameSnapshot(0));
+    state.setAdminBalance(10_000);
+    state.setInventoryAmount(ResourceType.ConstructionMaterials, definition.constructionMaterialsCost);
+    state.setInventoryAmount(ResourceType.IndustrialMachines, definition.industrialMachinesCost);
+    expect(state.buildFacility(FacilityType.Farm)).toBe(true);
+    state.setAdminBalance(0);
+    expect(state.setFacilityStaffing('farm-1', 4, 1)).toBe(false);
+
+    const snapshot = useGameStore.getState().createSnapshot();
+    const facility = snapshot.facilities.facilities[0]!;
+    expect(facility.assignedWorkers).toBe(definition.baseWorkers);
+    expect(facility.staffWagePerWorkerPerMinute).toBe(1);
+    expect(facility.pendingStaffingChange).toBeNull();
+    expect(snapshot.finance.transactions.filter((transaction) => transaction.source === 'facility-staffing')).toHaveLength(0);
+  });
+
+  it('rejects impossible staff activity combinations and out-of-range wages', () => {
+    const state = useGameStore.getState();
+    state.restoreSnapshot(createStartingGameSnapshot(0));
+    state.setAdminBalance(10_000);
+    const definition = FACILITIES[FacilityType.Farm];
+    state.setInventoryAmount(ResourceType.ConstructionMaterials, definition.constructionMaterialsCost);
+    state.setInventoryAmount(ResourceType.IndustrialMachines, definition.industrialMachinesCost);
+    expect(state.buildFacility(FacilityType.Farm)).toBe(true);
+    const current = useGameStore.getState().createSnapshot();
+    const savedFacility = current.facilities.facilities[0]!;
+    const withInvalidActivities = { ...current, facilities: { ...current.facilities, facilities: [{ ...savedFacility,
+      pendingStaffingChange: { targetWorkers: savedFacility.assignedWorkers!, initialWorkers: savedFacility.assignedWorkers!, startedAtGameTimeMs: 1, completesAtGameTimeMs: 2 },
+      staffTraining: { workers: 1, startedAtGameTimeMs: 1, completesAtGameTimeMs: 2 },
+    }] } };
+    expect(isGameSnapshot(withInvalidActivities)).toBe(false);
+    const withInvalidWage = { ...current, facilities: { ...current.facilities, facilities: [{ ...savedFacility, staffWagePerWorkerPerMinute: 1_000_000 }] } };
+    expect(isGameSnapshot(withInvalidWage)).toBe(false);
+  });
+
   it('pays a higher-quality inventory at its own quality-adjusted, slippage-aware price', () => {
     const state = useGameStore.getState();
     const snapshot = createStartingGameSnapshot(Date.now());

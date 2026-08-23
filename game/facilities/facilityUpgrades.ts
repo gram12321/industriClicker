@@ -1,6 +1,6 @@
 import { calculateAsymmetricalScaler01, calculateDiminishingBonus, calculatePowerPenalty, scaleExponential } from '../core/math/scaling';
 import { calculateQualityFromProgress } from '@/game/quality';
-import { FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_CONDITION_DECAY_MAX_REDUCTION, FACILITY_CONDITION_DECAY_REDUCTION_RATE, FACILITY_INITIAL_STAFF_QUALITY, FACILITY_MINIMUM_STAFFING_EFFICIENCY, FACILITY_OUTPUT_BONUS_RATE, FACILITY_OUTPUT_MAXIMUM_BONUS, FACILITY_OVERSTAFFING_BONUS_RATE, FACILITY_OVERSTAFFING_CONDITION_DECAY_GROWTH, FACILITY_OVERSTAFFING_MAXIMUM_BONUS, FACILITY_REPAIR_MATERIAL_COST_RATE, FACILITY_SPEED_BONUS_RATE, FACILITY_SPEED_MAXIMUM_BONUS, FACILITY_UNDERSTAFFING_EXPONENT, FACILITY_UPGRADE_COST_GROWTH, FACILITY_UPGRADE_RESOURCE_COST_RATE, FACILITY_WORKER_REQUIREMENT_GROWTH } from './facilityConstants';
+import { FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_CONDITION_DECAY_MAX_REDUCTION, FACILITY_CONDITION_DECAY_REDUCTION_RATE, FACILITY_FIRE_COST_WAGE_MINUTES, FACILITY_FIRE_DURATION_PER_WORKER_MS, FACILITY_INITIAL_STAFF_QUALITY, FACILITY_HIRE_COST_WAGE_MINUTES, FACILITY_HIRE_DURATION_PER_WORKER_MS, FACILITY_MINIMUM_STAFFING_EFFICIENCY, FACILITY_OUTPUT_BONUS_RATE, FACILITY_OUTPUT_MAXIMUM_BONUS, FACILITY_OVERSTAFFING_BONUS_RATE, FACILITY_OVERSTAFFING_CONDITION_DECAY_GROWTH, FACILITY_OVERSTAFFING_MAXIMUM_BONUS, FACILITY_REPAIR_MATERIAL_COST_RATE, FACILITY_SPEED_BONUS_RATE, FACILITY_SPEED_MAXIMUM_BONUS, FACILITY_STAFFING_BATCH_EXPONENT, FACILITY_STAFF_TRAINING_COST_WAGE_MINUTES, FACILITY_STAFF_TRAINING_DURATION_PER_WORKER_MS, FACILITY_UNDERSTAFFING_EXPONENT, FACILITY_UPGRADE_COST_GROWTH, FACILITY_UPGRADE_RESOURCE_COST_RATE, FACILITY_WORKER_REQUIREMENT_GROWTH } from './facilityConstants';
 
 export type FacilityUpgradeKind = 'speed' | 'output' | 'condition' | 'quality';
 
@@ -63,6 +63,10 @@ export function getRequiredWorkers(baseWorkers: number, speedLevel: number, outp
 export function getStaffingEfficiency(assignedWorkers: number, requiredWorkers: number, wagePerWorkerPerMinute = FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, staffQuality = FACILITY_INITIAL_STAFF_QUALITY): number {
   const assigned = Math.max(0, Math.floor(assignedWorkers));
   const required = Math.max(0, Math.floor(requiredWorkers));
+
+  if (assigned === 0) {
+    return 0;
+  }
 
   if (required === 0) {
     return 1;
@@ -141,4 +145,41 @@ export function getFacilityRepairCost(constructionInputCost: number, facilityCon
   const current = Number.isFinite(facilityCondition) ? Math.min(1, Math.max(0, facilityCondition)) : 0;
   const target = Number.isFinite(targetCondition) ? Math.min(1, Math.max(current, targetCondition)) : 1;
   return Math.max(0, constructionInputCost) * (target - current) * FACILITY_REPAIR_MATERIAL_COST_RATE;
+}
+
+/** Returns the shared batch multiplier used for hiring and severance work. */
+export function getStaffingChangeBatchMultiplier(workerDifference: number): number {
+  const difference = Math.max(0, Math.floor(workerDifference));
+  return difference > 0 ? Math.pow(difference, FACILITY_STAFFING_BATCH_EXPONENT) : 0;
+}
+
+/** Cash cost of a staffing change, expressed in wage-minutes. */
+export function getStaffingChangeCost(currentWorkers: number, targetWorkers: number, wagePerWorkerPerMinute: number): number {
+  const difference = Math.abs(Math.floor(targetWorkers) - Math.floor(currentWorkers));
+  if (difference === 0) return 0;
+  const isHiring = targetWorkers > currentWorkers;
+  const wage = Math.max(FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, wagePerWorkerPerMinute);
+  const wageMinutes = isHiring ? FACILITY_HIRE_COST_WAGE_MINUTES : FACILITY_FIRE_COST_WAGE_MINUTES;
+  return wage * wageMinutes * getStaffingChangeBatchMultiplier(difference);
+}
+
+/** Foreground duration of a staffing change. */
+export function getStaffingChangeDurationMs(currentWorkers: number, targetWorkers: number): number {
+  const difference = Math.abs(Math.floor(targetWorkers) - Math.floor(currentWorkers));
+  if (difference === 0) return 0;
+  const perWorkerDuration = targetWorkers > currentWorkers ? FACILITY_HIRE_DURATION_PER_WORKER_MS : FACILITY_FIRE_DURATION_PER_WORKER_MS;
+  return perWorkerDuration * getStaffingChangeBatchMultiplier(difference);
+}
+
+/** Cash cost of training a batch of workers. */
+export function getStaffTrainingCost(staffQuality: number, workerCount: number): number {
+  return FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE
+    * FACILITY_STAFF_TRAINING_COST_WAGE_MINUTES
+    * getStaffQualityWorkMultiplier(staffQuality)
+    * Math.max(0, Math.floor(workerCount));
+}
+
+/** Foreground duration of a training batch. */
+export function getStaffTrainingDurationMs(workerCount: number): number {
+  return FACILITY_STAFF_TRAINING_DURATION_PER_WORKER_MS * Math.max(0, Math.floor(workerCount));
 }

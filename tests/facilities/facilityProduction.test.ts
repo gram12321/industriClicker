@@ -63,6 +63,12 @@ describe('calculateFacilityEffectiveWork', () => {
     expect(calculateFacilityEffectiveWork(view, 1, 1.5)).toBeCloseTo(expectedWork);
   });
 
+  it('keeps base work when no workers are available', () => {
+    const { facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    facility.setAssignedWorkers(0);
+    expect(calculateFacilityEffectiveWork(facility.getView(), 1)).toBe(1);
+  });
+
   it('gains more staff experience from higher-work production cycles', () => {
     const { facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
     const before = facility.getView().staffQualityProgress;
@@ -84,6 +90,33 @@ describe('calculateFacilityEffectiveWork', () => {
     facility.processStaffingChange(now + 1_000);
 
     expect(facility.getView().staffQuality).toBeCloseTo(before / 2);
+  });
+
+  it('pauses experience while all assigned workers are training', () => {
+    const { facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    const now = 1_000;
+    expect(facility.scheduleStaffTraining(facility.getView().assignedWorkers, now, now + 10_000)).toBe(true);
+    const before = facility.getView().staffQualityProgress;
+    facility.gainStaffExperience(100_000);
+    expect(facility.getView().staffQualityProgress).toBe(before);
+  });
+
+  it('preserves remaining training time while training is paused', () => {
+    const { facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    const now = 1_000;
+    expect(facility.scheduleStaffTraining(1, now, now + 1_000)).toBe(true);
+    expect(facility.pauseStaffTraining(2_000)).toBe(true);
+    expect(facility.processStaffTraining(now + 1_000)).toBe(false);
+    expect(facility.processStaffTraining(now + 3_000)).toBe(true);
+  });
+
+  it('allows repairs to overlap staffing and training activities', () => {
+    const { facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    facility.applyConditionLoss(0.2);
+    const now = 1_000;
+    expect(facility.scheduleRepair(0.9, now, now + 10_000)).toBe(true);
+    expect(facility.scheduleStaffTraining(1, now, now + 20_000)).toBe(true);
+    expect(facility.processRepair(now + 10_000)).toBe(true);
   });
 });
 

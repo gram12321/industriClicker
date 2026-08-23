@@ -37,7 +37,6 @@ export function getFacilityMaxStaffWage(baseWage = FACILITY_BASE_STAFF_WAGE_PER_
 }
 /** New facilities and newly hired workers begin at the Q1 quality baseline. */
 export const FACILITY_INITIAL_STAFF_QUALITY = 1;
-export const FACILITY_STAFF_QUALITY_WORK_DIVISOR = 10;
 export const FACILITY_STAFFING_BATCH_EXPONENT = 0.65;
 export const FACILITY_HIRE_DURATION_PER_WORKER_MS = 60_000;
 export const FACILITY_FIRE_DURATION_PER_WORKER_MS = 30_000;

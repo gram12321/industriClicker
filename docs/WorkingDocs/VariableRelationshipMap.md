@@ -374,7 +374,7 @@ flowchart LR
 |---|---|---|---|
 | `inventory.entries.*.quantity/.quality/.sourceCostPerUnit` | Inventory | Resource commands and production additions/removals | `InventorySnapshot` |
 | `facility.recipeInputQ/.recipeInputSourceCost` | Facility | Captured at cycle input consumption; used at completion | Facility snapshot; production-maintenance allocation is added to output source cost |
-| Facility upgrade levels, workers, staff wage, condition, auto-repair settings | Facility | Upgrade, staffing/wage, repair, and foreground wear | Facility snapshot |
+| Facility upgrade levels, workers, staff wage, Staff Quality progress/trend, pending staffing/training, condition, auto-repair settings | Facility | Upgrade, staffing/wage, hiring/firing/training, repair, and foreground wear | Facility snapshot |
 | Resource-flow buckets and lifetime facility output | ResourceFlowLedger | Inventory-affecting commands and completed output | Game snapshot |
 | Finance balance, transactions, loans, lenders, searches, economy phase, staff-wage charges | Finance | Cash commands and foreground finance rules | `FinanceSnapshot` |
 | Numbered facilities, recipe order/position/progress, maintenance statistics | FacilityCollection | Construction, cycle setup, upgrades, production, repair | Facility snapshot |
@@ -393,7 +393,7 @@ Derived values include facility efficiency/output, worker/wage efficiency, produ
 |---|---|---|
 | Inventory and market trades | Resource, amount, market quote, quality | Inventory, market, Finance, Resource Flow |
 | Construction/material purchase | Facility definition, prices, supply, balance | Facilities, market, inventory, Finance |
-| Facility commands | Definition, research, inputs, balance, facility state, staff wage | Facility collection, inventory, Finance, Resource Flow |
+| Facility commands | Definition, research, inputs, balance, facility state, staff wage, Staff Quality | Facility collection, inventory, Finance, Resource Flow |
 | Finance commands | Loan/search criteria, lender policies, credit report, active loan | Finance, prestige, achievements |
 | Research commands | Catalogue, gates, grants, Finance, research ledger | Research, grants, Finance, prestige, achievements |
 | `advanceRealtime` / `advanceGameTime` | Time anchors and all timed state | Time, facilities, staff wages, markets, orders, research, loans, Finance, flow |
