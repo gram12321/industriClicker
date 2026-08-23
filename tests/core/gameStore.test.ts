@@ -93,9 +93,9 @@ describe('market sales', () => {
     state.setInventoryAmount(ResourceType.ConstructionMaterials, definition.constructionMaterialsCost);
     state.setInventoryAmount(ResourceType.IndustrialMachines, definition.industrialMachinesCost);
     expect(state.buildFacility(FacilityType.Farm)).toBe(true);
-    expect(state.setFacilityWorkers('farm-1', 1)).toBe(true);
     expect(state.setFacilityStaffWage('farm-1', 60)).toBe(true);
     const farm = useGameStore.getState().facilities.get('farm-1')!;
+    expect(farm.setAssignedWorkers(1)).toBe(true);
     expect(farm.setActiveRecipe(RecipeName.GrowGrain)).toBe(true);
     state.setAdminBalance(1);
     const wageTransactionsBefore = useGameStore.getState().finance.getTransactions().filter((transaction) => transaction.source === 'facility-staff-wage').length;
@@ -307,7 +307,10 @@ describe('facility construction inputs', () => {
     state.setInventoryAmount(ResourceType.IndustrialMachines, 0);
 
     expect(state.repairFacility('farm-1')).toBe(true);
-    expect(useGameStore.getState().facilities.get('farm-1')!.getView().facilityCondition).toBe(1);
+    expect(useGameStore.getState().facilities.get('farm-1')!.getView().pendingRepair).not.toBeNull();
+    state.advanceGameTime(301_000);
+    expect(useGameStore.getState().facilities.get('farm-1')!.getView().facilityCondition).toBeCloseTo(1, 2);
+    expect(useGameStore.getState().facilities.get('farm-1')!.getView().pendingRepair).toBeNull();
     expect(useGameStore.getState().inventory.getAmount(ResourceType.ConstructionMaterials)).toBe(0);
     expect(useGameStore.getState().inventory.getAmount(ResourceType.IndustrialMachines)).toBe(0);
   });
@@ -321,7 +324,10 @@ describe('facility construction inputs', () => {
     state.setAdminBalance(10_000);
 
     expect(state.repairFacility('farm-1', 0.75)).toBe(true);
-    expect(useGameStore.getState().facilities.get('farm-1')!.getView().facilityCondition).toBe(0.75);
+    expect(useGameStore.getState().facilities.get('farm-1')!.getView().pendingRepair).not.toBeNull();
+    state.advanceGameTime(151_000);
+    expect(useGameStore.getState().facilities.get('farm-1')!.getView().facilityCondition).toBeCloseTo(0.75, 2);
+    expect(useGameStore.getState().facilities.get('farm-1')!.getView().pendingRepair).toBeNull();
     expect(useGameStore.getState().facilityMaintenance.getRepairedCondition()).toBeCloseTo(0.25);
   });
 
@@ -343,8 +349,11 @@ describe('facility construction inputs', () => {
     expect(state.setFacilityAutoRepair('farm-1', true, 0.7, 1)).toBe(true);
 
     state.advanceGameTime(1_000);
+    expect(useGameStore.getState().facilities.get('farm-1')!.getView().pendingRepair).not.toBeNull();
+    state.advanceGameTime(301_000);
 
-    expect(useGameStore.getState().facilities.get('farm-1')!.getView().facilityCondition).toBe(1);
+    expect(useGameStore.getState().facilities.get('farm-1')!.getView().facilityCondition).toBeCloseTo(1, 2);
+    expect(useGameStore.getState().facilities.get('farm-1')!.getView().pendingRepair).toBeNull();
     expect(useGameStore.getState().facilityMaintenance.getRepairedCondition()).toBeGreaterThan(0.49);
     expect(useGameStore.getState().inventory.getAmount(ResourceType.ConstructionMaterials)).toBe(0);
     expect(useGameStore.getState().inventory.getAmount(ResourceType.IndustrialMachines)).toBe(0);

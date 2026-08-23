@@ -778,7 +778,7 @@ function CashFlow({
                   return (
                     <View key={group.id} style={s.group}>
                       <Row
-                        label={`${group.label} ×${transactionCount}`}
+                      label={group.label === "Staff wages" ? group.label : `${group.label} ×${transactionCount}`}
                         negative={group.amount < 0}
                         value={formatCurrency(group.amount)}
                       />
@@ -794,7 +794,7 @@ function CashFlow({
                             <Text accessibilityRole="button" accessibilityState={{ expanded: expandedDetails.has(detail.id) }} onPress={() => toggleDetail(detail.id)}>
                               <Text style={s.detail}>
                                 • {detail.resourceType ? `${getResource(detail.resourceType).icon} ` : ""}{detail.description}
-                                {detail.count > 1 ? ` ×${detail.count}` : ""}
+                                {detail.count > 1 && detail.description !== "Staff wages" ? ` ×${detail.count}` : ""}
                               </Text>
                             </Text>
                             {expandedDetails.has(detail.id) ? hasMarketTotals ? (

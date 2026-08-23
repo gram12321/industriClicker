@@ -113,6 +113,7 @@ export const APP_ICONS = {
   shield: 'shield-crown-outline',
   speed: 'trending-up',
   staffing: 'account-group-outline',
+  training: 'school-outline',
   upgrade: 'arrow-up-bold-circle-outline',
   work: 'progress-clock',
 } as const;

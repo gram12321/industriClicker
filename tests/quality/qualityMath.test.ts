@@ -50,7 +50,7 @@ describe('quality domain', () => {
       upgradeMaxQ: 7,
       productionMaxQ: 6,
     });
-    expect(breakdown).toEqual({ inputMaxQ: 9, researchMaxQ: 8, upgradeMaxQ: 7, productionMaxQ: 6, outputQ: 6 });
+    expect(breakdown).toEqual({ inputMaxQ: 9, researchMaxQ: 8, upgradeMaxQ: 7, productionMaxQ: 6, staffMaxQ: 99.999999, outputQ: 6 });
   });
 
   it('does not apply or display an input ceiling when a recipe has no inputs', () => {

@@ -95,7 +95,7 @@ export function advanceAllFacilityProduction(
   inventory: Inventory,
   getEffectiveWork: (facility: FacilityView, recipeName: RecipeName) => number,
   onInputConsumed?: (input: RecipeInput) => void,
-  resolveOutputQuality?: (resourceType: ResourceType, weightedInputQ: number | null, upgradeMaxQ: number) => OutputQualityBreakdown,
+  resolveOutputQuality?: (facility: FacilityView, resourceType: ResourceType, weightedInputQ: number | null, upgradeMaxQ: number) => OutputQualityBreakdown,
   getProductionMaintenanceCost?: (facility: FacilityView, recipe: Recipe) => number,
 ): ProductionOutput[] {
   const outputs: ProductionOutput[] = [];
@@ -140,12 +140,13 @@ export function advanceAllFacilityProduction(
             : 0;
           for (const output of recipe.outputs) {
             const amount = output.amount * facilityView.outputMultiplier;
-            const qualityBreakdown = resolveOutputQuality?.(output.resourceType, facility.getView().recipeInputQ, facilityView.upgradeMaxQ)
+            const qualityBreakdown = resolveOutputQuality?.(facilityView, output.resourceType, facility.getView().recipeInputQ, facilityView.upgradeMaxQ)
               ?? calculateOutputQuality({ weightedInputQ: facility.getView().recipeInputQ, researchMaxQ: 1, upgradeMaxQ: facilityView.upgradeMaxQ });
             inventory.add(output.resourceType, amount, qualityBreakdown.outputQ, outputSourceCostPerUnit);
             outputs.push({ facilityId: facilityView.id, facilityType: facilityView.facilityType, recipeName: recipe.name, resourceType: output.resourceType, amount, quality: qualityBreakdown.outputQ, sourceCostPerUnit: outputSourceCostPerUnit });
           }
           facility.applyConditionLoss(getRecipeProductionConditionLoss(recipe));
+          facility.gainStaffExperience(recipe.requiredWork);
           facility.setRecipeInputQ(null);
           facility.setRecipeInputSourceCost(null);
           progress = 0;

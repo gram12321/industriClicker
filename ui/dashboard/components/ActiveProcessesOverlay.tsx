@@ -14,7 +14,7 @@ import { clamp, formatDuration, formatElapsedTime, formatNumber, getColorClass }
 import { formatRecipeName } from '@/ui/dashboard/helpers/recipeFormatters';
 import { TooltipMaterialIcon, TooltipTextIcon } from '@/ui/dashboard/components/IconTooltip';
 
-type ProcessCategory = 'production' | 'research' | 'finance' | 'sales';
+type ProcessCategory = 'production' | 'research' | 'finance' | 'sales' | 'staffing' | 'maintenance';
 type ActiveProcess = { category: ProcessCategory; icon: string; id: string; isRecipe?: boolean; label: string; progress: number; timing: string; title: string };
 
 const PROCESS_FILTERS: ReadonlyArray<{ category: ProcessCategory; icon: ComponentProps<typeof MaterialCommunityIcons>['name']; label: string }> = [
@@ -22,10 +22,13 @@ const PROCESS_FILTERS: ReadonlyArray<{ category: ProcessCategory; icon: Componen
   { category: 'research', icon: APP_ICONS.research, label: 'Research' },
   { category: 'finance', icon: APP_ICONS.bank, label: 'Finance' },
   { category: 'sales', icon: APP_ICONS.salesOrders, label: 'Sales' },
+  { category: 'staffing', icon: APP_ICONS.staffing, label: 'Staffing' },
+  { category: 'maintenance', icon: APP_ICONS.repair, label: 'Maintenance' },
 ];
 
-export function ActiveProcessesOverlay({ customerPipelineProgress, facilities, finance, initiallyOpen = false, inventory, maximumOpenOrders, onCompleteProcess, research, salesOrders, showInstantCompletion }: {
+export function ActiveProcessesOverlay({ customerPipelineProgress, currentGameTimeMs, facilities, finance, initiallyOpen = false, inventory, maximumOpenOrders, onCompleteProcess, research, salesOrders, showInstantCompletion }: {
   customerPipelineProgress: number;
+  currentGameTimeMs: number;
   facilities: FacilityCollection;
   finance: Finance;
   initiallyOpen?: boolean;
@@ -38,7 +41,7 @@ export function ActiveProcessesOverlay({ customerPipelineProgress, facilities, f
 }) {
   const [isOpen, setIsOpen] = useState(initiallyOpen);
   const [visibleCategories, setVisibleCategories] = useState<ReadonlySet<ProcessCategory>>(() => new Set(PROCESS_FILTERS.map(({ category }) => category)));
-  const processes = getActiveProcesses({ customerPipelineProgress, facilities, finance, inventory, maximumOpenOrders, research, salesOrders });
+  const processes = getActiveProcesses({ customerPipelineProgress, currentGameTimeMs, facilities, finance, inventory, maximumOpenOrders, research, salesOrders });
   const visibleProcesses = processes.filter((process) => visibleCategories.has(process.category));
   const processCountLabel = visibleProcesses.length === 1 ? '1 active process' : `${visibleProcesses.length} active processes`;
 
@@ -77,7 +80,7 @@ export function ActiveProcessesOverlay({ customerPipelineProgress, facilities, f
               <Text style={[localStyles.processTiming, { color: getColorClass(process.progress) }]}>{process.timing}</Text>
             </View>
             <ProgressBar accessible accessibilityLabel={`${process.title}: ${process.timing}`} color={getColorClass(process.progress)} progress={process.progress} style={localStyles.progressBar} />
-            {showInstantCompletion && process.id !== 'customer-pipeline' && onCompleteProcess && <Button compact mode="outlined" onPress={() => onCompleteProcess(process.id, getRemainingProcessMilliseconds(process, facilities, finance, research))} style={localStyles.completeButton}>Complete instantly</Button>}
+            {showInstantCompletion && process.category !== 'staffing' && process.category !== 'maintenance' && process.id !== 'customer-pipeline' && onCompleteProcess && <Button compact mode="outlined" onPress={() => onCompleteProcess(process.id, getRemainingProcessMilliseconds(process, facilities, finance, research))} style={localStyles.completeButton}>Complete instantly</Button>}
           </View>)}
         </ScrollView>}
     </View>}
@@ -88,7 +91,7 @@ export function ActiveProcessesOverlay({ customerPipelineProgress, facilities, f
   </View>;
 }
 
-function getActiveProcesses({ customerPipelineProgress, facilities, finance, inventory, maximumOpenOrders, research, salesOrders }: Parameters<typeof ActiveProcessesOverlay>[0]): ActiveProcess[] {
+function getActiveProcesses({ customerPipelineProgress, currentGameTimeMs, facilities, finance, inventory, maximumOpenOrders, research, salesOrders }: Parameters<typeof ActiveProcessesOverlay>[0]): ActiveProcess[] {
   const production = facilities.getAll().flatMap((facility) => {
     const facilityView = facility.getView();
     if (getFacilityProductionStatus(facilityView, inventory) !== 'producing') return [];
@@ -133,7 +136,28 @@ function getActiveProcesses({ customerPipelineProgress, facilities, finance, inv
     title: 'Customer acquisition',
   }] : [];
 
-  return [...researchProcesses, ...lenderSearchProcess, ...production, ...pipelineProcess];
+  const staffingProcesses = facilities.getAll().flatMap((facility) => {
+    const view = facility.getView();
+    const processes: ActiveProcess[] = [];
+    if (view.pendingStaffingChange) {
+      const change = view.pendingStaffingChange;
+      const progress = clamp((currentGameTimeMs - change.startedAtGameTimeMs) / (change.completesAtGameTimeMs - change.startedAtGameTimeMs), 0, 1);
+      processes.push({ category: 'staffing', id: `staffing-${view.id}`, icon: APP_ICONS.staffing, label: change.targetWorkers > change.initialWorkers ? 'Hiring' : 'Fire/severance', progress, timing: `${formatNumber(progress * 100, { decimals: 0 })}% · ${formatDuration(Math.max(0, change.completesAtGameTimeMs - currentGameTimeMs) / 60_000)} left`, title: view.displayName });
+    }
+    if (view.staffTraining) {
+      const training = view.staffTraining;
+      const progress = clamp((currentGameTimeMs - training.startedAtGameTimeMs) / (training.completesAtGameTimeMs - training.startedAtGameTimeMs), 0, 1);
+      processes.push({ category: 'staffing', id: `training-${view.id}`, icon: APP_ICONS.training, label: 'Staff training', progress, timing: `${formatNumber(progress * 100, { decimals: 0 })}% · ${formatDuration(Math.max(0, training.completesAtGameTimeMs - currentGameTimeMs) / 60_000)} left`, title: view.displayName });
+    }
+    if (view.pendingRepair) {
+      const repair = view.pendingRepair;
+      const progress = clamp((currentGameTimeMs - repair.startedAtGameTimeMs) / (repair.completesAtGameTimeMs - repair.startedAtGameTimeMs), 0, 1);
+      processes.push({ category: 'maintenance', id: `repair-${view.id}`, icon: APP_ICONS.repair, label: 'Repair', progress, timing: `${formatNumber(progress * 100, { decimals: 0 })}% · ${formatDuration(Math.max(0, repair.completesAtGameTimeMs - currentGameTimeMs) / 60_000)} left`, title: view.displayName });
+    }
+    return processes;
+  });
+
+  return [...researchProcesses, ...lenderSearchProcess, ...production, ...pipelineProcess, ...staffingProcesses];
 }
 
 function getRemainingProcessMilliseconds(process: ActiveProcess, facilities: FacilityCollection, finance: Finance, research: ResearchLedger): number {

@@ -1,6 +1,6 @@
 import { Finance, LOAN_COLLECTION, buildFinanceStatementData, calculateAssets, calculateFacilityAssetValue, calculateLoanSearchEstimate, generateLoanOffers, LENDER_TYPES, refreshLoanOfferAvailability, type LoanOffer, type LoanSearchCriteria } from '@/game/finance';
 import { Inventory, ResourceFlowLedger } from '@/game/inventory';
-import { FACILITIES, FacilityCollection, FacilityMaintenanceStatistics, advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateFacilityProductionMaintenanceCost, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getMissingFacilityMaterials, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
+import { FACILITIES, FacilityCollection, FacilityMaintenanceStatistics, advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateFacilityProductionMaintenanceCost, FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_FIRE_COST_WAGE_MINUTES, FACILITY_FIRE_DURATION_PER_WORKER_MS, FACILITY_HIRE_COST_WAGE_MINUTES, FACILITY_HIRE_DURATION_PER_WORKER_MS, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_REPAIR_DURATION_PER_CONDITION_MS, FACILITY_STAFFING_BATCH_EXPONENT, FACILITY_STAFF_TRAINING_COST_WAGE_MINUTES, FACILITY_STAFF_TRAINING_DURATION_PER_WORKER_MS, getFacilityDefinition, getFacilityMissingInputs, getMissingFacilityMaterials, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, getStaffQualityWorkMultiplier, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
 import { calculateOutputQuality, calculateProductionMaxQ } from '@/game/quality';
 import { getRecipe, type RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
@@ -66,6 +66,7 @@ type GameState = {
   setFacilityProductionActive: (facilityId: string, active: boolean) => boolean;
   setFacilityWorkers: (facilityId: string, workerCount: number) => boolean;
   setFacilityStaffWage: (facilityId: string, wagePerWorkerPerMinute: number) => boolean;
+  trainFacilityStaff: (facilityId: string, workerCount: number) => boolean;
   setFacilityAutoRepair: (facilityId: string, enabled: boolean, threshold: number, target: number) => boolean;
   repairFacility: (facilityId: string, targetCondition?: number) => boolean;
   upgradeFacility: (facilityId: string, upgradeKind: FacilityUpgradeKind) => boolean;
@@ -158,6 +159,7 @@ function executeFacilityRepair(input: {
   targetCondition: number;
   occurredAtGameTimeMs: number;
   automatic: boolean;
+  completeCondition?: boolean;
 }): boolean {
   const { facility, inventory, market, finance, facilityMaintenance, resourceFlow, occurredAtGameTimeMs, targetCondition } = input;
   if (!facility) return false;
@@ -186,7 +188,7 @@ function executeFacilityRepair(input: {
   if (!inventory.has(ResourceType.ConstructionMaterials, constructionMaterialsRepairCost)
     || !inventory.has(ResourceType.IndustrialMachines, industrialMachinesRepairCost)) return false;
   if (missingInputPurchaseCost > 0 && !finance.applyTransaction({ amount: -missingInputPurchaseCost, description: `Bought missing repair inputs for ${facilityView.displayName}`, detailLines: trades.map(({ resourceType, trade }) => `${trade.amount} ${resourceType} at €${trade.unitPrice.toFixed(2)} each`), kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs })) return false;
-  if (!facility.repairCondition(repairTargetCondition)
+  if ((input.completeCondition !== false && !facility.repairCondition(repairTargetCondition))
     || !inventory.remove(ResourceType.ConstructionMaterials, constructionMaterialsRepairCost)
     || !inventory.remove(ResourceType.IndustrialMachines, industrialMachinesRepairCost)) return false;
   if (!finance.applyTransaction({ amount: -cashRepairCost, description: `${input.automatic ? 'Auto-repair' : 'Repair'} for ${facilityView.displayName}`, detailLines: [`Construction Materials used: ${constructionMaterialsRepairCost}`, `Industrial Machines used: ${industrialMachinesRepairCost}`, `Target condition: ${Math.round(repairTargetCondition * 100)}%`], facilityAccounting: { facilityId: facility.id, classification: 'maintenance', historicalValue: maintenanceExpense }, kind: 'operating', source: 'facility-repair', occurredAtGameTimeMs })) return false;
@@ -521,11 +523,20 @@ export const useGameStore = create<GameState>((set, get) => {
     const facilities = get().facilities.clone();
     const facility = facilities.get(facilityId);
 
-    if (!facility || !facility.setAssignedWorkers(workerCount)) {
+    if (!facility || facility.getView().pendingStaffingChange) {
       return false;
     }
-
-    set({ facilities });
+    const currentWorkers = facility.getView().assignedWorkers;
+    const workerDifference = Math.abs(workerCount - currentWorkers);
+    if (!Number.isInteger(workerCount) || workerCount < 0 || workerDifference === 0) return false;
+    const isHiring = workerCount > currentWorkers;
+    const wage = Math.max(1, facility.getView().staffWagePerWorkerPerMinute);
+    const batchMultiplier = Math.pow(workerDifference, FACILITY_STAFFING_BATCH_EXPONENT);
+    const cost = wage * (isHiring ? FACILITY_HIRE_COST_WAGE_MINUTES : FACILITY_FIRE_COST_WAGE_MINUTES) * batchMultiplier;
+    const duration = (isHiring ? FACILITY_HIRE_DURATION_PER_WORKER_MS : FACILITY_FIRE_DURATION_PER_WORKER_MS) * batchMultiplier;
+    const finance = get().finance.clone();
+    if (!finance.applyTransaction({ amount: -cost, description: `${isHiring ? 'Hiring' : 'Severance'} for ${facility.getView().displayName}`, detailLines: [`Workers: ${workerDifference}`, `Completes in ${(duration / 60_000).toFixed(2)} min`], facilityAccounting: { facilityId, classification: 'staffing', historicalValue: cost }, kind: 'operating', source: 'facility-staffing', occurredAtGameTimeMs: get().lastProcessedAtMs }) || !facility.scheduleStaffingChange(workerCount, get().lastProcessedAtMs, get().lastProcessedAtMs + duration)) return false;
+    set({ facilities, finance });
     return true;
   },
   setFacilityStaffWage: (facilityId, wagePerWorkerPerMinute) => {
@@ -538,6 +549,20 @@ export const useGameStore = create<GameState>((set, get) => {
     }
 
     set({ facilities });
+    return true;
+  },
+  trainFacilityStaff: (facilityId, workerCount) => {
+    get().advanceRealtime(Date.now());
+    const facilities = get().facilities.clone();
+    const facility = facilities.get(facilityId);
+    if (!facility || !Number.isInteger(workerCount) || workerCount <= 0) return false;
+    const view = facility.getView();
+    const duration = FACILITY_STAFF_TRAINING_DURATION_PER_WORKER_MS * workerCount;
+    const cost = FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE * FACILITY_STAFF_TRAINING_COST_WAGE_MINUTES * getStaffQualityWorkMultiplier(view.staffQuality) * workerCount;
+    const finance = get().finance.clone();
+    const startedAt = get().lastProcessedAtMs;
+    if (!finance.applyTransaction({ amount: -cost, description: `Staff training for ${view.displayName}`, detailLines: [`Workers: ${workerCount}`, `Completes in ${(duration / 60_000).toFixed(2)} min`], facilityAccounting: { facilityId, classification: 'staffing', historicalValue: cost }, kind: 'operating', source: 'facility-staffing', occurredAtGameTimeMs: startedAt }) || !facility.scheduleStaffTraining(workerCount, startedAt, startedAt + duration)) return false;
+    set({ facilities, finance });
     return true;
   },
   setFacilityAutoRepair: (facilityId, enabled, threshold, target) => {
@@ -563,8 +588,11 @@ export const useGameStore = create<GameState>((set, get) => {
     const resourceFlow = get().resourceFlow.clone();
     if (!executeFacilityRepair({
       facility: facilities.get(facilityId), inventory, market, finance, facilityMaintenance, resourceFlow, targetCondition,
-      occurredAtGameTimeMs: get().lastProcessedAtMs, automatic: false,
+      occurredAtGameTimeMs: get().lastProcessedAtMs, automatic: false, completeCondition: false,
     })) return false;
+    const facility = facilities.get(facilityId);
+    const currentCondition = facility?.getView().facilityCondition ?? 0;
+    if (!facility || !facility.scheduleRepair(targetCondition, get().lastProcessedAtMs, get().lastProcessedAtMs + Math.max(1, Math.ceil((Math.min(1, Math.max(currentCondition, targetCondition)) - currentCondition) * FACILITY_REPAIR_DURATION_PER_CONDITION_MS)))) return false;
 
     const prestige = get().prestige.clone();
     syncCompanyBalancePrestige(prestige, finance, get().lastProcessedAtMs);
@@ -689,7 +717,13 @@ export const useGameStore = create<GameState>((set, get) => {
       const stepEndGameTimeMs = stepStartGameTimeMs + stepMs;
 
       if (hasConstructedFacility) {
+        for (const facility of facilities.getAll()) {
+          facility.processStaffingChange(stepEndGameTimeMs);
+          facility.processStaffTraining(stepEndGameTimeMs);
+          facility.advanceStaffQuality(stepMs / REALTIME_WORK_MINUTE_MS);
+        }
         facilities.applyPassiveConditionLoss((stepMs / REALTIME_WORK_MINUTE_MS) * FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE);
+        for (const facility of facilities.getAll()) facility.processRepair(stepEndGameTimeMs);
       }
 
       if (hasConstructedFacility) {
@@ -769,11 +803,12 @@ export const useGameStore = create<GameState>((set, get) => {
           facility,
           baseWork,
           getRecipeResearchWorkSpeedMultiplier(recipeName, research.getCompletedProjectIds()),
-        ), (input) => recordResourceFlow('facility-input', input.resourceType, -input.amount, stepEndGameTimeMs), (resourceType, weightedInputQ, upgradeMaxQ) => calculateOutputQuality({
+        ), (input) => recordResourceFlow('facility-input', input.resourceType, -input.amount, stepEndGameTimeMs), (facilityView, resourceType, weightedInputQ, upgradeMaxQ) => calculateOutputQuality({
           weightedInputQ,
           researchMaxQ: getResourceResearchMaxQ(resourceType, research.getCompletedProjectIds()),
           upgradeMaxQ,
           productionMaxQ: calculateProductionMaxQ(resourceFlow.getLifetimeFacilityOutput(resourceType)),
+          staffMaxQ: facilityView.staffQuality,
         }), (facility, recipe) => calculateFacilityProductionMaintenanceCost(facility, recipe, market!));
         if (outputs.length > 0) {
           producedOutput = true;
@@ -807,14 +842,14 @@ export const useGameStore = create<GameState>((set, get) => {
         for (const facility of facilities.getAll()) {
           if (consideredAutoRepairs >= autoRepairLimit) break;
           const facilityView = facility.getView();
-          if (!facilityView.autoRepairEnabled || facilityView.facilityCondition > facilityView.autoRepairThreshold || facilityView.autoRepairTarget <= facilityView.facilityCondition) continue;
+          if (!facilityView.autoRepairEnabled || facilityView.pendingRepair || facilityView.pendingStaffingChange || facilityView.staffTraining || facilityView.facilityCondition > facilityView.autoRepairThreshold || facilityView.autoRepairTarget <= facilityView.facilityCondition) continue;
           consideredAutoRepairs += 1;
           market ??= get().market.clone();
           marketFinance ??= get().finance.clone();
           if (inventory === get().inventory) inventory = inventory.clone();
           if (resourceFlow === get().resourceFlow) resourceFlow = resourceFlow.clone();
           if (facilityMaintenance === get().facilityMaintenance) facilityMaintenance = facilityMaintenance.clone();
-          if (executeFacilityRepair({ facility, inventory, market, finance: marketFinance, facilityMaintenance, resourceFlow, targetCondition: facilityView.autoRepairTarget, occurredAtGameTimeMs: stepEndGameTimeMs, automatic: true })) {
+          if (executeFacilityRepair({ facility, inventory, market, finance: marketFinance, facilityMaintenance, resourceFlow, targetCondition: facilityView.autoRepairTarget, occurredAtGameTimeMs: stepEndGameTimeMs, automatic: true, completeCondition: false }) && facility.scheduleRepair(facilityView.autoRepairTarget, stepEndGameTimeMs, stepEndGameTimeMs + Math.max(1, Math.ceil((facilityView.autoRepairTarget - facilityView.facilityCondition) * FACILITY_REPAIR_DURATION_PER_CONDITION_MS)))) {
             autoRepairOccurred = true;
           }
         }

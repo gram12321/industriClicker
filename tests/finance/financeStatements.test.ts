@@ -75,6 +75,7 @@ describe('facility operating performance', () => {
       sourceCost: 12,
       maintenanceExpense: 3,
       staffWageExpense: 4,
+      staffingExpense: 0,
       capitalInvestment: 100,
       operatingProfit: 14,
       investmentAdjustedResult: -86,

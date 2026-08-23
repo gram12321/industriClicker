@@ -36,7 +36,8 @@ describe('calculateFacilityEffectiveWork', () => {
   it('adds the fully staffed workforce contribution to base work', () => {
     const { facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
 
-    expect(calculateFacilityEffectiveWork(facility.getView(), 1)).toBeCloseTo(1.2);
+    const view = facility.getView();
+    expect(calculateFacilityEffectiveWork(view, 1)).toBeCloseTo(1 + 0.2 * view.staffingEfficiency);
   });
 
   it('reduces only the workforce contribution when understaffed', () => {
@@ -54,12 +55,35 @@ describe('calculateFacilityEffectiveWork', () => {
     facility.applyConditionLoss(0.4);
     const view = facility.getView();
 
-    const expectedWork = (1 + view.requiredWorkers * 0.1)
+    const expectedWork = (1 + view.requiredWorkers * 0.1 * view.staffingEfficiency)
       * view.conditionEfficiency
       * view.speedUpgradeWorkSpeedMultiplier
       * 1.5;
 
     expect(calculateFacilityEffectiveWork(view, 1, 1.5)).toBeCloseTo(expectedWork);
+  });
+
+  it('gains more staff experience from higher-work production cycles', () => {
+    const { facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    const before = facility.getView().staffQualityProgress;
+    facility.gainStaffExperience(25);
+    const shortCycleGain = facility.getView().staffQualityProgress - before;
+    facility.gainStaffExperience(100);
+    const longCycleGain = facility.getView().staffQualityProgress - before - shortCycleGain;
+
+    expect(longCycleGain).toBeGreaterThan(shortCycleGain);
+  });
+
+  it('reduces staff quality proportionally when workers are fired', () => {
+    const { facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    facility.setAssignedWorkers(2);
+    facility.gainStaffExperience(100_000_000);
+    const before = facility.getView().staffQuality;
+    const now = 1_000;
+    expect(facility.scheduleStaffingChange(1, now, now + 1_000)).toBe(true);
+    facility.processStaffingChange(now + 1_000);
+
+    expect(facility.getView().staffQuality).toBeCloseTo(before / 2);
   });
 });
 
@@ -156,6 +180,20 @@ describe('facility economics', () => {
   });
 });
 
+describe('facility staffing changes', () => {
+  it('delays staffing changes and dilutes staff quality when workers are hired', () => {
+    const { facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    const initialQuality = facility.getView().staffQuality;
+
+    expect(facility.scheduleStaffingChange(4, 0, 1_000)).toBe(true);
+    expect(facility.processStaffingChange(500)).toBe(true);
+    expect(facility.getView().assignedWorkers).toBe(3);
+    expect(facility.processStaffingChange(1_000)).toBe(true);
+    expect(facility.getView().assignedWorkers).toBe(4);
+    expect(facility.getView().staffQuality).toBeLessThanOrEqual(initialQuality);
+  });
+});
+
 describe('advanceAllFacilityProduction', () => {
   it('requires escalating lifetime production for each resource quality cap', () => {
     expect(calculateProductionMaxQ(0)).toBe(1);
@@ -224,7 +262,7 @@ describe('advanceAllFacilityProduction', () => {
       inventory,
       () => getRecipe(RecipeName.GrowGrain).requiredWork,
       undefined,
-      (_resourceType, weightedInputQ, upgradeMaxQ) => calculateOutputQuality({
+      (_facilityView, _resourceType, weightedInputQ, upgradeMaxQ) => calculateOutputQuality({
         weightedInputQ,
         researchMaxQ: 100,
         upgradeMaxQ,

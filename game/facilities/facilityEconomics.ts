@@ -276,6 +276,7 @@ export function calculateProjectedFacilityQualityUpgradeNetGainPerMinute(
   researchMaxQForResource: (resourceType: ResourceType) => number,
   weightedInputQ: number | null,
   productionMaxQForResource: (resourceType: ResourceType) => number = () => Number.POSITIVE_INFINITY,
+  staffMaxQ = Number.POSITIVE_INFINITY,
 ): number {
   const view = facility.getView();
   const currentLimit = view.upgradeMaxQ;
@@ -285,8 +286,8 @@ export function calculateProjectedFacilityQualityUpgradeNetGainPerMinute(
 
   return recipe.outputs.reduce((total, output) => {
     const productionMaxQ = productionMaxQForResource(output.resourceType);
-    const currentQuality = calculateOutputQuality({ researchMaxQ: researchMaxQForResource(output.resourceType), weightedInputQ, upgradeMaxQ: currentLimit, productionMaxQ }).outputQ;
-    const nextQuality = calculateOutputQuality({ researchMaxQ: researchMaxQForResource(output.resourceType), weightedInputQ, upgradeMaxQ: nextLimit, productionMaxQ }).outputQ;
+    const currentQuality = calculateOutputQuality({ researchMaxQ: researchMaxQForResource(output.resourceType), weightedInputQ, upgradeMaxQ: currentLimit, productionMaxQ, staffMaxQ }).outputQ;
+    const nextQuality = calculateOutputQuality({ researchMaxQ: researchMaxQForResource(output.resourceType), weightedInputQ, upgradeMaxQ: nextLimit, productionMaxQ, staffMaxQ }).outputQ;
     const unitsPerMinute = output.amount * view.outputMultiplier * effectiveWorkPerMinute / recipe.requiredWork;
     return total + unitsPerMinute * (market.getLocalSalePrice(output.resourceType, nextQuality) - market.getLocalSalePrice(output.resourceType, currentQuality));
   }, 0);

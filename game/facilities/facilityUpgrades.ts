@@ -1,5 +1,6 @@
 import { calculateAsymmetricalScaler01, calculateDiminishingBonus, calculatePowerPenalty, scaleExponential } from '../core/math/scaling';
-import { FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_CONDITION_DECAY_MAX_REDUCTION, FACILITY_CONDITION_DECAY_REDUCTION_RATE, FACILITY_MINIMUM_STAFFING_EFFICIENCY, FACILITY_OUTPUT_BONUS_RATE, FACILITY_OUTPUT_MAXIMUM_BONUS, FACILITY_OVERSTAFFING_BONUS_RATE, FACILITY_OVERSTAFFING_CONDITION_DECAY_GROWTH, FACILITY_OVERSTAFFING_MAXIMUM_BONUS, FACILITY_REPAIR_MATERIAL_COST_RATE, FACILITY_SPEED_BONUS_RATE, FACILITY_SPEED_MAXIMUM_BONUS, FACILITY_UNDERSTAFFING_EXPONENT, FACILITY_UPGRADE_COST_GROWTH, FACILITY_UPGRADE_RESOURCE_COST_RATE, FACILITY_WORKER_REQUIREMENT_GROWTH } from './facilityConstants';
+import { calculateQualityFromProgress } from '@/game/quality';
+import { FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_CONDITION_DECAY_MAX_REDUCTION, FACILITY_CONDITION_DECAY_REDUCTION_RATE, FACILITY_INITIAL_STAFF_QUALITY, FACILITY_MINIMUM_STAFFING_EFFICIENCY, FACILITY_OUTPUT_BONUS_RATE, FACILITY_OUTPUT_MAXIMUM_BONUS, FACILITY_OVERSTAFFING_BONUS_RATE, FACILITY_OVERSTAFFING_CONDITION_DECAY_GROWTH, FACILITY_OVERSTAFFING_MAXIMUM_BONUS, FACILITY_REPAIR_MATERIAL_COST_RATE, FACILITY_SPEED_BONUS_RATE, FACILITY_SPEED_MAXIMUM_BONUS, FACILITY_UNDERSTAFFING_EXPONENT, FACILITY_UPGRADE_COST_GROWTH, FACILITY_UPGRADE_RESOURCE_COST_RATE, FACILITY_WORKER_REQUIREMENT_GROWTH } from './facilityConstants';
 
 export type FacilityUpgradeKind = 'speed' | 'output' | 'condition' | 'quality';
 
@@ -59,7 +60,7 @@ export function getRequiredWorkers(baseWorkers: number, speedLevel: number, outp
  * Staff below the requirement lose efficiency increasingly quickly. Extra
  * staff remain valid and give a bounded, exponentially diminishing bonus.
  */
-export function getStaffingEfficiency(assignedWorkers: number, requiredWorkers: number, wagePerWorkerPerMinute = FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE): number {
+export function getStaffingEfficiency(assignedWorkers: number, requiredWorkers: number, wagePerWorkerPerMinute = FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, staffQuality = FACILITY_INITIAL_STAFF_QUALITY): number {
   const assigned = Math.max(0, Math.floor(assignedWorkers));
   const required = Math.max(0, Math.floor(requiredWorkers));
 
@@ -78,7 +79,20 @@ export function getStaffingEfficiency(assignedWorkers: number, requiredWorkers: 
       FACILITY_OVERSTAFFING_BONUS_RATE,
     );
 
-  return workerEfficiency * getWageEfficiency(wagePerWorkerPerMinute);
+  return Math.max(
+    FACILITY_MINIMUM_STAFFING_EFFICIENCY,
+    workerEfficiency * getWageEfficiency(wagePerWorkerPerMinute) * getStaffQualityWorkMultiplier(staffQuality),
+  );
+}
+
+export function getStaffQualityWorkMultiplier(staffQuality: number): number {
+  const normalizedQuality = Number.isFinite(staffQuality) ? Math.min(100, Math.max(1, staffQuality)) : 1;
+  return 1 + 9 * calculateAsymmetricalScaler01((normalizedQuality - 1) / 99);
+}
+
+/** The same diminishing quality curve used by research and facility upgrades. */
+export function getStaffQualityFromProgress(progress: number): number {
+  return Math.min(100, Math.max(1, calculateQualityFromProgress(progress)));
 }
 
 /** Converts pay into a 0-10x efficiency multiplier around the base wage. */

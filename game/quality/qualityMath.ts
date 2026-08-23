@@ -12,6 +12,7 @@ export type QualityLimits = {
   researchMaxQ: number;
   upgradeMaxQ: number;
   productionMaxQ: number;
+  staffMaxQ: number;
 };
 
 export type OutputQualityBreakdown = QualityLimits & { outputQ: number };
@@ -69,9 +70,11 @@ export function calculateOutputQuality(limits: Partial<QualityLimits> & { weight
   const researchCandidate = limits.researchMaxQ ?? QUALITY_NUMERIC_CEILING;
   const upgradeCandidate = limits.upgradeMaxQ ?? QUALITY_NUMERIC_CEILING;
   const productionCandidate = limits.productionMaxQ ?? QUALITY_NUMERIC_CEILING;
+  const staffCandidate = limits.staffMaxQ ?? QUALITY_NUMERIC_CEILING;
   const researchMaxQ = Number.isFinite(researchCandidate) && researchCandidate > 0 ? researchCandidate : QUALITY_NUMERIC_CEILING;
   const upgradeMaxQ = Number.isFinite(upgradeCandidate) && upgradeCandidate > 0 ? upgradeCandidate : QUALITY_NUMERIC_CEILING;
   const productionMaxQ = Number.isFinite(productionCandidate) && productionCandidate > 0 ? productionCandidate : QUALITY_NUMERIC_CEILING;
-  const outputQ = Math.min(researchMaxQ, ...(Number.isFinite(inputMaxQ) ? [inputMaxQ] : []), upgradeMaxQ, productionMaxQ, QUALITY_NUMERIC_CEILING);
-  return { inputMaxQ, researchMaxQ, upgradeMaxQ, productionMaxQ, outputQ };
+  const staffMaxQ = Number.isFinite(staffCandidate) && staffCandidate > 0 ? staffCandidate : QUALITY_NUMERIC_CEILING;
+  const outputQ = Math.min(researchMaxQ, ...(Number.isFinite(inputMaxQ) ? [inputMaxQ] : []), upgradeMaxQ, productionMaxQ, staffMaxQ, QUALITY_NUMERIC_CEILING);
+  return { inputMaxQ, researchMaxQ, upgradeMaxQ, productionMaxQ, staffMaxQ, outputQ };
 }

@@ -28,6 +28,7 @@ const SOURCE_LABELS: Record<FinanceTransaction['source'], string> = {
   'facility-upgrade': 'Facility upgrades',
   'facility-repair': 'Facility repairs',
   'facility-staff-wage': 'Staff wages',
+  'facility-staffing': 'Staffing changes',
   'facility-production': 'Facility production',
   'research-investment': 'Research investment',
   'research-refund': 'Research refunds',
@@ -202,9 +203,13 @@ function buildCashFlowRows(transactions: FinanceTransaction[], groupDurationMs =
     detailGroup.amount += transaction.amount;
     const marketTransaction = parseMarketTransaction(transaction.description);
     const marketQuality = marketTransaction ? parseMarketQuality(transaction.detailLines) : null;
-    const matchingDetail = detailGroup.details.find((candidate) => marketTransaction
-      ? candidate.description === marketTransaction.description
-      : candidate.description === transaction.description && candidate.detailLines.join('\n') === transaction.detailLines.join('\n'));
+    const isStaffWage = transaction.source === 'facility-staff-wage';
+    const detailDescription = isStaffWage ? 'Staff wages' : (marketTransaction?.description ?? transaction.description);
+    const matchingDetail = detailGroup.details.find((candidate) => isStaffWage
+      ? candidate.description === detailDescription
+      : marketTransaction
+        ? candidate.description === marketTransaction.description
+        : candidate.description === transaction.description && candidate.detailLines.join('\n') === transaction.detailLines.join('\n'));
     if (matchingDetail) {
       matchingDetail.count += 1;
       if (marketTransaction) {
@@ -217,8 +222,8 @@ function buildCashFlowRows(transactions: FinanceTransaction[], groupDurationMs =
       }
     } else detailGroup.details.push({
       id: `${detailGroup.id}-${detailGroup.details.length}`,
-      description: marketTransaction?.description ?? transaction.description,
-      detailLines: transaction.detailLines,
+      description: detailDescription,
+      detailLines: isStaffWage ? [] : transaction.detailLines,
       count: 1,
       ...(marketTransaction ? {
         resourceType: marketTransaction.resourceType,

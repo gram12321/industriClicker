@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getFacilityMaxStaffWage, getStaffingEfficiency, getWageEfficiency } from '@/game/facilities';
+import { getFacilityMaxStaffWage, getStaffingEfficiency, getStaffQualityFromProgress, getStaffQualityWorkMultiplier, getWageEfficiency } from '@/game/facilities';
 import { getFacilityUpgradeResourceCost } from '@/game/facilities';
 import { calculateUpgradeMaxQ } from '@/game/quality';
 
@@ -30,6 +30,14 @@ describe('wage staffing efficiency', () => {
     expect(getWageEfficiency(10)).toBeGreaterThan(2);
     expect(getWageEfficiency(10)).toBeLessThan(5);
     expect(getWageEfficiency(50)).toBeGreaterThan(getWageEfficiency(10));
-    expect(getStaffingEfficiency(1, 1, 0)).toBe(0);
+    expect(getStaffingEfficiency(1, 1, 0)).toBeCloseTo(0.1);
+  });
+
+  it('uses Staff Q as a 1x to 10x work multiplier on the shared quality curve', () => {
+    expect(getStaffQualityWorkMultiplier(1)).toBeCloseTo(1);
+    expect(getStaffQualityWorkMultiplier(10)).toBeGreaterThan(1);
+    expect(getStaffQualityWorkMultiplier(100)).toBeCloseTo(10);
+    expect(getStaffQualityFromProgress(0)).toBe(1);
+    expect(getStaffQualityFromProgress(1_000_000)).toBeLessThanOrEqual(100);
   });
 });
