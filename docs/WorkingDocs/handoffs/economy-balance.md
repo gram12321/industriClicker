@@ -31,7 +31,7 @@ Run:
 npm run economy:report
 ```
 
-- Recipe windows model one fully staffed facility buying inputs locally and selling output locally; compare 15/60/180-minute margins, maintenance, price pressure, break-even, and payback.
+- Recipe windows model one fully staffed facility buying inputs locally and selling output locally, including every assigned worker's wage; compare 15/60/180-minute margins, maintenance, price pressure, break-even, and payback.
 - Connected chains share a market, retain the next minute's inputs, sell other output, and spread construction demand over 180 minutes. A stalled chain is invalid.
 - `initialMargin` is the primary intrinsic signal. `margin15m/60m/180m` include realised input, repair, and market effects. `breakEven` is operating margin, not capex payback. `payback` uses the simulator's investment definition.
 - Network III is a resilience comparison; its research cost is not charged to facility payback. Test-only electricity-cap comparisons do not change runtime rules.
@@ -41,7 +41,7 @@ npm run economy:report
 After a balance-affecting rule change, compare runtime and report support before reading numbers:
 
 1. Facility construction and upgrades include all euro and construction-input costs.
-2. Recipe inputs, outputs, work, staffing, research, diffusion order, and output multiplicity match.
+2. Recipe inputs, outputs, work, staffing, staff wages, research, diffusion order, and output multiplicity match.
 3. Wear, repair threshold, repair inputs, realised repair spend, and outstanding liability match.
 4. Chain demand includes every participating facility construction input.
 5. Focused regression tests and the generated report are updated together.

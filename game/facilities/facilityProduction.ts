@@ -50,8 +50,9 @@ export function calculateFacilityEffectiveWork(
 ): number {
   if (!Number.isFinite(baseWork) || baseWork <= 0) return 0;
 
+  const availableWorkers = Math.max(0, facility.assignedWorkers - (facility.staffTraining?.workers ?? 0));
   const staffWork = baseWork
-    * facility.requiredWorkers
+    * availableWorkers
     * FACILITY_STAFF_WORK_PER_WORKER_PER_MINUTE
     * facility.staffingEfficiency;
 

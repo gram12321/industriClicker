@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FacilityCollection } from '@/game/facilities/facilityCollection';
 import { FACILITIES, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_REPAIR_MATERIAL_COST_RATE } from '@/game/facilities/facilityConstants';
+import { calculateFacilityStaffWagePerMinute } from '@/game/facilities/facilityEconomics';
 import { calculateFacilityEffectiveWork, getRecipeProductionConditionLoss } from '@/game/facilities/facilityProduction';
 import { FacilityType } from '@/game/facilities/facilityTypes';
 import { Market } from '@/game/market';
@@ -75,11 +76,13 @@ describe('recipe economy simulation', () => {
         * FACILITY_REPAIR_MATERIAL_COST_RATE
         * (definition.landCost
           + definition.constructionMaterialsCost * market.getLocalPrice(ResourceType.ConstructionMaterials)
-          + definition.industrialMachinesCost * market.getLocalPrice(ResourceType.IndustrialMachines));
+          + definition.industrialMachinesCost * market.getLocalPrice(ResourceType.IndustrialMachines))
+      - calculateFacilityStaffWagePerMinute(view.assignedWorkers, view.staffWagePerWorkerPerMinute);
 
     const result = simulateRecipeEconomy({ recipeName: recipe.name, durationMinutes: 1 });
 
     expect(result.initialNetMarginPerMinute).toBeCloseTo(expectedInitialMargin, 10);
+    expect(result.totalStaffWage).toBeCloseTo(calculateFacilityStaffWagePerMinute(view.assignedWorkers, view.staffWagePerWorkerPerMinute), 10);
   });
 
   it('includes land, Construction Materials, and Industrial Machines in facility investment cost', () => {

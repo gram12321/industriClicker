@@ -105,7 +105,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     constructionMaterialsCost: 5,
     industrialMachinesCost: 1,
     upgradeCost: 40,
-    baseWorkers: 2,
+    baseWorkers: 1,
     recipes: [ALL_RECIPES[RecipeName.GrowGrain], ALL_RECIPES[RecipeName.GrowSugar], ALL_RECIPES[RecipeName.GrowFruit]],
   },
   [FacilityType.AnimalFarm]: {
@@ -116,7 +116,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     constructionMaterialsCost: 25,
     industrialMachinesCost: 4,
     upgradeCost: 100,
-    baseWorkers: 4,
+    baseWorkers: 2,
     recipes: [ALL_RECIPES[RecipeName.RaiseCattle], ALL_RECIPES[RecipeName.RaiseSheep], ALL_RECIPES[RecipeName.RaiseChicken]],
   },
   [FacilityType.Bakery]: {
@@ -127,7 +127,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     constructionMaterialsCost: 80,
     industrialMachinesCost: 8,
     upgradeCost: 150,
-    baseWorkers: 3,
+    baseWorkers: 2,
     recipes: [ALL_RECIPES[RecipeName.BakeBread], ALL_RECIPES[RecipeName.BakeCake], ALL_RECIPES[RecipeName.BakePremiumCake], ALL_RECIPES[RecipeName.BakeMeatPie]],
   },
   [FacilityType.SmallUtilityWorks]: {
@@ -149,7 +149,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     constructionMaterialsCost: 5,
     industrialMachinesCost: 4,
     upgradeCost: 80,
-    baseWorkers: 10,
+    baseWorkers: 5,
     recipes: [ALL_RECIPES[RecipeName.MineIron], ALL_RECIPES[RecipeName.MineCoal], ALL_RECIPES[RecipeName.MineCopper], ALL_RECIPES[RecipeName.MineGold]],
   },
   [FacilityType.Quarry]: {
@@ -160,7 +160,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     constructionMaterialsCost: 40,
     industrialMachinesCost: 4,
     upgradeCost: 70,
-    baseWorkers: 6,
+    baseWorkers: 3,
     recipes: [ALL_RECIPES[RecipeName.QuarrySand], ALL_RECIPES[RecipeName.QuarryClay], ALL_RECIPES[RecipeName.QuarryStone], ALL_RECIPES[RecipeName.QuarryMinerals]],
   },
   [FacilityType.IndustrialProcessingFactory]: {
@@ -171,7 +171,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     constructionMaterialsCost: 50,
     industrialMachinesCost: 8,
     upgradeCost: 200,
-    baseWorkers: 12,
+    baseWorkers: 6,
     recipes: [ALL_RECIPES[RecipeName.ProduceSteel], ALL_RECIPES[RecipeName.ProduceElectricCircuits]],
   },
   [FacilityType.ChemicalPlant]: {
@@ -182,7 +182,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     constructionMaterialsCost: 120,
     industrialMachinesCost: 14,
     upgradeCost: 350,
-    baseWorkers: 15,
+    baseWorkers: 7,
     recipes: [ALL_RECIPES[RecipeName.ProduceChemicals], ALL_RECIPES[RecipeName.SynthesizeFertilizer], ALL_RECIPES[RecipeName.ProducePlastic]],
   },
   [FacilityType.ElectronicsFactory]: {
@@ -193,7 +193,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     constructionMaterialsCost: 150,
     industrialMachinesCost: 18,
     upgradeCost: 400,
-    baseWorkers: 12,
+    baseWorkers: 6,
     recipes: [ALL_RECIPES[RecipeName.ProduceSilicon], ALL_RECIPES[RecipeName.ProduceAdvancedComponents]],
   },
   [FacilityType.AssemblyPlant]: {
@@ -204,7 +204,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     constructionMaterialsCost: 200,
     industrialMachinesCost: 30,
     upgradeCost: 600,
-    baseWorkers: 24,
+    baseWorkers: 12,
     recipes: [ALL_RECIPES[RecipeName.AssembleIndustrialMachines]],
   },
   [FacilityType.ConstructionFactory]: {
@@ -215,7 +215,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     constructionMaterialsCost: 100,
     industrialMachinesCost: 10,
     upgradeCost: 300,
-    baseWorkers: 16,
+    baseWorkers: 8,
     recipes: [ALL_RECIPES[RecipeName.ProduceBricks], ALL_RECIPES[RecipeName.ProduceCement], ALL_RECIPES[RecipeName.ProduceReinforcedConcrete], ALL_RECIPES[RecipeName.ProduceConstructionMaterials]],
   },
   [FacilityType.WaterWell]: {
@@ -237,7 +237,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     constructionMaterialsCost: 50,
     industrialMachinesCost: 8,
     upgradeCost: 250,
-    baseWorkers: 18,
+    baseWorkers: 9,
     recipes: [ALL_RECIPES[RecipeName.CoalPower], ALL_RECIPES[RecipeName.SolarPower]],
   },
 };

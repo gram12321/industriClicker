@@ -40,12 +40,29 @@ describe('calculateFacilityEffectiveWork', () => {
     expect(calculateFacilityEffectiveWork(view, 1)).toBeCloseTo(1 + 0.2 * view.staffingEfficiency);
   });
 
-  it('reduces only the workforce contribution when understaffed', () => {
+  it('scales direct work with the available workforce when understaffed', () => {
     const { facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
     facility.setAssignedWorkers(1);
     const view = facility.getView();
 
-    expect(calculateFacilityEffectiveWork(view, 1)).toBeCloseTo(1 + 0.2 * view.staffingEfficiency);
+    expect(calculateFacilityEffectiveWork(view, 1)).toBeCloseTo(1 + 0.1 * view.assignedWorkers * view.staffingEfficiency);
+  });
+
+  it('adds direct work while retaining diminishing overstaffing efficiency', () => {
+    const { facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    const fullyStaffedWork = calculateFacilityEffectiveWork(facility.getView(), 1);
+
+    facility.setAssignedWorkers(3);
+    const firstOverstaffedView = facility.getView();
+    const firstOverstaffedWork = calculateFacilityEffectiveWork(firstOverstaffedView, 1);
+    facility.setAssignedWorkers(4);
+    const secondOverstaffedView = facility.getView();
+    const secondOverstaffedWork = calculateFacilityEffectiveWork(facility.getView(), 1);
+
+    expect(firstOverstaffedWork).toBeCloseTo(1 + 0.3 * firstOverstaffedView.staffingEfficiency);
+    expect(firstOverstaffedWork).toBeGreaterThan(fullyStaffedWork);
+    expect(secondOverstaffedWork).toBeCloseTo(1 + 0.4 * secondOverstaffedView.staffingEfficiency);
+    expect(secondOverstaffedView.staffingEfficiency - firstOverstaffedView.staffingEfficiency).toBeLessThan(firstOverstaffedView.staffingEfficiency - 1);
   });
 
   it('applies condition, speed, and research to the combined work', () => {

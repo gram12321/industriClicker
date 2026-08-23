@@ -350,11 +350,11 @@ describe('recipe economy report', () => {
     const reportSections: string[] = [
       '# Recipe Economy Report',
       '',
-      'One fully staffed facility, local input purchases, normal market diffusion, and repairs at 70% condition. Initial margin is a full-cycle initial-market rate including expected maintenance; it does not treat input purchase timing as a loss.',
+      'One fully staffed facility, local input purchases, normal market diffusion, assigned-staff wages, and repairs at 70% condition. Initial margin is a full-cycle initial-market rate including expected maintenance and wages; it does not treat input purchase timing as a loss.',
       '',
       '## Recipe windows',
       '',
-      'Each recipe is assessed in a base market and a Network III market with Local Market Network III and Market Diffusion Network III already owned. The Network III scenario measures recipe resilience; its research is pre-owned and is not charged to facility payback. Every margin cell also shows Generated orders max 25%: a comparison that uses the live deterministic customer catalogue, generated bids, and standard lots, but fulfils no more than 25% of each recipe output. It is not guaranteed demand. When electricity max 1.5x changes a local-sale margin, its value is shown on a second line in the same margin column; electricity bought above 1.5 times its initial local price is supplied externally at that cap, without changing runtime market rules. The 15/60/180-minute margins are cumulative averages; window till unprofitable is the first completed output cycle with a non-positive margin, so a later recovery remains possible.',
+      'Each recipe is assessed in a base market and a Network III market with Local Market Network III and Market Diffusion Network III already owned. The facility is fully staffed, and all assigned-worker wages are included in every margin and payback calculation. The Network III scenario measures recipe resilience; its research is pre-owned and is not charged to facility payback. Every margin cell also shows Generated orders max 25%: a comparison that uses the live deterministic customer catalogue, generated bids, and standard lots, but fulfils no more than 25% of each recipe output. It is not guaranteed demand. When electricity max 1.5x changes a local-sale margin, its value is shown on a second line in the same margin column; electricity bought above 1.5 times its initial local price is supplied externally at that cap, without changing runtime market rules. The 15/60/180-minute margins are cumulative averages; window till unprofitable is the first completed output cycle with a non-positive margin, so a later recovery remains possible.',
       '',
     ];
     const entries = recipeEntries();
@@ -391,6 +391,7 @@ describe('recipe economy report', () => {
           ? `${(((initial.initialOutputUnitPrice - extendedRun.finalOutputUnitPrice) / initial.initialOutputUnitPrice) * 100).toFixed(1)}%`
           : '0.0%'}`,
         'maintenance 60m': money(longRun.totalMaintenanceCost),
+        'staff wages 60m': money(longRun.totalStaffWage),
         'window till unprofitable': minute(horizon.breakEvenMinute),
         'facility payback': minute(horizon.paybackMinute),
       }));
@@ -428,6 +429,7 @@ describe('recipe economy report', () => {
         facilities: chainFacilitiesSummary(scenario.facilities),
         'setup cost (EUR)': money(extendedRun.facilityInvestmentCost + extendedRun.recipeResearchInvestmentCost),
         'market input cost (EUR)': money(extendedRun.totalInputCost),
+        'staff wages 180m': money(extendedRun.totalStaffWage),
         'margin 15m/60m/180m': marginWindowsWithCustomerOrders(
           [shortRun.netMarginPerMinute, longRun.netMarginPerMinute, extendedRun.netMarginPerMinute],
           [electricityCappedShortRun.netMarginPerMinute, electricityCappedLongRun.netMarginPerMinute, electricityCappedExtendedRun.netMarginPerMinute],
@@ -442,7 +444,7 @@ describe('recipe economy report', () => {
     reportSections.push(
       '## Connected-chain economy (180 minutes)',
       '',
-      'Each row runs all listed facilities in one shared base market. Upstream production is available to downstream facilities before each minute ends; the chain retains the following minute\'s required inputs and sells every other produced good. Every margin cell also shows Generated orders max 25%: real generated customer orders may fulfil only from the chain\'s named primary outputs, up to 25% of their produced volume. Bids and lot sizes use live sales rules, so the realised share can be lower. When electricity max 1.5x changes a local-sale margin, its value is shown on a second line in the same margin column; electricity bought above 1.5 times its initial local price is supplied externally at that cap, without changing runtime market rules. The 15/60/180-minute margins are cumulative averages; window till unprofitable is the first output minute with a non-positive margin, so a later recovery remains possible. Setup cost includes land, Construction Materials, Industrial Machines, and each distinct recipe-unlock research cost. Construction demand consumes the participating facilities\' total Construction Materials and Industrial Machines requirement evenly through the 180-minute scenario; it is external demand, not a player expense. A scenario that stalls a facility is treated as an invalid report scenario.',
+      'Each row runs all listed facilities in one shared base market. Upstream production is available to downstream facilities before each minute ends; the chain retains the following minute\'s required inputs and sells every other produced good. Every fully staffed facility pays its assigned-worker wages in every margin and payback calculation. Every margin cell also shows Generated orders max 25%: real generated customer orders may fulfil only from the chain\'s named primary outputs, up to 25% of their produced volume. Bids and lot sizes use live sales rules, so the realised share can be lower. When electricity max 1.5x changes a local-sale margin, its value is shown on a second line in the same margin column; electricity bought above 1.5 times its initial local price is supplied externally at that cap, without changing runtime market rules. The 15/60/180-minute margins are cumulative averages; window till unprofitable is the first output minute with a non-positive margin, so a later recovery remains possible. Setup cost includes land, Construction Materials, Industrial Machines, and each distinct recipe-unlock research cost. Construction demand consumes the participating facilities\' total Construction Materials and Industrial Machines requirement evenly through the 180-minute scenario; it is external demand, not a player expense. A scenario that stalls a facility is treated as an invalid report scenario.',
       '',
       markdownTable(chainRows),
       '',

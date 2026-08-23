@@ -5,6 +5,7 @@ import { getLocalMarketDepthMultiplier, getLocalRegionalDiffusionMultiplier, get
 import { getResource, RESOURCE_TYPES, ResourceType } from '@/game/resources';
 import { getSalesResourceProfile, SalesOrders } from '@/game/sales';
 import { FACILITIES, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_PRODUCTION_ORDER, FACILITY_REPAIR_MATERIAL_COST_RATE } from '@/game/facilities/facilityConstants';
+import { calculateFacilityStaffWagePerMinute } from '@/game/facilities/facilityEconomics';
 import type { Facility } from '@/game/facilities/facility';
 import { FacilityCollection } from '@/game/facilities/facilityCollection';
 import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, getRecipeProductionConditionLoss, type ProductionOutput } from '@/game/facilities/facilityProduction';
@@ -42,6 +43,7 @@ export type RecipeEconomyResult = {
   totalRevenue: number;
   totalInputCost: number;
   totalMaintenanceCost: number;
+  totalStaffWage: number;
   facilityInvestmentCost: number;
   upgradeInvestmentCost: number;
   paybackMinute: number | null;
@@ -86,6 +88,7 @@ export type RecipeEconomyChainResult = {
   totalRevenue: number;
   totalInputCost: number;
   totalMaintenanceCost: number;
+  totalStaffWage: number;
   facilityInvestmentCost: number;
   recipeResearchInvestmentCost: number;
   netMarginPerMinute: number;
@@ -213,6 +216,7 @@ function processCustomerOrderSales(
     candidateResourceTypes,
     getResourceWeight: (resourceType) => customerOrderShareReserve(tracker, resourceType, salesShare),
     bidResearchMultiplier: 1,
+    inventoryValue: eligibleResourceTypes.reduce((total, resourceType) => total + inventoryByResource[resourceType] * globalPrices[resourceType], 0),
   });
   for (const order of tracker.salesOrders.getOfferedOrders()) {
     const canFulfil = order.lines.every((line) => (
@@ -245,7 +249,7 @@ function totalCustomerOrderAmount(amounts: Record<ResourceType, number>): number
  * a full-cycle initial-market rate, so recipes longer than one minute are not
  * penalized for buying their inputs before their first completed cycle.
  * Maintenance is charged as realised repair spend plus the outstanding repair
- * liability.
+ * liability. Every assigned worker's configured wage is charged each minute.
  */
 export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgradeLevel = 0, outputUpgradeLevel = 0, electricityPriceCapMultiplier, completedResearchProjectIds = [], customerOrderSalesShare = 0 }: RecipeEconomyScenario): RecipeEconomyResult {
   const recipe = getRecipe(recipeName);
@@ -263,6 +267,7 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
   let totalRevenue = 0;
   let totalInputCost = 0;
   let repairSpend = 0;
+  let totalStaffWage = 0;
   let totalCondition = 0;
   let repairCount = 0;
   let breakEvenMinute: number | null = null;
@@ -303,7 +308,8 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
   const initialMaintenancePerMinute = (
     FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE + initialCyclesPerMinute * getRecipeProductionConditionLoss(recipe)
   ) * initialRepairCost;
-  const initialNetMarginPerMinute = initialRevenuePerMinute - initialInputCostPerMinute - initialMaintenancePerMinute;
+  const staffWagePerMinute = calculateFacilityStaffWagePerMinute(initialView.assignedWorkers, initialView.staffWagePerWorkerPerMinute);
+  const initialNetMarginPerMinute = initialRevenuePerMinute - initialInputCostPerMinute - initialMaintenancePerMinute - staffWagePerMinute;
   let cycleOperatingMargin = 0;
 
   for (let minute = 1; minute <= minutes; minute += 1) {
@@ -377,7 +383,8 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
       + getFacilityRepairCost(definition.constructionMaterialsCost, facility.getView().facilityCondition) * market.getLocalPrice(ResourceType.ConstructionMaterials)
       + getFacilityRepairCost(definition.industrialMachinesCost, facility.getView().facilityCondition) * market.getLocalPrice(ResourceType.IndustrialMachines);
     const minuteMaintenanceCost = repairSpend - repairSpendBefore + outstandingMaintenanceCost - maintenanceBefore;
-    const minuteNetMargin = totalRevenue - revenueBefore + customerOrderSalesTracker.revenue - customerOrderRevenueBefore - (totalInputCost - inputCostBefore) - minuteMaintenanceCost;
+    totalStaffWage += calculateFacilityStaffWagePerMinute(view.assignedWorkers, view.staffWagePerWorkerPerMinute);
+    const minuteNetMargin = totalRevenue - revenueBefore + customerOrderSalesTracker.revenue - customerOrderRevenueBefore - (totalInputCost - inputCostBefore) - minuteMaintenanceCost - staffWagePerMinute;
     cycleOperatingMargin += minuteNetMargin;
     if (completedOutput) {
       if (breakEvenMinute === null && cycleOperatingMargin <= 0) breakEvenMinute = minute;
@@ -396,10 +403,11 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
     recipeName,
     durationMinutes: minutes,
     initialNetMarginPerMinute,
-    netMarginPerMinute: (totalRevenue + customerOrderSalesTracker.revenue - totalInputCost - totalMaintenanceCost) / minutes,
+    netMarginPerMinute: (totalRevenue + customerOrderSalesTracker.revenue - totalInputCost - totalMaintenanceCost - totalStaffWage) / minutes,
     totalRevenue,
     totalInputCost,
     totalMaintenanceCost,
+    totalStaffWage,
     facilityInvestmentCost,
     upgradeInvestmentCost,
     paybackMinute,
@@ -473,6 +481,7 @@ export function simulateRecipeEconomyChain({
   let totalRevenue = 0;
   let totalInputCost = 0;
   let repairSpend = 0;
+  let totalStaffWage = 0;
   let outstandingMaintenanceCost = 0;
   let fulfilledConstructionMaterialsDemand = 0;
   let fulfilledIndustrialMachinesDemand = 0;
@@ -596,7 +605,12 @@ export function simulateRecipeEconomyChain({
         + getFacilityRepairCost(FACILITIES[facility.facilityType].industrialMachinesCost, facility.getView().facilityCondition) * market.getLocalPrice(ResourceType.IndustrialMachines)
     ), 0);
     const minuteMaintenanceCost = repairSpend - repairSpendBefore + outstandingMaintenanceCost - maintenanceBefore;
-    const minuteNetMargin = totalRevenue - revenueBefore + customerOrderSalesTracker.revenue - customerOrderRevenueBefore - (totalInputCost - inputCostBefore) - minuteMaintenanceCost;
+    const minuteStaffWage = activeFacilities.reduce((total, facility) => {
+      const view = facility.getView();
+      return total + calculateFacilityStaffWagePerMinute(view.assignedWorkers, view.staffWagePerWorkerPerMinute);
+    }, 0);
+    totalStaffWage += minuteStaffWage;
+    const minuteNetMargin = totalRevenue - revenueBefore + customerOrderSalesTracker.revenue - customerOrderRevenueBefore - (totalInputCost - inputCostBefore) - minuteMaintenanceCost - minuteStaffWage;
     if (breakEvenMinute === null && outputs.length > 0 && minuteNetMargin <= 0) breakEvenMinute = minute;
     cumulativeNetProfit += minuteNetMargin;
     if (paybackMinute === null && cumulativeNetProfit >= facilityInvestmentCost + recipeResearchInvestmentCost) paybackMinute = minute;
@@ -612,9 +626,10 @@ export function simulateRecipeEconomyChain({
     totalRevenue,
     totalInputCost,
     totalMaintenanceCost,
+    totalStaffWage,
     facilityInvestmentCost,
     recipeResearchInvestmentCost,
-    netMarginPerMinute: (totalRevenue + customerOrderSalesTracker.revenue - totalInputCost - totalMaintenanceCost) / minutes,
+    netMarginPerMinute: (totalRevenue + customerOrderSalesTracker.revenue - totalInputCost - totalMaintenanceCost - totalStaffWage) / minutes,
     paybackMinute,
     constructionMaterialsDemand: includeConstructionInputsDemand ? constructionMaterialsDemand : 0,
     fulfilledConstructionMaterialsDemand,
