@@ -1,4 +1,5 @@
 import { ResourceType } from '../resources/resourceTypes';
+import { QUALITY_PREMIUM_CAKE_OUTPUT_BONUS } from '../quality/qualityConstants';
 import { Recipe, RecipeName } from './recipeTypes';
 
 export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
@@ -360,7 +361,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 2 },
       { resourceType: ResourceType.Water, amount: 2 },
     ],
-    outputs: [{ resourceType: ResourceType.PremiumCake, amount: 4 }],
+    outputs: [{ resourceType: ResourceType.Cake, amount: 4, outputBonusQ: QUALITY_PREMIUM_CAKE_OUTPUT_BONUS }],
     requiredWork: 0.52,
     conditionWearMultiplier: 1.1,
   },

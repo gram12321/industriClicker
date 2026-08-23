@@ -112,7 +112,7 @@ describe('market sales', () => {
     expect(useGameStore.getState().facilities.get('farm-1')!.getView().isActive).toBe(false);
   });
 
-  it('rejects snapshots missing current inventory or resource-flow fields', () => {
+  it('rejects snapshots missing or carrying obsolete inventory/resource-flow fields', () => {
     const snapshot = createStartingGameSnapshot(0);
     expect(isGameSnapshot(snapshot)).toBe(true);
     const { highestFacilityOutputQuality: _highestFacilityOutputQuality, ...staleResourceFlow } = snapshot.resourceFlow;
@@ -121,6 +121,10 @@ describe('market sales', () => {
     expect(isGameSnapshot({
       ...snapshot,
       inventory: { entries: { ...snapshot.inventory.entries, [ResourceType.Grain]: staleInventoryEntry } },
+    })).toBe(false);
+    expect(isGameSnapshot({
+      ...snapshot,
+      inventory: { entries: { ...snapshot.inventory.entries, 'premium-cake': { quantity: 1, quality: 1, sourceCostPerUnit: 0 } } },
     })).toBe(false);
   });
 

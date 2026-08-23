@@ -31,7 +31,6 @@ export enum ResourceType {
   AdvancedComponents = 'advanced-components',
   IndustrialMachines = 'industrial-machines',
   Cake = 'cake',
-  PremiumCake = 'premium-cake',
   Eggs = 'eggs',
   Fruit = 'fruit',
   Meat = 'meat',

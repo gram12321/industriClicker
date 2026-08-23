@@ -18,8 +18,7 @@ This is the authority for concrete variables, dependencies, commands, time effec
 | Wool | Animal Farm: Raise Sheep | 2 Grain, 1.5 Water, 1 Electricity |
 | Eggs | Animal Farm: Raise Chicken | 1 Grain, 1 Water, 0.75 Electricity |
 | Bread | Bakery: Bake Bread | 1.5 Grain, 1 Water, 1 Electricity |
-| Cake | Bakery: Bake Cake | 1 Grain, 0.5 Eggs, 2 Water, 2 Electricity |
-| Premium Cake | Bakery: Bake Premium Cake | 1 Grain, 0.5 Eggs, 1 Fruit, 1 Milk, 2 Water, 2 Electricity |
+| Cake | Bakery: Bake Cake; Bakery: Bake Premium Cake (+Q1) | 1 Grain, 0.5 Eggs, 2 Water, 2 Electricity / 1 Grain, 0.5 Eggs, 1 Fruit, 1 Milk, 2 Water, 2 Electricity |
 | Meat Pie | Bakery: Bake Meat Pie | 1 Grain, 1 Meat, 1 Water, 2 Electricity |
 | Coal | Mine: Mine Coal | 1 Water, 2 Electricity |
 | Iron | Mine: Mine Iron | 2 Water, 4 Electricity, 0.1 Chemicals |
@@ -100,7 +99,7 @@ flowchart LR
   milk --> bakePremiumCake
   water --> bakePremiumCake
   electricity --> bakePremiumCake
-  bakePremiumCake --> premiumCake[Premium Cake]
+  bakePremiumCake --> cake
   grain --> bakeMeatPie([Bakery: Bake Meat Pie])
   meat --> bakeMeatPie
   water --> bakeMeatPie
@@ -215,7 +214,7 @@ flowchart LR
 |---|---|---|
 | Farm | Water, Electricity, Fertilizer | Grain, Sugar, Fruit |
 | Animal Farm | Grain, Water, Electricity | Meat, Milk, Wool, Eggs, Fertilizer |
-| Bakery | Grain, Eggs, Fruit, Milk, Meat, Water, Electricity | Bread, Cake, Premium Cake, Meat Pie |
+| Bakery | Grain, Eggs, Fruit, Milk, Meat, Water, Electricity | Bread, Cake (Bake Premium Cake adds Q1), Meat Pie |
 | Small Utility Works | None | Water, Electricity |
 | Water Well | Electricity (electric mode) | Water |
 | Power Plant | Coal and Water (coal mode) | Electricity |
@@ -301,7 +300,7 @@ flowchart LR
   electricity --> bakery
   bakery --> bread[Bread]
   bakery --> cake[Cake]
-  bakery --> premiumCake[Premium Cake]
+  bakery --> cake
   bakery --> meatPie[Meat Pie]
 
   water --> mine

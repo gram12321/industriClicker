@@ -823,12 +823,13 @@ export const useGameStore = create<GameState>((set, get) => {
           facility,
           baseWork,
           getRecipeResearchWorkSpeedMultiplier(recipeName, research.getCompletedProjectIds()),
-        ), (input) => recordResourceFlow('facility-input', input.resourceType, -input.amount, stepEndGameTimeMs), (facilityView, resourceType, weightedInputQ, upgradeMaxQ) => calculateOutputQuality({
+        ), (input) => recordResourceFlow('facility-input', input.resourceType, -input.amount, stepEndGameTimeMs), (facilityView, output, weightedInputQ, upgradeMaxQ) => calculateOutputQuality({
           weightedInputQ,
-          researchMaxQ: getResourceResearchMaxQ(resourceType, research.getCompletedProjectIds()),
+          researchMaxQ: getResourceResearchMaxQ(output.resourceType, research.getCompletedProjectIds()),
           upgradeMaxQ,
-          productionMaxQ: calculateProductionMaxQ(resourceFlow.getLifetimeFacilityOutput(resourceType)),
+          productionMaxQ: calculateProductionMaxQ(resourceFlow.getLifetimeFacilityOutput(output.resourceType)),
           staffMaxQ: facilityView.staffQuality,
+          outputBonusQ: output.outputBonusQ,
         }), (facility, recipe) => calculateFacilityProductionMaintenanceCost(facility, recipe, market!));
         if (outputs.length > 0) {
           producedOutput = true;

@@ -47,6 +47,8 @@ export type RecipeInput = {
 export type RecipeOutput = {
   resourceType: ResourceType;
   amount: number;
+  /** Quality added after normal production ceilings are resolved. */
+  outputBonusQ?: number;
 };
 
 export type Recipe = {

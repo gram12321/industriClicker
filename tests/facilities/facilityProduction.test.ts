@@ -312,7 +312,7 @@ describe('advanceAllFacilityProduction', () => {
       inventory,
       () => getRecipe(RecipeName.GrowGrain).requiredWork,
       undefined,
-      (_facilityView, _resourceType, weightedInputQ, upgradeMaxQ) => calculateOutputQuality({
+      (_facilityView, _output, weightedInputQ, upgradeMaxQ) => calculateOutputQuality({
         weightedInputQ,
         researchMaxQ: 100,
         upgradeMaxQ,
@@ -456,6 +456,31 @@ describe('advanceAllFacilityProduction', () => {
 
     expect(outputs[0]!.quality).toBe(2);
     expect(inventory.getQuality(ResourceType.Grain)).toBe(2);
+  });
+
+  it('turns Premium Cake inputs into Cake with its post-ceiling quality bonus', () => {
+    const { facilities } = createActiveFacility(FacilityType.Bakery, RecipeName.BakePremiumCake);
+    const inventory = new Inventory();
+    addRecipeInputs(inventory, RecipeName.BakePremiumCake, 1);
+
+    const outputs = advanceAllFacilityProduction(
+      facilities,
+      inventory,
+      () => getRecipe(RecipeName.BakePremiumCake).requiredWork,
+      undefined,
+      (_facilityView, output, weightedInputQ, upgradeMaxQ) => calculateOutputQuality({
+        weightedInputQ,
+        researchMaxQ: 3,
+        upgradeMaxQ,
+        productionMaxQ: 3,
+        staffMaxQ: 3,
+        outputBonusQ: output.outputBonusQ,
+      }),
+    );
+
+    expect(outputs).toHaveLength(1);
+    expect(outputs[0]).toMatchObject({ resourceType: ResourceType.Cake, quality: 2 });
+    expect(inventory.getQuality(ResourceType.Cake)).toBe(2);
   });
 
 });

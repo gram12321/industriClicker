@@ -28,7 +28,6 @@ export const RESOURCE_TYPES = [
   ResourceType.AdvancedComponents,
   ResourceType.IndustrialMachines,
   ResourceType.Cake,
-  ResourceType.PremiumCake,
   ResourceType.Eggs,
   ResourceType.Fruit,
   ResourceType.Meat,
@@ -41,7 +40,7 @@ export type ResourceGroup = 'food' | 'raw-resources' | 'construction' | 'manufac
 
 /** Player-facing resource groupings shared by Pedia and other catalogues; each group is alphabetized by display name. */
 export const RESOURCE_GROUPS: ReadonlyArray<{ id: ResourceGroup; label: string; resources: readonly ResourceType[] }> = [
-  { id: 'food', label: 'Food', resources: [ResourceType.Bread, ResourceType.Cake, ResourceType.Eggs, ResourceType.Fruit, ResourceType.Grain, ResourceType.Meat, ResourceType.MeatPie, ResourceType.Milk, ResourceType.PremiumCake, ResourceType.Sugar] },
+  { id: 'food', label: 'Food', resources: [ResourceType.Bread, ResourceType.Cake, ResourceType.Eggs, ResourceType.Fruit, ResourceType.Grain, ResourceType.Meat, ResourceType.MeatPie, ResourceType.Milk, ResourceType.Sugar] },
   { id: 'raw-resources', label: 'Raw Resources', resources: [ResourceType.Clay, ResourceType.Coal, ResourceType.Copper, ResourceType.Gold, ResourceType.Iron, ResourceType.Minerals, ResourceType.Sand, ResourceType.Stone] },
   { id: 'construction', label: 'Construction', resources: [ResourceType.Bricks, ResourceType.Cement, ResourceType.ConstructionMaterials, ResourceType.ReinforcedConcrete] },
   { id: 'manufacturing', label: 'Manufacturing', resources: [ResourceType.AdvancedComponents, ResourceType.Chemicals, ResourceType.ElectricCircuits, ResourceType.Fertilizer, ResourceType.IndustrialMachines, ResourceType.Plastic, ResourceType.Silicon, ResourceType.Steel, ResourceType.Wool] },
@@ -153,10 +152,6 @@ export const RESOURCES: Readonly<Record<ResourceType, { name: string; market: Re
   [ResourceType.Cake]: {
     name: 'Cake',
     market: { localBenchmarkSupply: 1_750, localInitialSupply: 250, regionalBenchmarkSupply: 35_000, regionalInitialSupply: 5_000, globalBenchmarkSupply: 350_000, globalInitialSupply: 50_000, logisticsMultiplier: 0.4, valueDensityMultiplier: 1.15 },
-  },
-  [ResourceType.PremiumCake]: {
-    name: 'Premium Cake',
-    market: { localBenchmarkSupply: 3_000, localInitialSupply: 250, regionalBenchmarkSupply: 60_000, regionalInitialSupply: 5_000, globalBenchmarkSupply: 600_000, globalInitialSupply: 50_000, logisticsMultiplier: 0.4, valueDensityMultiplier: 1.3 },
   },
   [ResourceType.Eggs]: {
     name: 'Eggs',

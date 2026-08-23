@@ -15,7 +15,13 @@ export type QualityLimits = {
   staffMaxQ: number;
 };
 
-export type OutputQualityBreakdown = QualityLimits & { outputQ: number };
+export type OutputQualityBreakdown = QualityLimits & {
+  /** The normal production ceiling before a recipe-specific output bonus. */
+  maxQ: number;
+  /** Recipe-specific quality added after the normal production ceiling. */
+  outputBonusQ: number;
+  outputQ: number;
+};
 
 function finiteNonNegative(value: number): number {
   return Number.isFinite(value) ? Math.max(0, value) : 0;
@@ -77,7 +83,7 @@ export function calculateInputMaxQ(weightedInputQ: number | null): number {
 }
 
 /** Applies the applicable quality ceilings to one facility output. */
-export function calculateOutputQuality(limits: Partial<QualityLimits> & { weightedInputQ?: number | null }): OutputQualityBreakdown {
+export function calculateOutputQuality(limits: Partial<QualityLimits> & { weightedInputQ?: number | null; outputBonusQ?: number }): OutputQualityBreakdown {
   const inputMaxQ = limits.inputMaxQ ?? calculateInputMaxQ(limits.weightedInputQ ?? null);
   const researchCandidate = limits.researchMaxQ ?? QUALITY_NUMERIC_CEILING;
   const upgradeCandidate = limits.upgradeMaxQ ?? QUALITY_NUMERIC_CEILING;
@@ -87,6 +93,7 @@ export function calculateOutputQuality(limits: Partial<QualityLimits> & { weight
   const upgradeMaxQ = Number.isFinite(upgradeCandidate) && upgradeCandidate > 0 ? upgradeCandidate : QUALITY_NUMERIC_CEILING;
   const productionMaxQ = Number.isFinite(productionCandidate) && productionCandidate > 0 ? productionCandidate : QUALITY_NUMERIC_CEILING;
   const staffMaxQ = Number.isFinite(staffCandidate) && staffCandidate > 0 ? staffCandidate : QUALITY_NUMERIC_CEILING;
-  const outputQ = Math.min(researchMaxQ, ...(Number.isFinite(inputMaxQ) ? [inputMaxQ] : []), upgradeMaxQ, productionMaxQ, staffMaxQ, QUALITY_NUMERIC_CEILING);
-  return { inputMaxQ, researchMaxQ, upgradeMaxQ, productionMaxQ, staffMaxQ, outputQ };
+  const maxQ = Math.min(researchMaxQ, ...(Number.isFinite(inputMaxQ) ? [inputMaxQ] : []), upgradeMaxQ, productionMaxQ, staffMaxQ, QUALITY_NUMERIC_CEILING);
+  const outputBonusQ = finiteNonNegative(limits.outputBonusQ ?? 0);
+  return { inputMaxQ, researchMaxQ, upgradeMaxQ, productionMaxQ, staffMaxQ, maxQ, outputBonusQ, outputQ: maxQ + outputBonusQ };
 }

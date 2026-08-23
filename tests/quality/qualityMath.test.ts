@@ -50,7 +50,7 @@ describe('quality domain', () => {
       upgradeMaxQ: 7,
       productionMaxQ: 6,
     });
-    expect(breakdown).toEqual({ inputMaxQ: 9, researchMaxQ: 8, upgradeMaxQ: 7, productionMaxQ: 6, staffMaxQ: 99.999999, outputQ: 6 });
+    expect(breakdown).toEqual({ inputMaxQ: 9, researchMaxQ: 8, upgradeMaxQ: 7, productionMaxQ: 6, staffMaxQ: 99.999999, maxQ: 6, outputBonusQ: 0, outputQ: 6 });
   });
 
   it('does not apply or display an input ceiling when a recipe has no inputs', () => {
@@ -63,5 +63,19 @@ describe('quality domain', () => {
 
     expect(breakdown.inputMaxQ).toBe(Number.POSITIVE_INFINITY);
     expect(breakdown.outputQ).toBe(20);
+  });
+
+  it('adds recipe quality only after normal output ceilings are resolved', () => {
+    const breakdown = calculateOutputQuality({
+      inputMaxQ: 9,
+      researchMaxQ: 8,
+      upgradeMaxQ: 7,
+      productionMaxQ: 6,
+      outputBonusQ: 1,
+    });
+
+    expect(breakdown.maxQ).toBe(6);
+    expect(breakdown.outputBonusQ).toBe(1);
+    expect(breakdown.outputQ).toBe(7);
   });
 });

@@ -555,10 +555,10 @@ function getResourceSummary(resourceType: (typeof RESOURCE_TYPES)[number]): Reac
     case 'water': return 'Utility resource used across the production chain.';
     case 'electricity': return 'Utility resource used to power production recipes.';
     case 'sugar': return 'Farm-grown food resource that can be sold directly.';
-    case 'fruit': return <Text>Farm-grown ingredient used to bake <ResourceMention resourceType="premium-cake" />.</Text>;
+    case 'fruit': return 'Farm-grown ingredient used by the Bake Premium Cake recipe.';
     case 'eggs': return <Text>Animal Farm output used to bake <ResourceMention resourceType="cake" />.</Text>;
     case 'meat': return <Text>Animal Farm output used to bake <ResourceMention resourceType="meat-pie" />.</Text>;
-    case 'milk': return <Text>Animal Farm dairy output used to bake <ResourceMention resourceType="premium-cake" />.</Text>;
+    case 'milk': return 'Animal Farm dairy output used by the Bake Premium Cake recipe.';
     case 'wool': return 'Animal Farm fibre output reserved for future textile production.';
     case 'coal': return 'Mined fuel used by the Coal Power recipe.';
     case 'iron': return <Text>Chemical-assisted mined metal used to produce <ResourceMention resourceType="steel" />.</Text>;
@@ -580,8 +580,7 @@ function getResourceSummary(resourceType: (typeof RESOURCE_TYPES)[number]): Reac
     case 'gold': return <Text>Rare mined metal used to produce <ResourceMention resourceType="advanced-components" />.</Text>;
     case 'advanced-components': return <Text>High-value electronic components assembled into <ResourceMention resourceType="industrial-machines" />.</Text>;
     case 'industrial-machines': return <Text>Complex equipment assembled from <ResourceMention resourceType="steel" />, <ResourceMention resourceType="electric-circuits" />, and <ResourceMention resourceType="advanced-components" />.</Text>;
-    case 'cake': return <Text>Bakery product made from <ResourceMention resourceType="grain" />, <ResourceMention resourceType="eggs" />, <ResourceMention resourceType="water" />, and <ResourceMention resourceType="electricity" />.</Text>;
-    case 'premium-cake': return <Text>Premium baked product made from <ResourceMention resourceType="cake" /> ingredients plus <ResourceMention resourceType="fruit" /> and <ResourceMention resourceType="milk" />.</Text>;
+    case 'cake': return <Text>Bakery product made from <ResourceMention resourceType="grain" />, <ResourceMention resourceType="eggs" />, <ResourceMention resourceType="water" />, and <ResourceMention resourceType="electricity" />. Bake Premium Cake adds <ResourceMention resourceType="fruit" /> and <ResourceMention resourceType="milk" />, then produces ordinary Cake with a +Q1 (+100%) quality boost. The normal input, research, facility, production, and staff quality limits are calculated first; this recipe bonus is added afterward.</Text>;
     case 'meat-pie': return <Text>Baked savoury product made from <ResourceMention resourceType="grain" />, <ResourceMention resourceType="meat" />, <ResourceMention resourceType="water" />, and <ResourceMention resourceType="electricity" />.</Text>;
     default: return 'Tracked in your company inventory.';
   }

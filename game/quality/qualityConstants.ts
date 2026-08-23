@@ -5,6 +5,9 @@ export const QUALITY_NUMERIC_CEILING = QUALITY_THEORETICAL_MAXIMUM - 0.000001;
 /** Production may improve quality by one absolute point over its weighted inputs. */
 export const QUALITY_INPUT_BONUS = 1;
 
+/** Premium Cake adds one Q (the player-facing equivalent of +100% quality) after normal output limits apply. */
+export const QUALITY_PREMIUM_CAKE_OUTPUT_BONUS = 1;
+
 /** Shared diminishing-return curve for research and facility quality levels. */
 export const QUALITY_LEVEL_CURVE_RATE = Math.log(99 / 98);
 export const QUALITY_LEVEL_CURVE_SHAPE = 1.1;

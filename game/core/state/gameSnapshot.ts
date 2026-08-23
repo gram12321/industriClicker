@@ -10,6 +10,7 @@ import { isPrestigeLedgerSnapshot, type PrestigeLedgerSnapshot } from '../../pre
 import { type MarketSnapshot } from '../../market/marketTypes';
 import { MARKET_AUTOTRADE_INTERVAL_OPTIONS } from '../../market/marketConstants';
 import { RESOURCE_TYPES } from '../../resources/resourceConstants';
+import type { ResourceType } from '../../resources/resourceTypes';
 import { isResearchLedgerSnapshot, type ResearchLedgerSnapshot } from '../../research/research';
 import { isGrantLedgerSnapshot, type GrantLedgerSnapshot } from '../../grants/grant';
 import { RecipeName } from '../../recipes/recipeTypes';
@@ -46,6 +47,13 @@ export type GameSnapshot = {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
+}
+
+/** Rejects saves from a resource catalogue with added or removed resource identities. */
+function hasCurrentResourceKeys(value: unknown): value is Record<ResourceType, unknown> {
+  return isRecord(value)
+    && Object.keys(value).length === RESOURCE_TYPES.length
+    && RESOURCE_TYPES.every((resourceType) => Object.hasOwn(value, resourceType));
 }
 
 function isFinanceTransactionSnapshot(value: unknown): boolean {
@@ -157,7 +165,7 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
   }
 
   const marketAutomation = value.market.automation;
-  const inventoryEntries = isRecord(value.inventory) && isRecord(value.inventory.entries) ? value.inventory.entries : null;
+  const inventoryEntries = isRecord(value.inventory) ? value.inventory.entries : null;
   const financeTransactions: unknown[] = Array.isArray(value.finance.transactions) ? value.finance.transactions : [];
   const facilitySnapshots: unknown[] = Array.isArray(value.facilities.facilities) ? value.facilities.facilities : [];
 
@@ -181,12 +189,12 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
     && Array.isArray(value.finance.collectionNotices)
     && (value.finance.pendingRestructureOffer === null || isRecord(value.finance.pendingRestructureOffer))
     && typeof value.finance.nextCollectionNoticeNumber === 'number'
-    && inventoryEntries !== null
+    && hasCurrentResourceKeys(inventoryEntries)
     && RESOURCE_TYPES.every((resourceType) => isInventoryEntrySnapshot(inventoryEntries[resourceType]))
-    && isRecord(value.market.local)
-    && isRecord(value.market.regional)
-    && isRecord(value.market.global)
-    && isRecord(marketAutomation)
+    && hasCurrentResourceKeys(value.market.local)
+    && hasCurrentResourceKeys(value.market.regional)
+    && hasCurrentResourceKeys(value.market.global)
+    && hasCurrentResourceKeys(marketAutomation)
     && typeof value.market.localMarketDepthMultiplier === 'number' && Number.isFinite(value.market.localMarketDepthMultiplier) && value.market.localMarketDepthMultiplier >= 1
     && Array.isArray(value.market.localMarketNetworkActivations)
     && value.market.localMarketNetworkActivations.every(isLocalMarketNetworkActivationSnapshot)

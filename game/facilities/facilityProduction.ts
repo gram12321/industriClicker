@@ -1,6 +1,6 @@
 import type { Inventory } from '@/game/inventory';
 import { calculateOutputQuality, calculateWeightedInputQ, type OutputQualityBreakdown } from '@/game/quality';
-import { getRecipe, type Recipe, type RecipeInput, type RecipeName } from '@/game/recipes';
+import { getRecipe, type Recipe, type RecipeInput, type RecipeName, type RecipeOutput } from '@/game/recipes';
 import type { ResourceType } from '@/game/resources';
 import { FACILITY_PRODUCTION_CONDITION_LOSS_PER_CYCLE, FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT, FACILITY_PRODUCTION_ORDER, FACILITY_STAFF_WORK_PER_WORKER_PER_MINUTE } from './facilityConstants';
 import type { FacilityView } from './facility';
@@ -96,7 +96,7 @@ export function advanceAllFacilityProduction(
   inventory: Inventory,
   getEffectiveWork: (facility: FacilityView, recipeName: RecipeName) => number,
   onInputConsumed?: (input: RecipeInput) => void,
-  resolveOutputQuality?: (facility: FacilityView, resourceType: ResourceType, weightedInputQ: number | null, upgradeMaxQ: number) => OutputQualityBreakdown,
+  resolveOutputQuality?: (facility: FacilityView, output: RecipeOutput, weightedInputQ: number | null, upgradeMaxQ: number) => OutputQualityBreakdown,
   getProductionMaintenanceCost?: (facility: FacilityView, recipe: Recipe) => number,
 ): ProductionOutput[] {
   const outputs: ProductionOutput[] = [];
@@ -141,8 +141,8 @@ export function advanceAllFacilityProduction(
             : 0;
           for (const output of recipe.outputs) {
             const amount = output.amount * facilityView.outputMultiplier;
-            const qualityBreakdown = resolveOutputQuality?.(facilityView, output.resourceType, facility.getView().recipeInputQ, facilityView.upgradeMaxQ)
-              ?? calculateOutputQuality({ weightedInputQ: facility.getView().recipeInputQ, researchMaxQ: 1, upgradeMaxQ: facilityView.upgradeMaxQ });
+            const qualityBreakdown = resolveOutputQuality?.(facilityView, output, facility.getView().recipeInputQ, facilityView.upgradeMaxQ)
+              ?? calculateOutputQuality({ weightedInputQ: facility.getView().recipeInputQ, researchMaxQ: 1, upgradeMaxQ: facilityView.upgradeMaxQ, outputBonusQ: output.outputBonusQ });
             inventory.add(output.resourceType, amount, qualityBreakdown.outputQ, outputSourceCostPerUnit);
             outputs.push({ facilityId: facilityView.id, facilityType: facilityView.facilityType, recipeName: recipe.name, resourceType: output.resourceType, amount, quality: qualityBreakdown.outputQ, sourceCostPerUnit: outputSourceCostPerUnit });
           }

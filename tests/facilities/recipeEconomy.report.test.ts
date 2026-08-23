@@ -164,7 +164,7 @@ const CHAIN_SCENARIOS: ReadonlyArray<{ label: string; scenario: RecipeEconomyCha
     },
   },
   {
-    label: 'Animal farm and bakery: inputs -> Cake, Premium Cake, and Meat Pie',
+    label: 'Animal farm and bakery: inputs -> Cake and Meat Pie',
     scenario: {
       facilities: [
         { recipeName: RecipeName.ProduceWater },
@@ -182,7 +182,7 @@ const CHAIN_SCENARIOS: ReadonlyArray<{ label: string; scenario: RecipeEconomyCha
         { recipeName: RecipeName.BakeMeatPie },
       ],
       durationMinutes: RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES,
-      primaryOutputResourceTypes: [ResourceType.Cake, ResourceType.PremiumCake, ResourceType.MeatPie],
+      primaryOutputResourceTypes: [ResourceType.Cake, ResourceType.MeatPie],
       includeConstructionInputsDemand: true,
     },
   },

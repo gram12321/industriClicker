@@ -31,7 +31,6 @@ export const RESOURCE_ICONS: Readonly<Record<ResourceType, string>> = {
   [ResourceType.AdvancedComponents]: '🧩',
   [ResourceType.IndustrialMachines]: '🤖',
   [ResourceType.Cake]: '🍰',
-  [ResourceType.PremiumCake]: '🧁',
   [ResourceType.Eggs]: '🥚',
   [ResourceType.Fruit]: '🍎',
   [ResourceType.Meat]: '🥩',
