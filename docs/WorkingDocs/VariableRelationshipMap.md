@@ -1,15 +1,15 @@
 # Industri Clicker Variable Relationship Map
 
-Concrete data relationships for rules defined in [gameflow.md](gameflow.md). This map owns variable-level state and command effects, not player rationale or full formulas.
+This is the authority for concrete variables, dependencies, commands, time effects, and persistence. Names are in [CONTEXT.md](CONTEXT.md); rules/formulas are in [gameflow.md](gameflow.md). Tables are the compact index; Mermaid diagrams visualize the same relationships without replacing exact recipe values.
 
 ## Resource Production Map
 
-The catalogue in `game/resources/resourceConstants.ts` is the source of truth for resource identities and market seeds; `game/recipes/recipeConstants.ts` owns the exact recipes. The table is a compact index of every current output. The diagram shows every direct production dependency; resources with no outgoing arrows have no current recipe consumer.
+`game/resources/resourceConstants.ts` owns resource identities/market seeds; `game/recipes/recipeConstants.ts` owns exact recipe values.
 
 | Resource | Produced by | Inputs per cycle |
 |---|---|---|
 | Water | Small Utility Works: Produce Water; Water Well: Manual / Electric Pumping | None / None / 1 Electricity |
-| Electricity | Small Utility Works: Produce Electricity; Power Plant: Coal / Solar Power | None / 0.5 Coal, 1 Water / None |
+| Electricity | Small Utility Works: Produce Electricity; Power Plant: Coal / Solar Power | None / 0.5 Coal + 1 Water / None |
 | Grain | Farm: Grow Grain | 1 Water, 1 Electricity, 0.025 Fertilizer |
 | Sugar | Farm: Grow Sugar | 3 Water, 0.04 Fertilizer |
 | Fruit | Farm: Grow Fruit | 2 Water, 0.03 Fertilizer |
@@ -32,7 +32,7 @@ The catalogue in `game/resources/resourceConstants.ts` is the source of truth fo
 | Steel | Industrial Processing Factory: Produce Steel | 2 Iron, 1 Coal, 2 Water, 6 Electricity |
 | Electric Circuits | Industrial Processing Factory: Produce Electric Circuits | 2 Copper, 1 Silicon, 1 Plastic, 1 Water, 4 Electricity |
 | Chemicals | Chemical Plant: Produce Chemicals | 2 Minerals, 2 Water, 4 Electricity |
-| Fertilizer | Chemical Plant: Synthesize Fertilizer; Animal Farm: Raise Cattle / Sheep / Chicken | 1 Chemicals, 1 Minerals, 1 Water, 2 Electricity / respective Grain, Water, and Electricity inputs |
+| Fertilizer | Chemical Plant: Synthesize Fertilizer; Animal Farm: Raise Cattle / Sheep / Chicken | 1 Chemicals, 1 Minerals, 1 Water, 2 Electricity / animal inputs |
 | Plastic | Chemical Plant: Produce Plastic | 2 Chemicals, 1 Water, 3 Electricity |
 | Silicon | Electronics Factory: Produce Silicon | 3 Minerals, 3 Sand, 5 Electricity |
 | Advanced Components | Electronics Factory: Produce Advanced Components | 2 Electric Circuits, 2 Silicon, 0.1 Gold, 1 Water, 4 Electricity |
@@ -65,12 +65,13 @@ flowchart LR
   water --> growFruit([Farm: Grow Fruit])
   fertilizer --> growFruit
   growFruit --> fruit[Fruit]
+
   grain --> raiseCattle([Animal Farm: Raise Cattle])
   water --> raiseCattle
   electricity --> raiseCattle
   raiseCattle --> meat[Meat]
   raiseCattle --> milk[Milk]
-  raiseCattle --> fertilizer
+  raiseCattle --> fertilizer[Fertilizer]
   grain --> raiseSheep([Animal Farm: Raise Sheep])
   water --> raiseSheep
   electricity --> raiseSheep
@@ -83,6 +84,7 @@ flowchart LR
   raiseChicken --> meat
   raiseChicken --> eggs[Eggs]
   raiseChicken --> fertilizer
+
   grain --> bakeBread([Bakery: Bake Bread])
   water --> bakeBread
   electricity --> bakeBread
@@ -138,12 +140,12 @@ flowchart LR
   water --> produceSteel
   electricity --> produceSteel
   produceSteel --> steel[Steel]
-  copper --> produceCircuits
+  copper --> produceCircuits([Industrial Processing Factory: Produce Electric Circuits])
   silicon --> produceCircuits
   plastic --> produceCircuits
   water --> produceCircuits
   electricity --> produceCircuits
-  produceCircuits --> circuits[Electric Circuits]
+  produceCircuits --> electricCircuits[Electric Circuits]
 
   minerals --> produceChemicals([Chemical Plant: Produce Chemicals])
   water --> produceChemicals
@@ -153,23 +155,24 @@ flowchart LR
   minerals --> synthesizeFertilizer
   water --> synthesizeFertilizer
   electricity --> synthesizeFertilizer
-  synthesizeFertilizer --> fertilizer[Fertilizer]
+  synthesizeFertilizer --> fertilizer
   chemicals --> producePlastic([Chemical Plant: Produce Plastic])
   water --> producePlastic
   electricity --> producePlastic
   producePlastic --> plastic[Plastic]
+
   minerals --> produceSilicon([Electronics Factory: Produce Silicon])
   sand --> produceSilicon
   electricity --> produceSilicon
   produceSilicon --> silicon[Silicon]
-  circuits --> produceComponents([Electronics Factory: Produce Advanced Components])
+  electricCircuits --> produceComponents([Electronics Factory: Produce Advanced Components])
   silicon --> produceComponents
   gold --> produceComponents
   water --> produceComponents
   electricity --> produceComponents
   produceComponents --> advancedComponents[Advanced Components]
   steel --> assembleMachines([Assembly Plant: Assemble Industrial Machines])
-  circuits --> assembleMachines
+  electricCircuits --> assembleMachines
   advancedComponents --> assembleMachines
   water --> assembleMachines
   electricity --> assembleMachines
@@ -208,37 +211,53 @@ flowchart LR
 
 ## Facility Resource Flow Map
 
-This view uses the same resource-flow model as the recipe diagram, but each facility is represented once even when it has several recipes. Resource arrows therefore show all resources a facility can consume or produce; several Construction Factory resources form intentional within-facility loops.
+| Facility | Consumes | Produces |
+|---|---|---|
+| Farm | Water, Electricity, Fertilizer | Grain, Sugar, Fruit |
+| Animal Farm | Grain, Water, Electricity | Meat, Milk, Wool, Eggs, Fertilizer |
+| Bakery | Grain, Eggs, Fruit, Milk, Meat, Water, Electricity | Bread, Cake, Premium Cake, Meat Pie |
+| Small Utility Works | None | Water, Electricity |
+| Water Well | Electricity (electric mode) | Water |
+| Power Plant | Coal and Water (coal mode) | Electricity |
+| Mine | Water, Electricity, Chemicals | Coal, Iron, Copper, Gold |
+| Quarry | Water, Electricity | Sand, Clay, Stone, Minerals |
+| Industrial Processing Factory | Iron, Coal, Copper, Silicon, Plastic, Water, Electricity | Steel, Electric Circuits |
+| Chemical Plant | Minerals, Water, Electricity, Chemicals | Chemicals, Fertilizer, Plastic |
+| Electronics Factory | Minerals, Sand, Electric Circuits, Gold, Water, Electricity | Silicon, Advanced Components |
+| Assembly Plant | Steel, Electric Circuits, Advanced Components, Water, Electricity | Industrial Machines |
+| Construction Factory | Clay, Sand, Stone, Steel, Minerals, Chemicals, Plastic, Water, Electricity, Bricks, Cement, Reinforced Concrete | Bricks, Cement, Reinforced Concrete, Construction Materials |
 
 ```mermaid
 flowchart LR
-  utilityWorks([Small Utility Works])
-  waterWell([Water Well])
-  copper[Copper]
-  coal[Coal]
-  sand[Sand]
-  iron[Iron]
-  stone[Stone]
-  clay[Clay]
-  gold[Gold]
-  minerals[Minerals]
-
-  utilityAlignment[ ]:::hidden
-  utilityAlignment --> utilityWorks
-  utilityAlignment --> waterWell
-
-  rawAlignment[ ]:::hidden
-  rawAlignment --> copper
-  rawAlignment --> coal
-  rawAlignment --> sand
-  rawAlignment --> iron
-  rawAlignment --> stone
-  rawAlignment --> clay
-  rawAlignment --> gold
-  rawAlignment --> minerals
-
   water[Water]
   electricity[Electricity]
+  coal[Coal]
+  fertilizer[Fertilizer]
+  grain[Grain]
+  milk[Milk]
+  wool[Wool]
+  fruit[Fruit]
+  eggs[Eggs]
+  meat[Meat]
+  chemicals[Chemicals]
+  iron[Iron]
+  copper[Copper]
+  gold[Gold]
+  sand[Sand]
+  clay[Clay]
+  stone[Stone]
+  minerals[Minerals]
+  silicon[Silicon]
+  plastic[Plastic]
+  electricCircuits[Electric Circuits]
+  steel[Steel]
+  advancedComponents[Advanced Components]
+  bricks[Bricks]
+  cement[Cement]
+  reinforcedConcrete[Reinforced Concrete]
+
+  utilityWorks([Small Utility Works])
+  waterWell([Water Well])
   powerPlant([Power Plant])
   farm([Farm])
   animalFarm([Animal Farm])
@@ -254,29 +273,29 @@ flowchart LR
   utilityWorks --> water
   utilityWorks --> electricity
   waterWell --> water
-  water --> powerPlant
-  powerPlant --> electricity
   electricity --> waterWell
   coal --> powerPlant
+  water --> powerPlant
+  powerPlant --> electricity
 
   water --> farm
   electricity --> farm
   fertilizer --> farm
-  farm --> grain[Grain]
+  farm --> grain
   farm --> sugar[Sugar]
-  farm --> fruit[Fruit]
+  farm --> fruit
   grain --> animalFarm
   water --> animalFarm
   electricity --> animalFarm
-  animalFarm --> meat[Meat]
-  animalFarm --> milk[Milk]
-  animalFarm --> wool[Wool]
-  animalFarm --> eggs[Eggs]
-  animalFarm --> fertilizer[Fertilizer]
+  animalFarm --> meat
+  animalFarm --> milk
+  animalFarm --> wool
+  animalFarm --> eggs
+  animalFarm --> fertilizer
   grain --> bakery
-  sugar --> bakery
   fruit --> bakery
   eggs --> bakery
+  milk --> bakery
   meat --> bakery
   water --> bakery
   electricity --> bakery
@@ -292,7 +311,6 @@ flowchart LR
   mine --> iron
   mine --> copper
   mine --> gold
-
   water --> quarry
   electricity --> quarry
   quarry --> sand
@@ -307,28 +325,26 @@ flowchart LR
   plastic --> industrial
   water --> industrial
   electricity --> industrial
-  industrial --> steel[Steel]
-  industrial --> circuits[Electric Circuits]
-
+  industrial --> steel
+  industrial --> electricCircuits
   minerals --> chemical
   water --> chemical
   electricity --> chemical
-  chemical --> chemicals[Chemicals]
   chemicals --> chemical
-  chemical --> fertilizer[Fertilizer]
-  chemical --> plastic[Plastic]
+  chemical --> chemicals
+  chemical --> fertilizer
+  chemical --> plastic
 
   minerals --> electronics
   sand --> electronics
-  circuits --> electronics
+  electricCircuits --> electronics
   gold --> electronics
   water --> electronics
   electricity --> electronics
-  electronics --> silicon[Silicon]
+  electronics --> silicon
   electronics --> advancedComponents[Advanced Components]
-
   steel --> assembly
-  circuits --> assembly
+  electricCircuits --> assembly
   advancedComponents --> assembly
   water --> assembly
   electricity --> assembly
@@ -343,74 +359,58 @@ flowchart LR
   plastic --> construction
   water --> construction
   electricity --> construction
-  construction --> bricks[Bricks]
-  construction --> cement[Cement]
-  construction --> reinforcedConcrete[Reinforced Concrete]
   bricks --> construction
   cement --> construction
   reinforcedConcrete --> construction
+  construction --> bricks
+  construction --> cement
+  construction --> reinforcedConcrete
   construction --> constructionMaterials[Construction Materials]
-
-  linkStyle 0,1,2,3,4,5,6,7,8,9 opacity:0;
-  classDef hidden fill:none,stroke:none,color:transparent;
 ```
 
 ## Stored and Runtime State
 
-| State | Kind | Owner | Changes through | Saved as |
-|---|---|---|---|---|
-| `inventory.entries.*.quantity`, `.quality`, `.sourceCostPerUnit` | Stored | `Inventory` | Resource commands and production; source cost is quantity-weighted on additions | `InventorySnapshot` |
-| `facility.recipeInputQ`, `.recipeInputSourceCost` | Stored | `Facility` | Captured when a recipe cycle consumes inputs; used when that cycle completes | Facility snapshot; quality domain derives InputMaxQ and production carries direct material cost |
-| `facility.qualityUpgradeLevel` / `.upgradeMaxQ` | Stored / derived | `Facility` | Per-facility quality upgrades and quality-domain output calculation | Facility snapshot / derives UpgradeMaxQ |
-| `research.completed.resource-quality-*` | Stored | `ResearchLedger` | Resource-quality research completion | `ResearchLedgerSnapshot`; quality domain derives ResearchMaxQ by resource |
-| Resource-flow all-time category totals and the latest one-hour buckets | Stored | `ResourceFlowLedger` | Inventory-affecting commands and foreground production/autotrade | Resource-flow snapshot inside `GameSnapshot` |
-| `finance.balance`, `.transactions` (including typed facility construction, upgrade, and maintenance entries), `.loans`, `.lenders`, `.activeLoanSearch`, `.loanSearchOffers`, economy phase, loan-payment history | Stored | `Finance` | Accepted transactions, timed lender searches, loan actions, economy transitions, and foreground repayment attempts | `FinanceSnapshot` |
-| Numbered facility instances, production-cycle recipe order/current position, and recipe progress | Stored | `FacilityCollection` | Construction, cycle setup, upgrades, and production | Facility snapshot |
-| Facility upgrade levels, assigned workers, and 0–1 condition | Stored | `Facility` | Upgrade/staffing commands and foreground wear/production tear | Facility snapshot |
-| Facility auto-repair enabled flag, threshold, and target | Stored | `Facility` | Repair Technician research, facility auto-repair settings, foreground repair checks | Facility snapshot |
-| `salesOrders.offered`/`.completed` atomic order lines, `.customerStates`, `.nextOrderNumber` | Stored | `SalesOrders` | Customer-order bundle creation, expiry, fulfilment, and relationship actions | `SalesOrdersSnapshot` |
-| `achievements.unlocks` | Stored | `AchievementLedger` | Post-command achievement evaluation | `AchievementLedgerSnapshot` |
-| `resourceFlow.allTime.facility-output.*` | Stored / derived | `ResourceFlowLedger` | Completed facility recipe output only; quality domain derives company-wide ProductionMaxQ from each resource's lifetime output | Resource-flow snapshot inside `GameSnapshot` |
-| Facility maintenance repaired-condition, largest-repair, and repair-value totals | Stored | `FacilityMaintenanceStatistics` | Successful facility repairs | Facility-maintenance snapshot inside `GameSnapshot` |
-| `prestige.events` | Stored | `PrestigeLedger` | Balance changes and fulfilled sales | `PrestigeLedgerSnapshot` |
-| `research.completed`, `.active[]` (including each active project's effective duration) | Stored | `ResearchLedger` | Research start, foreground advance, per-project completion and cancellation | `ResearchLedgerSnapshot` |
-| `grants.grants` | Stored | `GrantLedger` | First facility construction and free-action consumption | `GrantLedgerSnapshot` |
-| `market.local`, `.regional`, `.global`, `.automation`, `.localMarketDepthMultiplier`, `.localMarketNetworkActivations` | Stored | `Market` | Manual local trades, contract fulfilment, adjacent-pair diffusion, and foreground Local Market Network activation | `MarketSnapshot` |
-| `startingConditionId` | Runtime | Zustand game store | Company activation/session change | No; source is the local company record |
-| `companyStartedAtGameTimeMs`, `lastProcessedAtMs`, `unprocessedWorkMs`, `customerPipelineProgress` | Stored | Zustand game store | Company creation, deletion, and global time advance | `GameTimeSnapshot` |
-| `lastObservedAtMs` | Runtime | Zustand game store | Foreground observation and lifecycle | No |
-| Local profile, company record, tutorial state, device session | Stored | Company domain SQLite adapters | Local player/company commands | Dedicated local tables |
+| State | Owner | Changes through | Saved as |
+|---|---|---|---|
+| `inventory.entries.*.quantity/.quality/.sourceCostPerUnit` | Inventory | Resource commands and production additions/removals | `InventorySnapshot` |
+| `facility.recipeInputQ/.recipeInputSourceCost` | Facility | Captured at cycle input consumption; used at completion | Facility snapshot |
+| Facility upgrade levels, workers, condition, auto-repair settings | Facility | Upgrade, staffing, repair, and foreground wear | Facility snapshot |
+| Resource-flow buckets and lifetime facility output | ResourceFlowLedger | Inventory-affecting commands and completed output | Game snapshot |
+| Finance balance, transactions, loans, lenders, searches, economy phase | Finance | Cash commands and foreground finance rules | `FinanceSnapshot` |
+| Numbered facilities, recipe order/position/progress, maintenance statistics | FacilityCollection | Construction, cycle setup, upgrades, production, repair | Facility snapshot |
+| Offered/completed orders, customer states, next order number | SalesOrders | Create, fulfil, reject, expire, relationship progression | `SalesOrdersSnapshot` |
+| Achievements, prestige events, research/grants | Their ledgers | Post-command evaluation and research commands | Their snapshots |
+| Market pools, automation, depth multiplier, network activations | Market | Trades, order fulfilment, diffusion, activations | `MarketSnapshot` |
+| Logical game time, partial work, customer pipeline | Game store | Company lifecycle and foreground advance | `GameTimeSnapshot` |
+| Profile, company, session, tutorial metadata | SQLite adapters | Local identity and tutorial commands | Dedicated local tables |
+| Wall-clock observation anchor and UI data | Runtime helpers | App lifecycle and selectors | Not persisted |
 
-Derived values include facility efficiency, production work/output, customer-order reward cap, offer rate, domain/customer/resource selection weights, current prestige, market diffusion amount, local-market activation progress, completed-research local market depth and local-regional diffusion rate, and UI view models.
+Derived values include facility efficiency/output, quality ceilings, order cap/rate/selection weights, prestige, market diffusion, market activation progress, research capacity, credit limits, statements, and UI view models.
 
 ## Command Effects
 
-| Command | Reads | Writes |
+| Command/group | Reads | Writes |
 |---|---|---|
-| `setInventoryAmount` | Resource and amount | Inventory |
-| `buyMissingConstructionInputs` | Facility definition; local Construction Materials and Industrial Machines prices/supply; balance; inventory | Market; Finance; Inventory |
-| `acceptLoanOffer` | Derived credit rating and selected deterministic lender offer | Finance loan/transaction state, prestige, finance achievements |
-| `startLoanSearch`, `makeExtraLoanPayment`, `repayLoanInFull` | Selected criteria or active loan, lender policy caps, balance | Search activity/fee or finance transactions, loans, payment history, and derived credit rating |
-| `buildFacility`, `destroyFacility`, `repairFacility`, `setFacilityRecipe`, `setFacilityProductionCycle`, `setFacilityWorkers`, `setFacilityAutoRepair`, `upgradeFacility` | Facility definition, researched recipes, Repair Technician limit, balance, Construction Materials, and Industrial Machines where applicable | Facilities; Finance; Inventory and resource-flow history where applicable |
-| `advanceRealtime`, `advanceGameTime`, `fastForwardOneMinute` | Time anchors and all timed state | Game time, pipeline, facility condition, inventory/resource-flow history, customer orders/relationships, local/regional/global market, active research, active lender searches, due loan payments |
-| Completed production outputs | Recipe outputs, facility output multiplier, and captured direct-material source cost | Inventory; all-time facility-output resource flow; production achievements; sales targeting |
-| Facility per-cycle contribution margin | Current output market value less captured direct input source cost | Facility Finance tab; derived only |
-| Facility period operating profit / investment-adjusted result | Timestamped Finance-owned facility output, direct-input, repair, construction, and upgrade records | Facility Finance tab using a selected Finance report period |
-| `fulfillSalesOrder`, `rejectSalesOrder` | Customer order; inventory and finance where applicable | Customer orders/relationships; inventory, finance, and resource-flow history where applicable |
-| Achievement evaluation | Post-command domain state | Achievement unlocks; idempotent achievement prestige events |
-| `getResearchAvailability`, `startResearch`, `cancelResearch(projectId)` | Code catalogue, pure gate context, finance, research ledger, progression grants | Research; grant use; finance/prestige and relevant achievements |
-| `createSalesOrderRequest` | Selected resource, quantity, derived capacity | Development customer order and pipeline |
-| `activateCompany` | Selected profile, outgoing snapshot, requested company snapshot | Device session; complete runtime game state |
-| `deleteActiveCompany` | Active company ID | Removes the active company and returns to local company selection |
-| `clearAllLocalData` | All local records | Clears profiles, companies, saves, tutorials, and the device session |
+| Inventory and market trades | Resource, amount, market quote, quality | Inventory, market, Finance, Resource Flow |
+| Construction/material purchase | Facility definition, prices, supply, balance | Facilities, market, inventory, Finance |
+| Facility commands | Definition, research, inputs, balance, facility state | Facility collection, inventory, Finance, Resource Flow |
+| Finance commands | Loan/search criteria, lender policies, credit report, active loan | Finance, prestige, achievements |
+| Research commands | Catalogue, gates, grants, Finance, research ledger | Research, grants, Finance, prestige, achievements |
+| `advanceRealtime` / `advanceGameTime` | Time anchors and all timed state | Time, facilities, markets, orders, research, loans, Finance, flow |
+| Completed production | Recipe, upgrades, input Q/source cost, lifetime output | Inventory, flow, Finance performance, achievements |
+| Sales commands | Order, inventory, market, current time | Orders, relationships, inventory, global market, Finance, prestige, flow |
+| Achievement evaluation | Post-command domain state | Unlocks and idempotent prestige events |
+| Company/session commands | Profile/company records and snapshots | SQLite session, company save, runtime state |
 
-All normal state changes batch persistence; background and explicit checkpoints flush it. UI issues commands and does not mutate state directly.
+UI issues commands; it does not mutate domain state directly.
 
 ## Persistence Mapping
 
-| State group | Save representation | Restore |
+| State group | Durable representation | Restore |
 |---|---|---|
-| Inventory, resource-flow history, finance (including loans), facilities and maintenance statistics, customer order/relationship state, achievements, prestige, research, progression grants | Respective snapshot inside a company-keyed `GameSnapshot` | Restore the active company's valid snapshot; customer catalogue remains deterministic code data |
-| Foreground game time and pipeline | `GameTimeSnapshot` | Restore logical/partial time and pipeline; reset observation anchor |
-| Catalogues and balance configuration | Typed code definitions | Reload from the app version; never save |
-| Player/company/session/tutorial metadata | Dedicated company-domain SQLite records | Load before an active company runtime session begins |
+| Gameplay ledgers and domain state | Company-keyed current `GameSnapshot` | Valid active-company snapshot; invalid current saves are discarded |
+| Logical time and pipeline | `GameTimeSnapshot` | Restore time/pipeline; reset observation anchor |
+| Profile/company/session/tutorial metadata | Dedicated SQLite tables | Load before activating a company |
+| Catalogues and balance values | Typed code constants | Reload from app version; never save |
+
+Normal changes batch saves; background/checkpoints flush after final foreground processing. There is no compatibility migration layer.

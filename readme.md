@@ -1,105 +1,57 @@
 # Industri Clicker
 
-Industri Clicker is an early-stage, single-player industrial clicker game for Android. It is mobile-first, UI-driven, and maintained entirely through coding agents. The game uses code-defined interface components and primitives rather than bespoke graphic design.
+Industri Clicker is a pre-alpha, single-player industrial clicker for native Android. It is mobile-first, local-first, deterministic, and built with code-defined UI rather than bespoke artwork.
 
-## Project Direction
+## Direction
 
-- Build a responsive, touch-first clicker experience for portrait phones before adapting it to larger screens.
-- Keep gameplay, economy, progression, and time-controlled tick processing deterministic, explicit, and testable outside the UI.
-- Keep the first release local-first and single-player. Cloud services are a later product decision, not a foundation requirement.
-- Use established, code-acquirable UI primitives instead of custom artwork or manually designed visual assets.
-- Keep shared visual tokens and the React Native Paper theme in `theme.ts`; keep dashboard-specific layout rules in `ui/dashboard/dashboard.styles.ts`.
-- Treat predecessor-project documents as references only. They do not define Industri Clicker's domain, implementation status, routes, or persistence.
+- Design portrait-phone interaction first; support touch, safe areas, text scaling, accessibility, and interrupted foreground play.
+- Keep game rules, formulas, progression, and tick processing deterministic and testable outside React Native.
+- Defer cloud services, accounts, offline catch-up, iOS, web release, and monetization until explicitly approved.
+- Treat predecessor-project material as archive only; current docs and code define this project.
 
-## Locked Technology Stack
+Verified stack and repository facts live in [PROJECT_INFO.md](docs/WorkingDocs/PROJECT_INFO.md).
 
-| Area | Decision |
-|---|---|
-| Product target | Native Android app first |
-| App framework | Expo + React Native |
-| Language | TypeScript |
-| Navigation | Expo Router |
-| UI | React Native Paper and React Native core components |
-| Game logic | Pure TypeScript engine and services, independent from UI |
-| In-memory state | Zustand |
-| Local persistence | Expo SQLite |
-| Cloud/backend | None initially; Supabase only when a real cloud need exists |
-| Development preview | Expo Go on a physical Android device; browser preview and DevTools as lightweight secondary tools |
-| Release path | Native Android build; no PWA or web release target |
-
-Exact package versions are intentionally not fixed here. The selected Expo SDK determines compatible versions when the project is scaffolded.
-
-## Local Setup
+## Setup
 
 ```bash
 npm install
-npm run web
+npm run start
 ```
 
-The web command is a local browser preview for development and layout inspection; Android remains the product target. For the preferred native preview, run `npm run start`, keep the phone and computer on the same network, and scan the QR code from Expo Go. `npm run android` is an optional emulator shortcut when an emulator is available.
+Use Expo Go on a physical Android device. `npm run web` is for layout inspection and `npm run android` is an optional emulator shortcut. Android preview/build details live in [PROJECT_INFO.md](docs/WorkingDocs/PROJECT_INFO.md).
 
-To create an installable standalone Android preview, run `npx eas-cli@latest build --platform android --profile preview`, sign in to Expo when prompted, and open the resulting build link on the Android device. The `preview` profile produces an APK that does not need Expo Go or a development server. It uses the provisional Android package ID `com.industriclicker.facilities`; change this before the first Play Store upload if a different permanent identifier is required.
-
-## Why This Stack
-
-Expo and React Native provide a native Android application rather than a browser application, while retaining TypeScript and React's component model. This gives coding agents a familiar, well-supported way to produce native mobile UI.
-
-React Native Paper supplies reusable Material-based controls, layouts, dialogs, lists, and feedback entirely through code. It meets the requirement for a coherent UI without relying on bespoke graphic design.
-
-Game state stays in memory for responsive taps and progression. Expo SQLite stores deliberate saves, checkpoints, and history; it is not written on every tap. Supabase is deferred until the game needs cloud backup, cross-device sync, accounts, or another explicitly approved server feature.
-
-## Architecture Principles
-
-Keep responsibilities separate:
+## Architecture
 
 ```text
-React Native UI -> hooks/view models -> game commands/services -> state and persistence adapters
+React Native UI -> hooks/view models -> game commands/services -> Zustand -> SQLite adapters
 ```
 
-- UI components render state and collect player input. They do not own business rules, calculations, or database access.
-- Expo Router `_layout.tsx` owns shared providers and navigation configuration; route screens own their rendering and interaction logic.
-- Shared colors and Paper theme configuration belong in `theme.ts`; screen-specific `StyleSheet` objects belong beside their screen. Avoid a global catch-all stylesheet.
-- Pure TypeScript engine/service modules own gameplay formulas, progression, tick order, validation, and derived values.
-- Zustand holds active source-of-truth runtime state. Derive view data instead of persisting every display value.
-- Expo SQLite adapters own durable local reads and writes. Save deliberately at meaningful checkpoints or batched intervals.
-- Database-interacting code is allowed only in dedicated, domain-bounded `*Database.ts` files (for example, `production/productionDatabase.ts`). These files own CRUD operations; business files must import their database functions to access persistence and must not perform database operations directly.
-- Do not retain legacy database tables, rows, schemas, or save shapes. When a database edit makes data obsolete, deliberately drop it and invalidate older local saves instead of adding compatibility paths.
-- Keep balance values named, centralized, and easy to tune. Do not hide tunable values in UI components.
-- Keep code-owned domain catalogues, balance values, and deterministic game configuration in the owning domain's named `*Constants.ts` module. Leave only technical implementation details, such as numerical tolerances and persistence identifiers, local to their module.
-- Use `game/core/index.ts`, `game/index.ts`, and `ui/index.ts` as the public barrel surfaces. Prefer wildcard re-exports in those barrels; keep internal implementation imports on leaf modules when using the barrel would create a dependency cycle.
-- Do not add compatibility layers, legacy data shapes, or backend infrastructure unless the task explicitly requires them.
+- UI renders state and issues commands; it owns no rules, calculations, or database access.
+- Pure `game/` modules own formulas, catalogues, validation, tick order, and derived values.
+- Zustand owns active source-of-truth state. SQLite writes deliberate snapshots through domain-bounded `*Database.ts` adapters; there is no compatibility layer for obsolete saves.
+- Put tunable domain values and deterministic catalogues in the owning `*Constants.ts` module. Keep shared theme tokens in `theme.ts` and screen styles beside their screens.
+- Public barrels are `game/core/index.ts`, `game/index.ts`, and `ui/index.ts`; use leaf imports where a barrel would create a cycle.
 
-## Mobile-First Experience
+## Validation
 
-- Design the portrait-phone interaction first; add tablet or larger-screen layouts intentionally.
-- Use touch-friendly controls with visible feedback. Do not require hover, right-click, or mouse-only interaction.
-- Respect safe areas, keyboard movement, text scaling, accessibility labels, readable contrast, and reduced-motion preferences.
-- Keep repeated tapping efficient: avoid unnecessary rerenders, allocations, animations, network calls, and persistence writes.
-- Make background/resume behavior and elapsed-time catch-up explicit before implementing them.
-
-## Development and Validation
-
-The primary native preview is a physical Android device running Expo Go. Expo Fast Refresh should update ordinary TypeScript and UI edits quickly. Expo web may be used for browser DevTools and fast layout inspection, but it is a development aid only. The emulator is optional; physical-device checks are the preferred truth for native behavior.
-
-Use the smallest useful verification for each change:
-
-- Documentation-only changes: review links and stale terminology; run `git diff --check` before handoff.
-- Gameplay changes: add or update focused tests for player-visible behavior, formulas, and tick order.
-- Select tests based on the changed files and behavior; do not run the full test suite for every change. Do not run focused Vitest tests: the repository environment blocks them with a Windows `spawn EPERM` error. Reserve full-suite checks for cross-cutting changes or an integration/release checkpoint.
-- Run the facility-production and recipe-balance tests when facility production, recipe balance, facility work/upgrade formulas, production tick order, or their tests change.
-- UI changes: inspect the narrow physical-device layout and the affected interaction path; use the emulator only when available.
-- Cross-cutting or release-style work: run the relevant full test/build checks once at the integration gate.
-
-Do not start a development server, create a release build, or commit changes unless the task or user explicitly calls for it.
+- Docs: review links and stale terminology, then run `git diff --check`.
+- Code: use focused tests and `npm run typecheck`; run `npm test` and facility/recipe checks at cross-cutting or integration checkpoints. Focused Vitest execution is currently blocked by the repository's Windows `spawn EPERM` environment issue.
+- Do not start servers, create builds, or commit unless the task explicitly requires it.
 
 ## Documentation
 
-- `docs/WorkingDocs/CONTEXT.md` — canonical Industri Clicker terminology.
-- `docs/WorkingDocs/design.md` — durable game and product direction.
-- `docs/WorkingDocs/PROJECT_INFO.md` — verified repository map, commands, and implementation status.
-- `docs/WorkingDocs/gameflow.md` — mechanics, tick order, formulas, state ownership, and persistence flow.
-- `docs/WorkingDocs/VariableRelationshipMap.md` — variable ownership, dependencies, commands, and persistence relationships.
-- `docs/WorkingDocs/versionlog.md` — change history after commits exist.
-- `skills/mobilegamedev-gram/SKILL.md` — repository router and agent conventions.
+| Document | Owns | Keep out |
+|---|---|---|
+| `CONTEXT.md` | Stable shared names and short definitions. | Formulas, relationships, product decisions, repo status. |
+| `design.md` | Durable player-facing direction and deferred decisions. | Exact formulas, tick/save mechanics, variable registers. |
+| `gameflow.md` | Rules, formulas, tick order, state ownership, and save lifecycle. | Full variable/dependency register, repo map, player rationale. |
+| `VariableRelationshipMap.md` | Variables, dependencies, commands, resource/facility relationships, and persistence mappings. | Player rationale, broad status, duplicate prose. |
+| `PROJECT_INFO.md` | Verified stack, repo shape, routes, commands, release setup, and implementation status. | Design authority and detailed mechanics. |
+| `AIDescriptions_coregame.md` | Compact agent orientation and links to the authorities above. | Authority for mechanics or implementation status. |
+| `AIpromt_docs.md` | Documentation-maintenance workflow. | Project facts already owned by the documents above. |
+| `AIpromt_codecleaning.md` | Behavior-preserving cleanup workflow. | Gameplay design and current implementation status. |
+| `handoffs/economy-balance.md` | Economy-report interpretation, parity checks, and balance workflow. | Runtime rule authority and duplicated catalogues. |
+| `versionlog.md` | Active reviewed history, limited to 300 lines. | Current rules; use `oldversionslog.md` for archived history. |
+| `oldversionslog.md` | Historical version entries moved from the active log. | New entries and current implementation guidance. |
 
-
+The README owns these boundaries. When a fact belongs in multiple documents, link to its owner instead of repeating it.

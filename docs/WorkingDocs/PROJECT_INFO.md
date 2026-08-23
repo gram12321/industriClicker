@@ -1,63 +1,45 @@
 # Project Information
 
-Verified repository facts for Industri Clicker. Product choices belong in [design.md](design.md) and mechanics in [gameflow.md](gameflow.md).
+Verified repository facts. Documentation ownership is defined in the root [readme.md](../../readme.md); product choices are in [design.md](design.md), mechanics in [gameflow.md](gameflow.md), and relationships in [VariableRelationshipMap.md](VariableRelationshipMap.md).
 
-## Current Status
+## Status
 
 - Stage: pre-alpha foundation.
-- Product: single-player, mobile-first industrial clicker for Android.
-- Implemented foundation: dashboard shell, local player/company selection, company-keyed local saves, standard-start onboarding, tutorial-guide placeholder, inventory with categorized foreground-time flow history and weighted source cost, local/regional/global market, facilities, classified finance statements and rolling cash flow with Finance-owned facility historical investment, maintenance, and period-performance records, local loans and credit ratings, customer orders and relationships, foreground production with multi-output recipes and direct-material output cost, the canonical four-ceiling quality domain (InputMaxQ, ResearchMaxQ, UpgradeMaxQ, ProductionMaxQ), unlimited per-resource quality research, per-facility quality upgrades, tiered company achievements, company prestige, local-first progression gates and grants, foreground research, Repair Technician research with per-facility automatic repair thresholds, IndustriPedia, and local saves.
-- Deferred: offline catch-up, broader workforce systems and maintenance interactions beyond the Repair Technician automation chain, and cloud services.
+- Product: single-player, mobile-first native Android game.
+- Implemented domains: local profile/company saves, tutorial onboarding, facilities and production, inventory/markets/quality, Finance/loans, customer orders, research, achievements, prestige, grants, repairs, and IndustriPedia.
+- Deferred: offline catch-up, cloud/accounts, iOS/web release, and workforce systems beyond current staffing and repair automation.
 
 ## Code Size
 
-Measured from the current working tree on 2026-08-15:
+Measured 2026-08-22 from the working tree:
 
-- Application and test source: 13,421 non-empty TypeScript lines across 123 `.ts` and `.tsx` files.
-- Project configuration: 96 non-empty lines across `metro.config.js`, `app.json`, `package.json`, and `tsconfig.json`.
-- Combined: 13,517 non-empty lines, excluding documentation, skills, lockfiles, and generated output.
+- Application (`app/`, `game/`, `ui/`, root helpers): 15,536 non-empty TypeScript lines in 124 files.
+- Tests (`tests/`): 3,018 lines in 22 files.
+- Total: 18,554 lines in 146 files; excludes docs, skills, lockfiles, and generated output.
 
-## Stack
+## Stack and Shape
 
-- Expo SDK 54, React Native, TypeScript, and Expo Router.
-- React Native Paper and React Native core components.
-- Zustand for runtime state and Expo SQLite for deliberate local saves.
-- No cloud backend.
-
-Public import barrels are `game/core/index.ts`, `game/index.ts`, and `ui/index.ts`. They use wildcard re-exports; internal modules may retain leaf imports to avoid dependency cycles.
-
-## Repository Shape
+- Expo SDK 54, React Native, TypeScript, Expo Router, React Native Paper, Zustand, Expo SQLite, and Vitest.
+- No cloud backend. Public barrels: `game/core/index.ts`, `game/index.ts`, `ui/index.ts`.
 
 ```text
-app/                  Expo Router screens and providers
-ui/dashboard/         Dashboard views, components, and UI helpers
-game/                 Game rules, catalogues, time, math, and persistence
-game/core/stores/     Zustand runtime state and command boundary
+app/                  Expo Router screens/providers
+ui/dashboard/         Views, components, and presentation helpers
+game/                 Rules, catalogues, state, time, and persistence
+tests/                Domain and economy checks
+tools/                Economy-report wrapper
+.github/workflows/    Manual Android APK workflow
 docs/WorkingDocs/     Canonical working documentation
-theme.ts              Shared Paper theme and visual tokens
+theme.ts              Shared Paper theme/tokens
 ```
 
 ## Routes and Commands
 
-- `/` — local player/company selection until a company is active, then the dashboard with Company, Inventory, Production, Finance, Sales, Profile, Settings, Leaderboard placeholder, Achievements, Research, and IndustriPedia views.
-- `npm run start` — Expo development server for Expo Go.
-- `npm run android` — optional Android emulator shortcut.
-- `npm run web` — local browser development preview.
-- `npm run typecheck` — TypeScript validation without emitting files.
-- `npm test` — deterministic Vitest checks for game-engine rules and recipe balance.
-- `npm run economy:report` — prints recipe margins, market pressure, maintenance, break-even, payback, and upgrade-level tables, and writes `economy-report.md` for economy balancing.
+- `/`: local player/company selection, then Company, Inventory, Facility, Finance, Sales, Research, Profile, Settings, Achievements, IndustriPedia, and the Leaderboard placeholder. Admin is development-only.
+- `npm run start`: Expo Go server. `npm run android`: optional emulator. `npm run web`: browser layout aid.
+- `npm run typecheck`: TypeScript check. `npm test`: Vitest suite. `npm run economy:report`: generate economy evidence.
 
 ## Android Distribution
 
-- `eas.json` defines an internal `preview` profile that creates an APK for direct Android-device installation without Expo Go or a development server.
-- Run `npx eas-cli@latest build --platform android --profile preview` to create the APK through EAS Build. The first run signs in to Expo and associates the project with an Expo account.
-- The current Android application ID is the provisional `com.industriclicker.facilities`; it must be kept stable after the first Google Play upload.
-
-## Documentation
-
-- [CONTEXT.md](CONTEXT.md): terminology.
-- [design.md](design.md): player-facing direction.
-- [gameflow.md](gameflow.md): system rules and lifecycle.
-- [VariableRelationshipMap.md](VariableRelationshipMap.md): variable relationships.
-- [handoffs/economy-balance.md](handoffs/economy-balance.md): canonical economy-report reading guide, balance workflow, and current tuning recommendations.
-- [AIpromt_docs.md](AIpromt_docs.md): documentation ownership rules.
+- `eas.json` `preview` creates a directly installable APK; the provisional application ID is `com.industriclicker.facilities`.
+- `npx eas-cli@latest build --platform android --profile preview` runs the build. `.github/workflows/android-apk.yml` runs a manual local build with `EXPO_TOKEN` and uploads the APK.
