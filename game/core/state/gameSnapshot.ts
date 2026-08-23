@@ -2,7 +2,8 @@ import { type FinanceSnapshot } from '../../finance/finance';
 import { type InventorySnapshot } from '../../inventory/inventory';
 import { ResourceFlowLedger } from '../../inventory/resourceFlow';
 import { type FacilityCollectionSnapshot } from '../../facilities/facilityCollection';
-import { getFacilityMaxStaffWage } from '../../facilities/facilityConstants';
+import { getFacilityMaxStaffWage, isValidFacilitySize } from '../../facilities/facilityConstants';
+import { FacilityType } from '../../facilities/facilityTypes';
 import { isFacilityMaintenanceStatisticsSnapshot, type FacilityMaintenanceStatisticsSnapshot } from '../../facilities/facilityMaintenanceStatistics';
 import { type SalesOrdersSnapshot } from '../../sales/salesOrders';
 import { isAchievementLedgerSnapshot, type AchievementLedgerSnapshot } from '../../achievements/achievement';
@@ -201,6 +202,8 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
     && RESOURCE_TYPES.every((resourceType) => isMarketAutomationSnapshot(marketAutomation[resourceType]))
     && Array.isArray(value.facilities.facilities)
     && facilitySnapshots.every((facility) => isRecord(facility)
+      && Object.values(FacilityType).includes(facility.facilityType as FacilityType)
+      && isValidFacilitySize(facility.facilityType as FacilityType, facility.sizeHectares)
       && Array.isArray(facility.productionCycle)
       && facility.productionCycle.every((recipeName) => Object.values(RecipeName).includes(recipeName as RecipeName))
       && typeof facility.productionCycleIndex === 'number'

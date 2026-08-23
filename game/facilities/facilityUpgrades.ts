@@ -5,28 +5,28 @@ import { FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_CONDITION_DECA
 export type FacilityUpgradeKind = 'speed' | 'output' | 'condition' | 'quality';
 
 /** Cost of the next level; level 0 is the first upgrade. */
-export function getFacilityUpgradeCost(constructionCost: number, currentLevel: number): number {
-  return Math.ceil(scaleExponential(constructionCost, currentLevel, FACILITY_UPGRADE_COST_GROWTH));
+export function getFacilityUpgradeCost(constructionCost: number, currentLevel: number, sizeMultiplier = 1): number {
+  return Math.ceil(scaleExponential(constructionCost * Math.max(1, sizeMultiplier), currentLevel, FACILITY_UPGRADE_COST_GROWTH));
 }
 
 /** Construction Materials or Industrial Machines required for the next upgrade level. */
-export function getFacilityUpgradeResourceCost(constructionResourceCost: number, currentLevel: number): number {
-  return scaleExponential(Math.max(0, constructionResourceCost) * FACILITY_UPGRADE_RESOURCE_COST_RATE, currentLevel, FACILITY_UPGRADE_COST_GROWTH);
+export function getFacilityUpgradeResourceCost(constructionResourceCost: number, currentLevel: number, sizeMultiplier = 1): number {
+  return scaleExponential(Math.max(0, constructionResourceCost) * FACILITY_UPGRADE_RESOURCE_COST_RATE * Math.max(1, sizeMultiplier), currentLevel, FACILITY_UPGRADE_COST_GROWTH);
 }
 
 /** Total paid cost for all completed levels in one facility upgrade track. */
-export function getFacilityUpgradeInvestmentCost(constructionCost: number, completedLevels: number): number {
+export function getFacilityUpgradeInvestmentCost(constructionCost: number, completedLevels: number, sizeMultiplier = 1): number {
   return Array.from(
     { length: Math.max(0, Math.floor(completedLevels)) },
-    (_, currentLevel) => getFacilityUpgradeCost(constructionCost, currentLevel),
+    (_, currentLevel) => getFacilityUpgradeCost(constructionCost, currentLevel, sizeMultiplier),
   ).reduce((total, cost) => total + cost, 0);
 }
 
 /** Total construction resources committed to all completed levels in one upgrade track. */
-export function getFacilityUpgradeResourceInvestmentCost(constructionResourceCost: number, completedLevels: number): number {
+export function getFacilityUpgradeResourceInvestmentCost(constructionResourceCost: number, completedLevels: number, sizeMultiplier = 1): number {
   return Array.from(
     { length: Math.max(0, Math.floor(completedLevels)) },
-    (_, currentLevel) => getFacilityUpgradeResourceCost(constructionResourceCost, currentLevel),
+    (_, currentLevel) => getFacilityUpgradeResourceCost(constructionResourceCost, currentLevel, sizeMultiplier),
   ).reduce((total, cost) => total + cost, 0);
 }
 

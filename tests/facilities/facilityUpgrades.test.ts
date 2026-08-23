@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getFacilityMaxStaffWage, getStaffingEfficiency, getStaffQualityFromProgress, getStaffQualityWorkMultiplier, getWageEfficiency } from '@/game/facilities';
-import { getFacilityUpgradeResourceCost } from '@/game/facilities';
+import { getFacilityMaxStaffWage, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, getStaffingEfficiency, getStaffQualityFromProgress, getStaffQualityWorkMultiplier, getWageEfficiency } from '@/game/facilities';
 import { calculateProgressFromQuality, calculateUpgradeMaxQ } from '@/game/quality';
 
 describe('getFacilityUpgradeResourceCost', () => {
@@ -8,6 +7,11 @@ describe('getFacilityUpgradeResourceCost', () => {
     expect(getFacilityUpgradeResourceCost(1, 0)).toBeCloseTo(0.2);
     expect(getFacilityUpgradeResourceCost(4, 0)).toBeCloseTo(0.8);
     expect(getFacilityUpgradeResourceCost(4, 1)).toBeCloseTo(1.2);
+  });
+
+  it('scales upgrade cash and resource costs with the farm footprint', () => {
+    expect(getFacilityUpgradeCost(40, 0, 5)).toBe(200);
+    expect(getFacilityUpgradeResourceCost(5, 0, 5)).toBeCloseTo(5);
   });
 
   it('starts facility quality at Q1 and follows the diminishing research curve', () => {

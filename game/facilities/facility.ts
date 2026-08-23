@@ -1,7 +1,7 @@
 import type { RecipeName } from '@/game/recipes';
 import { calculateAsymmetricalScaler01 } from '@/game/core/math/scaling';
 import { calculateProgressFromQuality, calculateUpgradeMaxQ } from '@/game/quality';
-import { FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_INITIAL_STAFF_QUALITY, FACILITY_REPAIR_EFFICIENCY_MULTIPLIER, FACILITY_STAFF_QUALITY_EXPERIENCE_PROGRESS_PER_WORK, FACILITY_STAFF_QUALITY_WAGE_GAIN_PER_MINUTE, FACILITY_STAFF_QUALITY_WAGE_LOSS_PER_MINUTE, FACILITY_STAFF_TRAINING_QUALITY_PROGRESS_PER_WORKER, getFacilityDefinition, getFacilityMaxStaffWage } from './facilityConstants';
+import { FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_INITIAL_STAFF_QUALITY, FACILITY_REPAIR_EFFICIENCY_MULTIPLIER, FACILITY_STAFF_QUALITY_EXPERIENCE_PROGRESS_PER_WORK, FACILITY_STAFF_QUALITY_WAGE_GAIN_PER_MINUTE, FACILITY_STAFF_QUALITY_WAGE_LOSS_PER_MINUTE, FACILITY_STAFF_TRAINING_QUALITY_PROGRESS_PER_WORKER, FARM_DEFAULT_SIZE_HECTARES, getFacilityDefinition, getFacilityMaxStaffWage, getFacilitySizeMultiplier, isValidFacilitySize } from './facilityConstants';
 import { FacilityType } from './facilityTypes';
 import { getConditionDecayMultiplier, getFacilityConditionEfficiency, getFacilityEfficiency, getOutputUpgradeMultiplier, getOverstaffingConditionDecayMultiplier, getRequiredWorkers, getSpeedUpgradeWorkSpeedMultiplier, getStaffingEfficiency, getStaffQualityFromProgress, getWageEfficiency } from './facilityUpgrades';
 
@@ -9,6 +9,7 @@ import { getConditionDecayMultiplier, getFacilityConditionEfficiency, getFacilit
 export type FacilitySnapshot = {
   id: string;
   facilityType: FacilityType;
+  sizeHectares: number;
   activeRecipeName: RecipeName | null;
   productionCycle: RecipeName[];
   productionCycleIndex: number;
@@ -37,6 +38,8 @@ export type FacilitySnapshot = {
 export type FacilityView = {
   id: string;
   facilityType: FacilityType;
+  sizeHectares: number;
+  sizeMultiplier: number;
   displayName: string;
   activeRecipeName: RecipeName | null;
   productionCycle: readonly RecipeName[];
@@ -74,6 +77,7 @@ export type FacilityView = {
 
 /** Player-owned state for one constructed facility. */
 export class Facility {
+  private sizeHectares: number;
   private activeRecipeName: RecipeName | null = null;
   private productionCycle: RecipeName[] = [];
   private productionCycleIndex = 0;
@@ -100,10 +104,16 @@ export class Facility {
   constructor(
     public readonly id: string,
     public readonly facilityType: FacilityType,
+    sizeHectaresOrSnapshot: number | FacilitySnapshot = facilityType === FacilityType.Farm ? FARM_DEFAULT_SIZE_HECTARES : 1,
     snapshot?: FacilitySnapshot,
   ) {
-    if (snapshot) {
-      this.restore(snapshot);
+    const suppliedSnapshot = typeof sizeHectaresOrSnapshot === 'object' ? sizeHectaresOrSnapshot : snapshot;
+    const suppliedSize = typeof sizeHectaresOrSnapshot === 'number' ? sizeHectaresOrSnapshot : suppliedSnapshot?.sizeHectares;
+    this.sizeHectares = isValidFacilitySize(facilityType, suppliedSize)
+      ? suppliedSize
+      : (facilityType === FacilityType.Farm ? FARM_DEFAULT_SIZE_HECTARES : 1);
+    if (suppliedSnapshot) {
+      this.restore(suppliedSnapshot);
     } else {
       this.assignedWorkers = this.calculateRequiredWorkers();
       this.staffQualityProgress = calculateProgressFromQuality(FACILITY_INITIAL_STAFF_QUALITY);
@@ -119,6 +129,8 @@ export class Facility {
     return {
       id: this.id,
       facilityType: this.facilityType,
+      sizeHectares: this.sizeHectares,
+      sizeMultiplier: getFacilitySizeMultiplier(this.facilityType, this.sizeHectares),
       displayName: `${getFacilityDefinition(this.facilityType).name} #${this.id.split('-').at(-1)}`,
       activeRecipeName: this.activeRecipeName,
       productionCycle: [...this.productionCycle],
@@ -156,11 +168,11 @@ export class Facility {
   }
 
   private calculateRequiredWorkers(): number {
-    return getRequiredWorkers(
+    return Math.ceil(getRequiredWorkers(
       getFacilityDefinition(this.facilityType).baseWorkers,
       this.speedUpgradeLevel,
       this.outputUpgradeLevel,
-    );
+    ) * getFacilitySizeMultiplier(this.facilityType, this.sizeHectares));
   }
 
   setAssignedWorkers(workerCount: number): boolean {
@@ -374,7 +386,7 @@ export class Facility {
   /** Internal production-state command used by the facility production engine. */
   setRecipeProgress(recipeName: RecipeName, progress: number): boolean {
     const recipe = getFacilityDefinition(this.facilityType).recipes.find((candidate) => candidate.name === recipeName);
-    if (!recipe || !Number.isFinite(progress) || progress < 0 || progress >= recipe.requiredWork) {
+    if (!recipe || !Number.isFinite(progress) || progress < 0 || progress >= recipe.requiredWork * getFacilitySizeMultiplier(this.facilityType, this.sizeHectares)) {
       return false;
     }
 
@@ -398,6 +410,7 @@ export class Facility {
     return {
       id: this.id,
       facilityType: this.facilityType,
+      sizeHectares: this.sizeHectares,
       activeRecipeName: this.activeRecipeName,
       productionCycle: [...this.productionCycle],
       productionCycleIndex: this.productionCycleIndex,
@@ -424,7 +437,7 @@ export class Facility {
   }
 
   static fromSnapshot(snapshot: FacilitySnapshot): Facility {
-    return new Facility(snapshot.id, snapshot.facilityType, snapshot);
+    return new Facility(snapshot.id, snapshot.facilityType, snapshot.sizeHectares, snapshot);
   }
 
   private restore(snapshot: FacilitySnapshot): void {
@@ -473,7 +486,7 @@ export class Facility {
     for (const recipe of getFacilityDefinition(this.facilityType).recipes) {
       const progress = snapshot.recipeProgress[recipe.name];
 
-      if (Number.isFinite(progress) && progress !== undefined && progress >= 0 && progress < recipe.requiredWork) {
+      if (Number.isFinite(progress) && progress !== undefined && progress >= 0 && progress < recipe.requiredWork * getFacilitySizeMultiplier(this.facilityType, this.sizeHectares)) {
         this.recipeProgress[recipe.name] = progress;
       }
     }

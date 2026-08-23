@@ -5,7 +5,7 @@ import { Button, Card, Dialog, IconButton, List, Portal, SegmentedButtons, Text,
 import { colors } from '@/theme';
 import { LOAN_COLLECTION, calculateFacilityAssetValue, type Finance } from '@/game/finance';
 import { Facility, type FacilityCollection, type FacilityType } from '@/game/facilities';
-import { calculateFacilityResourcePayment, calculateProjectedFacilityConditionEconomics, FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_GROUPS, FACILITY_REPAIR_DURATION_PER_CONDITION_MS, FACILITY_REPAIR_EFFICIENCY_MULTIPLIER, FACILITY_STAFF_TRAINING_QUALITY_PROGRESS_PER_WORKER, getFacilityDefinition, getFacilityEfficiency, getFacilityMaxStaffWage, getFacilityRepairCost, getStaffingChangeCost, getStaffingChangeDurationMs, getStaffTrainingCost, getStaffTrainingDurationMs, getStaffingEfficiency, getStaffQualityFromProgress, getStaffQualityWorkMultiplier } from '@/game/facilities';
+import { calculateFacilityResourcePayment, calculateProjectedFacilityConditionEconomics, FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_GROUPS, FACILITY_REPAIR_DURATION_PER_CONDITION_MS, FACILITY_REPAIR_EFFICIENCY_MULTIPLIER, FACILITY_STAFF_TRAINING_QUALITY_PROGRESS_PER_WORKER, getFacilityConstructionCosts, getFacilityDefinition, getFacilityEfficiency, getFacilityMaxStaffWage, getFacilityRepairCost, getFacilitySizeMultiplier, getFacilitySizeOptions, getStaffingChangeCost, getStaffingChangeDurationMs, getStaffTrainingCost, getStaffTrainingDurationMs, getStaffingEfficiency, getStaffQualityFromProgress, getStaffQualityWorkMultiplier } from '@/game/facilities';
 import type { Inventory } from '@/game/inventory';
 import type { Market } from '@/game/market';
 import { ResourceType } from '@/game/resources';
@@ -105,9 +105,9 @@ export function FacilityRepairDialog({
   const sliderProgress = currentCondition >= 1 ? 1 : (selectedTarget - currentCondition) / (1 - currentCondition);
   const repairTargetSteps = [...new Set([currentCondition, 0.5, 0.75, 1].filter((condition) => condition >= currentCondition))];
   const definition = getFacilityDefinition(facilityView.facilityType);
-  const repairEuroCost = getFacilityRepairCost(definition.landCost, currentCondition, selectedTarget);
-  const repairConstructionMaterialsCost = getFacilityRepairCost(definition.constructionMaterialsCost, currentCondition, selectedTarget);
-  const repairIndustrialMachinesCost = getFacilityRepairCost(definition.industrialMachinesCost, currentCondition, selectedTarget);
+  const repairEuroCost = getFacilityRepairCost(definition.landCost * facilityView.sizeMultiplier, currentCondition, selectedTarget);
+  const repairConstructionMaterialsCost = getFacilityRepairCost(definition.constructionMaterialsCost * facilityView.sizeMultiplier, currentCondition, selectedTarget);
+  const repairIndustrialMachinesCost = getFacilityRepairCost(definition.industrialMachinesCost * facilityView.sizeMultiplier, currentCondition, selectedTarget);
   const repairPayment = calculateFacilityResourcePayment(finance, inventory, market, repairEuroCost, repairConstructionMaterialsCost, repairIndustrialMachinesCost);
   const repairDurationMs = Math.max(0, Math.ceil((selectedTarget - currentCondition) * FACILITY_REPAIR_DURATION_PER_CONDITION_MS));
   const pendingRepairSeconds = facilityView.pendingRepair ? Math.max(0, facilityView.pendingRepair.completesAtGameTimeMs - currentGameTimeMs) / 1_000 : 0;
@@ -405,13 +405,14 @@ export function FacilityConstructionDialog(props: {
   finance: Finance;
   inventory: Inventory;
   market: Market;
-  pendingConstruction: FacilityType | null;
+  pendingConstruction: { facilityType: FacilityType; sizeHectares: number } | null;
   pendingDestruction: string | null;
   isConstructionYardOpen: boolean;
   isConstructionTutorial?: boolean;
   isFacilitySelectionEnabled?: boolean;
   onCloseConstructionYard: () => void;
   onSelectFacility: (facilityType: FacilityType) => void;
+  onSelectConstructionSize: (sizeHectares: number) => void;
   onConfirmConstruction: () => void;
   onBuyMissingConstructionInputs: () => void;
   onConfirmDestruction: () => void;
@@ -419,7 +420,7 @@ export function FacilityConstructionDialog(props: {
   onDismissDestruction: () => void;
 }) {
   return <>
-    <ConfirmConstrution facilityType={props.pendingConstruction} finance={props.finance} inventory={props.inventory} isConstructionTutorial={props.isConstructionTutorial} market={props.market} onBuyMissingConstructionInputs={props.onBuyMissingConstructionInputs} onConfirm={props.onConfirmConstruction} onDismiss={props.onDismissConstruction} />
+    <ConfirmConstrution facilityType={props.pendingConstruction?.facilityType ?? null} sizeHectares={props.pendingConstruction?.sizeHectares ?? 1} finance={props.finance} inventory={props.inventory} isConstructionTutorial={props.isConstructionTutorial} market={props.market} onBuyMissingConstructionInputs={props.onBuyMissingConstructionInputs} onSelectConstructionSize={props.onSelectConstructionSize} onConfirm={props.onConfirmConstruction} onDismiss={props.onDismissConstruction} />
     <BuildFacilityDialog finance={props.finance} inventory={props.inventory} isConstructionTutorial={props.isConstructionTutorial} isFacilitySelectionEnabled={props.isFacilitySelectionEnabled} market={props.market} onDismiss={props.onCloseConstructionYard} onSelectFacility={props.onSelectFacility} visible={props.isConstructionYardOpen} />
     <DestructionDialog facilities={props.facilities} facilityId={props.pendingDestruction} finance={props.finance} market={props.market} onConfirm={props.onConfirmDestruction} onDismiss={props.onDismissDestruction} />
   </>;
@@ -450,13 +451,14 @@ function BuildFacilityDialog({
   const [facilityFilter, setFacilityFilter] = useState<'all' | 'available' | 'unavailable'>('all');
   const facilities = FACILITY_GROUPS.flatMap((group) => group.facilities.map((facilityType) => {
     const definition = getFacilityDefinition(facilityType);
-    const missingMaterials = Math.max(0, definition.constructionMaterialsCost - inventory.getAmount(ResourceType.ConstructionMaterials));
-    const missingIndustrialMachines = Math.max(0, definition.industrialMachinesCost - inventory.getAmount(ResourceType.IndustrialMachines));
+    const constructionCosts = getFacilityConstructionCosts(facilityType, definition, getFacilitySizeOptions(facilityType)[0]);
+    const missingMaterials = Math.max(0, constructionCosts.constructionMaterialsCost - inventory.getAmount(ResourceType.ConstructionMaterials));
+    const missingIndustrialMachines = Math.max(0, constructionCosts.industrialMachinesCost - inventory.getAmount(ResourceType.IndustrialMachines));
     const materialPurchaseCost = getMarketPurchaseCost(market, ResourceType.ConstructionMaterials, missingMaterials);
     const machinePurchaseCost = getMarketPurchaseCost(market, ResourceType.IndustrialMachines, missingIndustrialMachines);
     const canAffordConstruction = Number.isFinite(materialPurchaseCost)
       && Number.isFinite(machinePurchaseCost)
-      && finance.canAfford(definition.landCost + materialPurchaseCost + machinePurchaseCost);
+      && finance.canAfford(constructionCosts.landCost + materialPurchaseCost + machinePurchaseCost);
     return { canAffordConstruction, definition, facilityType, groupLabel: group.label };
   }));
   const filteredFacilities = facilities.filter(({ canAffordConstruction }) => facilityFilter === 'all'
@@ -484,9 +486,10 @@ function BuildFacilityDialog({
             style={[styles.constructionYardListViewport, { maxHeight: isConstructionTutorial ? tutorialFacilityListMaxHeight : facilityListMaxHeight }]}
           >
             {filteredFacilities.map(({ canAffordConstruction, definition, facilityType, groupLabel }, index) => {
-              const constructionMaterialsPrice = getDisplayedMarketUnitPrice(market, ResourceType.ConstructionMaterials, definition.constructionMaterialsCost);
-              const industrialMachinesPrice = getDisplayedMarketUnitPrice(market, ResourceType.IndustrialMachines, definition.industrialMachinesCost);
-              const totalConstructionCost = definition.landCost + definition.constructionMaterialsCost * constructionMaterialsPrice + definition.industrialMachinesCost * industrialMachinesPrice;
+              const constructionCosts = getFacilityConstructionCosts(facilityType, definition, getFacilitySizeOptions(facilityType)[0]);
+              const constructionMaterialsPrice = getDisplayedMarketUnitPrice(market, ResourceType.ConstructionMaterials, constructionCosts.constructionMaterialsCost);
+              const industrialMachinesPrice = getDisplayedMarketUnitPrice(market, ResourceType.IndustrialMachines, constructionCosts.industrialMachinesCost);
+              const totalConstructionCost = constructionCosts.landCost + constructionCosts.constructionMaterialsCost * constructionMaterialsPrice + constructionCosts.industrialMachinesCost * industrialMachinesPrice;
               const showGroup = index === 0 || filteredFacilities[index - 1].groupLabel !== groupLabel;
               return (
                 <View key={facilityType}>
@@ -500,7 +503,7 @@ function BuildFacilityDialog({
                 >
                   <Card.Content>
                     <List.Item
-                      description={<View style={styles.facilityCostDetails}><View style={styles.currencyDescription}><Text>Land (euros):</Text><CurrencyValue value={definition.landCost} /></View><View style={styles.currencyDescription}><Text><TooltipResourceIcon resourceType={ResourceType.ConstructionMaterials} /> Construction Materials: {formatNumber(definition.constructionMaterialsCost)} ·</Text><CurrencyValue value={constructionMaterialsPrice} /></View><View style={styles.currencyDescription}><Text><TooltipResourceIcon resourceType={ResourceType.IndustrialMachines} /> Industrial Machines: {formatNumber(definition.industrialMachinesCost)} ·</Text><CurrencyValue value={industrialMachinesPrice} /></View><View style={styles.currencyDescription}><Text>Market replacement cost (Total cost):</Text><CurrencyValue value={totalConstructionCost} /></View></View>}
+                      description={<View style={styles.facilityCostDetails}><View style={styles.currencyDescription}><Text>Land (euros):</Text><CurrencyValue value={constructionCosts.landCost} /></View><View style={styles.currencyDescription}><Text><TooltipResourceIcon resourceType={ResourceType.ConstructionMaterials} /> Construction Materials: {formatNumber(constructionCosts.constructionMaterialsCost)} ·</Text><CurrencyValue value={constructionMaterialsPrice} /></View><View style={styles.currencyDescription}><Text><TooltipResourceIcon resourceType={ResourceType.IndustrialMachines} /> Industrial Machines: {formatNumber(constructionCosts.industrialMachinesCost)} ·</Text><CurrencyValue value={industrialMachinesPrice} /></View><View style={styles.currencyDescription}><Text>Market replacement cost (Total cost):</Text><CurrencyValue value={totalConstructionCost} /></View></View>}
                       left={(props) => <List.Icon {...props} icon={definition.icon} />}
                       title={definition.name}
                       titleStyle={styles.facilityTitle}
@@ -522,20 +525,24 @@ function BuildFacilityDialog({
 
 function ConfirmConstrution({
   facilityType,
+  sizeHectares,
   finance,
   inventory,
   isConstructionTutorial,
   market,
   onBuyMissingConstructionInputs,
+  onSelectConstructionSize,
   onConfirm,
   onDismiss,
 }: {
   facilityType: FacilityType | null;
+  sizeHectares: number;
   finance: Finance;
   inventory: Inventory;
   isConstructionTutorial?: boolean;
   market: Market;
   onBuyMissingConstructionInputs: () => void;
+  onSelectConstructionSize: (sizeHectares: number) => void;
   onConfirm: () => void;
   onDismiss: () => void;
 }) {
@@ -546,15 +553,18 @@ function ConfirmConstrution({
   }
 
   const definition = getFacilityDefinition(facilityType);
+  const sizeOptions = getFacilitySizeOptions(facilityType);
+  const constructionCosts = getFacilityConstructionCosts(facilityType, definition, sizeHectares);
+  const sizeMultiplier = getFacilitySizeMultiplier(facilityType, sizeHectares);
   const contentMaxHeight = isConstructionTutorial
     ? Math.min(300, Math.max(180, height * 0.38))
     : Math.min(420, Math.max(220, height * 0.52));
-  const canConstruct = finance.canAfford(definition.landCost)
-    && inventory.has(ResourceType.ConstructionMaterials, definition.constructionMaterialsCost)
-    && inventory.has(ResourceType.IndustrialMachines, definition.industrialMachinesCost);
-  const balanceAfterConstruction = finance.getBalance() - definition.landCost;
-  const materialsAfterConstruction = inventory.getAmount(ResourceType.ConstructionMaterials) - definition.constructionMaterialsCost;
-  const industrialMachinesAfterConstruction = inventory.getAmount(ResourceType.IndustrialMachines) - definition.industrialMachinesCost;
+  const canConstruct = finance.canAfford(constructionCosts.landCost)
+    && inventory.has(ResourceType.ConstructionMaterials, constructionCosts.constructionMaterialsCost)
+    && inventory.has(ResourceType.IndustrialMachines, constructionCosts.industrialMachinesCost);
+  const balanceAfterConstruction = finance.getBalance() - constructionCosts.landCost;
+  const materialsAfterConstruction = inventory.getAmount(ResourceType.ConstructionMaterials) - constructionCosts.constructionMaterialsCost;
+  const industrialMachinesAfterConstruction = inventory.getAmount(ResourceType.IndustrialMachines) - constructionCosts.industrialMachinesCost;
   const missingMaterials = Math.max(0, -materialsAfterConstruction);
   const missingIndustrialMachines = Math.max(0, -industrialMachinesAfterConstruction);
   const missingInputsPurchaseCost = getMarketPurchaseCost(market, ResourceType.ConstructionMaterials, missingMaterials)
@@ -563,7 +573,7 @@ function ConfirmConstrution({
     + missingIndustrialMachines * getDisplayedMarketUnitPrice(market, ResourceType.IndustrialMachines, missingIndustrialMachines);
   const canAutoBuyInputs = (missingMaterials > 0 || missingIndustrialMachines > 0)
     && Number.isFinite(missingInputsPurchaseCost)
-    && finance.canAfford(definition.landCost + missingInputsPurchaseCost);
+    && finance.canAfford(constructionCosts.landCost + missingInputsPurchaseCost);
 
   return (
     <Portal>
@@ -574,9 +584,17 @@ function ConfirmConstrution({
             <Text style={styles.dialogDescription}>
               Purchase the land, supply the Construction Materials, and install the Industrial Machines before the facility is added to your company.
             </Text>
+            {sizeOptions.length > 1 && <>
+              <Text variant="titleMedium" style={styles.dialogSectionHeading}>Farm size</Text>
+              <SegmentedButtons
+                buttons={sizeOptions.map((size) => ({ value: String(size), label: `${size} ha` }))}
+                onValueChange={(value) => onSelectConstructionSize(Number(value))}
+                value={String(sizeHectares)}
+              />
+            </>}
             <Card mode="contained" style={styles.dialogSummaryCard}>
               <Card.Content style={styles.dialogSummaryContent}>
-                <View style={styles.dialogSummaryRow}><Text>Construction cost</Text><View style={styles.currencyDescription}><CurrencyValue value={definition.landCost} /><Text style={styles.detailValue}> · <TooltipResourceIcon resourceType={ResourceType.ConstructionMaterials} /> Construction Materials: {formatNumber(definition.constructionMaterialsCost)} · <TooltipResourceIcon resourceType={ResourceType.IndustrialMachines} /> Industrial Machines: {formatNumber(definition.industrialMachinesCost)}</Text></View></View>
+                <View style={styles.dialogSummaryRow}><Text>Construction cost</Text><View style={styles.currencyDescription}><CurrencyValue value={constructionCosts.landCost} /><Text style={styles.detailValue}> · <TooltipResourceIcon resourceType={ResourceType.ConstructionMaterials} /> Construction Materials: {formatNumber(constructionCosts.constructionMaterialsCost)} · <TooltipResourceIcon resourceType={ResourceType.IndustrialMachines} /> Industrial Machines: {formatNumber(constructionCosts.industrialMachinesCost)}</Text></View></View>
                 <View style={styles.dialogSummaryRow}><Text>Resources after purchase</Text><View style={styles.currencyDescription}><CurrencyValue value={balanceAfterConstruction} /><Text style={styles.detailValue}> · <TooltipResourceIcon resourceType={ResourceType.ConstructionMaterials} /> Construction Materials: {formatNumber(materialsAfterConstruction)} · <TooltipResourceIcon resourceType={ResourceType.IndustrialMachines} /> Industrial Machines: {formatNumber(industrialMachinesAfterConstruction)}</Text></View></View>
               </Card.Content>
             </Card>
@@ -588,7 +606,7 @@ function ConfirmConstrution({
                 left={() => <TooltipTextIcon label={formatRecipeName(recipe)}>{RECIPE_ICONS[recipe.name]}</TooltipTextIcon>}
                 right={(props) => <List.Icon {...props} icon={isExpanded ? 'chevron-up' : 'chevron-down'} />}
                 title={formatRecipeName(recipe)}
-              />{isExpanded && <View style={styles.dialogSummaryContent}><RecipeResourceSummary recipe={recipe} /><WorkMetric value={String(recipe.requiredWork)} /></View>}</View>;
+              />{isExpanded && <View style={styles.dialogSummaryContent}><RecipeResourceSummary inputMultiplier={sizeMultiplier} outputMultiplier={sizeMultiplier} recipe={recipe} /><WorkMetric value={String(recipe.requiredWork * sizeMultiplier)} /></View>}</View>;
             })}
           </ScrollView>
         </Dialog.Content>

@@ -50,21 +50,22 @@ const SOURCE_LABELS: Record<FinanceTransaction['source'], string> = {
 export function calculateFacilityAssetBreakdown(facility: Facility, market: Market, finance: Finance) {
   const view = facility.getView();
   const definition = getFacilityDefinition(view.facilityType);
-  const currentConstructionValue = definition.landCost
-    + definition.constructionMaterialsCost * market.getLocalPrice(ResourceType.ConstructionMaterials)
-    + definition.industrialMachinesCost * market.getLocalPrice(ResourceType.IndustrialMachines);
-  const currentUpgradeValue = getFacilityUpgradeInvestmentCost(definition.upgradeCost, view.speedUpgradeLevel)
-    + getFacilityUpgradeInvestmentCost(definition.upgradeCost, view.outputUpgradeLevel)
-    + getFacilityUpgradeInvestmentCost(definition.upgradeCost, view.conditionDecayUpgradeLevel)
-    + getFacilityUpgradeInvestmentCost(definition.upgradeCost, Math.max(0, view.qualityUpgradeLevel - 1))
-    + getFacilityUpgradeResourceInvestmentCost(definition.constructionMaterialsCost, view.speedUpgradeLevel) * market.getLocalPrice(ResourceType.ConstructionMaterials)
-    + getFacilityUpgradeResourceInvestmentCost(definition.constructionMaterialsCost, view.outputUpgradeLevel) * market.getLocalPrice(ResourceType.ConstructionMaterials)
-    + getFacilityUpgradeResourceInvestmentCost(definition.constructionMaterialsCost, view.conditionDecayUpgradeLevel) * market.getLocalPrice(ResourceType.ConstructionMaterials)
-    + getFacilityUpgradeResourceInvestmentCost(definition.constructionMaterialsCost, Math.max(0, view.qualityUpgradeLevel - 1)) * market.getLocalPrice(ResourceType.ConstructionMaterials)
-    + getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, view.speedUpgradeLevel) * market.getLocalPrice(ResourceType.IndustrialMachines)
-    + getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, view.outputUpgradeLevel) * market.getLocalPrice(ResourceType.IndustrialMachines)
-    + getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, view.conditionDecayUpgradeLevel) * market.getLocalPrice(ResourceType.IndustrialMachines)
-    + getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, Math.max(0, view.qualityUpgradeLevel - 1)) * market.getLocalPrice(ResourceType.IndustrialMachines);
+  const sizeMultiplier = view.sizeMultiplier;
+  const currentConstructionValue = definition.landCost * sizeMultiplier
+    + definition.constructionMaterialsCost * sizeMultiplier * market.getLocalPrice(ResourceType.ConstructionMaterials)
+    + definition.industrialMachinesCost * sizeMultiplier * market.getLocalPrice(ResourceType.IndustrialMachines);
+  const currentUpgradeValue = getFacilityUpgradeInvestmentCost(definition.upgradeCost, view.speedUpgradeLevel, sizeMultiplier)
+    + getFacilityUpgradeInvestmentCost(definition.upgradeCost, view.outputUpgradeLevel, sizeMultiplier)
+    + getFacilityUpgradeInvestmentCost(definition.upgradeCost, view.conditionDecayUpgradeLevel, sizeMultiplier)
+    + getFacilityUpgradeInvestmentCost(definition.upgradeCost, Math.max(0, view.qualityUpgradeLevel - 1), sizeMultiplier)
+    + getFacilityUpgradeResourceInvestmentCost(definition.constructionMaterialsCost, view.speedUpgradeLevel, sizeMultiplier) * market.getLocalPrice(ResourceType.ConstructionMaterials)
+    + getFacilityUpgradeResourceInvestmentCost(definition.constructionMaterialsCost, view.outputUpgradeLevel, sizeMultiplier) * market.getLocalPrice(ResourceType.ConstructionMaterials)
+    + getFacilityUpgradeResourceInvestmentCost(definition.constructionMaterialsCost, view.conditionDecayUpgradeLevel, sizeMultiplier) * market.getLocalPrice(ResourceType.ConstructionMaterials)
+    + getFacilityUpgradeResourceInvestmentCost(definition.constructionMaterialsCost, Math.max(0, view.qualityUpgradeLevel - 1), sizeMultiplier) * market.getLocalPrice(ResourceType.ConstructionMaterials)
+    + getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, view.speedUpgradeLevel, sizeMultiplier) * market.getLocalPrice(ResourceType.IndustrialMachines)
+    + getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, view.outputUpgradeLevel, sizeMultiplier) * market.getLocalPrice(ResourceType.IndustrialMachines)
+    + getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, view.conditionDecayUpgradeLevel, sizeMultiplier) * market.getLocalPrice(ResourceType.IndustrialMachines)
+    + getFacilityUpgradeResourceInvestmentCost(definition.industrialMachinesCost, Math.max(0, view.qualityUpgradeLevel - 1), sizeMultiplier) * market.getLocalPrice(ResourceType.IndustrialMachines);
   const accounting = finance.getFacilityAccounting(facility.id);
   const capitalInvestment = accounting.constructionInvestment + accounting.upgradeInvestment;
   const currentReplacementValue = currentConstructionValue + currentUpgradeValue;

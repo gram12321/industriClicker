@@ -20,17 +20,33 @@ export type ProductionOutput = {
   sourceCostPerUnit: number;
 };
 
+function scaleAmount(amount: number, sizeMultiplier: number): number {
+  return amount * Math.max(1, sizeMultiplier);
+}
+
+export function getFacilityRecipeRequiredWork(recipe: Recipe, sizeMultiplier = 1): number {
+  return scaleAmount(recipe.requiredWork, sizeMultiplier);
+}
+
+export function getFacilityRecipeInputs(recipe: Recipe, sizeMultiplier = 1): RecipeInput[] {
+  return recipe.inputs.map((input) => ({ ...input, amount: scaleAmount(input.amount, sizeMultiplier) }));
+}
+
+export function getFacilityRecipeOutputs(recipe: Recipe, sizeMultiplier = 1): RecipeOutput[] {
+  return recipe.outputs.map((output) => ({ ...output, amount: scaleAmount(output.amount, sizeMultiplier) }));
+}
+
 /** Calculates the amount-weighted quality of a recipe's consumed inputs. */
-export function calculateRecipeInputQ(recipe: Recipe, inventory: Inventory): number | null {
-  return calculateWeightedInputQ(recipe.inputs.map((input) => ({
+export function calculateRecipeInputQ(recipe: Recipe, inventory: Inventory, sizeMultiplier = 1): number | null {
+  return calculateWeightedInputQ(getFacilityRecipeInputs(recipe, sizeMultiplier).map((input) => ({
     amount: input.amount,
     quality: inventory.getQuality(input.resourceType),
   })));
 }
 
 /** Direct material cost captured when a recipe cycle consumes its inputs. */
-export function calculateRecipeInputSourceCost(recipe: Recipe, inventory: Inventory): number {
-  return recipe.inputs.reduce(
+export function calculateRecipeInputSourceCost(recipe: Recipe, inventory: Inventory, sizeMultiplier = 1): number {
+  return getFacilityRecipeInputs(recipe, sizeMultiplier).reduce(
     (total, input) => total + input.amount * inventory.getEntry(input.resourceType).sourceCostPerUnit,
     0,
   );
@@ -56,24 +72,24 @@ export function calculateFacilityEffectiveWork(
     * FACILITY_STAFF_WORK_PER_WORKER_PER_MINUTE
     * facility.staffingEfficiency;
 
-  return (baseWork + staffWork)
+  return (baseWork * Math.max(1, facility.sizeMultiplier) + staffWork)
     * facility.conditionEfficiency
     * facility.speedUpgradeWorkSpeedMultiplier
     * recipeResearchWorkSpeedMultiplier;
 }
 
 /** Inputs still needed before the facility can begin its next recipe cycle. */
-export function getFacilityMissingInputs(recipeName: RecipeName | null, inventory: Inventory): RecipeInput[] {
+export function getFacilityMissingInputs(recipeName: RecipeName | null, inventory: Inventory, sizeMultiplier = 1): RecipeInput[] {
   if (!recipeName) return [];
 
-  return getRecipe(recipeName).inputs.filter((input) => !inventory.has(input.resourceType, input.amount));
+  return getFacilityRecipeInputs(getRecipe(recipeName), sizeMultiplier).filter((input) => !inventory.has(input.resourceType, input.amount));
 }
 
 /** Total inputs needed to complete each recipe in a facility's configured production cycle once. */
 export function getFacilityProductionCycleInputs(facility: FacilityView): RecipeInput[] {
   const amounts = new Map<ResourceType, number>();
   for (const recipeName of facility.productionCycle) {
-    for (const input of getRecipe(recipeName).inputs) {
+    for (const input of getFacilityRecipeInputs(getRecipe(recipeName), facility.sizeMultiplier)) {
       amounts.set(input.resourceType, (amounts.get(input.resourceType) ?? 0) + input.amount);
     }
   }
@@ -85,7 +101,7 @@ export function getFacilityProductionStatus(facility: FacilityView, inventory: I
   if (!recipeName) return 'not-started';
   if (!facility.isActive) return 'paused';
 
-  return (facility.recipeProgress[recipeName] ?? 0) === 0 && getFacilityMissingInputs(recipeName, inventory).length > 0
+  return (facility.recipeProgress[recipeName] ?? 0) === 0 && getFacilityMissingInputs(recipeName, inventory, facility.sizeMultiplier).length > 0
     ? 'missing-inputs'
     : 'producing';
 }
@@ -113,25 +129,28 @@ export function advanceAllFacilityProduction(
 
       while (remainingStepFraction > 0) {
         const recipe = getRecipe(currentRecipeName);
-        if (recipe.requiredWork <= 0) break;
+        const requiredWork = getFacilityRecipeRequiredWork(recipe, facilityView.sizeMultiplier);
+        const inputs = getFacilityRecipeInputs(recipe, facilityView.sizeMultiplier);
+        const scaledOutputs = getFacilityRecipeOutputs(recipe, facilityView.sizeMultiplier);
+        if (requiredWork <= 0) break;
         const effectiveWork = getEffectiveWork(facilityView, currentRecipeName);
         if (!Number.isFinite(effectiveWork) || effectiveWork <= 0) break;
-        if (progress === 0 && !recipe.inputs.every((input) => inventory.has(input.resourceType, input.amount))) break;
+        if (progress === 0 && !inputs.every((input) => inventory.has(input.resourceType, input.amount))) break;
 
         if (progress === 0) {
-          facility.setRecipeInputQ(calculateRecipeInputQ(recipe, inventory));
-          facility.setRecipeInputSourceCost(calculateRecipeInputSourceCost(recipe, inventory));
-          for (const input of recipe.inputs) {
+          facility.setRecipeInputQ(calculateRecipeInputQ(recipe, inventory, facilityView.sizeMultiplier));
+          facility.setRecipeInputSourceCost(calculateRecipeInputSourceCost(recipe, inventory, facilityView.sizeMultiplier));
+          for (const input of inputs) {
             if (inventory.remove(input.resourceType, input.amount)) onInputConsumed?.(input);
           }
         }
 
-        const appliedWork = Math.min(remainingStepFraction * effectiveWork, recipe.requiredWork - progress);
+        const appliedWork = Math.min(remainingStepFraction * effectiveWork, requiredWork - progress);
         progress += appliedWork;
         remainingStepFraction = Math.max(0, remainingStepFraction - appliedWork / effectiveWork);
 
-        if (progress + WORK_COMPLETION_EPSILON >= recipe.requiredWork) {
-          const totalOutputAmount = recipe.outputs.reduce(
+        if (progress + WORK_COMPLETION_EPSILON >= requiredWork) {
+          const totalOutputAmount = scaledOutputs.reduce(
             (total, output) => total + output.amount * facilityView.outputMultiplier,
             0,
           );
@@ -139,7 +158,7 @@ export function advanceAllFacilityProduction(
           const outputSourceCostPerUnit = totalOutputAmount > 0
             ? ((facility.getView().recipeInputSourceCost ?? 0) + Math.max(0, productionMaintenanceCost)) / totalOutputAmount
             : 0;
-          for (const output of recipe.outputs) {
+          for (const output of scaledOutputs) {
             const amount = output.amount * facilityView.outputMultiplier;
             const qualityBreakdown = resolveOutputQuality?.(facilityView, output, facility.getView().recipeInputQ, facilityView.upgradeMaxQ)
               ?? calculateOutputQuality({ weightedInputQ: facility.getView().recipeInputQ, researchMaxQ: 1, upgradeMaxQ: facilityView.upgradeMaxQ, outputBonusQ: output.outputBonusQ });

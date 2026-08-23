@@ -4,6 +4,11 @@ import { FacilityType } from './facilityTypes';
 export const FACILITY_TYPES = [FacilityType.Farm, FacilityType.AnimalFarm, FacilityType.Bakery, FacilityType.SmallUtilityWorks, FacilityType.Mine, FacilityType.Quarry, FacilityType.IndustrialProcessingFactory, FacilityType.ChemicalPlant, FacilityType.ElectronicsFactory, FacilityType.AssemblyPlant, FacilityType.ConstructionFactory, FacilityType.WaterWell, FacilityType.PowerPlant] as const;
 export type FacilityGroup = 'agriculture' | 'extraction' | 'manufacturing' | 'utilities';
 
+/** Farm footprints offered during construction; the first option is the baseline field. */
+export const FARM_SIZE_OPTIONS_HECTARES = [5, 10, 25, 50] as const;
+export const FARM_DEFAULT_SIZE_HECTARES = FARM_SIZE_OPTIONS_HECTARES[0];
+export type FarmSizeHectares = (typeof FARM_SIZE_OPTIONS_HECTARES)[number];
+
 /** Player-facing facility groupings shared by Pedia and other catalogues; each group is alphabetized by display name. */
 export const FACILITY_GROUPS: ReadonlyArray<{ id: FacilityGroup; label: string; facilities: readonly FacilityType[] }> = [
   { id: 'agriculture', label: 'Agriculture', facilities: [FacilityType.AnimalFarm, FacilityType.Bakery, FacilityType.Farm] },
@@ -94,6 +99,40 @@ export type FacilityDefinition = {
   baseWorkers: number;
   recipes: readonly Recipe[];
 };
+
+/** Returns the construction scale for a facility instance. Non-farms remain one baseline unit. */
+export function getFacilitySizeMultiplier(facilityType: FacilityType, sizeHectares = 1): number {
+  if (facilityType !== FacilityType.Farm) return 1;
+  return Math.max(1, sizeHectares / FARM_DEFAULT_SIZE_HECTARES);
+}
+
+export function isValidFacilitySize(facilityType: FacilityType, sizeHectares: unknown): sizeHectares is number {
+  return typeof sizeHectares === 'number'
+    && Number.isFinite(sizeHectares)
+    && sizeHectares > 0
+    && (facilityType !== FacilityType.Farm
+      ? sizeHectares === 1
+      : FARM_SIZE_OPTIONS_HECTARES.includes(sizeHectares as FarmSizeHectares));
+}
+
+export function getFacilitySizeOptions(facilityType: FacilityType): readonly number[] {
+  return facilityType === FacilityType.Farm ? FARM_SIZE_OPTIONS_HECTARES : [1];
+}
+
+export type FacilityConstructionCosts = {
+  landCost: number;
+  constructionMaterialsCost: number;
+  industrialMachinesCost: number;
+};
+
+export function getFacilityConstructionCosts(facilityType: FacilityType, definition: FacilityDefinition, sizeHectares = 1): FacilityConstructionCosts {
+  const multiplier = getFacilitySizeMultiplier(facilityType, sizeHectares);
+  return {
+    landCost: definition.landCost * multiplier,
+    constructionMaterialsCost: definition.constructionMaterialsCost * multiplier,
+    industrialMachinesCost: definition.industrialMachinesCost * multiplier,
+  };
+}
 
 /** Code-owned facility catalogue. Player-owned state belongs to FacilityCollection. */
 export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {

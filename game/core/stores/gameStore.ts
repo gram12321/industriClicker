@@ -1,6 +1,6 @@
 import { Finance, LOAN_COLLECTION, buildFinanceStatementData, calculateAssets, calculateFacilityAssetValue, calculateLoanSearchEstimate, generateLoanOffers, LENDER_TYPES, refreshLoanOfferAvailability, type LoanOffer, type LoanSearchCriteria } from '@/game/finance';
 import { Inventory, ResourceFlowLedger } from '@/game/inventory';
-import { FACILITIES, FacilityCollection, FacilityMaintenanceStatistics, advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateFacilityProductionMaintenanceCost, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_REPAIR_DURATION_PER_CONDITION_MS, getFacilityDefinition, getFacilityMissingInputs, getMissingFacilityMaterials, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, getStaffingChangeCost, getStaffingChangeDurationMs, getStaffTrainingCost, getStaffTrainingDurationMs, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
+import { FACILITIES, FacilityCollection, FacilityMaintenanceStatistics, FacilityType, advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateFacilityProductionMaintenanceCost, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_REPAIR_DURATION_PER_CONDITION_MS, FARM_DEFAULT_SIZE_HECTARES, getFacilityConstructionCosts, getFacilityDefinition, getFacilityMissingInputs, getMissingFacilityMaterials, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, getStaffingChangeCost, getStaffingChangeDurationMs, getStaffTrainingCost, getStaffTrainingDurationMs, isValidFacilitySize, type FacilityUpgradeKind } from '@/game/facilities';
 import { calculateOutputQuality, calculateProductionMaxQ } from '@/game/quality';
 import { getRecipe, type RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
@@ -58,8 +58,8 @@ type GameState = {
   buyMarketResource: (resourceType: ResourceType, amount: number) => boolean;
   sellMarketResource: (resourceType: ResourceType, amount: number) => boolean;
   setMarketAutomation: (resourceType: ResourceType, updates: Partial<MarketAutomation>) => boolean;
-  buyMissingConstructionInputs: (facilityType: FacilityType) => boolean;
-  buildFacility: (facilityType: FacilityType) => boolean;
+  buyMissingConstructionInputs: (facilityType: FacilityType, sizeHectares?: number) => boolean;
+  buildFacility: (facilityType: FacilityType, sizeHectares?: number) => boolean;
   sellFacility: (facilityId: string) => boolean;
   setFacilityRecipe: (facilityId: string, recipeName: RecipeName | null) => boolean;
   setFacilityProductionCycle: (facilityId: string, recipeNames: readonly RecipeName[]) => boolean;
@@ -166,10 +166,11 @@ function executeFacilityRepair(input: {
   if (!facility) return false;
   const facilityView = facility.getView();
   const definition = getFacilityDefinition(facility.facilityType);
+  const sizeMultiplier = facilityView.sizeMultiplier;
   const repairTargetCondition = Number.isFinite(targetCondition) ? Math.min(1, Math.max(facilityView.facilityCondition, targetCondition)) : 1;
-  const cashRepairCost = getFacilityRepairCost(definition.landCost, facilityView.facilityCondition, repairTargetCondition);
-  const constructionMaterialsRepairCost = getFacilityRepairCost(definition.constructionMaterialsCost, facilityView.facilityCondition, repairTargetCondition);
-  const industrialMachinesRepairCost = getFacilityRepairCost(definition.industrialMachinesCost, facilityView.facilityCondition, repairTargetCondition);
+  const cashRepairCost = getFacilityRepairCost(definition.landCost * sizeMultiplier, facilityView.facilityCondition, repairTargetCondition);
+  const constructionMaterialsRepairCost = getFacilityRepairCost(definition.constructionMaterialsCost * sizeMultiplier, facilityView.facilityCondition, repairTargetCondition);
+  const industrialMachinesRepairCost = getFacilityRepairCost(definition.industrialMachinesCost * sizeMultiplier, facilityView.facilityCondition, repairTargetCondition);
   const constructionMaterialsPrice = market.getLocalPrice(ResourceType.ConstructionMaterials);
   const industrialMachinesPrice = market.getLocalPrice(ResourceType.IndustrialMachines);
   const maintenanceExpense = cashRepairCost
@@ -384,23 +385,26 @@ export const useGameStore = create<GameState>((set, get) => {
     set({ market });
     return true;
   },
-  buyMissingConstructionInputs: (facilityType) => {
+  buyMissingConstructionInputs: (facilityType, sizeHectares) => {
     get().advanceRealtime(Date.now());
     const definition = getFacilityDefinition(facilityType);
     const facilities = get().facilities;
     const inventory = get().inventory.clone();
     const market = get().market.clone();
     const finance = get().finance.clone();
-    const missingConstructionMaterials = Math.max(0, definition.constructionMaterialsCost - inventory.getAmount(ResourceType.ConstructionMaterials));
-    const missingIndustrialMachines = Math.max(0, definition.industrialMachinesCost - inventory.getAmount(ResourceType.IndustrialMachines));
-    const missingInputs = getMissingFacilityMaterials(inventory, { constructionMaterials: definition.constructionMaterialsCost, industrialMachines: definition.industrialMachinesCost });
+    const selectedSize = sizeHectares ?? (facilityType === FacilityType.Farm ? FARM_DEFAULT_SIZE_HECTARES : 1);
+    if (!isValidFacilitySize(facilityType, selectedSize)) return false;
+    const constructionCosts = getFacilityConstructionCosts(facilityType, definition, selectedSize);
+    const missingConstructionMaterials = Math.max(0, constructionCosts.constructionMaterialsCost - inventory.getAmount(ResourceType.ConstructionMaterials));
+    const missingIndustrialMachines = Math.max(0, constructionCosts.industrialMachinesCost - inventory.getAmount(ResourceType.IndustrialMachines));
+    const missingInputs = getMissingFacilityMaterials(inventory, { constructionMaterials: constructionCosts.constructionMaterialsCost, industrialMachines: constructionCosts.industrialMachinesCost });
     if (missingInputs.length === 0) return false;
 
     const trades = missingInputs.map((input) => ({ ...input, trade: market.buyFromLocal(input.resourceType, input.amount) }));
     const purchaseCost = trades.reduce((total, { trade }) => total + trade.unitPrice * trade.amount, 0);
 
     if (trades.some(({ trade }) => !trade.success)
-      || !finance.canAfford(definition.landCost + purchaseCost)
+      || !finance.canAfford(constructionCosts.landCost + purchaseCost)
       || trades.some(({ resourceType, trade }) => !inventory.add(resourceType, trade.amount, trade.quality, trade.unitPrice))
       || !finance.applyTransaction({ amount: -purchaseCost, description: `Bought missing construction inputs for ${definition.name}`, detailLines: trades.map(({ resourceType, trade }) => `${trade.amount} ${resourceType} at €${trade.unitPrice.toFixed(2)} each`), kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: get().lastProcessedAtMs })) return false;
 
@@ -409,26 +413,29 @@ export const useGameStore = create<GameState>((set, get) => {
     set({ market, inventory, finance, resourceFlow });
     return true;
   },
-  buildFacility: (facilityType) => {
+  buildFacility: (facilityType, sizeHectares) => {
     get().advanceRealtime(Date.now());
     const facilities = get().facilities.clone();
     const finance = get().finance.clone();
     const inventory = get().inventory.clone();
     const definition = getFacilityDefinition(facilityType);
+    const selectedSize = sizeHectares ?? (facilityType === FacilityType.Farm ? FARM_DEFAULT_SIZE_HECTARES : 1);
+    if (!isValidFacilitySize(facilityType, selectedSize)) return false;
+    const constructionCosts = getFacilityConstructionCosts(facilityType, definition, selectedSize);
     const isFirstFacility = facilities.getAll().length === 0;
-    const constructionInvestment = definition.landCost
-      + definition.constructionMaterialsCost * get().market.getLocalPrice(ResourceType.ConstructionMaterials)
-      + definition.industrialMachinesCost * get().market.getLocalPrice(ResourceType.IndustrialMachines);
+    const constructionInvestment = constructionCosts.landCost
+      + constructionCosts.constructionMaterialsCost * get().market.getLocalPrice(ResourceType.ConstructionMaterials)
+      + constructionCosts.industrialMachinesCost * get().market.getLocalPrice(ResourceType.IndustrialMachines);
 
-    if (!finance.canAfford(definition.landCost)
-      || !inventory.has(ResourceType.ConstructionMaterials, definition.constructionMaterialsCost)
-      || !inventory.has(ResourceType.IndustrialMachines, definition.industrialMachinesCost)
-      || !facilities.build(facilityType)) {
+    if (!finance.canAfford(constructionCosts.landCost)
+      || !inventory.has(ResourceType.ConstructionMaterials, constructionCosts.constructionMaterialsCost)
+      || !inventory.has(ResourceType.IndustrialMachines, constructionCosts.industrialMachinesCost)
+      || !facilities.build(facilityType, selectedSize)) {
       return false;
     }
 
     const builtFacility = facilities.getAllByType(facilityType).at(-1);
-    if (!builtFacility || !finance.applyTransaction({ amount: -definition.landCost, description: `Purchased land for ${builtFacility.getView().displayName}`, detailLines: [`Construction materials committed: ${definition.constructionMaterialsCost}`, `Industrial machines installed: ${definition.industrialMachinesCost}`], facilityAccounting: { facilityId: builtFacility.id, classification: 'construction', historicalValue: constructionInvestment }, kind: 'investing', source: 'facility-construction', occurredAtGameTimeMs: get().lastProcessedAtMs }) || !inventory.remove(ResourceType.ConstructionMaterials, definition.constructionMaterialsCost) || !inventory.remove(ResourceType.IndustrialMachines, definition.industrialMachinesCost)) {
+    if (!builtFacility || !finance.applyTransaction({ amount: -constructionCosts.landCost, description: `Purchased land for ${builtFacility.getView().displayName}`, detailLines: [`Facility size: ${selectedSize}${facilityType === FacilityType.Farm ? ' ha' : ''}`, `Construction materials committed: ${constructionCosts.constructionMaterialsCost}`, `Industrial machines installed: ${constructionCosts.industrialMachinesCost}`], facilityAccounting: { facilityId: builtFacility.id, classification: 'construction', historicalValue: constructionInvestment }, kind: 'investing', source: 'facility-construction', occurredAtGameTimeMs: get().lastProcessedAtMs }) || !inventory.remove(ResourceType.ConstructionMaterials, constructionCosts.constructionMaterialsCost) || !inventory.remove(ResourceType.IndustrialMachines, constructionCosts.industrialMachinesCost)) {
       return false;
     }
 
@@ -459,8 +466,8 @@ export const useGameStore = create<GameState>((set, get) => {
       });
     }
     const resourceFlow = get().resourceFlow.clone();
-    resourceFlow.record('facility-spending', ResourceType.ConstructionMaterials, -definition.constructionMaterialsCost, get().lastProcessedAtMs);
-    resourceFlow.record('facility-spending', ResourceType.IndustrialMachines, -definition.industrialMachinesCost, get().lastProcessedAtMs);
+    resourceFlow.record('facility-spending', ResourceType.ConstructionMaterials, -constructionCosts.constructionMaterialsCost, get().lastProcessedAtMs);
+    resourceFlow.record('facility-spending', ResourceType.IndustrialMachines, -constructionCosts.industrialMachinesCost, get().lastProcessedAtMs);
     for (const resourceType of RESOURCE_TYPES) {
       const rewardAmount = achievementResult.inventory.getAmount(resourceType) - inventory.getAmount(resourceType);
       if (rewardAmount > 0) resourceFlow.record('reward', resourceType, rewardAmount, get().lastProcessedAtMs);
@@ -636,10 +643,11 @@ export const useGameStore = create<GameState>((set, get) => {
         : upgradeKind === 'condition' ? facilityView.conditionDecayUpgradeLevel
           : facilityView.qualityUpgradeLevel;
     const definition = getFacilityDefinition(facility.facilityType);
+    const sizeMultiplier = facilityView.sizeMultiplier;
     const costLevel = upgradeKind === 'quality' ? Math.max(0, currentLevel - 1) : currentLevel;
-    const cost = getFacilityUpgradeCost(definition.upgradeCost, costLevel);
-    const constructionMaterialsCost = getFacilityUpgradeResourceCost(definition.constructionMaterialsCost, costLevel);
-    const industrialMachinesCost = getFacilityUpgradeResourceCost(definition.industrialMachinesCost, costLevel);
+    const cost = getFacilityUpgradeCost(definition.upgradeCost, costLevel, sizeMultiplier);
+    const constructionMaterialsCost = getFacilityUpgradeResourceCost(definition.constructionMaterialsCost, costLevel, sizeMultiplier);
+    const industrialMachinesCost = getFacilityUpgradeResourceCost(definition.industrialMachinesCost, costLevel, sizeMultiplier);
     const upgradeInvestment = cost
       + constructionMaterialsCost * market.getLocalPrice(ResourceType.ConstructionMaterials)
       + industrialMachinesCost * market.getLocalPrice(ResourceType.IndustrialMachines);

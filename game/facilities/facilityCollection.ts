@@ -1,5 +1,5 @@
 import { Facility, type FacilitySnapshot } from './facility';
-import { FACILITY_TYPES } from './facilityConstants';
+import { FACILITY_TYPES, FARM_DEFAULT_SIZE_HECTARES, isValidFacilitySize } from './facilityConstants';
 import { FacilityType } from './facilityTypes';
 /** Plain collection data used by the game snapshot and Expo SQLite adapter. */
 export type FacilityCollectionSnapshot = {   facilities: FacilitySnapshot[]; };
@@ -29,11 +29,16 @@ export class FacilityCollection {
     return this.getAll().filter((facility) => facility.facilityType === facilityType);
   }
 
-  build(facilityType: FacilityType): boolean {
+  build(facilityType: FacilityType, sizeHectares?: number): boolean {
+    const selectedSize = sizeHectares ?? (facilityType === FacilityType.Farm ? FARM_DEFAULT_SIZE_HECTARES : 1);
+    if (!isValidFacilitySize(facilityType, selectedSize)) {
+      return false;
+    }
+
     const nextNumber = this.getAllByType(facilityType).reduce((highest, facility) => (
       Math.max(highest, Number(facility.id.split('-').at(-1)) || 0)
     ), 0) + 1;
-    this.facilities.push(new Facility(`${facilityType}-${nextNumber}`, facilityType));
+    this.facilities.push(new Facility(`${facilityType}-${nextNumber}`, facilityType, selectedSize));
     return true;
   }
 
@@ -71,7 +76,9 @@ export class FacilityCollection {
     const collection = new FacilityCollection();
 
     for (const facilitySnapshot of snapshot.facilities) {
-      if (!(FACILITY_TYPES as readonly FacilityType[]).includes(facilitySnapshot.facilityType) || collection.get(facilitySnapshot.id)) {
+      if (!(FACILITY_TYPES as readonly FacilityType[]).includes(facilitySnapshot.facilityType)
+        || !isValidFacilitySize(facilitySnapshot.facilityType, facilitySnapshot.sizeHectares)
+        || collection.get(facilitySnapshot.id)) {
         continue;
       }
 

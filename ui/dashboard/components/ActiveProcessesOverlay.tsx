@@ -2,7 +2,7 @@ import { useState, type ComponentProps } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button, ProgressBar, Text } from 'react-native-paper';
-import { calculateFacilityEffectiveWork, getFacilityDefinition, getFacilityProductionStatus, type FacilityCollection } from '@/game/facilities';
+import { calculateFacilityEffectiveWork, getFacilityDefinition, getFacilityProductionStatus, getFacilityRecipeRequiredWork, type FacilityCollection } from '@/game/facilities';
 import { BASE_WORK_PER_MINUTE } from '@/game/core/time';
 import type { Finance } from '@/game/finance';
 import type { Inventory } from '@/game/inventory';
@@ -100,9 +100,10 @@ function getActiveProcesses({ customerPipelineProgress, currentGameTimeMs, facil
     if (!recipe) return [];
 
     const recipeProgress = facilityView.recipeProgress[recipe.name] ?? 0;
-    const progress = clamp(recipeProgress / recipe.requiredWork, 0, 1);
+    const requiredWork = getFacilityRecipeRequiredWork(recipe, facilityView.sizeMultiplier);
+    const progress = clamp(recipeProgress / requiredWork, 0, 1);
     const workPerMinute = calculateFacilityEffectiveWork(facilityView, BASE_WORK_PER_MINUTE, getRecipeResearchWorkSpeedMultiplier(recipe.name, research.getCompletedProjectIds()));
-    const minutesRemaining = workPerMinute > 0 ? (recipe.requiredWork - recipeProgress) / workPerMinute : 0;
+    const minutesRemaining = workPerMinute > 0 ? (requiredWork - recipeProgress) / workPerMinute : 0;
     return [{ category: 'production' as const, id: facilityView.id, icon: RECIPE_ICONS[recipe.name], isRecipe: true, label: formatRecipeName(recipe), progress, timing: `${formatNumber(progress * 100, { decimals: 0 })}% · ${formatDuration(minutesRemaining)} left`, title: facilityView.displayName }];
   });
 

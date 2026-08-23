@@ -6,7 +6,7 @@ Verified repository facts. Documentation ownership is defined in the root [readm
 
 - Stage: pre-alpha foundation.
 - Product: single-player, mobile-first native Android game.
-- Implemented domains: local profile/company saves, tutorial onboarding, facilities and production (including staffing, wages, Staff Quality, hiring/firing/training, and production-maintenance allocation), inventory/markets/quality, Finance/loans, customer orders, research, achievements, prestige, grants, repairs, and IndustriPedia.
+- Implemented domains: local profile/company saves, tutorial onboarding, facilities and production (including selectable Farm footprints, staffing, wages, Staff Quality, hiring/firing/training, and production-maintenance allocation), inventory/markets/quality, Finance/loans, customer orders, research, achievements, prestige, grants, repairs, and IndustriPedia.
 - Deferred: offline catch-up, cloud/accounts, iOS/web release, and workforce systems beyond current staffing and repair automation.
 
 ## Code Size

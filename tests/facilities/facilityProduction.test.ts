@@ -245,6 +245,28 @@ describe('facility staffing changes', () => {
 });
 
 describe('advanceAllFacilityProduction', () => {
+  it('scales a large farm footprint across staffing, cycle inputs, work, and output', () => {
+    const facilities = new FacilityCollection();
+    facilities.build(FacilityType.Farm, 25);
+    const facility = facilities.getAllByType(FacilityType.Farm)[0]!;
+    facility.setActiveRecipe(RecipeName.GrowGrain);
+    const view = facility.getView();
+    const recipe = getRecipe(RecipeName.GrowGrain);
+    const inventory = new Inventory();
+    for (const input of recipe.inputs) inventory.add(input.resourceType, input.amount * view.sizeMultiplier);
+
+    expect(view.sizeHectares).toBe(25);
+    expect(view.sizeMultiplier).toBe(5);
+    expect(view.requiredWorkers).toBe(5);
+    expect(getFacilityProductionCycleInputs(view)).toEqual(recipe.inputs.map((input) => ({ ...input, amount: input.amount * 5 })));
+
+    const outputs = advanceAllFacilityProduction(facilities, inventory, (facilityView) => calculateFacilityEffectiveWork(facilityView, 1));
+
+    expect(outputs).toHaveLength(1);
+    expect(outputs[0]?.amount).toBeCloseTo(recipe.outputs[0].amount * 5);
+    expect(inventory.getAmount(ResourceType.Grain)).toBeCloseTo(recipe.outputs[0].amount * 5);
+  });
+
   it('requires escalating lifetime production for each resource quality cap', () => {
     expect(calculateProductionMaxQ(0)).toBe(1);
     expect(calculateProductionMaxQ(99)).toBeLessThan(2);
