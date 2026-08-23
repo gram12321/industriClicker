@@ -1,7 +1,7 @@
 import type { RecipeName } from '@/game/recipes';
 import { calculateAsymmetricalScaler01 } from '@/game/core/math/scaling';
 import { calculateUpgradeMaxQ } from '@/game/quality';
-import { getFacilityDefinition } from './facilityConstants';
+import { FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, getFacilityDefinition } from './facilityConstants';
 import { FacilityType } from './facilityTypes';
 import { getConditionDecayMultiplier, getFacilityConditionEfficiency, getFacilityEfficiency, getOutputUpgradeMultiplier, getOverstaffingConditionDecayMultiplier, getRequiredWorkers, getSpeedUpgradeWorkSpeedMultiplier, getStaffingEfficiency } from './facilityUpgrades';
 
@@ -21,6 +21,7 @@ export type FacilitySnapshot = {
   outputUpgradeLevel?: number;
   conditionDecayUpgradeLevel?: number;
   assignedWorkers?: number;
+  staffWagePerWorkerPerMinute: number;
   facilityCondition: number;
   autoRepairEnabled: boolean;
   autoRepairThreshold: number;
@@ -47,6 +48,7 @@ export type FacilityView = {
   conditionDecayMultiplier: number;
   overstaffingConditionDecayMultiplier: number;
   assignedWorkers: number;
+  staffWagePerWorkerPerMinute: number;
   requiredWorkers: number;
   staffingEfficiency: number;
   facilityCondition: number;
@@ -73,6 +75,7 @@ export class Facility {
   private outputUpgradeLevel = 0;
   private conditionDecayUpgradeLevel = 0;
   private assignedWorkers = 0;
+  private staffWagePerWorkerPerMinute = FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE;
   private facilityCondition = 1;
   private autoRepairEnabled = false;
   private autoRepairThreshold = 0.7;
@@ -92,7 +95,7 @@ export class Facility {
 
   getView(): FacilityView {
     const requiredWorkers = this.calculateRequiredWorkers();
-    const staffingEfficiency = getStaffingEfficiency(this.assignedWorkers, requiredWorkers);
+    const staffingEfficiency = getStaffingEfficiency(this.assignedWorkers, requiredWorkers, this.staffWagePerWorkerPerMinute);
     const facilityEfficiency = getFacilityEfficiency(staffingEfficiency, this.facilityCondition);
     return {
       id: this.id,
@@ -113,6 +116,7 @@ export class Facility {
       conditionDecayMultiplier: getConditionDecayMultiplier(this.conditionDecayUpgradeLevel),
       overstaffingConditionDecayMultiplier: getOverstaffingConditionDecayMultiplier(this.assignedWorkers, requiredWorkers),
       assignedWorkers: this.assignedWorkers,
+      staffWagePerWorkerPerMinute: this.staffWagePerWorkerPerMinute,
       requiredWorkers,
       staffingEfficiency,
       facilityCondition: this.facilityCondition,
@@ -167,6 +171,12 @@ export class Facility {
     }
 
     return this.setProductionCycle([recipeName]);
+  }
+
+  setStaffWagePerWorkerPerMinute(wage: number): boolean {
+    if (!Number.isFinite(wage) || wage < 0) return false;
+    this.staffWagePerWorkerPerMinute = wage;
+    return true;
   }
 
   setAutoRepair(enabled: boolean, threshold: number, target: number): boolean {
@@ -271,6 +281,7 @@ export class Facility {
       outputUpgradeLevel: this.outputUpgradeLevel,
       conditionDecayUpgradeLevel: this.conditionDecayUpgradeLevel,
       assignedWorkers: this.assignedWorkers,
+      staffWagePerWorkerPerMinute: this.staffWagePerWorkerPerMinute,
       facilityCondition: this.facilityCondition,
       autoRepairEnabled: this.autoRepairEnabled,
       autoRepairThreshold: this.autoRepairThreshold,
@@ -308,6 +319,9 @@ export class Facility {
     this.assignedWorkers = isValidWorkerCount(snapshot.assignedWorkers)
       ? snapshot.assignedWorkers
       : this.calculateRequiredWorkers();
+    this.staffWagePerWorkerPerMinute = isValidStaffWage(snapshot.staffWagePerWorkerPerMinute)
+      ? snapshot.staffWagePerWorkerPerMinute
+      : FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE;
     this.facilityCondition = isValidFacilityCondition(snapshot.facilityCondition)
       ? snapshot.facilityCondition
       : 1;
@@ -335,4 +349,8 @@ function isValidWorkerCount(value: unknown): value is number {
 
 function isValidFacilityCondition(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
+}
+
+function isValidStaffWage(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0;
 }

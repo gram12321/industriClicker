@@ -1,5 +1,5 @@
 import { calculateAsymmetricalScaler01, calculateDiminishingBonus, calculatePowerPenalty, scaleExponential } from '../core/math/scaling';
-import { FACILITY_CONDITION_DECAY_MAX_REDUCTION, FACILITY_CONDITION_DECAY_REDUCTION_RATE, FACILITY_MINIMUM_STAFFING_EFFICIENCY, FACILITY_OUTPUT_BONUS_RATE, FACILITY_OUTPUT_MAXIMUM_BONUS, FACILITY_OVERSTAFFING_BONUS_RATE, FACILITY_OVERSTAFFING_CONDITION_DECAY_GROWTH, FACILITY_OVERSTAFFING_MAXIMUM_BONUS, FACILITY_REPAIR_MATERIAL_COST_RATE, FACILITY_SPEED_BONUS_RATE, FACILITY_SPEED_MAXIMUM_BONUS, FACILITY_UNDERSTAFFING_EXPONENT, FACILITY_UPGRADE_COST_GROWTH, FACILITY_UPGRADE_RESOURCE_COST_RATE, FACILITY_WORKER_REQUIREMENT_GROWTH } from './facilityConstants';
+import { FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_CONDITION_DECAY_MAX_REDUCTION, FACILITY_CONDITION_DECAY_REDUCTION_RATE, FACILITY_MINIMUM_STAFFING_EFFICIENCY, FACILITY_OUTPUT_BONUS_RATE, FACILITY_OUTPUT_MAXIMUM_BONUS, FACILITY_OVERSTAFFING_BONUS_RATE, FACILITY_OVERSTAFFING_CONDITION_DECAY_GROWTH, FACILITY_OVERSTAFFING_MAXIMUM_BONUS, FACILITY_REPAIR_MATERIAL_COST_RATE, FACILITY_SPEED_BONUS_RATE, FACILITY_SPEED_MAXIMUM_BONUS, FACILITY_UNDERSTAFFING_EXPONENT, FACILITY_UPGRADE_COST_GROWTH, FACILITY_UPGRADE_RESOURCE_COST_RATE, FACILITY_WORKER_REQUIREMENT_GROWTH } from './facilityConstants';
 
 export type FacilityUpgradeKind = 'speed' | 'output' | 'condition' | 'quality';
 
@@ -59,7 +59,7 @@ export function getRequiredWorkers(baseWorkers: number, speedLevel: number, outp
  * Staff below the requirement lose efficiency increasingly quickly. Extra
  * staff remain valid and give a bounded, exponentially diminishing bonus.
  */
-export function getStaffingEfficiency(assignedWorkers: number, requiredWorkers: number): number {
+export function getStaffingEfficiency(assignedWorkers: number, requiredWorkers: number, wagePerWorkerPerMinute = FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE): number {
   const assigned = Math.max(0, Math.floor(assignedWorkers));
   const required = Math.max(0, Math.floor(requiredWorkers));
 
@@ -69,16 +69,29 @@ export function getStaffingEfficiency(assignedWorkers: number, requiredWorkers: 
 
   const staffingRatio = assigned / required;
 
-  if (staffingRatio <= 1) {
-    return FACILITY_MINIMUM_STAFFING_EFFICIENCY
-      + (1 - FACILITY_MINIMUM_STAFFING_EFFICIENCY) * calculatePowerPenalty(staffingRatio, FACILITY_UNDERSTAFFING_EXPONENT);
+  const workerEfficiency = staffingRatio <= 1
+    ? FACILITY_MINIMUM_STAFFING_EFFICIENCY
+      + (1 - FACILITY_MINIMUM_STAFFING_EFFICIENCY) * calculatePowerPenalty(staffingRatio, FACILITY_UNDERSTAFFING_EXPONENT)
+    : 1 + calculateDiminishingBonus(
+      staffingRatio - 1,
+      FACILITY_OVERSTAFFING_MAXIMUM_BONUS,
+      FACILITY_OVERSTAFFING_BONUS_RATE,
+    );
+
+  return workerEfficiency * getWageEfficiency(wagePerWorkerPerMinute);
+}
+
+/** Converts pay into a 0-10x efficiency multiplier around the base wage. */
+export function getWageEfficiency(wagePerWorkerPerMinute: number, baseWage = FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE): number {
+  const wage = Math.max(0, Number.isFinite(wagePerWorkerPerMinute) ? wagePerWorkerPerMinute : 0);
+  const base = Math.max(Number.EPSILON, Number.isFinite(baseWage) ? baseWage : FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE);
+  const ratio = Math.min(100, wage / base);
+
+  if (ratio <= 1) {
+    return (Math.exp(3 * ratio) - 1) / (Math.exp(3) - 1);
   }
 
-  return 1 + calculateDiminishingBonus(
-    staffingRatio - 1,
-    FACILITY_OVERSTAFFING_MAXIMUM_BONUS,
-    FACILITY_OVERSTAFFING_BONUS_RATE,
-  );
+  return 1 + 9 * calculateAsymmetricalScaler01((ratio - 1) / 99);
 }
 
 /** Excess staff accelerate both passive and production wear without a ceiling. */

@@ -27,6 +27,7 @@ const SOURCE_LABELS: Record<FinanceTransaction['source'], string> = {
   'facility-construction': 'Facility construction',
   'facility-upgrade': 'Facility upgrades',
   'facility-repair': 'Facility repairs',
+  'facility-staff-wage': 'Staff wages',
   'facility-production': 'Facility production',
   'research-investment': 'Research investment',
   'research-refund': 'Research refunds',

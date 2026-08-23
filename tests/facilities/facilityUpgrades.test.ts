@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { getFacilityMaxStaffWage, getStaffingEfficiency, getWageEfficiency } from '@/game/facilities';
 import { getFacilityUpgradeResourceCost } from '@/game/facilities';
 import { calculateUpgradeMaxQ } from '@/game/quality';
 
@@ -14,5 +15,21 @@ describe('getFacilityUpgradeResourceCost', () => {
     expect(calculateUpgradeMaxQ(2)).toBeCloseTo(2);
     expect(calculateUpgradeMaxQ(3)).toBeGreaterThan(2);
     expect(calculateUpgradeMaxQ(1_000)).toBeLessThan(100);
+  });
+});
+
+describe('wage staffing efficiency', () => {
+  it('maps zero, base, and maximum wage to the intended endpoints', () => {
+    expect(getWageEfficiency(0)).toBe(0);
+    expect(getWageEfficiency(1)).toBeCloseTo(1);
+    expect(getWageEfficiency(getFacilityMaxStaffWage())).toBeCloseTo(10);
+  });
+
+  it('penalizes below-base wages and gives diminishing gains above base', () => {
+    expect(getWageEfficiency(0.5)).toBeLessThan(0.5);
+    expect(getWageEfficiency(10)).toBeGreaterThan(2);
+    expect(getWageEfficiency(10)).toBeLessThan(5);
+    expect(getWageEfficiency(50)).toBeGreaterThan(getWageEfficiency(10));
+    expect(getStaffingEfficiency(1, 1, 0)).toBe(0);
   });
 });

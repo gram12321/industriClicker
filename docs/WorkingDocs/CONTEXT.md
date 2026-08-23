@@ -10,10 +10,10 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Resource | A typed item the player can gain, spend, transform, and hold in inventory. |
 | Grain, Bread, Water, Electricity, Sugar, Fruit, Eggs, Meat, Milk, Wool, Cake, Premium Cake, Meat Pie, Coal, Iron, Copper, Gold, Minerals, Steel, Electric Circuits, Chemicals, Fertilizer, Plastic, Silicon, Advanced Components, Industrial Machines, Bricks, Cement, Reinforced Concrete, Construction Materials, Sand, Clay, Stone | Current resource names. |
 | Inventory | Player-owned resource quantities, quality, and quantity-weighted historical source cost per unit. |
-| Source cost | The historical euro cost per unit carried by inventory. Market purchases use their executed unit price; facility output carries the direct-material cost of inputs consumed for its completed recipe cycle. |
-| Direct material cost | The source cost of recipe inputs consumed to make facility output. Maintenance and facility capital investment are excluded in the current model. |
+| Source cost | The historical euro cost per unit carried by inventory. Market purchases use their executed unit price; facility output carries consumed input cost plus the projected cash and repair-material burden caused by completing its production cycle. |
+| Production maintenance allocation | The projected cash, Construction Materials, and Industrial Machines repair cost attributable to condition wear from a completed production cycle. Passive or idle wear remains facility maintenance and is not assigned to output. |
 | Contribution margin | Per-cycle output value at current market prices less historical direct input cost. It excludes facility overhead and is not operating profit. |
-| Facility operating profit | Selected-period output market value less direct input cost and repair expense. It excludes capital investment, which appears separately in investment-adjusted result. |
+| Facility operating profit | Selected-period output market value less direct input cost, repair expense, and staff wages. It excludes capital investment, which appears separately in investment-adjusted result. |
 | Investment-adjusted result | Facility operating profit less construction and upgrade investment made in the selected period. |
 | Resource flow | A categorized, signed change to a player-owned resource: facility output/input, market trade, customer-order delivery, facility spending, or reward. |
 | Inventory flow period | The shared Inventory reporting window: last 15 seconds, 1 minute, 15 minutes, 1 hour, or all company time. It uses foreground logical game time. |
@@ -39,6 +39,7 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Asset value | A derived euro value of cash, inventory at current local-market prices, facilities at historical capital cost less condition wear, or completed research. |
 | Facility capital investment | The historical construction and upgrade value recorded in Finance when a facility consumes its land, Construction Materials, and Industrial Machines. |
 | Facility maintenance expense | The historical value of repairs recorded in Finance for one facility. It is tracked separately from capital investment. |
+| Facility staff wage | The player-set euro wage per assigned worker per foreground minute. Finance records each paid foreground-step charge as an operating expense for that facility. |
 | Facility market revaluation | The informational difference between a facility's historical-cost book value and its condition-adjusted replacement value at current local-market prices. It does not change company assets. |
 | Finance payment cycle | One foreground minute used for loan repayment and financing comparisons. |
 | 52-cycle loan cost | The fee-inclusive loan cost rate normalized over 52 finance payment cycles; it is a comparison metric, not an annual rate. |
@@ -52,7 +53,7 @@ Canonical terminology and naming for Industri Clicker. Design decisions belong i
 | Customer type | A buyer-behaviour profile separate from a home domain. Local Businesses, Retail Chain, Construction Contractor, Industrial Enterprise, Utility Operator, and Government Procurement control frequency, target-value tendency, global premium tendency, bundle appetite, market-share tendency, and allowed operating domains. |
 | Customer relationship | A normalized 0–1 company-specific score, displayed to players as 0–100. Its Reputation baseline comes from prestige recognition minus a larger-account adjustment for customer market share. The remaining difference is retained order history: fulfilments add to it; rejections and expiries remove from it; foreground-time decay pulls it back toward Reputation. |
 | Speed upgrade / Output upgrade | Facility levels that respectively improve work speed or recipe output and consume euros, Construction Materials, and Industrial Machines. |
-| Assigned workers / Required workers | The local worker count and calculated staffing target for a facility. |
+| Assigned workers / Required workers | The local worker count and calculated staffing target for a facility. Assigned workers each receive the facility's configured staff wage. |
 | Facility condition | A persisted 0–1 measure of a constructed facility's wear state. It begins at 1 and decreases during foreground time and completed production cycles. |
 | Repair threshold / repair target | The condition percentages used by a facility's optional auto-repair rule: when condition falls to or below the threshold, it repairs up to the target. |
 | Repair Technician research | A five-tier research chain that unlocks threshold-based auto-repair and raises the number of facilities allowed to use it. |

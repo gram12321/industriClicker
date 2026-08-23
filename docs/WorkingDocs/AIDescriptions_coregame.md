@@ -4,7 +4,7 @@ This is the concise, code-verified status guide. Use `CONTEXT.md` for vocabulary
 
 ## Runtime and Player Surfaces
 
-The Expo Router app presents a local company-selection screen and a mobile dashboard with Company, Inventory, Facilities, Finance, Sales, Research, Achievements, Profile, Settings, Leaderboard placeholder, and IndustriPedia views. React Native Paper provides the touch-first UI; Zustand owns active runtime state; Expo SQLite stores company-keyed snapshots. Inventory stores quantity, quality, and quantity-weighted source cost; facility production carries direct input cost into completed output and records timestamped Finance-owned facility performance.
+The Expo Router app presents a local company-selection screen and a mobile dashboard with Company, Inventory, Facilities, Finance, Sales, Research, Achievements, Profile, Settings, Leaderboard placeholder, and IndustriPedia views. React Native Paper provides the touch-first UI; Zustand owns active runtime state; Expo SQLite stores company-keyed snapshots. Inventory stores quantity, quality, and quantity-weighted source cost; facility production carries input plus production-caused maintenance cost into completed output and records timestamped Finance-owned facility performance.
 
 ## Implemented Behavior
 

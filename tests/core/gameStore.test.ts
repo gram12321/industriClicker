@@ -85,6 +85,33 @@ describe('market autobuy', () => {
 });
 
 describe('market sales', () => {
+  it('records staff wages every foreground second and pauses a facility when its next wage cannot be paid', () => {
+    const state = useGameStore.getState();
+    const definition = FACILITIES[FacilityType.Farm];
+    state.restoreSnapshot(createStartingGameSnapshot(0));
+    state.setAdminBalance(1_000);
+    state.setInventoryAmount(ResourceType.ConstructionMaterials, definition.constructionMaterialsCost);
+    state.setInventoryAmount(ResourceType.IndustrialMachines, definition.industrialMachinesCost);
+    expect(state.buildFacility(FacilityType.Farm)).toBe(true);
+    expect(state.setFacilityWorkers('farm-1', 1)).toBe(true);
+    expect(state.setFacilityStaffWage('farm-1', 60)).toBe(true);
+    const farm = useGameStore.getState().facilities.get('farm-1')!;
+    expect(farm.setActiveRecipe(RecipeName.GrowGrain)).toBe(true);
+    state.setAdminBalance(1);
+    const wageTransactionsBefore = useGameStore.getState().finance.getTransactions().filter((transaction) => transaction.source === 'facility-staff-wage').length;
+
+    state.advanceGameTime(1_000);
+
+    expect(useGameStore.getState().finance.getBalance()).toBeCloseTo(0);
+    expect(useGameStore.getState().finance.getTransactions().filter((transaction) => transaction.source === 'facility-staff-wage')).toHaveLength(wageTransactionsBefore + 1);
+    expect(useGameStore.getState().facilities.get('farm-1')!.getView().isActive).toBe(true);
+
+    state.advanceGameTime(1_000);
+
+    expect(useGameStore.getState().finance.getTransactions().filter((transaction) => transaction.source === 'facility-staff-wage')).toHaveLength(wageTransactionsBefore + 1);
+    expect(useGameStore.getState().facilities.get('farm-1')!.getView().isActive).toBe(false);
+  });
+
   it('rejects snapshots missing current inventory or resource-flow fields', () => {
     const snapshot = createStartingGameSnapshot(0);
     expect(isGameSnapshot(snapshot)).toBe(true);
