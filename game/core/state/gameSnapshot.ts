@@ -49,7 +49,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isFinanceTransactionSnapshot(value: unknown): boolean {
   if (!isRecord(value) || typeof value.source !== 'string') return false;
-  const facilitySource = value.source === 'facility-construction' || value.source === 'facility-upgrade' || value.source === 'facility-repair';
+  const facilitySource = value.source === 'facility-construction' || value.source === 'facility-upgrade' || value.source === 'facility-repair' || value.source === 'facility-staff-wage';
   if (value.source === 'facility-production') {
     return value.facilityAccounting === undefined
       && isRecord(value.facilityPerformance)
@@ -58,13 +58,13 @@ function isFinanceTransactionSnapshot(value: unknown): boolean {
       && typeof value.facilityPerformance.outputValue === 'number'
       && Number.isFinite(value.facilityPerformance.outputValue)
       && value.facilityPerformance.outputValue >= 0
-      && typeof value.facilityPerformance.directInputCost === 'number'
-      && Number.isFinite(value.facilityPerformance.directInputCost)
-      && value.facilityPerformance.directInputCost >= 0;
+      && typeof value.facilityPerformance.sourceCost === 'number'
+      && Number.isFinite(value.facilityPerformance.sourceCost)
+      && value.facilityPerformance.sourceCost >= 0;
   }
   if (!facilitySource) return value.facilityAccounting === undefined && value.facilityPerformance === undefined;
   if (!isRecord(value.facilityAccounting) || value.facilityPerformance !== undefined) return false;
-  const expectedClassification = value.source === 'facility-construction' ? 'construction' : value.source === 'facility-upgrade' ? 'upgrade' : 'maintenance';
+  const expectedClassification = value.source === 'facility-construction' ? 'construction' : value.source === 'facility-upgrade' ? 'upgrade' : value.source === 'facility-repair' ? 'maintenance' : 'staff-wage';
   return typeof value.facilityAccounting.facilityId === 'string'
     && value.facilityAccounting.facilityId.length > 0
     && value.facilityAccounting.classification === expectedClassification
@@ -172,6 +172,9 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
       && Number.isFinite(facility.facilityCondition)
       && facility.facilityCondition >= 0
       && facility.facilityCondition <= 1
+      && typeof facility.staffWagePerWorkerPerMinute === 'number'
+      && Number.isFinite(facility.staffWagePerWorkerPerMinute)
+      && facility.staffWagePerWorkerPerMinute >= 0
       && typeof facility.autoRepairEnabled === 'boolean'
       && typeof facility.autoRepairThreshold === 'number' && Number.isFinite(facility.autoRepairThreshold) && facility.autoRepairThreshold >= 0 && facility.autoRepairThreshold < 1
       && typeof facility.autoRepairTarget === 'number' && Number.isFinite(facility.autoRepairTarget) && facility.autoRepairTarget > facility.autoRepairThreshold && facility.autoRepairTarget <= 1

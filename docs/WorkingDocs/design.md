@@ -14,10 +14,10 @@ Industri Clicker is a single-player, local-first industrial clicker for native A
 
 - **Native/local-first:** no account, cloud dependency, or online identity in the first release; multiple companies are independently saved on the device.
 - **Deterministic economy:** production, markets, finance, customer orders, progression, and foreground time are explicit and reproducible. Exact balance belongs to code constants and [gameflow.md](gameflow.md).
-- **Production:** facilities are numbered instances with ordered repeating recipe cycles, staffing, upgrades, condition wear, repairs, and local-market automation. Construction and upkeep consume the defined industrial inputs.
-- **Quality:** Q is visible to players, affects market sales, and constrains future production through input, research, facility, and lifetime-output limits. Exact ceilings belong to `game/quality/` and `gameflow.md`.
+- **Production:** facilities are numbered instances with ordered repeating recipe cycles, staffing, player-set wages, upgrades, condition wear, repairs, and local-market automation. Construction and upkeep consume the defined industrial inputs.
+- **Quality:** Q is visible to players, affects market sales, and constrains future production through input, research, facility, and lifetime-output limits. Exact ceilings belong to `game/quality/` and [gameflow.md](gameflow.md).
 - **Markets and sales:** the local market is player-facing; regional/global pools are device-local. Customer orders are atomic bundles with deterministic local customers, company relationships, and research-controlled scale/targeting.
-- **Finance and progression:** Finance reports company and facility economics; loans, research, achievements, prestige, and grants are progression systems, not hidden UI rules.
+- **Finance and progression:** Finance reports company and facility economics, including output source cost, maintenance, staff wages, and capital; loans, research, achievements, prestige, and grants are progression systems, not hidden UI rules.
 - **Onboarding:** the standard-start tutorial covers company orientation, first facility construction, recipe research, production, automation, economics, upgrades, and Inventory flow. It is replayable/dismissible and does not cover every later system.
 - **Mobile UX:** use touch-sized controls, safe areas, accessible labels, readable contrast, non-color-only status, and explicit foreground/background behavior.
 

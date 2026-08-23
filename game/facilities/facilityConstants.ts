@@ -27,6 +27,13 @@ export const FACILITY_OVERSTAFFING_BONUS_RATE = 0.7;
 /** Wear growth applied for each full staffing ratio above the requirement. */
 export const FACILITY_OVERSTAFFING_CONDITION_DECAY_GROWTH = 1.5;
 export const FACILITY_MINIMUM_STAFFING_EFFICIENCY = 0.01;
+/** Reference wage for each assigned facility worker, per foreground minute. */
+export const FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE = 1;
+/** Maximum wage is always this many times the current base wage. */
+export const FACILITY_MAX_STAFF_WAGE_MULTIPLIER = 100;
+export function getFacilityMaxStaffWage(baseWage = FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE): number {
+  return Math.max(0, baseWage) * FACILITY_MAX_STAFF_WAGE_MULTIPLIER;
+}
 /** Additional work contributed by each required worker per foreground minute. */
 export const FACILITY_STAFF_WORK_PER_WORKER_PER_MINUTE = 0.1;
 /** Condition lost by every constructed facility per foreground minute. */

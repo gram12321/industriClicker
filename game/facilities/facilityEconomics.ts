@@ -6,14 +6,14 @@ import type { Market } from '@/game/market';
 import type { Recipe } from '@/game/recipes';
 import { ResourceType } from '@/game/resources';
 import { calculateOutputQuality, calculateUpgradeMaxQ } from '@/game/quality';
-import { Facility } from './facility';
+import { Facility, type FacilityView } from './facility';
 import {
   FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE,
   FACILITY_REPAIR_MATERIAL_COST_RATE,
   getFacilityDefinition,
 } from './facilityConstants';
 import { calculateFacilityEffectiveWork, calculateRecipeInputSourceCost, getRecipeProductionConditionLoss } from './facilityProduction';
-import { getFacilityConditionEfficiency, type FacilityUpgradeKind } from './facilityUpgrades';
+import { getConditionDecayMultiplier, getFacilityConditionEfficiency, getOverstaffingConditionDecayMultiplier, type FacilityUpgradeKind } from './facilityUpgrades';
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value));
@@ -110,9 +110,62 @@ export function calculateFacilityNetGainPerMinute(
   valuePerMinute: number,
   decayMaterialCostPerMinute: number,
   market: Market,
+  staffWagePerMinute = 0,
 ): number {
   return valuePerMinute
-    - decayMaterialCostPerMinute * market.getLocalPrice(ResourceType.ConstructionMaterials);
+    - decayMaterialCostPerMinute * market.getLocalPrice(ResourceType.ConstructionMaterials)
+    - Math.max(0, staffWagePerMinute);
+}
+
+/** Projects the euro cost of condition wear, including cash and both repair inputs. */
+export function calculateFacilityDecayCostPerMinute(
+  cashRepairBaseCost: number,
+  constructionMaterialsCost: number,
+  industrialMachinesCost: number,
+  facilityCondition: number,
+  conditionDecayMultiplier: number,
+  effectiveWorkPerMinute: number,
+  recipe: Recipe | null,
+  constructionMaterialsPrice: number,
+  industrialMachinesPrice: number,
+): number {
+  const condition = clamp(facilityCondition, 0, 1);
+  const productionConditionLossPerMinute = recipe && recipe.requiredWork > 0
+    ? Math.max(0, effectiveWorkPerMinute) / recipe.requiredWork * getRecipeProductionConditionLoss(recipe)
+    : 0;
+  const conditionLossPerMinute = (
+    FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE + productionConditionLossPerMinute
+  ) * calculateAsymmetricalScaler01(condition) * conditionDecayMultiplier;
+
+  return Math.max(0, conditionLossPerMinute) * FACILITY_REPAIR_MATERIAL_COST_RATE * (
+    Math.max(0, cashRepairBaseCost)
+    + Math.max(0, constructionMaterialsCost) * Math.max(0, constructionMaterialsPrice)
+    + Math.max(0, industrialMachinesCost) * Math.max(0, industrialMachinesPrice)
+  );
+}
+
+/** Estimates only the maintenance burden caused by completing one production cycle. */
+export function calculateFacilityProductionMaintenanceCost(
+  facility: FacilityView,
+  recipe: Recipe,
+  market: Market,
+): number {
+  const definition = getFacilityDefinition(facility.facilityType);
+  const productionConditionLoss = getRecipeProductionConditionLoss(recipe)
+    * calculateAsymmetricalScaler01(clamp(facility.facilityCondition, 0, 1))
+    * getConditionDecayMultiplier(facility.conditionDecayUpgradeLevel)
+    * getOverstaffingConditionDecayMultiplier(facility.assignedWorkers, facility.requiredWorkers);
+
+  return Math.max(0, productionConditionLoss) * FACILITY_REPAIR_MATERIAL_COST_RATE * (
+    definition.landCost
+    + definition.constructionMaterialsCost * market.getLocalPrice(ResourceType.ConstructionMaterials)
+    + definition.industrialMachinesCost * market.getLocalPrice(ResourceType.IndustrialMachines)
+  );
+}
+
+/** Recurring wage expense for the currently assigned facility staff. */
+export function calculateFacilityStaffWagePerMinute(assignedWorkers: number, wagePerWorkerPerMinute: number): number {
+  return Math.max(0, assignedWorkers) * Math.max(0, wagePerWorkerPerMinute);
 }
 
 /** Current market value of one completed recipe cycle's outputs. */
@@ -161,7 +214,7 @@ export function calculateProjectedFacilityConditionEconomics(
   recipeResearchWorkSpeedMultiplier: number,
   getInputQuality?: (resourceType: ResourceType) => number,
   getOutputQuality?: (resourceType: ResourceType) => number,
-): { decayMaterialCostPerMinute: number; netGainPerMinute: number; valuePerMinute: number } {
+): { decayMaterialCostPerMinute: number; decayCostPerMinute: number; netGainPerMinute: number; valuePerMinute: number } {
   const facilityView = facility.getView();
   const projectedCondition = Math.max(facilityView.facilityCondition, clamp(targetCondition, 0, 1));
   const conditionEfficiency = getFacilityConditionEfficiency(projectedCondition);
@@ -192,10 +245,24 @@ export function calculateProjectedFacilityConditionEconomics(
     effectiveWorkPerMinute,
     recipe,
   );
+  const decayCostPerMinute = calculateFacilityDecayCostPerMinute(
+    definition.landCost,
+    definition.constructionMaterialsCost,
+    definition.industrialMachinesCost,
+    projectedView.facilityCondition,
+    projectedView.conditionDecayMultiplier * projectedView.overstaffingConditionDecayMultiplier,
+    effectiveWorkPerMinute,
+    recipe,
+    market.getLocalPrice(ResourceType.ConstructionMaterials),
+    market.getLocalPrice(ResourceType.IndustrialMachines),
+  );
 
   return {
     decayMaterialCostPerMinute,
-    netGainPerMinute: calculateFacilityNetGainPerMinute(valuePerMinute, decayMaterialCostPerMinute, market),
+    decayCostPerMinute,
+    netGainPerMinute: valuePerMinute
+      - decayCostPerMinute
+      - calculateFacilityStaffWagePerMinute(projectedView.assignedWorkers, projectedView.staffWagePerWorkerPerMinute),
     valuePerMinute,
   };
 }
@@ -267,5 +334,6 @@ export function calculateProjectedFacilityUpgradeNetGainPerMinute(
     projectedValuePerMinute,
     projectedDecayCostPerMinute,
     market,
+    calculateFacilityStaffWagePerMinute(projectedView.assignedWorkers, projectedView.staffWagePerWorkerPerMinute),
   );
 }

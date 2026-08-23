@@ -6,16 +6,16 @@ Verified repository facts. Documentation ownership is defined in the root [readm
 
 - Stage: pre-alpha foundation.
 - Product: single-player, mobile-first native Android game.
-- Implemented domains: local profile/company saves, tutorial onboarding, facilities and production, inventory/markets/quality, Finance/loans, customer orders, research, achievements, prestige, grants, repairs, and IndustriPedia.
+- Implemented domains: local profile/company saves, tutorial onboarding, facilities and production (including staff wages and production-maintenance allocation), inventory/markets/quality, Finance/loans, customer orders, research, achievements, prestige, grants, repairs, and IndustriPedia.
 - Deferred: offline catch-up, cloud/accounts, iOS/web release, and workforce systems beyond current staffing and repair automation.
 
 ## Code Size
 
-Measured 2026-08-22 from the working tree:
+Measured 2026-08-23 from the working tree:
 
-- Application (`app/`, `game/`, `ui/`, root helpers): 15,536 non-empty TypeScript lines in 124 files.
-- Tests (`tests/`): 3,018 lines in 22 files.
-- Total: 18,554 lines in 146 files; excludes docs, skills, lockfiles, and generated output.
+- Application (`app/`, `game/`, `ui/`, root helpers): 15,805 non-empty TypeScript lines in 124 files.
+- Tests (`tests/`): 3,093 lines in 22 files.
+- Total: 18,898 lines in 146 files; excludes docs, skills, lockfiles, and generated output.
 
 ## Stack and Shape
 

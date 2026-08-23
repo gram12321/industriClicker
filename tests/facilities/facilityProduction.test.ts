@@ -6,6 +6,7 @@ import { ResourceType } from '@/game/resources';
 import { FacilityCollection } from '@/game/facilities/facilityCollection';
 import {
   calculateFacilityDecayMaterialCostPerMinute,
+  calculateFacilityProductionMaintenanceCost,
   calculateFacilityNetGainPerMinute,
   calculateRecipeContributionMargin,
   calculateFacilityResourcePayment,
@@ -145,6 +146,14 @@ describe('facility economics', () => {
     expect(decayMaterialCost).toBeGreaterThan(0);
     expect(calculateFacilityNetGainPerMinute(valuePerMinute, decayMaterialCost, market)).toBeLessThan(valuePerMinute);
   });
+
+  it('subtracts recurring staff wages from displayed net gain', () => {
+    const market = new Market();
+    const valuePerMinute = 25;
+    const decayMaterialCost = 0;
+
+    expect(calculateFacilityNetGainPerMinute(valuePerMinute, decayMaterialCost, market, 7)).toBe(18);
+  });
 });
 
 describe('advanceAllFacilityProduction', () => {
@@ -185,6 +194,20 @@ describe('advanceAllFacilityProduction', () => {
 
     const totalOutput = recipe.outputs.reduce((total, output) => total + output.amount, 0);
     expect(inventory.getEntry(ResourceType.Grain).sourceCostPerUnit).toBeCloseTo(inputSourceCost / totalOutput);
+  });
+
+  it('adds production-caused cash and repair-resource wear to output source cost', () => {
+    const { facilities, facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    const inventory = new Inventory();
+    const market = new Market();
+    const recipe = getRecipe(RecipeName.GrowGrain);
+    for (const input of recipe.inputs) inventory.add(input.resourceType, input.amount, 1, 2);
+
+    const inputSourceCost = 2 * recipe.inputs.reduce((total, input) => total + input.amount, 0);
+    const maintenanceCost = calculateFacilityProductionMaintenanceCost(facility.getView(), recipe, market);
+    const outputs = advanceAllFacilityProduction(facilities, inventory, () => recipe.requiredWork, undefined, undefined, (view, completedRecipe) => calculateFacilityProductionMaintenanceCost(view, completedRecipe, market));
+
+    expect(outputs[0]?.sourceCostPerUnit).toBeCloseTo((inputSourceCost + maintenanceCost) / outputs[0]!.amount);
   });
 
   it('retains the consumed input quality when inventory changes before completion', () => {

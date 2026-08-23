@@ -373,10 +373,10 @@ flowchart LR
 | State | Owner | Changes through | Saved as |
 |---|---|---|---|
 | `inventory.entries.*.quantity/.quality/.sourceCostPerUnit` | Inventory | Resource commands and production additions/removals | `InventorySnapshot` |
-| `facility.recipeInputQ/.recipeInputSourceCost` | Facility | Captured at cycle input consumption; used at completion | Facility snapshot |
-| Facility upgrade levels, workers, condition, auto-repair settings | Facility | Upgrade, staffing, repair, and foreground wear | Facility snapshot |
+| `facility.recipeInputQ/.recipeInputSourceCost` | Facility | Captured at cycle input consumption; used at completion | Facility snapshot; production-maintenance allocation is added to output source cost |
+| Facility upgrade levels, workers, staff wage, condition, auto-repair settings | Facility | Upgrade, staffing/wage, repair, and foreground wear | Facility snapshot |
 | Resource-flow buckets and lifetime facility output | ResourceFlowLedger | Inventory-affecting commands and completed output | Game snapshot |
-| Finance balance, transactions, loans, lenders, searches, economy phase | Finance | Cash commands and foreground finance rules | `FinanceSnapshot` |
+| Finance balance, transactions, loans, lenders, searches, economy phase, staff-wage charges | Finance | Cash commands and foreground finance rules | `FinanceSnapshot` |
 | Numbered facilities, recipe order/position/progress, maintenance statistics | FacilityCollection | Construction, cycle setup, upgrades, production, repair | Facility snapshot |
 | Offered/completed orders, customer states, next order number | SalesOrders | Create, fulfil, reject, expire, relationship progression | `SalesOrdersSnapshot` |
 | Achievements, prestige events, research/grants | Their ledgers | Post-command evaluation and research commands | Their snapshots |
@@ -385,7 +385,7 @@ flowchart LR
 | Profile, company, session, tutorial metadata | SQLite adapters | Local identity and tutorial commands | Dedicated local tables |
 | Wall-clock observation anchor and UI data | Runtime helpers | App lifecycle and selectors | Not persisted |
 
-Derived values include facility efficiency/output, quality ceilings, order cap/rate/selection weights, prestige, market diffusion, market activation progress, research capacity, credit limits, statements, and UI view models.
+Derived values include facility efficiency/output, worker/wage efficiency, production-maintenance allocation, quality ceilings, order cap/rate/selection weights, prestige, market diffusion, market activation progress, research capacity, credit limits, statements, and UI view models.
 
 ## Command Effects
 
@@ -393,11 +393,11 @@ Derived values include facility efficiency/output, quality ceilings, order cap/r
 |---|---|---|
 | Inventory and market trades | Resource, amount, market quote, quality | Inventory, market, Finance, Resource Flow |
 | Construction/material purchase | Facility definition, prices, supply, balance | Facilities, market, inventory, Finance |
-| Facility commands | Definition, research, inputs, balance, facility state | Facility collection, inventory, Finance, Resource Flow |
+| Facility commands | Definition, research, inputs, balance, facility state, staff wage | Facility collection, inventory, Finance, Resource Flow |
 | Finance commands | Loan/search criteria, lender policies, credit report, active loan | Finance, prestige, achievements |
 | Research commands | Catalogue, gates, grants, Finance, research ledger | Research, grants, Finance, prestige, achievements |
-| `advanceRealtime` / `advanceGameTime` | Time anchors and all timed state | Time, facilities, markets, orders, research, loans, Finance, flow |
-| Completed production | Recipe, upgrades, input Q/source cost, lifetime output | Inventory, flow, Finance performance, achievements |
+| `advanceRealtime` / `advanceGameTime` | Time anchors and all timed state | Time, facilities, staff wages, markets, orders, research, loans, Finance, flow |
+| Completed production | Recipe, upgrades, input Q/source cost, production-maintenance allocation, lifetime output | Inventory, flow, Finance performance, achievements |
 | Sales commands | Order, inventory, market, current time | Orders, relationships, inventory, global market, Finance, prestige, flow |
 | Achievement evaluation | Post-command domain state | Unlocks and idempotent prestige events |
 | Company/session commands | Profile/company records and snapshots | SQLite session, company save, runtime state |

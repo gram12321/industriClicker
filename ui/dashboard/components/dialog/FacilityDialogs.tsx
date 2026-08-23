@@ -1,16 +1,16 @@
 import { PanResponder, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Button, Card, Dialog, List, Portal, SegmentedButtons, Text } from 'react-native-paper';
+import { Button, Card, Dialog, IconButton, List, Portal, SegmentedButtons, Text, TextInput } from 'react-native-paper';
 import { colors } from '@/theme';
 import { LOAN_COLLECTION, calculateFacilityAssetValue, type Finance } from '@/game/finance';
-import type { Facility, FacilityCollection, FacilityType } from '@/game/facilities';
-import { calculateFacilityResourcePayment, calculateProjectedFacilityConditionEconomics, FACILITY_GROUPS, getFacilityDefinition, getFacilityRepairCost } from '@/game/facilities';
+import { Facility, type FacilityCollection, type FacilityType } from '@/game/facilities';
+import { calculateFacilityResourcePayment, calculateProjectedFacilityConditionEconomics, FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_GROUPS, getFacilityDefinition, getFacilityEfficiency, getFacilityMaxStaffWage, getFacilityRepairCost, getStaffingEfficiency } from '@/game/facilities';
 import type { Inventory } from '@/game/inventory';
 import type { Market } from '@/game/market';
 import { ResourceType } from '@/game/resources';
 import type { Recipe } from '@/game/recipes';
-import { clamp, formatCurrency, formatNumber } from '@/utils';
+import { clamp, formatCurrency, formatNumber, formatPercent } from '@/utils';
 import { WorkMetric } from '@/ui/dashboard/components/DashboardPrimitives';
 import { formatRecipeName } from '@/ui/dashboard/helpers/recipeFormatters';
 import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
@@ -37,6 +37,26 @@ function CurrencyValue({ value }: { value: number }) {
 function repairTargetForSlider(currentCondition: number, sliderPosition: number): number {
   const position = Math.max(0, Math.min(1, sliderPosition));
   return Math.round((currentCondition + (1 - currentCondition) * position) * 100) / 100;
+}
+
+// Anchor the common €10 point at the physical midpoint of the slider.
+const WAGE_SLIDER_EXPONENT = Math.log(0.1) / Math.log(0.5);
+
+function wageStep(value: number): number {
+  if (value < 2) return 0.01;
+  if (value < 10) return 0.1;
+  return 1;
+}
+
+function wageFromSliderPosition(position: number, max: number): number {
+  const normalizedPosition = clamp(position, 0, 1);
+  const rawValue = max * normalizedPosition ** WAGE_SLIDER_EXPONENT;
+  const step = wageStep(rawValue);
+  return Number((Math.round(rawValue / step) * step).toFixed(step < 1 ? (step === 0.01 ? 2 : 1) : 0));
+}
+
+function wageSliderPosition(value: number, max: number): number {
+  return max > 0 ? Math.pow(clamp(value / max, 0, 1), 1 / WAGE_SLIDER_EXPONENT) : 0;
 }
 
 export function FacilityRepairDialog({
@@ -132,7 +152,7 @@ export function FacilityRepairDialog({
       {projectedEconomics ? <Card mode="contained" style={styles.dialogSummaryCard}><Card.Content style={styles.dialogSummaryContent}>
         <Text style={styles.facilityUpgradeLabel}>{`Projected at ${formatNumber(selectedTarget * 100, { decimals: 0 })}% condition`}</Text>
         <View style={styles.dialogSummaryRow}><Text>Value/min</Text><Text style={styles.repairTargetValue}>{formatCurrency(projectedEconomics.valuePerMinute)}</Text></View>
-        <View style={styles.dialogSummaryRow}><Text>Maintenance/min</Text><Text style={styles.facilityRepairCost}>{formatCurrency(projectedEconomics.decayMaterialCostPerMinute * market.getLocalPrice(ResourceType.ConstructionMaterials))}</Text></View>
+        <View style={styles.dialogSummaryRow}><Text>Maintenance/min</Text><Text style={styles.facilityRepairCost}>{formatCurrency(projectedEconomics.decayCostPerMinute)}</Text></View>
         <View style={styles.dialogSummaryRow}><Text>Net gain/min</Text><Text style={styles.repairTargetValue}>{formatCurrency(projectedEconomics.netGainPerMinute)}</Text></View>
       </Card.Content></Card> : <Text style={styles.dialogDescription}>Start a recipe to preview value and net gain per minute.</Text>}
       <Card mode="contained" style={styles.dialogSummaryCard}><Card.Content style={styles.dialogSummaryContent}>
@@ -150,6 +170,132 @@ export function FacilityRepairDialog({
     </Dialog.Content>
     <Dialog.Actions><Button onPress={onDismiss}>Cancel</Button><Button disabled={!canRepair} mode="contained" onPress={() => onRepair(selectedTarget)}>{`Repair to ${formatNumber(selectedTarget * 100, { decimals: 0 })}%`}</Button></Dialog.Actions>
   </Dialog></Portal>;
+}
+
+export function FacilityStaffWageDialog({
+  activeRecipe,
+  facility,
+  getInputQuality,
+  getOutputQuality,
+  market,
+  onDismiss,
+  onSetWorkers,
+  onSetStaffWage,
+  recipeResearchWorkSpeedMultiplier,
+  visible,
+}: {
+  activeRecipe: Recipe | null;
+  facility: Facility;
+  getInputQuality: (resourceType: ResourceType) => number;
+  getOutputQuality?: (resourceType: ResourceType) => number;
+  market: Market;
+  onDismiss: () => void;
+  onSetWorkers: (workerCount: number) => boolean;
+  onSetStaffWage: (wagePerWorkerPerMinute: number) => boolean;
+  recipeResearchWorkSpeedMultiplier: number;
+  visible: boolean;
+}) {
+  const facilityView = facility.getView();
+  const [selectedWorkers, setSelectedWorkers] = useState(facilityView.assignedWorkers);
+  const [selectedWage, setSelectedWage] = useState(facilityView.staffWagePerWorkerPerMinute);
+  const [wageInput, setWageInput] = useState(String(facilityView.staffWagePerWorkerPerMinute));
+  const initialWorkerSliderMax = Math.max(facilityView.requiredWorkers, 1) * 10;
+  const workerSliderMax = facilityView.assignedWorkers > initialWorkerSliderMax
+    ? facilityView.assignedWorkers * 10
+    : initialWorkerSliderMax;
+  const wageSliderMax = getFacilityMaxStaffWage(FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE);
+  const totalWagePerMinute = selectedWage * selectedWorkers;
+  const projectedFacility = activeRecipe ? Facility.fromSnapshot(facility.toSnapshot()) : null;
+  if (projectedFacility) {
+    projectedFacility.setAssignedWorkers(selectedWorkers);
+    projectedFacility.setStaffWagePerWorkerPerMinute(selectedWage);
+  }
+  const projectedEconomics = projectedFacility && activeRecipe
+    ? calculateProjectedFacilityConditionEconomics(projectedFacility, facilityView.facilityCondition, activeRecipe, market, recipeResearchWorkSpeedMultiplier, getInputQuality, getOutputQuality)
+    : null;
+
+  useEffect(() => {
+    if (!visible) return;
+    const view = facility.getView();
+    setSelectedWorkers(view.assignedWorkers);
+    setSelectedWage(view.staffWagePerWorkerPerMinute);
+    setWageInput(String(view.staffWagePerWorkerPerMinute));
+  }, [visible]);
+
+  const updateWage = (value: number) => {
+    const bounded = Math.max(0, Math.min(wageSliderMax, value));
+    const step = wageStep(bounded);
+    const normalized = Number((Math.round(bounded / step) * step).toFixed(step < 1 ? (step === 0.01 ? 2 : 1) : 0));
+    setSelectedWage(normalized);
+    setWageInput(String(normalized));
+  };
+  const handleWageInput = (value: string) => {
+    setWageInput(value);
+    const parsed = Number(value.replace(',', '.'));
+    if (value.trim() !== '' && Number.isFinite(parsed) && parsed >= 0) setSelectedWage(Math.min(wageSliderMax, parsed));
+  };
+  const normalizeWageInput = () => {
+    const parsed = Number(wageInput.replace(',', '.'));
+    updateWage(Number.isFinite(parsed) && parsed >= 0 ? parsed : selectedWage);
+  };
+  const selectedStaffEfficiency = getStaffingEfficiency(selectedWorkers, facilityView.requiredWorkers, selectedWage);
+  const selectedFacilityEfficiency = getFacilityEfficiency(selectedStaffEfficiency, facilityView.facilityCondition);
+
+  return <Portal><Dialog dismissable onDismiss={onDismiss} visible={visible}>
+    <Dialog.Title>{`Staffing ${facilityView.displayName}`}</Dialog.Title>
+    <Dialog.Content style={styles.dialogSummaryContent}>
+      <Text style={styles.dialogDescription}>Set the number of assigned workers and their wage. Staff wages are paid every foreground minute.</Text>
+      <Card mode="contained" style={styles.dialogSummaryCard}><Card.Content style={styles.dialogSummaryContent}>
+        <View style={styles.dialogSummaryRow}><Text style={styles.facilityUpgradeLabel}>Staff</Text><Text style={styles.repairTargetValue}>{formatNumber(selectedWorkers)} / {formatNumber(facilityView.requiredWorkers)}</Text></View>
+        <StaffingSlider accessibilityLabel={`Staff assigned ${formatNumber(selectedWorkers)} of ${formatNumber(facilityView.requiredWorkers)}`} max={workerSliderMax} onChange={setSelectedWorkers} step={1} value={selectedWorkers} />
+        <View style={styles.dialogSummaryRow}><Text style={styles.facilityStaffingDetail}>Staff efficiency</Text><Text style={styles.facilityStaffingDetail}>{formatPercent(selectedStaffEfficiency, { decimals: 0 })}</Text></View>
+        <View style={styles.dialogSummaryRow}><Text style={styles.facilityStaffingDetail}>Facility efficiency</Text><Text style={styles.facilityStaffingDetail}>{formatPercent(selectedFacilityEfficiency, { decimals: 0 })}</Text></View>
+      </Card.Content></Card>
+      <Card mode="contained" style={styles.dialogSummaryCard}><Card.Content style={styles.dialogSummaryContent}>
+        <Text style={styles.facilityUpgradeLabel}>Wage</Text>
+        <View style={styles.dialogSummaryRow}><Text style={styles.facilityUpgradeLabel}>Wage per worker/min</Text><Text style={styles.repairTargetValue}>{formatCurrency(selectedWage)}</Text></View>
+        <TextInput dense inputMode="decimal" label="€/worker/min" mode="outlined" onBlur={normalizeWageInput} onChangeText={handleWageInput} style={{ marginBottom: 8 }} value={wageInput} />
+        <StaffingSlider accessibilityLabel={`Wage ${formatCurrency(selectedWage)} per worker per minute`} max={wageSliderMax} onChange={updateWage} positionFromValue={(value, max) => wageSliderPosition(value, max)} valueFromPosition={(position, max) => wageFromSliderPosition(position, max)} step={0.01} value={selectedWage} />
+        <View style={styles.dialogSummaryRow}><Text>Total wage/min</Text><Text style={styles.repairTargetValue}>{formatCurrency(totalWagePerMinute)}</Text></View>
+      </Card.Content></Card>
+      {projectedEconomics && <Card mode="contained" style={styles.dialogSummaryCard}><Card.Content style={styles.dialogSummaryContent}>
+        <Text style={styles.facilityUpgradeLabel}>Projected facility economics</Text>
+        <View style={styles.dialogSummaryRow}><Text>Value/min</Text><Text style={styles.repairTargetValue}>{formatCurrency(projectedEconomics.valuePerMinute)}</Text></View>
+        <View style={styles.dialogSummaryRow}><Text>Net gain/min</Text><Text style={styles.repairTargetValue}>{formatCurrency(projectedEconomics.netGainPerMinute)}</Text></View>
+        <View style={styles.dialogSummaryRow}><Text>Decay cost/min</Text><Text style={styles.facilityRepairCost}>{formatCurrency(projectedEconomics.decayCostPerMinute)}</Text></View>
+      </Card.Content></Card>}
+    </Dialog.Content>
+    <Dialog.Actions><Button onPress={onDismiss}>Cancel</Button><Button mode="contained" onPress={() => { if (onSetWorkers(selectedWorkers) && onSetStaffWage(selectedWage)) onDismiss(); }}>Save staffing</Button></Dialog.Actions>
+  </Dialog></Portal>;
+}
+
+function StaffingSlider({ accessibilityLabel, max, min = 0, onChange, positionFromValue, step, value, valueFromPosition }: { accessibilityLabel: string; max: number; min?: number; onChange: (value: number) => void; positionFromValue?: (value: number, max: number) => number; step: number; value: number; valueFromPosition?: (position: number, max: number) => number }) {
+  const sliderWidthRef = useRef(0);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const range = Math.max(0.0001, max - min);
+  const progress = positionFromValue ? positionFromValue(value, max) : Math.max(0, Math.min(1, (value - min) / range));
+  const setSliderPosition = (position: number) => {
+    const rawValue = valueFromPosition ? valueFromPosition(position, max) : min + Math.max(0, Math.min(1, position)) * range;
+    const decimalPlaces = Math.max(0, (String(step).split('.')[1] ?? '').length);
+    const steppedValue = Math.round(rawValue / step) * step;
+    onChangeRef.current(Number(steppedValue.toFixed(decimalPlaces)));
+  };
+  const panResponder = useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderGrant: (event) => { if (sliderWidthRef.current > 0) setSliderPosition(event.nativeEvent.locationX / sliderWidthRef.current); },
+    onPanResponderMove: (event) => { if (sliderWidthRef.current > 0) setSliderPosition(event.nativeEvent.locationX / sliderWidthRef.current); },
+    onStartShouldSetPanResponder: () => true,
+  })).current;
+
+  return <View accessibilityLabel={accessibilityLabel} style={styles.marketSlider}>
+    <View onLayout={(event) => { sliderWidthRef.current = event.nativeEvent.layout.width; }} style={styles.marketSliderTouchArea} {...panResponder.panHandlers}>
+      <View pointerEvents="none" style={styles.marketSliderTrack} />
+      <View pointerEvents="none" style={[styles.marketSliderFill, { width: `${progress * 100}%` }]} />
+      <View pointerEvents="none" style={[styles.marketSliderThumb, { left: `${progress * 100}%` }]} />
+    </View>
+    <View style={styles.marketSliderLabels}><Text style={styles.marketSliderLabel}>{formatNumber(min, { smartDecimals: true })}</Text><Text style={styles.marketSliderLabel}>{formatNumber(max, { smartDecimals: true })}</Text></View>
+  </View>;
 }
 
 export function FacilityConstructionDialog(props: {

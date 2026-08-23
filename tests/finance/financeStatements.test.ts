@@ -66,24 +66,47 @@ describe('facility operating performance', () => {
   it('separates operating profit from capital investment within a report period', () => {
     const finance = new Finance();
     expect(finance.applyTransaction({ amount: 0, description: 'Farm construction', detailLines: [], facilityAccounting: { facilityId: 'farm-1', classification: 'construction', historicalValue: 100 }, kind: 'investing', source: 'facility-construction', occurredAtGameTimeMs: 0 })).toBe(true);
-    expect(finance.applyTransaction({ amount: 0, description: 'Farm output', detailLines: [], facilityPerformance: { facilityId: 'farm-1', outputValue: 30, directInputCost: 12 }, kind: 'operating', source: 'facility-production', occurredAtGameTimeMs: 30_000 })).toBe(true);
+    expect(finance.applyTransaction({ amount: 0, description: 'Farm output', detailLines: [], facilityPerformance: { facilityId: 'farm-1', outputValue: 30, sourceCost: 12 }, kind: 'operating', source: 'facility-production', occurredAtGameTimeMs: 30_000 })).toBe(true);
     expect(finance.applyTransaction({ amount: 0, description: 'Farm repair', detailLines: [], facilityAccounting: { facilityId: 'farm-1', classification: 'maintenance', historicalValue: 3 }, kind: 'operating', source: 'facility-repair', occurredAtGameTimeMs: 45_000 })).toBe(true);
+    expect(finance.applyTransaction({ amount: -4, description: 'Farm staff wages', detailLines: [], facilityAccounting: { facilityId: 'farm-1', classification: 'staff-wage', historicalValue: 4 }, kind: 'operating', source: 'facility-staff-wage', occurredAtGameTimeMs: 50_000 })).toBe(true);
 
     expect(finance.getFacilityPerformance('farm-1', 'minute', 60_000)).toEqual({
       outputValue: 30,
-      directInputCost: 12,
+      sourceCost: 12,
       maintenanceExpense: 3,
+      staffWageExpense: 4,
       capitalInvestment: 100,
-      operatingProfit: 15,
-      investmentAdjustedResult: -85,
+      operatingProfit: 14,
+      investmentAdjustedResult: -86,
     });
     expect(finance.getFacilityPerformance('farm-1', 'minute', 120_000)).toMatchObject({
       outputValue: 0,
-      directInputCost: 0,
+      sourceCost: 0,
       maintenanceExpense: 0,
+      staffWageExpense: 0,
       capitalInvestment: 0,
       operatingProfit: 0,
     });
+  });
+
+  it('reports staff wages as an operating expense in the company statement', () => {
+    const finance = new Finance();
+    expect(finance.applyTransaction({ amount: -4, description: 'Farm staff wages', detailLines: [], facilityAccounting: { facilityId: 'farm-1', classification: 'staff-wage', historicalValue: 4 }, kind: 'operating', source: 'facility-staff-wage', occurredAtGameTimeMs: 1_000 })).toBe(true);
+
+    const statement = buildFinanceStatementData({
+      achievements: new AchievementLedger(),
+      companyStartedAtGameTimeMs: 0,
+      currentGameTimeMs: 1_000,
+      facilities: new FacilityCollection(),
+      finance,
+      inventory: new Inventory(),
+      market: new Market(),
+      period: 'all-time',
+      research: new ResearchLedger(),
+    });
+
+    expect(statement.incomeStatement).toMatchObject({ expenses: 4, netIncome: -4 });
+    expect(statement.incomeStatement.expenseDetails).toContainEqual({ label: 'Staff wages', amount: 4 });
   });
 });
 

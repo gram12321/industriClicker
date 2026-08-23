@@ -19,13 +19,15 @@ Foreground elapsed time -> advanceGameTime -> one-second timed rules -> SQLite s
 
 ## Production and Facilities
 
-- A recipe consumes all inputs at cycle start or stalls without banking work. Capture input quality and direct-material source cost then; allocate that cost across completed output units.
-- Completion applies output multipliers, records categorized input/output flow, lifetime output, and a zero-cash Finance performance entry at current local price. Contribution margin excludes maintenance and capital; facility operating profit subtracts direct input cost and repair expense; investment-adjusted result also subtracts period construction/upgrades.
+- A recipe consumes all inputs at cycle start or stalls without banking work. Capture input quality and input source cost then; at completion, add the production-maintenance allocation and divide total source cost across output quantity.
+- Production-maintenance allocation is `productionConditionLoss × repairMaterialCostRate × (landCost + constructionMaterialsCost × localConstructionMaterialsPrice + industrialMachinesCost × localIndustrialMachinesPrice)`, where production loss uses recipe wear, the asymmetrical condition scaler, condition-decay upgrades, and overstaffing wear.
+- Completion applies output multipliers, records categorized input/output flow and lifetime output, and creates a zero-cash Finance performance entry at current local price. Contribution margin excludes maintenance and capital; operating profit subtracts output source cost and staff wages; actual repair settlements remain visible as maintenance; investment-adjusted result also subtracts period construction/upgrades.
 - Each facility is an independent numbered instance with a paused/resumable, ordered, repeating cycle of researched recipes. Missing inputs stall at cycle boundaries. Exact recipes and dependencies are in [VariableRelationshipMap.md](VariableRelationshipMap.md).
 - Construction consumes land euros, Construction Materials, and Industrial Machines. Missing construction/upgrade/repair inputs may be bought from the local market only when the full cash requirement is affordable.
 - Upgrade cost is `ceil(baseUpgradeCost × 1.5^currentLevel)` euros plus each construction input at `baseRequirement × 0.2 × 1.5^currentLevel`; fractional resource costs are valid.
 - Speed work multiplier: `1 + 0.8 × (1 - e^(-0.22 × speedLevel))`. Output multiplier: `1 + 1.5 × (1 - e^(-0.18 × outputLevel))`.
-- Required workers: `baseWorkers + speedLevel + outputLevel + ceil(baseWorkers × 1.15^(speedLevel + outputLevel) - baseWorkers)`. Staffing efficiency is `0.01 + 0.99 × ratio^1.6` at/below target and `1 + 0.25 × (1 - e^(-0.7 × (ratio - 1)))` above it.
+- Required workers: `baseWorkers + speedLevel + outputLevel + ceil(baseWorkers × 1.15^(speedLevel + outputLevel) - baseWorkers)`. Worker staffing efficiency is `0.01 + 0.99 × ratio^1.6` at/below target and `1 + 0.25 × (1 - e^(-0.7 × (ratio - 1)))` above it, multiplied by wage efficiency. For wage ratio `r = min(100, wage/baseWage)`, wage efficiency is `(e^(3r) - 1)/(e^3 - 1)` through the base wage and `1 + 9 × asymmetricalScaler((r - 1)/99)` above it.
+- Each assigned worker costs the player-set wage per foreground minute. The proportional charge is recorded each foreground step; if it cannot be paid, that facility pauses before production work.
 - Condition starts at 1. Passive loss is `1/1,200` per facility-minute. Each completed recipe loses `(requiredWork/1,200 + 0.05/1,200) × recipeWearMultiplier`; both losses use the asymmetrical condition scaler and the overstaffing multiplier `1.5^(staffingRatio - 1)`.
 - Condition upgrades reduce wear by `1 - 0.75 × (1 - e^(-0.18 × conditionUpgradeLevel))` without increasing workers. Facility efficiency is staffing efficiency × condition efficiency.
 - Repair to a selected higher target costs each construction input `constructionCost × 0.45 × (target - current)`; cash uses land cost. Auto-repair uses the same costs, Finance maintenance entry, statistics, and flow, but only during foreground steps and within the Repair Technician facility limit.
@@ -37,11 +39,11 @@ Run `npm run economy:report` for report-only recipe windows and connected-chain 
 
 ## Market
 
-- Price is `benchmarkSupply / max(supply, 1) × marketQuality`. Local, regional, and global reservoirs are device-local; manual trades use local.
-- Adjacent pools diffuse every five foreground seconds. Raw request is `rateBaseSupply / divisor × priceGap × (1 + priceGap)^curvature × logisticsMultiplier × valueDensityMultiplier × localRegionalResearchMultiplier`, capped by equilibrium and source supply. Diffusion research changes only local↔regional raw rate.
+- Price is `benchmarkSupply / max(supply, 1) × marketQuality`. Catalogue entries also own logistics/value-density multipliers; local supply/benchmark begin at 1/100, 1/20, or 1/10 of regional values by price tier, while regional initial supply is the diffusion rate base.
+- Adjacent pools diffuse every five foreground seconds. Raw request is `rateBaseSupply / divisor × priceGap × (1 + priceGap)^curvature × logisticsMultiplier × valueDensityMultiplier × localRegionalResearchMultiplier`, where `priceGap = max(lowerPrice / higherPrice, higherPrice / lowerPrice) - 1`; elapsed-time, equilibrium, and source-supply caps apply. Diffusion research changes only local↔regional raw rate and uses the configured 1.15×–4.00× tiers.
 - Local Market Network tiers create persisted, concurrent foreground activations. Each tier adds `0.05 × original local supply` and matching benchmark capacity per foreground minute until its own increment is exhausted; activations stack and do not replace diffusion.
-- Inventory and market additions mix quality and inventory source cost by quantity. Market purchases use executed price; facility output uses captured direct input cost. Selling uses inventory Q as a price multiplier and mixes Q into local stock; customer fulfilment adds goods to global stock.
-- Each resource has a saved five-second-default autotrade interval. Autobuy respects access, cash, supply, inventory targets, and price caps; autosell respects rate, minimum keep, and minimum price. Resource Flow records market, order, facility spending, reward, and production changes.
+- Inventory and market additions mix quality and source cost by quantity. Market purchases use executed price; facility output uses captured input cost plus production-maintenance allocation. Selling uses inventory Q as a price multiplier and mixes Q into local stock; customer fulfilment adds goods to global stock.
+- Each resource has a saved five-second-default autotrade interval. Autobuy respects access, cash, supply, inventory targets, and price caps; autosell respects rate, minimum keep, and minimum price. Resource Flow records market, order, construction/upgrade/repair spending, rewards, and production changes.
 
 ## Finance, Sales, and Progression
 

@@ -96,6 +96,7 @@ export function advanceAllFacilityProduction(
   getEffectiveWork: (facility: FacilityView, recipeName: RecipeName) => number,
   onInputConsumed?: (input: RecipeInput) => void,
   resolveOutputQuality?: (resourceType: ResourceType, weightedInputQ: number | null, upgradeMaxQ: number) => OutputQualityBreakdown,
+  getProductionMaintenanceCost?: (facility: FacilityView, recipe: Recipe) => number,
 ): ProductionOutput[] {
   const outputs: ProductionOutput[] = [];
 
@@ -133,8 +134,9 @@ export function advanceAllFacilityProduction(
             (total, output) => total + output.amount * facilityView.outputMultiplier,
             0,
           );
+          const productionMaintenanceCost = getProductionMaintenanceCost?.(facility.getView(), recipe) ?? 0;
           const outputSourceCostPerUnit = totalOutputAmount > 0
-            ? (facility.getView().recipeInputSourceCost ?? 0) / totalOutputAmount
+            ? ((facility.getView().recipeInputSourceCost ?? 0) + Math.max(0, productionMaintenanceCost)) / totalOutputAmount
             : 0;
           for (const output of recipe.outputs) {
             const amount = output.amount * facilityView.outputMultiplier;

@@ -1,6 +1,6 @@
 import { Finance, LOAN_COLLECTION, buildFinanceStatementData, calculateAssets, calculateFacilityAssetValue, calculateLoanSearchEstimate, generateLoanOffers, LENDER_TYPES, refreshLoanOfferAvailability, type LoanOffer, type LoanSearchCriteria } from '@/game/finance';
 import { Inventory, ResourceFlowLedger } from '@/game/inventory';
-import { FACILITIES, FacilityCollection, FacilityMaintenanceStatistics, advanceAllFacilityProduction, calculateFacilityEffectiveWork, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getMissingFacilityMaterials, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
+import { FACILITIES, FacilityCollection, FacilityMaintenanceStatistics, advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateFacilityProductionMaintenanceCost, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, getFacilityDefinition, getFacilityMissingInputs, getMissingFacilityMaterials, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, type FacilityType, type FacilityUpgradeKind } from '@/game/facilities';
 import { calculateOutputQuality, calculateProductionMaxQ } from '@/game/quality';
 import { getRecipe, type RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
@@ -65,6 +65,7 @@ type GameState = {
   setFacilityProductionCycle: (facilityId: string, recipeNames: readonly RecipeName[]) => boolean;
   setFacilityProductionActive: (facilityId: string, active: boolean) => boolean;
   setFacilityWorkers: (facilityId: string, workerCount: number) => boolean;
+  setFacilityStaffWage: (facilityId: string, wagePerWorkerPerMinute: number) => boolean;
   setFacilityAutoRepair: (facilityId: string, enabled: boolean, threshold: number, target: number) => boolean;
   repairFacility: (facilityId: string, targetCondition?: number) => boolean;
   upgradeFacility: (facilityId: string, upgradeKind: FacilityUpgradeKind) => boolean;
@@ -527,6 +528,18 @@ export const useGameStore = create<GameState>((set, get) => {
     set({ facilities });
     return true;
   },
+  setFacilityStaffWage: (facilityId, wagePerWorkerPerMinute) => {
+    get().advanceRealtime(Date.now());
+    const facilities = get().facilities.clone();
+    const facility = facilities.get(facilityId);
+
+    if (!facility || !facility.setStaffWagePerWorkerPerMinute(wagePerWorkerPerMinute)) {
+      return false;
+    }
+
+    set({ facilities });
+    return true;
+  },
   setFacilityAutoRepair: (facilityId, enabled, threshold, target) => {
     get().advanceRealtime(Date.now());
     const facilities = get().facilities.clone();
@@ -679,6 +692,18 @@ export const useGameStore = create<GameState>((set, get) => {
         facilities.applyPassiveConditionLoss((stepMs / REALTIME_WORK_MINUTE_MS) * FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE);
       }
 
+      if (hasConstructedFacility) {
+        for (const facility of facilities.getAll()) {
+          const facilityView = facility.getView();
+          const staffWageExpense = facilityView.assignedWorkers * facilityView.staffWagePerWorkerPerMinute * stepMs / REALTIME_WORK_MINUTE_MS;
+          if (staffWageExpense <= 0) continue;
+          marketFinance ??= get().finance.clone();
+          if (!marketFinance.applyTransaction({ amount: -staffWageExpense, description: `Staff wages for ${facilityView.displayName}`, detailLines: [`Workers: ${facilityView.assignedWorkers}`, `Wage: €${facilityView.staffWagePerWorkerPerMinute.toFixed(2)} per worker/min`], facilityAccounting: { facilityId: facility.id, classification: 'staff-wage', historicalValue: staffWageExpense }, kind: 'operating', source: 'facility-staff-wage', occurredAtGameTimeMs: stepEndGameTimeMs })) {
+            facility.setProductionActive(false);
+          }
+        }
+      }
+
       const networkMarket: Market = market ?? get().market;
       if (networkMarket.getLocalMarketNetworkActivations().length > 0) {
         const activatingMarket: Market = market ?? networkMarket.clone();
@@ -749,16 +774,16 @@ export const useGameStore = create<GameState>((set, get) => {
           researchMaxQ: getResourceResearchMaxQ(resourceType, research.getCompletedProjectIds()),
           upgradeMaxQ,
           productionMaxQ: calculateProductionMaxQ(resourceFlow.getLifetimeFacilityOutput(resourceType)),
-        }));
+        }), (facility, recipe) => calculateFacilityProductionMaintenanceCost(facility, recipe, market!));
         if (outputs.length > 0) {
           producedOutput = true;
-          const facilityPerformance = new Map<string, { directInputCost: number; outputValue: number }>();
+          const facilityPerformance = new Map<string, { sourceCost: number; outputValue: number }>();
           for (const output of outputs) {
             if (resourceFlow === get().resourceFlow) resourceFlow = resourceFlow.clone();
             resourceFlow.recordFacilityOutput(output.resourceType, output.amount, output.quality, stepEndGameTimeMs);
-            const current = facilityPerformance.get(output.facilityId) ?? { directInputCost: 0, outputValue: 0 };
+            const current = facilityPerformance.get(output.facilityId) ?? { sourceCost: 0, outputValue: 0 };
             current.outputValue += output.amount * market.getLocalSalePrice(output.resourceType, output.quality);
-            current.directInputCost += output.amount * output.sourceCostPerUnit;
+            current.sourceCost += output.amount * output.sourceCostPerUnit;
             facilityPerformance.set(output.facilityId, current);
           }
           marketFinance ??= get().finance.clone();
@@ -766,7 +791,7 @@ export const useGameStore = create<GameState>((set, get) => {
             marketFinance.applyTransaction({
               amount: 0,
               description: `Production completed by ${facilities.get(facilityId)?.getView().displayName ?? facilityId}`,
-              detailLines: [`Output market value: €${performance.outputValue.toFixed(2)}`, `Direct input cost: €${performance.directInputCost.toFixed(2)}`],
+              detailLines: [`Output market value: €${performance.outputValue.toFixed(2)}`, `Output source cost: €${performance.sourceCost.toFixed(2)}`],
               facilityPerformance: { facilityId, ...performance },
               kind: 'operating',
               source: 'facility-production',
