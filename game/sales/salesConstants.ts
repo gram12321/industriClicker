@@ -98,11 +98,11 @@ export const SALES_CUSTOMER_BID_MULTIPLIER_RANGE = [0.55, 1.8] as const;
 
 /** Economy affects both customer frequency and their willingness to pay. */
 export const SALES_ECONOMY_MULTIPLIERS: Readonly<Record<EconomyPhase, { acquisition: number; bid: number }>> = {
-  crash: { acquisition: 0.33, bid: 0.5 },
-  recession: { acquisition: 0.66, bid: 0.75 },
+  crash: { acquisition: 0.7, bid: 0.7 },
+  recession: { acquisition: 0.85, bid: 0.85 },
   stable: { acquisition: 1, bid: 1 },
-  expansion: { acquisition: 1.8, bid: 1.25 },
-  boom: { acquisition: 3, bid: 1.5 },
+  expansion: { acquisition: 1.15, bid: 1.15 },
+  boom: { acquisition: 1.3, bid: 1.3 },
 };
 
 export const SALES_CUSTOMER_DOMAIN_PROFILES: Readonly<Record<SalesCustomerDomain, {

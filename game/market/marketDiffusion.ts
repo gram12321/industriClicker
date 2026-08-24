@@ -1,9 +1,10 @@
 import type { ResourceMarketDefinition } from '@/game/resources';
+import { calculateQualityValueMultiplier } from '@/game/quality';
 import { MARKET_DIFFUSION_CURVATURE, MARKET_DIFFUSION_DIVISOR, MARKET_DIFFUSION_MAX_EQUILIBRIUM_CORRECTION, MARKET_DIFFUSION_REFERENCE_INTERVAL_MS } from './marketConstants';
 import type { MarketDiffusionDetails, MarketDiffusionDirection, MarketDiffusionInfo, MarketPoolEntry, MarketPoolKind } from './marketTypes';
 
 export function calculateMarketPrice(benchmarkSupply: number, entry: MarketPoolEntry): number {
-  return benchmarkSupply / Math.max(entry.supply, 1) * entry.quality;
+  return benchmarkSupply / Math.max(entry.supply, 1) * calculateQualityValueMultiplier(entry.quality);
 }
 
 type MarketDiffusionPair = {
