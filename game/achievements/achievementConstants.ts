@@ -91,7 +91,7 @@ export function createResourceProductionAchievements(resourceType: ResourceType,
 }
 
 export const ACHIEVEMENT_DEFINITIONS: readonly AchievementDefinition[] = [
-  ...createTieredAchievements({ seriesId: 'facility_portfolio', category: 'facilities', name: 'Industrial Footprint', description: 'Own {threshold} facilities.', icon: 'factory', metric: 'facility-count', thresholds: [2, 4, 6, 10, 15] }),
+  ...createTieredAchievements({ seriesId: 'facility_portfolio', category: 'facilities', name: 'Industrial Footprint', description: 'Own {threshold} facilities.', icon: 'factory', metric: 'facility-count', thresholds: [1, 4, 6, 10, 15] }),
   ...createTieredAchievements({ seriesId: 'facility_upgrades', category: 'facilities', name: 'Moderniser', description: 'Buy {threshold} facility upgrades.', icon: 'trending-up', metric: 'upgrade-levels', thresholds: [3, 8, 15, 30, 60] }),
   ...createTieredAchievements({ seriesId: 'facility_upgrade_depth', category: 'facilities', name: 'Integrated Industry', description: 'Have {threshold} facilities and at least 6 upgrades per facility.', icon: 'factory-cog', metric: 'facility-upgrade-depth', thresholds: [2, 3, 6, 10, 15], prestigeAmounts: [0.3, 1.2, 4.5, 8, 12] }),
   ...createTieredAchievements({ seriesId: 'condition_repaired', category: 'facilities', name: 'Restoration Works', description: 'Restore {threshold}% facility condition.', icon: 'wrench', metric: 'condition-repaired', thresholds: [25, 75, 100, 250, 500] }),

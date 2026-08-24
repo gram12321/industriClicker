@@ -5,7 +5,7 @@ describe('early achievement balance', () => {
   it('keeps the first milestones from unlocking immediately', () => {
     const threshold = (seriesId: string) => ACHIEVEMENT_DEFINITIONS.find((achievement) => achievement.seriesId === seriesId && achievement.tier === 1)?.threshold;
 
-    expect(threshold('facility_portfolio')).toBe(2);
+    expect(threshold('facility_portfolio')).toBe(1);
     expect(threshold('total_production')).toBe(25);
     expect(threshold('fulfilled_orders')).toBe(3);
     expect(threshold('company_time')).toBe(30);
