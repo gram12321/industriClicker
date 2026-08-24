@@ -10,7 +10,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 1 },
       { resourceType: ResourceType.Fertilizer, amount: 0.025 },
     ],
-    outputs: [{ resourceType: ResourceType.Grain, amount: 1.35 }],
+    outputs: [{ resourceType: ResourceType.Grain, amount: 1.5 }],
     requiredWork: 0.06,
     conditionWearMultiplier: 0.75,
   },
@@ -69,7 +69,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     outputs: [
       { resourceType: ResourceType.Meat, amount: 0.5 },
       { resourceType: ResourceType.Milk, amount: 1.25 },
-      { resourceType: ResourceType.Fertilizer, amount: 0.05 },
+      { resourceType: ResourceType.Fertilizer, amount: 0.1 },
     ],
     requiredWork: 0.6125,
     conditionWearMultiplier: 1.32,
@@ -84,7 +84,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     outputs: [
       { resourceType: ResourceType.Meat, amount: 0.375 },
       { resourceType: ResourceType.Wool, amount: 0.5 },
-      { resourceType: ResourceType.Fertilizer, amount: 0.025 },
+      { resourceType: ResourceType.Fertilizer, amount: 0.05 },
     ],
     requiredWork: 0.4375,
     conditionWearMultiplier: 1.11,
@@ -99,7 +99,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     outputs: [
       { resourceType: ResourceType.Meat, amount: 0.25 },
       { resourceType: ResourceType.Eggs, amount: 1.25 },
-      { resourceType: ResourceType.Fertilizer, amount: 0.0125 },
+      { resourceType: ResourceType.Fertilizer, amount: 0.025 },
     ],
     requiredWork: 0.35,
     conditionWearMultiplier: 0.91,

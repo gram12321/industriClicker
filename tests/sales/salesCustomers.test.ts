@@ -26,8 +26,8 @@ describe('sales customer catalogue', () => {
   });
 
   it('uses commercial delivery lots that vary by resource scale', () => {
-    expect(getSalesResourceProfile(ResourceType.Water)).toEqual({ domain: 'utilities', standardOrderLot: 500 });
-    expect(getSalesResourceProfile(ResourceType.Electricity)).toEqual({ domain: 'utilities', standardOrderLot: 250 });
+    expect(getSalesResourceProfile(ResourceType.Water)).toEqual({ domain: 'utilities', standardOrderLot: 100 });
+    expect(getSalesResourceProfile(ResourceType.Electricity)).toEqual({ domain: 'utilities', standardOrderLot: 100 });
     expect(getSalesResourceProfile(ResourceType.Sand).standardOrderLot).toBeGreaterThan(getSalesResourceProfile(ResourceType.Grain).standardOrderLot);
     expect(getSalesResourceProfile(ResourceType.IndustrialMachines).standardOrderLot).toBe(1);
   });
