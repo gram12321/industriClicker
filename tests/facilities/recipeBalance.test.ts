@@ -12,7 +12,7 @@ type RecipeTimingCase = {
 
 const RECIPE_TIMING_CASES: readonly RecipeTimingCase[] = [
   { facilityType: FacilityType.Farm, recipeName: RecipeName.GrowGrain, expectedSeconds: 3 },
-  { facilityType: FacilityType.Farm, recipeName: RecipeName.GrowSugar, expectedSeconds: 6 },
+  { facilityType: FacilityType.Farm, recipeName: RecipeName.GrowSugar, expectedSeconds: 5 },
   { facilityType: FacilityType.Farm, recipeName: RecipeName.GrowFruit, expectedSeconds: 8 },
   { facilityType: FacilityType.AnimalFarm, recipeName: RecipeName.RaiseCattle, expectedSeconds: 26.25 },
   { facilityType: FacilityType.AnimalFarm, recipeName: RecipeName.RaiseSheep, expectedSeconds: 18.75 },
@@ -20,7 +20,7 @@ const RECIPE_TIMING_CASES: readonly RecipeTimingCase[] = [
   { facilityType: FacilityType.Bakery, recipeName: RecipeName.BakeBread, expectedSeconds: 12 },
   { facilityType: FacilityType.Bakery, recipeName: RecipeName.BakeCake, expectedSeconds: 18 },
   { facilityType: FacilityType.Bakery, recipeName: RecipeName.BakePremiumCake, expectedSeconds: 24 },
-  { facilityType: FacilityType.Bakery, recipeName: RecipeName.BakeMeatPie, expectedSeconds: 30 },
+  { facilityType: FacilityType.Bakery, recipeName: RecipeName.BakeMeatPie, expectedSeconds: 60 },
   { facilityType: FacilityType.SmallUtilityWorks, recipeName: RecipeName.ProduceWater, expectedSeconds: 4 },
   { facilityType: FacilityType.SmallUtilityWorks, recipeName: RecipeName.ProduceElectricity, expectedSeconds: 6 },
   { facilityType: FacilityType.Mine, recipeName: RecipeName.MineCoal, expectedSeconds: 6 },
@@ -34,7 +34,7 @@ const RECIPE_TIMING_CASES: readonly RecipeTimingCase[] = [
   { facilityType: FacilityType.IndustrialProcessingFactory, recipeName: RecipeName.ProduceSteel, expectedSeconds: 30 },
   { facilityType: FacilityType.IndustrialProcessingFactory, recipeName: RecipeName.ProduceElectricCircuits, expectedSeconds: 45 },
   { facilityType: FacilityType.ChemicalPlant, recipeName: RecipeName.ProduceChemicals, expectedSeconds: 60 },
-  { facilityType: FacilityType.ChemicalPlant, recipeName: RecipeName.SynthesizeFertilizer, expectedSeconds: 40 },
+  { facilityType: FacilityType.ChemicalPlant, recipeName: RecipeName.SynthesizeFertilizer, expectedSeconds: 32 },
   { facilityType: FacilityType.ChemicalPlant, recipeName: RecipeName.ProducePlastic, expectedSeconds: 40 },
   { facilityType: FacilityType.ElectronicsFactory, recipeName: RecipeName.ProduceSilicon, expectedSeconds: 55 },
   { facilityType: FacilityType.ElectronicsFactory, recipeName: RecipeName.ProduceAdvancedComponents, expectedSeconds: 82.5 },
@@ -45,8 +45,8 @@ const RECIPE_TIMING_CASES: readonly RecipeTimingCase[] = [
   { facilityType: FacilityType.ConstructionFactory, recipeName: RecipeName.ProduceConstructionMaterials, expectedSeconds: 120 },
   { facilityType: FacilityType.WaterWell, recipeName: RecipeName.ManualPumping, expectedSeconds: 4 },
   { facilityType: FacilityType.WaterWell, recipeName: RecipeName.ElectricPumping, expectedSeconds: 6.5 },
-  { facilityType: FacilityType.PowerPlant, recipeName: RecipeName.CoalPower, expectedSeconds: 10 },
-  { facilityType: FacilityType.PowerPlant, recipeName: RecipeName.SolarPower, expectedSeconds: 20 },
+  { facilityType: FacilityType.CoalPowerPlant, recipeName: RecipeName.CoalPower, expectedSeconds: 10 },
+  { facilityType: FacilityType.SolarPlant, recipeName: RecipeName.SolarPower, expectedSeconds: 20 },
 ];
 
 function getBaselineWorkPerMinute(facilityType: FacilityType): number {

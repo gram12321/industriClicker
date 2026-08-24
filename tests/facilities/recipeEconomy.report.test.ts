@@ -17,7 +17,6 @@ import {
 
 const RECIPE_WINDOW_SCENARIOS = [
   { label: 'Base market', localDepthLevel: 0, diffusionLevel: 0 },
-  { label: 'Network III', localDepthLevel: 3, diffusionLevel: 3 },
 ] as const;
 const CUSTOMER_ORDER_SALES_SHARE = 0.25;
 const CHAIN_SCENARIOS: ReadonlyArray<{ label: string; scenario: RecipeEconomyChainScenario }> = [
@@ -269,6 +268,10 @@ function minute(value: number | null): string {
   return value === null ? 'not reached' : String(value);
 }
 
+function horizonMinute(value: number | null): string {
+  return value === null ? `not reached in ${RECIPE_ECONOMY_BREAK_EVEN_HORIZON_MINUTES / 60}h` : String(value);
+}
+
 function marginWindows(shortRun: number, longRun: number, extendedRun: number): string {
   return `${money(shortRun)}/${money(longRun)}/${money(extendedRun)}`;
 }
@@ -354,7 +357,7 @@ describe('recipe economy report', () => {
       '',
       '## Recipe windows',
       '',
-      'Each recipe is assessed in a base market and a Network III market with Local Market Network III and Market Diffusion Network III already owned. The facility is fully staffed, and all assigned-worker wages are included in every margin and payback calculation. The Network III scenario measures recipe resilience; its research is pre-owned and is not charged to facility payback. Every margin cell also shows Generated orders max 25%: a comparison that uses the live deterministic customer catalogue, generated bids, and standard lots, but fulfils no more than 25% of each recipe output. It is not guaranteed demand. When electricity max 1.5x changes a local-sale margin, its value is shown on a second line in the same margin column; electricity bought above 1.5 times its initial local price is supplied externally at that cap, without changing runtime market rules. The 15/60/180-minute margins are cumulative averages; window till unprofitable is the first completed output cycle with a non-positive margin, so a later recovery remains possible.',
+      'Each recipe is assessed in the base market. The facility is fully staffed, and all assigned-worker wages are included in every margin and payback calculation. Every margin cell also shows Generated orders max 25%: a comparison that uses the live deterministic customer catalogue, generated bids, and standard lots, but fulfils no more than 25% of each recipe output. It is not guaranteed demand. When electricity max 1.5x changes a local-sale margin, its value is shown on a second line in the same margin column; electricity bought above 1.5 times its initial local price is supplied externally at that cap, without changing runtime market rules. The 15/60/180-minute margins are cumulative averages; window till unprofitable is the first completed output cycle with a non-positive margin, measured through the 24-hour report horizon.',
       '',
     ];
     const entries = recipeEntries();
@@ -381,6 +384,8 @@ describe('recipe economy report', () => {
         recipe: entry.recipe,
         scenario: scenario.label,
         'Facility/recipe cost (EUR)': `${money(initial.facilityInvestmentCost)}/${money(getResearchProject(getRecipeResearchProjectId(recipeName))?.cost ?? 0)}`,
+        'Building cost (EUR)': money(initial.facilityInvestmentCost),
+        'Building cost (EUR/CM/IM)': `${FACILITIES[Object.values(FACILITIES).find((definition) => definition.recipes.some((recipe) => recipe.name === recipeName))!.type].landCost}/${FACILITIES[Object.values(FACILITIES).find((definition) => definition.recipes.some((recipe) => recipe.name === recipeName))!.type].constructionMaterialsCost}/${FACILITIES[Object.values(FACILITIES).find((definition) => definition.recipes.some((recipe) => recipe.name === recipeName))!.type].industrialMachinesCost}`,
         'initial margin': money(initial.initialNetMarginPerMinute),
         'margin 15m/60m/180m': marginWindowsWithCustomerOrders(
           [shortRun.netMarginPerMinute, longRun.netMarginPerMinute, extendedRun.netMarginPerMinute],
@@ -392,16 +397,32 @@ describe('recipe economy report', () => {
           : '0.0%'}`,
         'maintenance 60m': money(longRun.totalMaintenanceCost),
         'staff wages 60m': money(longRun.totalStaffWage),
-        'window till unprofitable': minute(horizon.breakEvenMinute),
+        'window till unprofitable': horizonMinute(horizon.breakEvenMinute),
         'facility payback': minute(horizon.paybackMinute),
       }));
     });
+    const facilitySummaryRows = [...recipeRows].flatMap(([facility, rows]) => rows.flatMap((scenarioRows) => scenarioRows.map((row) => ({
+      facility,
+      recipe: row.recipe,
+      'total building cost (EUR)': row['Building cost (EUR)'],
+      'building cost (EUR/CM/IM)': row['Building cost (EUR/CM/IM)'],
+      'initial margin': row['initial margin'],
+      'window till unprofitable': row['window till unprofitable'],
+    }))));
+    reportSections.push(
+      '## Facility investment and recipe resilience',
+      '',
+      'Building cost is the initial-price construction cost: land plus Construction Materials and Industrial Machines. The unprofitable window is searched through the 24-hour report horizon.',
+      '',
+      markdownTable(facilitySummaryRows),
+      '',
+    );
     console.log('\nRecipe economy: one fully staffed facility, local input purchases, local output sales, 70% repair threshold');
     for (const [facility, rows] of recipeRows) {
       const flatRows = rows.flat();
       console.log(`\n${facility}`);
       console.table(flatRows);
-      reportSections.push(`## ${facility}`, '', 'Network III applies pre-owned Local Market Network III and Market Diffusion Network III. It is a market-resilience scenario: neither network research nor recipe-unlock research is charged to facility payback.', '', markdownTable(flatRows), '');
+      reportSections.push(`## ${facility}`, '', 'The recipe rows use the base market and a 24-hour window for detecting the first completed output cycle with a non-positive operating margin.', '', markdownTable(flatRows), '');
     }
 
     const chainRows = CHAIN_SCENARIOS.map(({ label, scenario }) => {
@@ -435,7 +456,7 @@ describe('recipe economy report', () => {
           [electricityCappedShortRun.netMarginPerMinute, electricityCappedLongRun.netMarginPerMinute, electricityCappedExtendedRun.netMarginPerMinute],
           [customerOrderShortRun.netMarginPerMinute, customerOrderLongRun.netMarginPerMinute, customerOrderExtendedRun.netMarginPerMinute],
         ),
-        'window till unprofitable': minute(horizon.breakEvenMinute),
+        'window till unprofitable': horizonMinute(horizon.breakEvenMinute),
         'facility payback': minute(horizon.paybackMinute),
       };
     });

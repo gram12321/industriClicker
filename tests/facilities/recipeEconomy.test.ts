@@ -58,10 +58,10 @@ describe('recipe economy simulation', () => {
 
   it('prices cash, Construction Materials, and Industrial Machines in initial repair liability', () => {
     const recipe = getRecipe(RecipeName.SolarPower);
-    const definition = FACILITIES[FacilityType.PowerPlant];
+    const definition = FACILITIES[FacilityType.SolarPlant];
     const facilities = new FacilityCollection();
-    facilities.build(FacilityType.PowerPlant);
-    const facility = facilities.getAllByType(FacilityType.PowerPlant)[0]!;
+    facilities.build(FacilityType.SolarPlant);
+    const facility = facilities.getAllByType(FacilityType.SolarPlant)[0]!;
     const market = new Market();
 
     facility.setActiveRecipe(recipe.name);
@@ -86,7 +86,7 @@ describe('recipe economy simulation', () => {
   });
 
   it('includes land, Construction Materials, and Industrial Machines in facility investment cost', () => {
-    const definition = FACILITIES[FacilityType.PowerPlant];
+    const definition = FACILITIES[FacilityType.SolarPlant];
     const market = new Market();
     const expectedFacilityInvestmentCost = definition.landCost
       + definition.constructionMaterialsCost * market.getLocalPrice(ResourceType.ConstructionMaterials)
