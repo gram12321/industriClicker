@@ -1,4 +1,4 @@
-import { Finance, LOAN_COLLECTION, buildFinanceStatementData, calculateAssets, calculateFacilityAssetValue, calculateLoanSearchEstimate, generateLoanOffers, LENDER_TYPES, refreshLoanOfferAvailability, type LoanOffer, type LoanSearchCriteria } from '@/game/finance';
+import { Finance, LOAN_COLLECTION, buildFinanceStatementData, calculateAssets, calculateFacilityAssetValue, calculateLoanSearchEstimate, generateLoanOffers, getEconomyStaffWageMultiplier, LENDER_TYPES, refreshLoanOfferAvailability, type LoanOffer, type LoanSearchCriteria } from '@/game/finance';
 import { Inventory, ResourceFlowLedger } from '@/game/inventory';
 import { FACILITIES, FacilityCollection, FacilityMaintenanceStatistics, FacilityType, advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateFacilityProductionMaintenanceCost, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_REPAIR_DURATION_PER_CONDITION_MS, FARM_DEFAULT_SIZE_HECTARES, getFacilityConstructionCosts, getFacilityDefinition, getFacilityMissingInputs, getMissingFacilityMaterials, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, getStaffingChangeCost, getStaffingChangeDurationMs, getStaffTrainingCost, getStaffTrainingDurationMs, isValidFacilitySize, type FacilityUpgradeKind } from '@/game/facilities';
 import { calculateOutputQuality, calculateProductionMaxQ } from '@/game/quality';
@@ -713,6 +713,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const hasConstructedFacility = get().facilities.getAll().length > 0;
     const hasActiveFacility = hasConstructedFacility && get().facilities.getAll().some((facility) => facility.getView().isActive);
     const facilities = hasConstructedFacility ? get().facilities.clone() : get().facilities;
+    facilities.setStaffWageBaseMultiplier(getEconomyStaffWageMultiplier(get().finance.getEconomyPhase()));
     let inventory = hasActiveFacility ? get().inventory.clone() : get().inventory;
     let resourceFlow = get().resourceFlow;
     const recordResourceFlow = (kind: Parameters<ResourceFlowLedger['record']>[0], resourceType: ResourceType, amount: number, occurredAtGameTimeMs: number) => {
@@ -1112,6 +1113,10 @@ export const useGameStore = create<GameState>((set, get) => {
       })
       : { achievements: get().achievements, prestige, inventory };
 
+    if (hasConstructedFacility) {
+      facilities.setStaffWageBaseMultiplier(getEconomyStaffWageMultiplier(financeForLoanProcessing.getEconomyPhase()));
+    }
+
     for (const resourceType of RESOURCE_TYPES) {
       const rewardAmount = achievementResult.inventory.getAmount(resourceType) - inventory.getAmount(resourceType);
       if (rewardAmount > 0) recordResourceFlow('reward', resourceType, rewardAmount, nextGameTimeMs);
@@ -1417,6 +1422,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const finance = Finance.fromSnapshot(snapshot.finance);
     const market = Market.fromSnapshot(snapshot.market);
     const facilities = FacilityCollection.fromSnapshot(snapshot.facilities);
+    facilities.setStaffWageBaseMultiplier(getEconomyStaffWageMultiplier(finance.getEconomyPhase()));
     const salesOrders = SalesOrders.fromSnapshot(snapshot.salesOrders);
     const achievements = AchievementLedger.fromSnapshot(snapshot.achievements);
     const facilityMaintenance = FacilityMaintenanceStatistics.fromSnapshot(snapshot.facilityMaintenance);

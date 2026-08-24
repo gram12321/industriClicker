@@ -3,7 +3,7 @@ import { calculateAsymmetricalScaler01 } from '@/game/core/math/scaling';
 import { calculateProgressFromQuality, calculateUpgradeMaxQ } from '@/game/quality';
 import { FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_INITIAL_STAFF_QUALITY, FACILITY_REPAIR_EFFICIENCY_MULTIPLIER, FACILITY_STAFF_QUALITY_EXPERIENCE_PROGRESS_PER_WORK, FACILITY_STAFF_QUALITY_TREND_DECAY_RATE, FACILITY_STAFF_QUALITY_TREND_MEMORY_MINUTES, FACILITY_STAFF_TRAINING_QUALITY_PROGRESS_PER_WORKER, FARM_DEFAULT_SIZE_HECTARES, getFacilityDefinition, getFacilityMaxStaffWage, getFacilitySizeMultiplier, isValidFacilitySize } from './facilityConstants';
 import { FacilityType } from './facilityTypes';
-import { getConditionDecayMultiplier, getFacilityConditionEfficiency, getFacilityEfficiency, getOutputUpgradeMultiplier, getOverstaffingConditionDecayMultiplier, getRequiredWorkers, getSpeedUpgradeWorkSpeedMultiplier, getStaffingEfficiency, getStaffQualityFromProgress, getStaffQualityWagePressurePerMinute, getStaffQualityWageProgressChangePerMinute, getWageEfficiency } from './facilityUpgrades';
+import { getConditionDecayMultiplier, getFacilityConditionEfficiency, getFacilityEfficiency, getFacilityStaffTargetWage, getOutputUpgradeMultiplier, getOverstaffingConditionDecayMultiplier, getRequiredWorkers, getSpeedUpgradeWorkSpeedMultiplier, getStaffingEfficiency, getStaffQualityFromProgress, getStaffQualityWagePressurePerMinute, getStaffQualityWageProgressChangePerMinute, getWageEfficiency } from './facilityUpgrades';
 
 /** Plain data used by the game snapshot and Expo SQLite adapter. */
 export type FacilitySnapshot = {
@@ -61,6 +61,7 @@ export type FacilityView = {
   staffQualityTrend: 'rising' | 'falling' | 'steady';
   staffQualityWageTrend: 'rising' | 'falling' | 'steady';
   staffQualityWagePressurePerMinute: number;
+  staffWageTargetPerWorkerPerMinute: number;
   pendingStaffingChange: { targetWorkers: number; initialWorkers: number; startedAtGameTimeMs: number; completesAtGameTimeMs: number } | null;
   staffTraining: { workers: number; startedAtGameTimeMs: number; completesAtGameTimeMs: number } | null;
   pendingRepair: { targetCondition: number; startedAtGameTimeMs: number; completesAtGameTimeMs: number } | null;
@@ -99,6 +100,7 @@ export class Facility {
   private staffTraining: { workers: number; startedAtGameTimeMs: number; completesAtGameTimeMs: number } | null = null;
   private pendingRepair: { targetCondition: number; startedAtGameTimeMs: number; completesAtGameTimeMs: number } | null = null;
   private staffWagePerWorkerPerMinute = FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE;
+  private staffWageBaseMultiplier = 1;
   private facilityCondition = 1;
   private autoRepairEnabled = false;
   private autoRepairThreshold = 0.7;
@@ -126,16 +128,17 @@ export class Facility {
   getView(): FacilityView {
     const requiredWorkers = this.calculateRequiredWorkers();
     const staffQuality = getStaffQualityFromProgress(this.staffQualityProgress);
+    const targetWage = getFacilityStaffTargetWage(staffQuality, this.staffWageBaseMultiplier);
     const staffQualityWageTrend = this.assignedWorkers <= 0
       ? 'steady'
-      : this.staffWagePerWorkerPerMinute > FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE
+      : this.staffWagePerWorkerPerMinute > targetWage
       ? 'rising'
-      : this.staffWagePerWorkerPerMinute < FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE ? 'falling' : 'steady';
+      : this.staffWagePerWorkerPerMinute < targetWage ? 'falling' : 'steady';
     const staffQualityWagePressurePerMinute = this.assignedWorkers <= 0
       ? 0
-      : getStaffQualityWagePressurePerMinute(this.staffQualityProgress, this.staffWagePerWorkerPerMinute);
+      : getStaffQualityWagePressurePerMinute(this.staffQualityProgress, this.staffWagePerWorkerPerMinute, targetWage);
     const availableWorkers = Math.max(0, this.assignedWorkers - (this.staffTraining?.workers ?? 0));
-    const staffingEfficiency = getStaffingEfficiency(availableWorkers, requiredWorkers, this.staffWagePerWorkerPerMinute, staffQuality);
+    const staffingEfficiency = getStaffingEfficiency(availableWorkers, requiredWorkers, this.staffWagePerWorkerPerMinute, staffQuality, targetWage);
     const facilityEfficiency = getFacilityEfficiency(staffingEfficiency, this.facilityCondition) * (this.pendingRepair ? FACILITY_REPAIR_EFFICIENCY_MULTIPLIER : 1);
     return {
       id: this.id,
@@ -163,6 +166,7 @@ export class Facility {
       staffQualityTrend: this.staffQualityTrend,
       staffQualityWageTrend,
       staffQualityWagePressurePerMinute,
+      staffWageTargetPerWorkerPerMinute: targetWage,
       pendingStaffingChange: this.pendingStaffingChange ? { ...this.pendingStaffingChange } : null,
       staffTraining: this.staffTraining ? { ...this.staffTraining } : null,
       pendingRepair: this.pendingRepair ? { ...this.pendingRepair } : null,
@@ -229,6 +233,14 @@ export class Facility {
     return true;
   }
 
+  setStaffWageBaseMultiplier(multiplier: number): void {
+    this.staffWageBaseMultiplier = Number.isFinite(multiplier) ? Math.max(0.1, multiplier) : 1;
+  }
+
+  getStaffWageBaseMultiplier(): number {
+    return this.staffWageBaseMultiplier;
+  }
+
   processStaffingChange(currentGameTimeMs: number): boolean {
     if (!this.pendingStaffingChange || currentGameTimeMs < this.pendingStaffingChange.startedAtGameTimeMs) return false;
     const change = this.pendingStaffingChange;
@@ -238,7 +250,7 @@ export class Facility {
     if (targetWorkers > this.assignedWorkers) {
       const hiredWorkers = targetWorkers - this.assignedWorkers;
       const currentQuality = getStaffQualityFromProgress(this.staffQualityProgress);
-      const hireQuality = Math.max(1, Math.min(FACILITY_INITIAL_STAFF_QUALITY, getWageEfficiency(this.staffWagePerWorkerPerMinute) * FACILITY_INITIAL_STAFF_QUALITY));
+      const hireQuality = Math.max(1, Math.min(FACILITY_INITIAL_STAFF_QUALITY, getWageEfficiency(this.staffWagePerWorkerPerMinute, getFacilityStaffTargetWage(currentQuality, this.staffWageBaseMultiplier)) * FACILITY_INITIAL_STAFF_QUALITY));
       const mixedQuality = (this.assignedWorkers * currentQuality + hiredWorkers * hireQuality) / targetWorkers;
       this.staffQualityProgress = calculateProgressFromQuality(mixedQuality);
     } else if (targetWorkers < this.assignedWorkers && this.assignedWorkers > 0) {
@@ -260,7 +272,7 @@ export class Facility {
     const durationMs = completesAtGameTimeMs - startedAtGameTimeMs;
     if (this.staffTraining) {
       if (this.staffTraining.workers + workers > this.assignedWorkers) return false;
-      this.staffTraining = { ...this.staffTraining, workers: this.staffTraining.workers + workers, completesAtGameTimeMs: this.staffTraining.completesAtGameTimeMs + durationMs };
+      this.staffTraining = { ...this.staffTraining, workers: this.staffTraining.workers + workers };
       return true;
     }
     if (workers > this.assignedWorkers) return false;
@@ -307,7 +319,8 @@ export class Facility {
       return false;
     }
     const previousQuality = getStaffQualityFromProgress(this.staffQualityProgress);
-    const change = getStaffQualityWageProgressChangePerMinute(this.staffWagePerWorkerPerMinute) * elapsedMinutes;
+    const currentQuality = previousQuality;
+    const change = getStaffQualityWageProgressChangePerMinute(this.staffWagePerWorkerPerMinute, getFacilityStaffTargetWage(currentQuality, this.staffWageBaseMultiplier)) * elapsedMinutes;
     const next = Math.max(0, this.staffQualityProgress + change);
     if (next === this.staffQualityProgress) {
       this.updateStaffQualityTrend();
@@ -339,7 +352,8 @@ export class Facility {
   }
 
   setStaffWagePerWorkerPerMinute(wage: number): boolean {
-    if (!Number.isFinite(wage) || wage < 0 || wage > getFacilityMaxStaffWage()) return false;
+    const targetWage = getFacilityStaffTargetWage(getStaffQualityFromProgress(this.staffQualityProgress), this.staffWageBaseMultiplier);
+    if (!Number.isFinite(wage) || wage < 0 || wage > getFacilityMaxStaffWage(targetWage)) return false;
     this.staffWagePerWorkerPerMinute = wage;
     return true;
   }

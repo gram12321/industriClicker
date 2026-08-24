@@ -118,6 +118,11 @@ export type EconomyPhase = (typeof ECONOMY_PHASES)[number];
 /** Ordered, normalized presentation score for the named economy phases. */
 export const ECONOMY_PHASE_SCORES: Readonly<Record<EconomyPhase, number>> = { crash: 0, recession: 0.25, stable: 0.5, expansion: 0.75, boom: 1 };
 export const ECONOMY_INTEREST_MULTIPLIERS: Readonly<Record<EconomyPhase, number>> = { crash: 1.35, recession: 1.16, stable: 1, expansion: 0.93, boom: 0.86 };
+/** Staff wage target multiplier by economy phase. Wage pressure follows the same cycle as labour demand. */
+export const ECONOMY_STAFF_WAGE_MULTIPLIERS: Readonly<Record<EconomyPhase, number>> = { crash: 0.7, recession: 0.85, stable: 1, expansion: 1.15, boom: 1.3 };
+export function getEconomyStaffWageMultiplier(phase: EconomyPhase): number {
+  return ECONOMY_STAFF_WAGE_MULTIPLIERS[phase] ?? ECONOMY_STAFF_WAGE_MULTIPLIERS.stable;
+}
 /** Ten-minute deterministic economy transitions favour returning to Stable. */
 export const ECONOMY_TRANSITION = {
   periodMs: 10 * 60_000,

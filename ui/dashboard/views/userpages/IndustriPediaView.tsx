@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Button, Card, List, Menu, Text } from 'react-native-paper';
 import { FACILITY_GROUPS, getFacilityDefinition } from '@/game/facilities';
 import { FINANCE_INITIAL_BALANCE } from '@/game/company/companyConstants';
-import { ECONOMY_INTEREST_MULTIPLIERS, ECONOMY_PHASES, type EconomyPhase } from '@/game/finance';
+import { ECONOMY_INTEREST_MULTIPLIERS, ECONOMY_PHASES, ECONOMY_STAFF_WAGE_MULTIPLIERS, type EconomyPhase } from '@/game/finance';
 import { PRESTIGE_SALES_HALF_LIFE_FOREGROUND_HOURS } from '@/game/prestige';
 import type { Market, MarketDiffusionDetails } from '@/game/market';
 import { getResource, RESOURCE_GROUPS, RESOURCE_TYPES, ResourceType } from '@/game/resources';
@@ -482,6 +482,7 @@ function EconomySection({ economyPhase }: { economyPhase: EconomyPhase }) {
       <List.Item description={`${formatSignedPercent(salesEffects.acquisition - 1, { decimals: 0 })} versus Stable`} left={(props) => <List.Icon {...props} icon={APP_ICONS.salesOrders} />} title="New customer-order frequency" />
       <List.Item description={`${formatSignedPercent(salesEffects.bid - 1, { decimals: 0 })} versus Stable`} left={(props) => <List.Icon {...props} icon={APP_ICONS.bid} />} title="New customer bid premiums" />
       <List.Item description={`${formatSignedPercent(ECONOMY_INTEREST_MULTIPLIERS[economyPhase] - 1, { decimals: 0 })} versus Stable`} left={(props) => <List.Icon {...props} icon={APP_ICONS.financeHistory} />} title="Future loan-offer rates" />
+      <List.Item description={`${formatSignedPercent(ECONOMY_STAFF_WAGE_MULTIPLIERS[economyPhase] - 1, { decimals: 0 })} versus Stable, before Staff Quality`} left={(props) => <List.Icon {...props} icon={APP_ICONS.staffing} />} title="Neutral staff wage" />
     </Card.Content></Card>
     <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
       <Text style={styles.cardKicker}>HOW IT CHANGES</Text>
@@ -491,7 +492,7 @@ function EconomySection({ economyPhase }: { economyPhase: EconomyPhase }) {
     <Card mode="contained" style={styles.featureCard}><Card.Content style={styles.cardContent}>
       <Text style={styles.cardKicker}>PHASE EFFECTS</Text>
       {ECONOMY_PHASES.map((phase) => <View key={phase} style={localStyles.economyPhaseRow}><Text style={localStyles.economyPhaseName}>{phase}</Text><Text style={styles.cardDescription}>{`${formatSignedPercent(SALES_ECONOMY_MULTIPLIERS[phase].acquisition - 1, { decimals: 0 })} order frequency · ${formatSignedPercent(SALES_ECONOMY_MULTIPLIERS[phase].bid - 1, { decimals: 0 })} bid premiums · ${formatSignedPercent(ECONOMY_INTEREST_MULTIPLIERS[phase] - 1, { decimals: 0 })} offered rates`}</Text></View>)}
-      <Text style={styles.cardDescription}>Economy phase does not change existing customer orders or loan rates, production, market prices, or lender caps.</Text>
+      <Text style={styles.cardDescription}>Economy phase does not change existing customer orders or loan rates, production output directly, market prices, or lender caps. It does change the neutral staff wage: higher Staff Quality expects higher pay, and the phase shifts that expectation by 70% in a Crash to 130% in a Boom.</Text>
     </Card.Content></Card>
   </>;
 }

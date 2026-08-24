@@ -15,6 +15,7 @@ import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculate
 import { calculateOutputQuality, calculateProductionMaxQ } from '@/game/quality';
 import { Market } from '@/game/market';
 import { FacilityType } from '@/game/facilities/facilityTypes';
+import { getStaffTrainingDurationMs } from '@/game/facilities/facilityUpgrades';
 
 function createActiveFacility(facilityType: FacilityType, recipeName: RecipeName) {
   const facilities = new FacilityCollection();
@@ -143,6 +144,21 @@ describe('calculateFacilityEffectiveWork', () => {
     const before = facility.getView().staffQualityProgress;
     facility.gainStaffExperience(100_000);
     expect(facility.getView().staffQualityProgress).toBe(before);
+  });
+
+  it('trains workers concurrently without extending the batch duration', () => {
+    const { facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    facility.setAssignedWorkers(2);
+    const now = 1_000;
+    const duration = getStaffTrainingDurationMs(1);
+
+    expect(getStaffTrainingDurationMs(2)).toBe(duration);
+    expect(facility.scheduleStaffTraining(1, now, now + duration)).toBe(true);
+    expect(facility.scheduleStaffTraining(1, now + 30_000, now + 30_000 + duration)).toBe(true);
+    expect(facility.getView().staffTraining?.workers).toBe(2);
+    expect(facility.getView().staffTraining?.completesAtGameTimeMs).toBe(now + duration);
+    expect(facility.processStaffTraining(now + duration - 1)).toBe(false);
+    expect(facility.processStaffTraining(now + duration)).toBe(true);
   });
 
   it('preserves remaining training time while training is paused', () => {

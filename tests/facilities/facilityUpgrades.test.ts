@@ -29,8 +29,10 @@ describe('wage staffing efficiency', () => {
     expect(getWageEfficiency(getFacilityMaxStaffWage())).toBeCloseTo(10);
   });
 
-  it('penalizes below-base wages and gives diminishing gains above base', () => {
+  it('applies stronger exponential pressure farther from expected wage', () => {
     expect(getWageEfficiency(0.5)).toBeLessThan(0.5);
+    expect(getWageEfficiency(0.25)).toBeLessThan(getWageEfficiency(0.5));
+    expect(getWageEfficiency(2)).toBeGreaterThan(1);
     expect(getWageEfficiency(10)).toBeGreaterThan(2);
     expect(getWageEfficiency(10)).toBeLessThan(5);
     expect(getWageEfficiency(50)).toBeGreaterThan(getWageEfficiency(10));

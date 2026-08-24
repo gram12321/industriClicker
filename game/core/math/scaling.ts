@@ -35,6 +35,21 @@ export function calculateDiminishingBonus(level: number, maximumBonus: number, r
   return maximumBonus * (1 - Math.exp(-rate * Math.max(0, level)));
 }
 
+/**
+ * Maps a normalized distance to an exponentially increasing 0-1 effect.
+ *
+ * Consumers:
+ * - `game/facilities/facilityUpgrades.ts` for wage pressure away from expected pay.
+ */
+export function calculateExponentialScaler01(value: number, rate: number): number {
+  if (!Number.isFinite(value) || !Number.isFinite(rate) || rate <= 0) {
+    return 0;
+  }
+
+  const normalizedValue = Math.max(0, Math.min(1, value));
+  return (1 - Math.exp(-rate * normalizedValue)) / (1 - Math.exp(-rate));
+}
+
 export type NormalizationControlPoint = {
   input: number;
   normalized: number;

@@ -1,4 +1,4 @@
-import { calculateAsymmetricalScaler01, calculateDiminishingBonus, calculatePowerPenalty, scaleExponential } from '../core/math/scaling';
+import { calculateAsymmetricalScaler01, calculateDiminishingBonus, calculateExponentialScaler01, calculatePowerPenalty, scaleExponential } from '../core/math/scaling';
 import { calculateQualityFromProgress } from '@/game/quality';
 import { FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_CONDITION_DECAY_MAX_REDUCTION, FACILITY_CONDITION_DECAY_REDUCTION_RATE, FACILITY_FIRE_COST_WAGE_MINUTES, FACILITY_FIRE_DURATION_PER_WORKER_MS, FACILITY_INITIAL_STAFF_QUALITY, FACILITY_HIRE_COST_WAGE_MINUTES, FACILITY_HIRE_DURATION_PER_WORKER_MS, FACILITY_MINIMUM_STAFFING_EFFICIENCY, FACILITY_OUTPUT_BONUS_RATE, FACILITY_OUTPUT_MAXIMUM_BONUS, FACILITY_OVERSTAFFING_BONUS_RATE, FACILITY_OVERSTAFFING_CONDITION_DECAY_GROWTH, FACILITY_OVERSTAFFING_MAXIMUM_BONUS, FACILITY_REPAIR_MATERIAL_COST_RATE, FACILITY_SPEED_BONUS_RATE, FACILITY_SPEED_MAXIMUM_BONUS, FACILITY_STAFFING_BATCH_EXPONENT, FACILITY_STAFF_QUALITY_WAGE_GAIN_PER_MINUTE, FACILITY_STAFF_QUALITY_WAGE_LOSS_PER_MINUTE, FACILITY_STAFF_TRAINING_COST_WAGE_MINUTES, FACILITY_STAFF_TRAINING_DURATION_PER_WORKER_MS, FACILITY_UNDERSTAFFING_EXPONENT, FACILITY_UPGRADE_COST_GROWTH, FACILITY_UPGRADE_RESOURCE_COST_RATE, FACILITY_WORKER_REQUIREMENT_GROWTH } from './facilityConstants';
 
@@ -60,7 +60,7 @@ export function getRequiredWorkers(baseWorkers: number, speedLevel: number, outp
  * Staff below the requirement lose efficiency increasingly quickly. Extra
  * staff remain valid and give a bounded, exponentially diminishing bonus.
  */
-export function getStaffingEfficiency(assignedWorkers: number, requiredWorkers: number, wagePerWorkerPerMinute = FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, staffQuality = FACILITY_INITIAL_STAFF_QUALITY): number {
+export function getStaffingEfficiency(assignedWorkers: number, requiredWorkers: number, wagePerWorkerPerMinute = FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, staffQuality = FACILITY_INITIAL_STAFF_QUALITY, baseWage = FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE): number {
   const assigned = Math.max(0, Math.floor(assignedWorkers));
   const required = Math.max(0, Math.floor(requiredWorkers));
 
@@ -85,7 +85,7 @@ export function getStaffingEfficiency(assignedWorkers: number, requiredWorkers: 
 
   return Math.max(
     FACILITY_MINIMUM_STAFFING_EFFICIENCY,
-    workerEfficiency * getWageEfficiency(wagePerWorkerPerMinute) * getStaffQualityWorkMultiplier(staffQuality),
+    workerEfficiency * getWageEfficiency(wagePerWorkerPerMinute, baseWage) * getStaffQualityWorkMultiplier(staffQuality),
   );
 }
 
@@ -99,32 +99,39 @@ export function getStaffQualityFromProgress(progress: number): number {
   return Math.min(100, Math.max(1, calculateQualityFromProgress(progress)));
 }
 
-/** Converts pay into a 0-10x efficiency multiplier around the base wage. */
+/** Converts pay into a 0-10x efficiency multiplier around expected wage. */
 export function getWageEfficiency(wagePerWorkerPerMinute: number, baseWage = FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE): number {
   const wage = Math.max(0, Number.isFinite(wagePerWorkerPerMinute) ? wagePerWorkerPerMinute : 0);
   const base = Math.max(Number.EPSILON, Number.isFinite(baseWage) ? baseWage : FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE);
   const ratio = Math.min(100, wage / base);
 
   if (ratio <= 1) {
-    return (Math.exp(3 * ratio) - 1) / (Math.exp(3) - 1);
+    return 1 - calculateExponentialScaler01(1 - ratio, 3);
   }
 
-  return 1 + 9 * calculateAsymmetricalScaler01((ratio - 1) / 99);
+  return 1 + 9 * calculateExponentialScaler01((ratio - 1) / 99, 3);
+}
+
+/** Wage that is neutral for the current quality and economy phase. */
+export function getFacilityStaffTargetWage(staffQuality: number, economyWageMultiplier = 1, baseWage = FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE): number {
+  const quality = Number.isFinite(staffQuality) ? Math.min(100, Math.max(1, staffQuality)) : FACILITY_INITIAL_STAFF_QUALITY;
+  const phaseMultiplier = Number.isFinite(economyWageMultiplier) ? Math.max(0.1, economyWageMultiplier) : 1;
+  return Math.max(Number.EPSILON, baseWage * phaseMultiplier * quality);
 }
 
 /** Wage-driven Staff Quality progress change before the quality curve is applied. */
-export function getStaffQualityWageProgressChangePerMinute(wagePerWorkerPerMinute: number): number {
-  const wageEfficiency = getWageEfficiency(wagePerWorkerPerMinute);
+export function getStaffQualityWageProgressChangePerMinute(wagePerWorkerPerMinute: number, targetWage = FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE): number {
+  const wageEfficiency = getWageEfficiency(wagePerWorkerPerMinute, targetWage);
   return wageEfficiency >= 1
     ? (wageEfficiency - 1) * FACILITY_STAFF_QUALITY_WAGE_GAIN_PER_MINUTE
     : -(1 - wageEfficiency) * FACILITY_STAFF_QUALITY_WAGE_LOSS_PER_MINUTE;
 }
 
 /** Current wage-only Q change per foreground minute after the quality curve. */
-export function getStaffQualityWagePressurePerMinute(staffQualityProgress: number, wagePerWorkerPerMinute: number): number {
+export function getStaffQualityWagePressurePerMinute(staffQualityProgress: number, wagePerWorkerPerMinute: number, targetWage = FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE): number {
   const progress = Number.isFinite(staffQualityProgress) ? Math.max(0, staffQualityProgress) : 0;
   const currentQuality = getStaffQualityFromProgress(progress);
-  return getStaffQualityFromProgress(progress + getStaffQualityWageProgressChangePerMinute(wagePerWorkerPerMinute)) - currentQuality;
+  return getStaffQualityFromProgress(progress + getStaffQualityWageProgressChangePerMinute(wagePerWorkerPerMinute, targetWage)) - currentQuality;
 }
 
 /** Excess staff accelerate both passive and production wear without a ceiling. */
@@ -196,5 +203,5 @@ export function getStaffTrainingCost(staffQuality: number, workerCount: number):
 
 /** Foreground duration of a training batch. */
 export function getStaffTrainingDurationMs(workerCount: number): number {
-  return FACILITY_STAFF_TRAINING_DURATION_PER_WORKER_MS * Math.max(0, Math.floor(workerCount));
+  return workerCount > 0 ? FACILITY_STAFF_TRAINING_DURATION_PER_WORKER_MS : 0;
 }

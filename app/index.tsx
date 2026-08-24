@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { Image, Pressable, ScrollView, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Image, Pressable, ScrollView, useWindowDimensions, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Avatar, Divider, IconButton, Menu, Portal, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { APP_ICONS, ECONOMY_PHASE_ICONS } from '@/icons';
@@ -35,6 +35,8 @@ export default function HomeScreen() {
 }
 
 function GameShell({ companyName }: { companyName: string }) {
+  const { width } = useWindowDimensions();
+  const isCompactHeader = width <= 420;
   const [activeView, setActiveView] = useState<ActiveScreen>('company');
   const [collapsedFacilities, setCollapsedFacilities] = useState<Record<string, boolean>>({});
   const [pediaInitialSection, setPediaInitialSection] = useState<IndustriPediaSection>('resources');
@@ -179,19 +181,19 @@ function GameShell({ companyName }: { companyName: string }) {
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <StatusBar style="light" />
       <View style={styles.screen}>
-        <View style={styles.header}><View style={styles.topBar}>
-          <View style={styles.balanceInline}>
-            <Pressable accessibilityLabel={isTutorialOpen && tutorialStep === 2 ? 'Tutorial highlighted company balance' : 'Open Finance'} accessibilityRole="button" onPress={() => setActiveView('finance')} style={styles.balanceAmount}>
-              <MaterialCommunityIcons accessibilityLabel="Balance icon" color={colors.onDark} name={APP_ICONS.currency} size={21} />
-              <Text style={styles.balanceInlineValue}>{formatCurrency(finance.getBalance())}</Text>
+        <View style={styles.header}><View style={[styles.topBar, isCompactHeader && styles.compactTopBar]}>
+          <View style={[styles.balanceInline, isCompactHeader && styles.compactBalanceInline]}>
+            <Pressable accessibilityLabel={isTutorialOpen && tutorialStep === 2 ? 'Tutorial highlighted company balance' : 'Open Finance'} accessibilityRole="button" onPress={() => setActiveView('finance')} style={[styles.balanceAmount, isCompactHeader && styles.compactBalanceAmount]}>
+              <MaterialCommunityIcons accessibilityLabel="Balance icon" color={colors.onDark} name={APP_ICONS.currency} size={isCompactHeader ? 17 : 21} />
+              <Text numberOfLines={1} style={[styles.balanceInlineValue, isCompactHeader && styles.compactBalanceInlineValue]}>{formatCurrency(finance.getBalance())}</Text>
             </Pressable>
-            {tutorial.completedWelcome && <Pressable accessibilityLabel="Open company prestige" accessibilityRole="button" onPress={() => setIsPrestigeOpen(true)} style={styles.prestigeInline}><MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.achievements} size={17} /><Text style={styles.prestigeInlineValue}>{formatNumber(prestigeSummary.totalPrestige, { smartDecimals: true })}</Text></Pressable>}
+            {tutorial.completedWelcome && <Pressable accessibilityLabel="Open company prestige" accessibilityRole="button" onPress={() => setIsPrestigeOpen(true)} style={[styles.prestigeInline, isCompactHeader && styles.compactPrestigeInline]}><MaterialCommunityIcons color={colors.onDark} name={APP_ICONS.achievements} size={isCompactHeader ? 14 : 17} /><Text numberOfLines={1} style={[styles.prestigeInlineValue, isCompactHeader && styles.compactPrestigeInlineValue]}>{formatNumber(prestigeSummary.totalPrestige, { smartDecimals: true })}</Text></Pressable>}
           </View>
           <View style={styles.headerActions}>
-            {tutorial.completedWelcome && <View accessibilityLabel={`Economy: ${economyPhase}`} style={styles.headerElapsedTime}><TooltipMaterialIcon color={economyPhaseColor} label={`${economyPhase} economy`} name={ECONOMY_PHASE_ICONS[economyPhase]} size={18} /></View>}
-            {tutorial.completedWelcome && <IconButton accessibilityLabel="Fast-forward one minute" icon={APP_ICONS.fastForward} iconColor={colors.onDark} onPress={fastForwardOneMinute} />}
-            <View accessibilityLabel={isTutorialOpen && tutorialStep === 3 ? 'Tutorial highlighted company time' : `Time ${formatElapsedTime(elapsedForegroundTimeMs)}`} style={styles.headerElapsedTime}><TooltipMaterialIcon color={colors.onDark} label="Elapsed game time" name={APP_ICONS.elapsedTime} size={17} /><Text style={styles.headerElapsedTimeValue}>{formatElapsedTime(elapsedForegroundTimeMs)}</Text></View>
-            <Menu anchor={<Pressable accessibilityLabel="Open profile menu" accessibilityRole="button" onPress={() => setIsProfileMenuOpen(true)} style={styles.profileButton}><Avatar.Text label={companyName.slice(0, 2).toUpperCase()} size={38} style={styles.avatar} /></Pressable>} onDismiss={() => setIsProfileMenuOpen(false)} visible={isProfileMenuOpen}>
+            {tutorial.completedWelcome && <View accessibilityLabel={`Economy: ${economyPhase}`} style={[styles.headerElapsedTime, isCompactHeader && styles.compactHeaderElapsedTime]}><TooltipMaterialIcon color={economyPhaseColor} label={`${economyPhase} economy`} name={ECONOMY_PHASE_ICONS[economyPhase]} size={isCompactHeader ? 15 : 18} /></View>}
+            {tutorial.completedWelcome && <IconButton accessibilityLabel="Fast-forward one minute" icon={APP_ICONS.fastForward} iconColor={colors.onDark} onPress={fastForwardOneMinute} size={isCompactHeader ? 18 : 24} style={isCompactHeader ? styles.compactHeaderIconButton : undefined} />}
+            <View accessibilityLabel={isTutorialOpen && tutorialStep === 3 ? 'Tutorial highlighted company time' : `Time ${formatElapsedTime(elapsedForegroundTimeMs)}`} style={[styles.headerElapsedTime, isCompactHeader && styles.compactHeaderElapsedTime]}><TooltipMaterialIcon color={colors.onDark} label="Elapsed game time" name={APP_ICONS.elapsedTime} size={isCompactHeader ? 15 : 17} /><Text numberOfLines={1} style={[styles.headerElapsedTimeValue, isCompactHeader && styles.compactHeaderElapsedTimeValue]}>{formatElapsedTime(elapsedForegroundTimeMs)}</Text></View>
+            <Menu anchor={<Pressable accessibilityLabel="Open profile menu" accessibilityRole="button" onPress={() => setIsProfileMenuOpen(true)} style={[styles.profileButton, isCompactHeader && styles.compactProfileButton]}><Avatar.Text label={companyName.slice(0, 2).toUpperCase()} size={isCompactHeader ? 30 : 38} style={styles.avatar} /></Pressable>} onDismiss={() => setIsProfileMenuOpen(false)} visible={isProfileMenuOpen}>
               <Menu.Item leadingIcon={APP_ICONS.account} onPress={() => { setIsProfileMenuOpen(false); setActiveView('profile'); }} title="Profile" />
               <Menu.Item leadingIcon={APP_ICONS.settings} onPress={() => { setIsProfileMenuOpen(false); setActiveView('settings'); }} title="Settings" />
               <Menu.Item leadingIcon="format-list-numbered" onPress={() => { setIsProfileMenuOpen(false); setActiveView('leaderboard'); }} title="Leaderboard" />
