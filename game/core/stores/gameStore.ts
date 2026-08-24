@@ -855,7 +855,7 @@ export const useGameStore = create<GameState>((set, get) => {
             marketFinance.applyTransaction({
               amount: 0,
               description: `Production completed by ${facilities.get(facilityId)?.getView().displayName ?? facilityId}`,
-              detailLines: [`Output market value: €${performance.outputValue.toFixed(2)}`, `Output source cost: €${performance.sourceCost.toFixed(2)}`],
+              detailLines: [`Output market value: €${performance.outputValue.toFixed(2)}`, `Input cost + production wear: €${performance.sourceCost.toFixed(2)}`],
               facilityPerformance: { facilityId, ...performance },
               kind: 'operating',
               source: 'facility-production',

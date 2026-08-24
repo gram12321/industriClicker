@@ -50,6 +50,10 @@ export const FACILITY_FIRE_COST_WAGE_MINUTES = 2;
 export const FACILITY_STAFF_QUALITY_WAGE_GAIN_PER_MINUTE = 0.02;
 export const FACILITY_STAFF_QUALITY_WAGE_LOSS_PER_MINUTE = 0.04;
 export const FACILITY_STAFF_QUALITY_EXPERIENCE_PROGRESS_PER_WORK = 0.002;
+/** Approximate foreground memory used by the player-facing Staff Quality trend. */
+export const FACILITY_STAFF_QUALITY_TREND_MEMORY_MINUTES = 1;
+/** Makes the weighted trend mostly forget changes after one memory window. */
+export const FACILITY_STAFF_QUALITY_TREND_DECAY_RATE = 3;
 export const FACILITY_STAFF_TRAINING_COST_WAGE_MINUTES = 10;
 export const FACILITY_STAFF_TRAINING_DURATION_PER_WORKER_MS = 120_000;
 /** Foreground repair time for restoring one full condition point. */

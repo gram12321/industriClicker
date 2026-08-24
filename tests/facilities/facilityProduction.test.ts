@@ -5,7 +5,6 @@ import { getRecipe, RecipeName } from '@/game/recipes';
 import { ResourceType } from '@/game/resources';
 import { FacilityCollection } from '@/game/facilities/facilityCollection';
 import {
-  calculateFacilityDecayMaterialCostPerMinute,
   calculateFacilityProductionMaintenanceCost,
   calculateFacilityNetGainPerMinute,
   calculateRecipeContributionMargin,
@@ -107,6 +106,34 @@ describe('calculateFacilityEffectiveWork', () => {
     facility.processStaffingChange(now + 1_000);
 
     expect(facility.getView().staffQuality).toBeCloseTo(before / 2);
+    expect(facility.getView().staffQualityTrend).toBe('falling');
+  });
+
+  it('keeps a recent staffing change visible while experience continues', () => {
+    const { facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    const now = 1_000;
+    facility.setAssignedWorkers(2);
+    facility.gainStaffExperience(100_000_000);
+    expect(facility.scheduleStaffingChange(1, now, now + 1_000)).toBe(true);
+    facility.processStaffingChange(now + 1_000);
+    facility.gainStaffExperience(1);
+
+    expect(facility.getView().staffQualityTrend).toBe('falling');
+    facility.advanceStaffQuality(5);
+    expect(facility.getView().staffQualityTrend).toBe('steady');
+  });
+
+  it('exposes wage pressure separately from the net quality trend', () => {
+    const { facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    facility.gainStaffExperience(10_000);
+    expect(facility.getView().staffQualityWageTrend).toBe('steady');
+    expect(facility.getView().staffQualityWagePressurePerMinute).toBe(0);
+    expect(facility.setStaffWagePerWorkerPerMinute(0.5)).toBe(true);
+    expect(facility.getView().staffQualityWageTrend).toBe('falling');
+    expect(facility.getView().staffQualityWagePressurePerMinute).toBeLessThan(0);
+    expect(facility.setStaffWagePerWorkerPerMinute(2)).toBe(true);
+    expect(facility.getView().staffQualityWageTrend).toBe('rising');
+    expect(facility.getView().staffQualityWagePressurePerMinute).toBeGreaterThan(0);
   });
 
   it('pauses experience while all assigned workers are training', () => {
@@ -210,23 +237,15 @@ describe('facility economics', () => {
     expect(margin).toBeCloseTo(outputValue - inputCost);
   });
 
-  it('keeps displayed net gain aligned with recipe value and repair-material decay', () => {
-    const market = new Market();
-    const recipe = getRecipe(RecipeName.GrowGrain);
-    const valuePerMinute = calculateRecipeValuePerMinute(recipe, market, 1, 1.2);
-    const decayMaterialCost = calculateFacilityDecayMaterialCostPerMinute(100, 1, 1, 1.2, recipe);
-
-    expect(valuePerMinute).toBeGreaterThan(0);
-    expect(decayMaterialCost).toBeGreaterThan(0);
-    expect(calculateFacilityNetGainPerMinute(valuePerMinute, decayMaterialCost, market)).toBeLessThan(valuePerMinute);
+  it('subtracts the full euro cost of condition wear from displayed net gain', () => {
+    expect(calculateFacilityNetGainPerMinute(25, 3.5)).toBe(21.5);
   });
 
   it('subtracts recurring staff wages from displayed net gain', () => {
-    const market = new Market();
     const valuePerMinute = 25;
-    const decayMaterialCost = 0;
+    const decayCost = 0;
 
-    expect(calculateFacilityNetGainPerMinute(valuePerMinute, decayMaterialCost, market, 7)).toBe(18);
+    expect(calculateFacilityNetGainPerMinute(valuePerMinute, decayCost, 7)).toBe(18);
   });
 });
 

@@ -108,15 +108,14 @@ export function calculateFacilityDecayMaterialCostPerMinute(
     * conditionLossPerMinute;
 }
 
-/** Calculates profit after the material cost of maintaining the facility's condition. */
+/** Calculates profit after euro-denominated condition wear and recurring staff wages. */
 export function calculateFacilityNetGainPerMinute(
   valuePerMinute: number,
-  decayMaterialCostPerMinute: number,
-  market: Market,
+  decayCostPerMinute: number,
   staffWagePerMinute = 0,
 ): number {
   return valuePerMinute
-    - decayMaterialCostPerMinute * market.getLocalPrice(ResourceType.ConstructionMaterials)
+    - Math.max(0, decayCostPerMinute)
     - Math.max(0, staffWagePerMinute);
 }
 
@@ -336,19 +335,22 @@ export function calculateProjectedFacilityUpgradeNetGainPerMinute(
     getOutputQuality,
     projectedView.sizeMultiplier,
   );
-  const projectedDecayCostPerMinute = calculateFacilityDecayMaterialCostPerMinute(
+  const projectedDecayCostPerMinute = calculateFacilityDecayCostPerMinute(
+    definition.landCost * projectedView.sizeMultiplier,
     definition.constructionMaterialsCost * projectedView.sizeMultiplier,
+    definition.industrialMachinesCost * projectedView.sizeMultiplier,
     projectedView.facilityCondition,
     projectedView.conditionDecayMultiplier * projectedView.overstaffingConditionDecayMultiplier,
     projectedEffectiveWork,
     recipe,
+    market.getLocalPrice(ResourceType.ConstructionMaterials),
+    market.getLocalPrice(ResourceType.IndustrialMachines),
     projectedView.sizeMultiplier,
   );
 
   return calculateFacilityNetGainPerMinute(
     projectedValuePerMinute,
     projectedDecayCostPerMinute,
-    market,
     calculateFacilityStaffWagePerMinute(projectedView.assignedWorkers, projectedView.staffWagePerWorkerPerMinute),
   );
 }
