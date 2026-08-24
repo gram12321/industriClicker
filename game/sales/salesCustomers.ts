@@ -1,6 +1,6 @@
 import type { ResourceType } from '@/game/resources';
 import { calculateAsymmetricalScaler01 } from '@/game/core/math/scaling';
-import { SALES_CUSTOMER_BID_MULTIPLIER_RANGE, SALES_CUSTOMER_DOMAIN_PROFILES, SALES_CUSTOMER_GENERATION, SALES_CUSTOMER_PURCHASING_POWER_RANGE, SALES_CUSTOMER_TYPE_PROFILES, SALES_RESOURCE_PROFILES } from './salesConstants';
+import { SALES_CUSTOMER_DOMAIN_PROFILES, SALES_CUSTOMER_GENERATION, SALES_CUSTOMER_PURCHASING_POWER_RANGE, SALES_CUSTOMER_TYPE_PROFILES, SALES_RESOURCE_PROFILES } from './salesConstants';
 import { generateSalesCustomerName } from './salesCustomerNames';
 import { getDeterministicUnitInterval, pickDeterministicWeighted } from './salesRandom';
 import {
@@ -60,7 +60,11 @@ export function getSalesCustomerCatalogue(worldSeed = SALES_CUSTOMER_WORLD_SEED,
       const purchasingPower = Math.round((minimumPurchasingPower + (1 - calculateAsymmetricalScaler01(1 - getDeterministicUnitInterval(`${seed}:power`))) * (maximumPurchasingPower - minimumPurchasingPower)) * 1_000) / 1_000;
       const bidRange = SALES_CUSTOMER_DOMAIN_PROFILES[domain].bidRange; const baseBid = bidRange[0] + getDeterministicUnitInterval(`${seed}:bid`) * (bidRange[1] - bidRange[0]);
       const bidTail = 0.65 + calculateAsymmetricalScaler01(getDeterministicUnitInterval(`${seed}:bid-tail`)) * 0.9;
-      const bidMultiplier = Math.round(Math.max(SALES_CUSTOMER_BID_MULTIPLIER_RANGE[0], Math.min(SALES_CUSTOMER_BID_MULTIPLIER_RANGE[1], baseBid * bidTail)) * 1_000) / 1_000;
+      const rawBidMultiplier = Math.max(Number.EPSILON, baseBid * bidTail);
+      // Keep the combined customer factor bounded while allowing each source trait
+      // to retain its full generated value without independent clamping.
+      const combinedCustomerFactor = Math.max(0.5, Math.min(1.5, purchasingPower * rawBidMultiplier));
+      const bidMultiplier = Math.round((combinedCustomerFactor / purchasingPower) * 1_000) / 1_000;
       const baseName = generateSalesCustomerName({ seed, domain, customerType }); const name = customers.some((customer) => customer.name === baseName) ? `${baseName} ${customerIndex + 1}` : baseName;
       customers.push({ id: `customer:${catalogueVersion}:${domain}:${customerIndex + 1}`, name, domain, customerType, operatingDomains: getOperatingDomains(domain, customerType, seed), marketShare, purchasingPower, bidMultiplier });
       remainingShare = Math.max(0, remainingShare - marketShare); customerIndex += 1;

@@ -22,7 +22,7 @@ export const SALES_ORDER_CUSTOMER_SIZE_SCALING = {
 } as const;
 /** Keeps unstocked resources offerable while making covered inventory more likely. */
 export const SALES_ORDER_UNSTOCKED_INVENTORY_READINESS = 0.25;
-export const SALES_ORDER_SELECTION_MAX_RELATIONSHIP_MULTIPLIER = 2;
+export const SALES_ORDER_SELECTION_MAX_RELATIONSHIP_MULTIPLIER = 3;
 export const SALES_ORDER_PRESTIGE_DISCOVERY_SCALE = 120;
 export const SALES_ORDER_PRESTIGE_DISCOVERY_BASE = 0.01;
 export const SALES_ORDER_PRESTIGE_DISCOVERY_MAX = 10;
@@ -68,22 +68,19 @@ export const SALES_ORDER_BUNDLE_PRESTIGE_CONTROL_POINTS = [
 /** Bid-premium prestige curve: company prestige should remain modest early and become decisive later. */
 export const SALES_ORDER_BID_PRESTIGE_CONTROL_POINTS = [
   { input: 0, normalized: 0 },
-  { input: 1, normalized: 0.005 },
-  { input: 5, normalized: 0.015 },
-  { input: 20, normalized: 0.05 },
-  { input: 60, normalized: 0.15 },
-  { input: 150, normalized: 0.4 },
-  { input: 300, normalized: 0.7 },
-  { input: 600, normalized: 1 },
+  { input: 5, normalized: 0.005 },
+  { input: 20, normalized: 0.02 },
+  { input: 80, normalized: 0.08 },
+  { input: 200, normalized: 0.25 },
+  { input: 500, normalized: 0.6 },
+  { input: 1_000, normalized: 1 },
 ] as const;
 
-export const SALES_ORDER_PRESSURE_OFFER_CHANCE = 0.025;
+export const SALES_ORDER_PRESSURE_OFFER_CHANCE = 0.25;
 export const SALES_ORDER_PRESTIGE_BONUS_MIN = 0.01;
-export const SALES_ORDER_PRESTIGE_BONUS_MAX = 4;
+export const SALES_ORDER_PRESTIGE_BONUS_MAX = 2;
 export const SALES_ORDER_RELATIONSHIP_BONUS_MIN = 0.01;
 export const SALES_ORDER_RELATIONSHIP_BONUS_MAX = 4;
-export const SALES_ORDER_CUSTOMER_FACTOR_MIN = -0.5;
-export const SALES_ORDER_CUSTOMER_FACTOR_MAX = 0.5;
 /** Presentation ranges for percentage-based sales-card colour cues. */
 export const SALES_ORDER_BID_BONUS_COLOR_MIN_PERCENT = -100;
 export const SALES_ORDER_BID_BONUS_COLOR_MAX_PERCENT = 1_000;
@@ -94,7 +91,8 @@ export const SALES_ORDER_LOCAL_COMPARISON_COLOR_MAX_PERCENT = 100;
 
 /** Fixed catalogue display ranges. Values outside are clamped only for score colouring. */
 export const SALES_CUSTOMER_PURCHASING_POWER_RANGE = [0.55, 2] as const;
-export const SALES_CUSTOMER_BID_MULTIPLIER_RANGE = [0.55, 1.8] as const;
+/** Effective purchasing-power × bid-trait range after catalogue generation. */
+export const SALES_CUSTOMER_BID_MULTIPLIER_RANGE = [0.5, 1.5] as const;
 
 /** Economy affects both customer frequency and their willingness to pay. */
 export const SALES_ECONOMY_MULTIPLIERS: Readonly<Record<EconomyPhase, { acquisition: number; bid: number }>> = {
@@ -148,7 +146,7 @@ export const SALES_CUSTOMER_TYPE_PROFILES: Readonly<Record<SalesCustomerType, {
     prestigeScale: 1,
     prestigeExponent: 1,
     accessibilityFloor: 1,
-    globalPremiumBaseline: 0.13,
+    globalPremiumBaseline: 0.10,
     marketShareScale: 0.22,
   },
   'retail-chain': {
@@ -162,7 +160,7 @@ export const SALES_CUSTOMER_TYPE_PROFILES: Readonly<Record<SalesCustomerType, {
     prestigeScale: 8,
     prestigeExponent: 2,
     accessibilityFloor: 0.2,
-    globalPremiumBaseline: 0.08,
+    globalPremiumBaseline: 0.06,
     marketShareScale: 0.65,
   },
   'construction-contractor': {
@@ -176,7 +174,7 @@ export const SALES_CUSTOMER_TYPE_PROFILES: Readonly<Record<SalesCustomerType, {
     prestigeScale: 30,
     prestigeExponent: 2.5,
     accessibilityFloor: 0.03,
-    globalPremiumBaseline: 0.065,
+    globalPremiumBaseline: 0.02,
     marketShareScale: 1.05,
   },
   'industrial-enterprise': {
@@ -190,7 +188,7 @@ export const SALES_CUSTOMER_TYPE_PROFILES: Readonly<Record<SalesCustomerType, {
     prestigeScale: 50,
     prestigeExponent: 3,
     accessibilityFloor: 0.01,
-    globalPremiumBaseline: 0.05,
+    globalPremiumBaseline: -0.02,
     marketShareScale: 1.55,
   },
   'utility-operator': {
@@ -204,7 +202,7 @@ export const SALES_CUSTOMER_TYPE_PROFILES: Readonly<Record<SalesCustomerType, {
     prestigeScale: 20,
     prestigeExponent: 2.5,
     accessibilityFloor: 0.05,
-    globalPremiumBaseline: 0.04,
+    globalPremiumBaseline: -0.10,
     marketShareScale: 1.35,
   },
   'government-procurement': {
@@ -218,7 +216,7 @@ export const SALES_CUSTOMER_TYPE_PROFILES: Readonly<Record<SalesCustomerType, {
     prestigeScale: 100,
     prestigeExponent: 4,
     accessibilityFloor: 0.002,
-    globalPremiumBaseline: 0.075,
+    globalPremiumBaseline: 0.04,
     marketShareScale: 1.8,
   },
 };
