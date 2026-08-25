@@ -169,11 +169,11 @@ export function ProductionView({
       const projectedSpeedNetGain = activeRecipe && getActiveOutputQuality ? calculateProjectedFacilityUpgradeNetGainPerMinute(facility, activeRecipe, market, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds), 'speed', (resourceType) => inventory.getQuality(resourceType), getActiveOutputQuality) : undefined;
       const projectedOutputNetGain = activeRecipe && getActiveOutputQuality ? calculateProjectedFacilityUpgradeNetGainPerMinute(facility, activeRecipe, market, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds), 'output', (resourceType) => inventory.getQuality(resourceType), getActiveOutputQuality) : undefined;
       const projectedConditionNetGain = activeRecipe && getActiveOutputQuality ? calculateProjectedFacilityUpgradeNetGainPerMinute(facility, activeRecipe, market, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds), 'condition', (resourceType) => inventory.getQuality(resourceType), getActiveOutputQuality) : undefined;
-      const assetBreakdown = calculateFacilityAssetBreakdown(facility, market, finance);
-      const financePeriod = facilityFinancePeriods[facilityId] ?? 'all-time';
-      const facilityPerformance = finance.getFacilityPerformance(facilityId, financePeriod, currentGameTimeMs);
       const isExpanded = collapsedFacilities[facilityId] !== true;
       const activeDetailTab = isFirstFacilityTutorial && index === 0 ? (firstFacilityStep === 'upgrades' || firstFacilityStep === 'inventory-transition' ? 'upgrades' : firstFacilityStep === 'footprint' || firstFacilityStep === 'research' || firstFacilityStep === 'recipe-card' || firstFacilityStep === 'recipe-automation' || firstFacilityStep === 'recipe-economics' ? 'recipe' : 'efficiency') : (facilityDetailTabs[facilityId] ?? 'recipe');
+      const financePeriod = facilityFinancePeriods[facilityId] ?? 'all-time';
+      const assetBreakdown = (activeDetailTab === 'finance' ? calculateFacilityAssetBreakdown(facility, market, finance) : undefined) as ReturnType<typeof calculateFacilityAssetBreakdown>;
+      const facilityPerformance = (activeDetailTab === 'finance' ? finance.getFacilityPerformance(facilityId, financePeriod, currentGameTimeMs) : undefined) as ReturnType<Finance['getFacilityPerformance']>;
       const productionCycleInputs = getFacilityProductionCycleInputs(facilityView);
       const allInputsAutoBuyEnabled = productionCycleInputs.length > 0 && productionCycleInputs.every((input) => market.getAutomation(input.resourceType).autoBuyEnabled);
       const hasMissingCycleInputs = productionCycleInputs.some((input) => input.amount > inventory.getAmount(input.resourceType));

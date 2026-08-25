@@ -163,9 +163,19 @@ function cashFlowHeading(kind: FinanceTransaction['kind'], amount: number): stri
   return `Equity ${direction}`;
 }
 
-type ParsedMarketTransaction = { description: string; quantity: number; resourceType: ResourceType };
+type ParsedMarketTransaction = { description: string; quantity: number; resourceType: ResourceType; qualityAmount?: number; qualityQuantity?: number };
 
-function parseMarketTransaction(description: string): ParsedMarketTransaction | null {
+function parseMarketTransaction(transaction: FinanceTransaction): ParsedMarketTransaction | null {
+  if (transaction.marketTrade) {
+    return {
+      description: transaction.description,
+      quantity: transaction.marketTrade.quantity,
+      resourceType: transaction.marketTrade.resourceType,
+      qualityAmount: transaction.marketTrade.qualityAmount,
+      qualityQuantity: transaction.marketTrade.qualityQuantity,
+    };
+  }
+  const { description } = transaction;
   const match = /^(Autobought|Autosold|Bought|Sold) ([\d.,]+) (.+?)(?: (for production|from local market|to local market))?$/.exec(description);
   if (!match) return null;
   const quantity = Number(match[2].replace(',', '.'));
@@ -202,7 +212,7 @@ function buildCashFlowRows(transactions: FinanceTransaction[], groupDurationMs =
       row.detailGroups.push(detailGroup);
     }
     detailGroup.amount += transaction.amount;
-    const marketTransaction = parseMarketTransaction(transaction.description);
+    const marketTransaction = parseMarketTransaction(transaction);
     const marketQuality = marketTransaction ? parseMarketQuality(transaction.detailLines) : null;
     const isStaffWage = transaction.source === 'facility-staff-wage';
     const detailDescription = isStaffWage ? 'Staff wages' : (marketTransaction?.description ?? transaction.description);
@@ -212,11 +222,14 @@ function buildCashFlowRows(transactions: FinanceTransaction[], groupDurationMs =
         ? candidate.description === marketTransaction.description
         : candidate.description === transaction.description && candidate.detailLines.join('\n') === transaction.detailLines.join('\n'));
     if (matchingDetail) {
-      matchingDetail.count += 1;
+      matchingDetail.count += transaction.occurrenceCount;
       if (marketTransaction) {
         matchingDetail.totalQuantity = (matchingDetail.totalQuantity ?? 0) + marketTransaction.quantity;
         matchingDetail.totalAbsoluteAmount = (matchingDetail.totalAbsoluteAmount ?? 0) + Math.abs(transaction.amount);
-        if (marketQuality !== null) {
+        if (marketTransaction.qualityQuantity !== undefined && marketTransaction.qualityAmount !== undefined) {
+          matchingDetail.totalQualityQuantity = (matchingDetail.totalQualityQuantity ?? 0) + marketTransaction.qualityQuantity;
+          matchingDetail.totalQualityAmount = (matchingDetail.totalQualityAmount ?? 0) + marketTransaction.qualityAmount;
+        } else if (marketQuality !== null) {
           matchingDetail.totalQualityQuantity = (matchingDetail.totalQualityQuantity ?? 0) + marketTransaction.quantity;
           matchingDetail.totalQualityAmount = (matchingDetail.totalQualityAmount ?? 0) + marketTransaction.quantity * marketQuality;
         }
@@ -225,12 +238,14 @@ function buildCashFlowRows(transactions: FinanceTransaction[], groupDurationMs =
       id: `${detailGroup.id}-${detailGroup.details.length}`,
       description: detailDescription,
       detailLines: isStaffWage ? [] : transaction.detailLines,
-      count: 1,
+      count: transaction.occurrenceCount,
       ...(marketTransaction ? {
         resourceType: marketTransaction.resourceType,
         totalQuantity: marketTransaction.quantity,
         totalAbsoluteAmount: Math.abs(transaction.amount),
-        ...(marketQuality !== null ? { totalQualityQuantity: marketTransaction.quantity, totalQualityAmount: marketTransaction.quantity * marketQuality } : {}),
+        ...(marketTransaction.qualityQuantity !== undefined && marketTransaction.qualityAmount !== undefined
+          ? { totalQualityQuantity: marketTransaction.qualityQuantity, totalQualityAmount: marketTransaction.qualityAmount }
+          : marketQuality !== null ? { totalQualityQuantity: marketTransaction.quantity, totalQualityAmount: marketTransaction.quantity * marketQuality } : {}),
       } : {}),
     });
   }

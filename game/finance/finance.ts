@@ -1,17 +1,19 @@
 import { FINANCE_INITIAL_BALANCE } from '@/game/company/companyConstants';
-import { ADVANCED_LOAN_CONFIG, ECONOMY_PHASES, ECONOMY_TRANSITION, FINANCE_REPORT_PERIODS, LOAN_COLLECTION, LOAN_PAYMENT_INTERVAL_MS, LOAN_TERMS, type EconomyPhase, type FinanceReportPeriod, type FinanceTransactionKind, type FinanceTransactionSource, type LenderType } from './financeConstants';
+import type { ResourceType } from '@/game/resources';
+import { ADVANCED_LOAN_CONFIG, ECONOMY_PHASES, ECONOMY_TRANSITION, FINANCE_AUTOMATION_TRANSACTION_BUCKET_MS, FINANCE_REPORT_PERIODS, LOAN_COLLECTION, LOAN_PAYMENT_INTERVAL_MS, LOAN_TERMS, type EconomyPhase, type FinanceReportPeriod, type FinanceTransactionKind, type FinanceTransactionSource, type LenderType } from './financeConstants';
 import { createInitialLenders, estimatePrepaymentPenalty, type Lender, type LoanSearchCriteria, type LoanSearchEstimate } from './loanService';
 
 export type FacilityAccountingEntry = { facilityId: string; classification: 'construction' | 'upgrade' | 'maintenance' | 'staff-wage' | 'staffing'; historicalValue: number };
 export type FacilityPerformanceEntry = { facilityId: string; outputValue: number; sourceCost: number };
 export type FacilityPerformance = { outputValue: number; sourceCost: number; maintenanceExpense: number; staffWageExpense: number; staffingExpense: number; capitalInvestment: number; operatingProfit: number; investmentAdjustedResult: number };
-export type FinanceTransaction = { id: string; amount: number; description: string; detailLines: string[]; kind: FinanceTransactionKind; source: FinanceTransactionSource; balanceAfter: number; occurredAtGameTimeMs: number; facilityAccounting?: FacilityAccountingEntry; facilityPerformance?: FacilityPerformanceEntry };
+export type MarketTradeSummary = { resourceType: ResourceType; quantity: number; qualityQuantity: number; qualityAmount: number };
+export type FinanceTransaction = { id: string; amount: number; description: string; detailLines: string[]; kind: FinanceTransactionKind; source: FinanceTransactionSource; balanceAfter: number; occurredAtGameTimeMs: number; occurrenceCount: number; aggregationKey?: string; marketTrade?: MarketTradeSummary; facilityAccounting?: FacilityAccountingEntry; facilityPerformance?: FacilityPerformanceEntry };
 export type LoanStatus = 'active' | 'repaid' | 'defaulted';
 export type Loan = { id: string; lenderId: string; lenderName: string; lenderType: LenderType; principal: number; remainingBalance: number; annualInterestRate: number; periodicInterestRate: number; paymentAmount: number; originationFee: number; totalPeriods: number; remainingPeriods: number; nextPaymentAtGameTimeMs: number; missedPayments: number; totalPaid: number; status: LoanStatus };
 export type LoanOffer = { id: string; lenderId: string; lenderName: string; lenderType: LenderType; principal: number; durationPeriods: number; annualInterestRate: number; periodicInterestRate: number; paymentAmount: number; originationFee: number; totalRepayment: number; totalInterest: number; totalCost: number; isAvailable: boolean; unavailableReason: string | null; paymentIntervalMs: number };
 export type ActiveLoanSearch = { criteria: LoanSearchCriteria; cost: number; workRequiredMs: number; workCompletedMs: number; startedAtGameTimeMs: number };
 export type LoanSearchResult = { requestedOfferCount: number; foundOfferCount: number; availableOfferCount: number; completedAtGameTimeMs: number };
-export type FinanceTransactionInput = Omit<FinanceTransaction, 'id' | 'balanceAfter'>;
+export type FinanceTransactionInput = Omit<FinanceTransaction, 'id' | 'balanceAfter' | 'occurrenceCount'>;
 export type LoanOperationResult = { success: boolean; reason?: string };
 export type LoanCollectionStage = 'warning' | 'penalty' | 'liquidation' | 'default';
 export type LoanCollectionNotice = { id: string; loanId: string; lenderName: string; missedPayments: number; stage: LoanCollectionStage; title: string; message: string; occurredAtGameTimeMs: number };
@@ -32,7 +34,7 @@ function isValidFacilityPerformanceEntry(entry: FacilityPerformanceEntry | undef
     && Number.isFinite(entry.outputValue) && entry.outputValue >= 0
     && Number.isFinite(entry.sourceCost) && entry.sourceCost >= 0;
 }
-function transactionClone(transaction: FinanceTransaction): FinanceTransaction { return { ...transaction, detailLines: [...transaction.detailLines], ...(transaction.facilityAccounting ? { facilityAccounting: { ...transaction.facilityAccounting } } : {}), ...(transaction.facilityPerformance ? { facilityPerformance: { ...transaction.facilityPerformance } } : {}) }; }
+function transactionClone(transaction: FinanceTransaction): FinanceTransaction { return { ...transaction, detailLines: [...transaction.detailLines], ...(transaction.marketTrade ? { marketTrade: { ...transaction.marketTrade } } : {}), ...(transaction.facilityAccounting ? { facilityAccounting: { ...transaction.facilityAccounting } } : {}), ...(transaction.facilityPerformance ? { facilityPerformance: { ...transaction.facilityPerformance } } : {}) }; }
 function loanClone(loan: Loan): Loan { return { ...loan }; }
 function lenderClone(lender: Lender): Lender { return { ...lender }; }
 function criteriaClone(criteria: LoanSearchCriteria): LoanSearchCriteria { return { ...criteria, lenderTypes: [...criteria.lenderTypes] }; }
@@ -42,6 +44,56 @@ function searchResultClone(result: LoanSearchResult): LoanSearchResult { return 
 function noticeClone(notice: LoanCollectionNotice): LoanCollectionNotice { return { ...notice }; }
 function restructureClone(offer: DebtRestructureOffer): DebtRestructureOffer { return { ...offer }; }
 function phaseRoll(period: number): number { const value = Math.sin((period + 1) * 12_989.17) * 43_758.5453; return value - Math.floor(value); }
+
+type FacilityPerformanceTotals = Omit<FacilityPerformance, 'operatingProfit' | 'investmentAdjustedResult'>;
+type FacilityAccountingTotals = { constructionInvestment: number; upgradeInvestment: number; maintenanceExpense: number };
+
+function createFacilityPerformanceTotals(): FacilityPerformanceTotals {
+  return { outputValue: 0, sourceCost: 0, maintenanceExpense: 0, staffWageExpense: 0, staffingExpense: 0, capitalInvestment: 0 };
+}
+
+function createFacilityAccountingTotals(): FacilityAccountingTotals {
+  return { constructionInvestment: 0, upgradeInvestment: 0, maintenanceExpense: 0 };
+}
+
+function withFacilityPerformanceDerivedValues(totals: FacilityPerformanceTotals): FacilityPerformance {
+  const operatingProfit = totals.outputValue - totals.sourceCost - totals.staffWageExpense - totals.staffingExpense;
+  return { ...totals, operatingProfit, investmentAdjustedResult: operatingProfit - totals.capitalInvestment };
+}
+
+function mergeMarketTrade(current: MarketTradeSummary | undefined, next: MarketTradeSummary | undefined): MarketTradeSummary | undefined {
+  if (!current) return next ? { ...next } : undefined;
+  if (!next || current.resourceType !== next.resourceType) return { ...current };
+  return {
+    resourceType: current.resourceType,
+    quantity: current.quantity + next.quantity,
+    qualityQuantity: current.qualityQuantity + next.qualityQuantity,
+    qualityAmount: current.qualityAmount + next.qualityAmount,
+  };
+}
+
+function aggregatedDetailLines(transaction: FinanceTransaction): string[] {
+  if (transaction.facilityPerformance) {
+    return [
+      `Output market value: â‚¬${transaction.facilityPerformance.outputValue.toFixed(2)}`,
+      `Input cost + production wear: â‚¬${transaction.facilityPerformance.sourceCost.toFixed(2)}`,
+    ];
+  }
+  if (transaction.marketTrade) {
+    const averageQuality = transaction.marketTrade.qualityQuantity > 0
+      ? transaction.marketTrade.qualityAmount / transaction.marketTrade.qualityQuantity
+      : 0;
+    const averageUnitPrice = transaction.marketTrade.quantity > 0
+      ? Math.abs(transaction.amount) / transaction.marketTrade.quantity
+      : 0;
+    return [
+      `Total quantity: ${transaction.marketTrade.quantity}`,
+      `Average unit price: â‚¬${averageUnitPrice.toFixed(2)}`,
+      `Average quality: Q${averageQuality.toFixed(2)}`,
+    ];
+  }
+  return transaction.detailLines;
+}
 
 /** Company-owned financial state. Its calculations remain in pure finance services. */
 export class Finance {
@@ -64,23 +116,21 @@ export class Finance {
   private collectionNotices: LoanCollectionNotice[] = [];
   private pendingRestructureOffer: DebtRestructureOffer | null = null;
   private nextCollectionNoticeNumber = 1;
+  private facilityPerformanceTotals = new Map<string, FacilityPerformanceTotals>();
+  private facilityAccountingTotals = new Map<string, FacilityAccountingTotals>();
+  private aggregationIndexes = new Map<string, number>();
 
   constructor(snapshot?: FinanceSnapshot) { if (snapshot) this.restore(snapshot); }
   getBalance(): number { return this.balance; }
   canAfford(cost: number): boolean { return nonNegative(cost) && this.balance >= cost; }
   getTransactions(): FinanceTransaction[] { return this.transactions.map(transactionClone); }
   getFacilityAccounting(facilityId: string) {
-    return this.transactions.reduce((totals, transaction) => {
-      const entry = transaction.facilityAccounting;
-      if (!entry || entry.facilityId !== facilityId) return totals;
-      if (entry.classification === 'construction') totals.constructionInvestment += entry.historicalValue;
-      if (entry.classification === 'upgrade') totals.upgradeInvestment += entry.historicalValue;
-      if (entry.classification === 'maintenance') totals.maintenanceExpense += entry.historicalValue;
-      return totals;
-    }, { constructionInvestment: 0, upgradeInvestment: 0, maintenanceExpense: 0 });
+    const totals = this.facilityAccountingTotals.get(facilityId) ?? createFacilityAccountingTotals();
+    return { ...totals };
   }
   getFacilityPerformance(facilityId: string, period: FinanceReportPeriod, currentGameTimeMs: number): FacilityPerformance {
     const durationMs = FINANCE_REPORT_PERIODS.find((candidate) => candidate.id === period)?.durationMs ?? null;
+    if (durationMs === null) return withFacilityPerformanceDerivedValues(this.facilityPerformanceTotals.get(facilityId) ?? createFacilityPerformanceTotals());
     const startGameTimeMs = durationMs === null ? Number.NEGATIVE_INFINITY : currentGameTimeMs - durationMs;
     const totals = this.transactions.reduce((current, transaction) => {
       if (transaction.occurredAtGameTimeMs < startGameTimeMs || transaction.occurredAtGameTimeMs > currentGameTimeMs) return current;
@@ -97,12 +147,8 @@ export class Finance {
         current.sourceCost += performance.sourceCost;
       }
       return current;
-    }, { outputValue: 0, sourceCost: 0, maintenanceExpense: 0, staffWageExpense: 0, staffingExpense: 0, capitalInvestment: 0 });
-    // Production-caused maintenance is already included in output source cost.
-    // Repair settlements remain visible in the maintenance line but are not
-    // deducted a second time from operating profit.
-    const operatingProfit = totals.outputValue - totals.sourceCost - totals.staffWageExpense - totals.staffingExpense;
-    return { ...totals, operatingProfit, investmentAdjustedResult: operatingProfit - totals.capitalInvestment };
+    }, createFacilityPerformanceTotals());
+    return withFacilityPerformanceDerivedValues(totals);
   }
   getLoans(): Loan[] { return this.loans.map(loanClone); }
   getLenders(): Lender[] { return this.lenders.map(lenderClone); }
@@ -120,9 +166,89 @@ export class Finance {
     const balanceAfter = this.balance + input.amount;
     if (!nonNegative(balanceAfter)) return false;
     this.balance = balanceAfter;
-    this.transactions.push({ ...input, id: `finance-${this.nextTransactionNumber}`, balanceAfter, detailLines: [...input.detailLines], ...(input.facilityAccounting ? { facilityAccounting: { ...input.facilityAccounting } } : {}), ...(input.facilityPerformance ? { facilityPerformance: { ...input.facilityPerformance } } : {}) });
+    const aggregationIndexKey = input.aggregationKey
+      ? `${Math.floor(input.occurredAtGameTimeMs / FINANCE_AUTOMATION_TRANSACTION_BUCKET_MS)}:${input.aggregationKey}`
+      : null;
+    const existingIndex = aggregationIndexKey === null ? undefined : this.aggregationIndexes.get(aggregationIndexKey);
+    if (existingIndex !== undefined) {
+      const existing = this.transactions[existingIndex];
+      if (existing) {
+        const facilityAccounting = existing.facilityAccounting && input.facilityAccounting
+          ? { ...existing.facilityAccounting, historicalValue: existing.facilityAccounting.historicalValue + input.facilityAccounting.historicalValue }
+          : existing.facilityAccounting;
+        const facilityPerformance = existing.facilityPerformance && input.facilityPerformance
+          ? { ...existing.facilityPerformance, outputValue: existing.facilityPerformance.outputValue + input.facilityPerformance.outputValue, sourceCost: existing.facilityPerformance.sourceCost + input.facilityPerformance.sourceCost }
+          : existing.facilityPerformance;
+        const transaction: FinanceTransaction = {
+          ...existing,
+          amount: existing.amount + input.amount,
+          balanceAfter,
+          occurredAtGameTimeMs: input.occurredAtGameTimeMs,
+          occurrenceCount: existing.occurrenceCount + 1,
+          marketTrade: mergeMarketTrade(existing.marketTrade, input.marketTrade),
+          ...(facilityAccounting ? { facilityAccounting } : {}),
+          ...(facilityPerformance ? { facilityPerformance } : {}),
+        };
+        transaction.detailLines = aggregatedDetailLines(transaction);
+        this.transactions[existingIndex] = transaction;
+        this.recordFacilityTotals(input);
+        return true;
+      }
+    }
+    const transaction: FinanceTransaction = {
+      ...input,
+      id: `finance-${this.nextTransactionNumber}`,
+      balanceAfter,
+      detailLines: [...input.detailLines],
+      occurrenceCount: 1,
+      ...(input.marketTrade ? { marketTrade: { ...input.marketTrade } } : {}),
+      ...(input.facilityAccounting ? { facilityAccounting: { ...input.facilityAccounting } } : {}),
+      ...(input.facilityPerformance ? { facilityPerformance: { ...input.facilityPerformance } } : {}),
+    };
+    this.transactions.push(transaction);
+    if (aggregationIndexKey !== null) this.aggregationIndexes.set(aggregationIndexKey, this.transactions.length - 1);
+    this.recordFacilityTotals(transaction);
     this.nextTransactionNumber += 1;
     return true;
+  }
+
+  private recordFacilityTotals(transaction: Pick<FinanceTransaction, 'facilityAccounting' | 'facilityPerformance'>): void {
+    const accounting = transaction.facilityAccounting;
+    if (accounting) {
+      const accountingTotals = this.facilityAccountingTotals.get(accounting.facilityId) ?? createFacilityAccountingTotals();
+      if (accounting.classification === 'construction') accountingTotals.constructionInvestment += accounting.historicalValue;
+      if (accounting.classification === 'upgrade') accountingTotals.upgradeInvestment += accounting.historicalValue;
+      if (accounting.classification === 'maintenance') accountingTotals.maintenanceExpense += accounting.historicalValue;
+      this.facilityAccountingTotals.set(accounting.facilityId, accountingTotals);
+
+      const performanceTotals = this.facilityPerformanceTotals.get(accounting.facilityId) ?? createFacilityPerformanceTotals();
+      if (accounting.classification === 'maintenance') performanceTotals.maintenanceExpense += accounting.historicalValue;
+      if (accounting.classification === 'staff-wage') performanceTotals.staffWageExpense += accounting.historicalValue;
+      if (accounting.classification === 'staffing') performanceTotals.staffingExpense += accounting.historicalValue;
+      if (accounting.classification === 'construction' || accounting.classification === 'upgrade') performanceTotals.capitalInvestment += accounting.historicalValue;
+      this.facilityPerformanceTotals.set(accounting.facilityId, performanceTotals);
+    }
+
+    const performance = transaction.facilityPerformance;
+    if (performance) {
+      const totals = this.facilityPerformanceTotals.get(performance.facilityId) ?? createFacilityPerformanceTotals();
+      totals.outputValue += performance.outputValue;
+      totals.sourceCost += performance.sourceCost;
+      this.facilityPerformanceTotals.set(performance.facilityId, totals);
+    }
+  }
+
+  private rebuildTransactionIndexes(): void {
+    this.facilityPerformanceTotals.clear();
+    this.facilityAccountingTotals.clear();
+    this.aggregationIndexes.clear();
+    this.transactions.forEach((transaction, index) => {
+      this.recordFacilityTotals(transaction);
+      if (transaction.aggregationKey) {
+        const key = `${Math.floor(transaction.occurredAtGameTimeMs / FINANCE_AUTOMATION_TRANSACTION_BUCKET_MS)}:${transaction.aggregationKey}`;
+        this.aggregationIndexes.set(key, index);
+      }
+    });
   }
 
   acceptLoan(offer: LoanOffer, occurredAtGameTimeMs: number): Loan | null {
@@ -208,5 +334,5 @@ export class Finance {
   static fromSnapshot(snapshot: FinanceSnapshot): Finance { return new Finance(snapshot); }
   private addCollectionNotice(loan: Loan, stage: LoanCollectionStage, occurredAtGameTimeMs: number): void { const copy = stage === 'warning' ? ['Payment missed', 'A late fee was charged. Pay before collection escalates.'] : stage === 'penalty' ? ['Serious delinquency', 'Interest and the balance have increased; company prestige was damaged.'] : stage === 'liquidation' ? ['Forced liquidation', 'Inventory and facilities will be sold to reduce this debt.'] : ['Loan default', 'This lender blacklisted the company. A punitive restructure is available.']; this.collectionNotices.push({ id: `collection-${this.nextCollectionNoticeNumber}`, loanId: loan.id, lenderName: loan.lenderName, missedPayments: loan.missedPayments, stage, title: copy[0], message: copy[1], occurredAtGameTimeMs }); this.nextCollectionNoticeNumber += 1; }
   private createRestructureOffer(loan: Loan): DebtRestructureOffer { const principal = loan.remainingBalance; const durationPeriods = Math.max(LOAN_COLLECTION.restructureMinimumPeriods, loan.remainingPeriods * LOAN_COLLECTION.restructureTermMultiplier); const periodicInterestRate = LOAN_COLLECTION.restructureAnnualRate / 52; const paymentAmount = principal * periodicInterestRate * (1 + periodicInterestRate) ** durationPeriods / ((1 + periodicInterestRate) ** durationPeriods - 1); return { loanId: loan.id, lenderName: loan.lenderName, principal, annualInterestRate: LOAN_COLLECTION.restructureAnnualRate, periodicInterestRate, paymentAmount, durationPeriods }; }
-  private restore(snapshot: FinanceSnapshot): void { this.balance = nonNegative(snapshot.balance) ? snapshot.balance : FINANCE_INITIAL_BALANCE; this.transactions = Array.isArray(snapshot.transactions) ? snapshot.transactions.filter((item) => Number.isFinite(item.amount) && typeof item.description === 'string' && Array.isArray(item.detailLines) && Number.isFinite(item.balanceAfter) && Number.isFinite(item.occurredAtGameTimeMs)).map(transactionClone) : []; this.loans = Array.isArray(snapshot.loans) ? snapshot.loans.filter((loan) => nonNegative(loan.principal) && nonNegative(loan.remainingBalance) && nonNegative(loan.paymentAmount) && Number.isInteger(loan.remainingPeriods)).map(loanClone) : []; this.lenders = Array.isArray(snapshot.lenders) && snapshot.lenders.length > 0 ? snapshot.lenders.map(lenderClone) : createInitialLenders(); this.activeLoanSearch = snapshot.activeLoanSearch && Number.isFinite(snapshot.activeLoanSearch.workRequiredMs) && Number.isFinite(snapshot.activeLoanSearch.workCompletedMs) && snapshot.activeLoanSearch.workRequiredMs > 0 ? searchClone(snapshot.activeLoanSearch) : null; this.loanSearchOffers = Array.isArray(snapshot.loanSearchOffers) ? snapshot.loanSearchOffers.filter((offer) => typeof offer.id === 'string' && nonNegative(offer.principal) && Number.isFinite(offer.paymentAmount)).map(offerClone) : []; this.lastLoanSearchResult = snapshot.lastLoanSearchResult && Number.isInteger(snapshot.lastLoanSearchResult.requestedOfferCount) && Number.isInteger(snapshot.lastLoanSearchResult.foundOfferCount) && Number.isInteger(snapshot.lastLoanSearchResult.availableOfferCount) && Number.isFinite(snapshot.lastLoanSearchResult.completedAtGameTimeMs) ? searchResultClone(snapshot.lastLoanSearchResult) : null; this.economyPhase = ECONOMY_PHASES.includes(snapshot.economyPhase) ? snapshot.economyPhase : 'stable'; this.lastEconomyPhasePeriod = Number.isInteger(snapshot.lastEconomyPhasePeriod) ? snapshot.lastEconomyPhasePeriod : -1; this.onTimeLoanPayments = Number.isInteger(snapshot.onTimeLoanPayments) ? snapshot.onTimeLoanPayments : 0; this.missedLoanPayments = Number.isInteger(snapshot.missedLoanPayments) ? snapshot.missedLoanPayments : 0; this.paidOffLoans = Number.isInteger(snapshot.paidOffLoans) ? snapshot.paidOffLoans : 0; this.loanDefaults = Number.isInteger(snapshot.loanDefaults) ? snapshot.loanDefaults : 0; this.consecutiveNegativePeriods = Number.isInteger(snapshot.consecutiveNegativePeriods) ? snapshot.consecutiveNegativePeriods : 0; this.nextTransactionNumber = Number.isInteger(snapshot.nextTransactionNumber) && snapshot.nextTransactionNumber > 0 ? snapshot.nextTransactionNumber : this.transactions.length + 1; this.nextLoanNumber = Number.isInteger(snapshot.nextLoanNumber) && snapshot.nextLoanNumber > 0 ? snapshot.nextLoanNumber : this.loans.length + 1; this.collectionNotices = Array.isArray(snapshot.collectionNotices) ? snapshot.collectionNotices.filter((notice) => typeof notice.id === 'string' && typeof notice.loanId === 'string' && typeof notice.lenderName === 'string' && typeof notice.title === 'string' && typeof notice.message === 'string' && ['warning', 'penalty', 'liquidation', 'default'].includes(notice.stage)).map(noticeClone) : []; this.pendingRestructureOffer = snapshot.pendingRestructureOffer && typeof snapshot.pendingRestructureOffer.loanId === 'string' ? restructureClone(snapshot.pendingRestructureOffer) : null; this.nextCollectionNoticeNumber = Number.isInteger(snapshot.nextCollectionNoticeNumber) && snapshot.nextCollectionNoticeNumber > 0 ? snapshot.nextCollectionNoticeNumber : this.collectionNotices.length + 1; }
+  private restore(snapshot: FinanceSnapshot): void { this.balance = nonNegative(snapshot.balance) ? snapshot.balance : FINANCE_INITIAL_BALANCE; this.transactions = Array.isArray(snapshot.transactions) ? snapshot.transactions.filter((item) => Number.isFinite(item.amount) && typeof item.description === 'string' && Array.isArray(item.detailLines) && Number.isFinite(item.balanceAfter) && Number.isFinite(item.occurredAtGameTimeMs) && Number.isInteger(item.occurrenceCount) && item.occurrenceCount > 0).map(transactionClone) : []; this.loans = Array.isArray(snapshot.loans) ? snapshot.loans.filter((loan) => nonNegative(loan.principal) && nonNegative(loan.remainingBalance) && nonNegative(loan.paymentAmount) && Number.isInteger(loan.remainingPeriods)).map(loanClone) : []; this.lenders = Array.isArray(snapshot.lenders) && snapshot.lenders.length > 0 ? snapshot.lenders.map(lenderClone) : createInitialLenders(); this.activeLoanSearch = snapshot.activeLoanSearch && Number.isFinite(snapshot.activeLoanSearch.workRequiredMs) && Number.isFinite(snapshot.activeLoanSearch.workCompletedMs) && snapshot.activeLoanSearch.workRequiredMs > 0 ? searchClone(snapshot.activeLoanSearch) : null; this.loanSearchOffers = Array.isArray(snapshot.loanSearchOffers) ? snapshot.loanSearchOffers.filter((offer) => typeof offer.id === 'string' && nonNegative(offer.principal) && Number.isFinite(offer.paymentAmount)).map(offerClone) : []; this.lastLoanSearchResult = snapshot.lastLoanSearchResult && Number.isInteger(snapshot.lastLoanSearchResult.requestedOfferCount) && Number.isInteger(snapshot.lastLoanSearchResult.foundOfferCount) && Number.isInteger(snapshot.lastLoanSearchResult.availableOfferCount) && Number.isFinite(snapshot.lastLoanSearchResult.completedAtGameTimeMs) ? searchResultClone(snapshot.lastLoanSearchResult) : null; this.economyPhase = ECONOMY_PHASES.includes(snapshot.economyPhase) ? snapshot.economyPhase : 'stable'; this.lastEconomyPhasePeriod = Number.isInteger(snapshot.lastEconomyPhasePeriod) ? snapshot.lastEconomyPhasePeriod : -1; this.onTimeLoanPayments = Number.isInteger(snapshot.onTimeLoanPayments) ? snapshot.onTimeLoanPayments : 0; this.missedLoanPayments = Number.isInteger(snapshot.missedLoanPayments) ? snapshot.missedLoanPayments : 0; this.paidOffLoans = Number.isInteger(snapshot.paidOffLoans) ? snapshot.paidOffLoans : 0; this.loanDefaults = Number.isInteger(snapshot.loanDefaults) ? snapshot.loanDefaults : 0; this.consecutiveNegativePeriods = Number.isInteger(snapshot.consecutiveNegativePeriods) ? snapshot.consecutiveNegativePeriods : 0; this.nextTransactionNumber = Number.isInteger(snapshot.nextTransactionNumber) && snapshot.nextTransactionNumber > 0 ? snapshot.nextTransactionNumber : this.transactions.length + 1; this.nextLoanNumber = Number.isInteger(snapshot.nextLoanNumber) && snapshot.nextLoanNumber > 0 ? snapshot.nextLoanNumber : this.loans.length + 1; this.collectionNotices = Array.isArray(snapshot.collectionNotices) ? snapshot.collectionNotices.filter((notice) => typeof notice.id === 'string' && typeof notice.loanId === 'string' && typeof notice.lenderName === 'string' && typeof notice.title === 'string' && typeof notice.message === 'string' && ['warning', 'penalty', 'liquidation', 'default'].includes(notice.stage)).map(noticeClone) : []; this.pendingRestructureOffer = snapshot.pendingRestructureOffer && typeof snapshot.pendingRestructureOffer.loanId === 'string' ? restructureClone(snapshot.pendingRestructureOffer) : null; this.nextCollectionNoticeNumber = Number.isInteger(snapshot.nextCollectionNoticeNumber) && snapshot.nextCollectionNoticeNumber > 0 ? snapshot.nextCollectionNoticeNumber : this.collectionNotices.length + 1; this.rebuildTransactionIndexes(); }
 }

@@ -85,7 +85,7 @@ describe('market autobuy', () => {
 });
 
 describe('market sales', () => {
-  it('records staff wages every foreground second and pauses a facility when its next wage cannot be paid', () => {
+  it('charges staff wages every foreground second while aggregating the finance history, then pauses when the next wage cannot be paid', () => {
     const state = useGameStore.getState();
     const definition = FACILITIES[FacilityType.Farm];
     state.restoreSnapshot(createStartingGameSnapshot(0));
@@ -98,17 +98,23 @@ describe('market sales', () => {
     expect(farm.setAssignedWorkers(1)).toBe(true);
     expect(farm.setActiveRecipe(RecipeName.GrowGrain)).toBe(true);
     state.setAdminBalance(1);
-    const wageTransactionsBefore = useGameStore.getState().finance.getTransactions().filter((transaction) => transaction.source === 'facility-staff-wage').length;
+    const wageEventCountBefore = useGameStore.getState().finance.getTransactions()
+      .filter((transaction) => transaction.source === 'facility-staff-wage')
+      .reduce((total, transaction) => total + transaction.occurrenceCount, 0);
 
     state.advanceGameTime(1_000);
 
     expect(useGameStore.getState().finance.getBalance()).toBeCloseTo(0);
-    expect(useGameStore.getState().finance.getTransactions().filter((transaction) => transaction.source === 'facility-staff-wage')).toHaveLength(wageTransactionsBefore + 1);
+    expect(useGameStore.getState().finance.getTransactions()
+      .filter((transaction) => transaction.source === 'facility-staff-wage')
+      .reduce((total, transaction) => total + transaction.occurrenceCount, 0)).toBe(wageEventCountBefore + 1);
     expect(useGameStore.getState().facilities.get('farm-1')!.getView().isActive).toBe(true);
 
     state.advanceGameTime(1_000);
 
-    expect(useGameStore.getState().finance.getTransactions().filter((transaction) => transaction.source === 'facility-staff-wage')).toHaveLength(wageTransactionsBefore + 1);
+    expect(useGameStore.getState().finance.getTransactions()
+      .filter((transaction) => transaction.source === 'facility-staff-wage')
+      .reduce((total, transaction) => total + transaction.occurrenceCount, 0)).toBe(wageEventCountBefore + 1);
     expect(useGameStore.getState().facilities.get('farm-1')!.getView().isActive).toBe(false);
   });
 
@@ -142,6 +148,9 @@ describe('market sales', () => {
     const staleTransactions = snapshot.finance.transactions.map(({ facilityAccounting: _facilityAccounting, ...transaction }) => transaction);
 
     expect(isGameSnapshot({ ...snapshot, finance: { ...snapshot.finance, transactions: staleTransactions } })).toBe(false);
+    const obsoleteTransactions = snapshot.finance.transactions.map(({ occurrenceCount: _occurrenceCount, ...transaction }) => transaction);
+
+    expect(isGameSnapshot({ ...snapshot, finance: { ...snapshot.finance, transactions: obsoleteTransactions } })).toBe(false);
   });
 
   it('persists staffing transactions and current staff state as a valid snapshot', () => {
