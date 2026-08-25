@@ -133,7 +133,10 @@ export class Finance {
     if (durationMs === null) return withFacilityPerformanceDerivedValues(this.facilityPerformanceTotals.get(facilityId) ?? createFacilityPerformanceTotals());
     const startGameTimeMs = durationMs === null ? Number.NEGATIVE_INFINITY : currentGameTimeMs - durationMs;
     const totals = this.transactions.reduce((current, transaction) => {
-      if (transaction.occurredAtGameTimeMs < startGameTimeMs || transaction.occurredAtGameTimeMs > currentGameTimeMs) return current;
+      const reportTime = transaction.aggregationKey
+        ? Math.floor(transaction.occurredAtGameTimeMs / FINANCE_AUTOMATION_TRANSACTION_BUCKET_MS) * FINANCE_AUTOMATION_TRANSACTION_BUCKET_MS
+        : transaction.occurredAtGameTimeMs;
+      if (reportTime < startGameTimeMs || reportTime > currentGameTimeMs) return current;
       const accounting = transaction.facilityAccounting;
       if (accounting?.facilityId === facilityId) {
         if (accounting.classification === 'maintenance') current.maintenanceExpense += accounting.historicalValue;

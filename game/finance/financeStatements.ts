@@ -7,7 +7,7 @@ import type { Market } from '@/game/market';
 import type { ResearchLedger } from '@/game/research';
 import { getResearchProject } from '@/game/research';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
-import { FINANCE_REPORT_PERIODS, type FinanceReportPeriod } from './financeConstants';
+import { FINANCE_AUTOMATION_TRANSACTION_BUCKET_MS, FINANCE_REPORT_PERIODS, type FinanceReportPeriod } from './financeConstants';
 import type { Finance, FinanceTransaction, Loan } from './finance';
 import { calculateCreditRating, calculateLoanLimitBreakdown, type CreditRating, type LoanLimitBreakdown } from './loanService';
 
@@ -100,7 +100,10 @@ function periodStart(period: FinanceReportPeriod, currentGameTimeMs: number): nu
 }
 
 function inPeriod(transaction: FinanceTransaction, period: FinanceReportPeriod, currentGameTimeMs: number): boolean {
-  return transaction.occurredAtGameTimeMs >= periodStart(period, currentGameTimeMs) && transaction.occurredAtGameTimeMs <= currentGameTimeMs;
+  const reportTime = transaction.aggregationKey
+    ? Math.floor(transaction.occurredAtGameTimeMs / FINANCE_AUTOMATION_TRANSACTION_BUCKET_MS) * FINANCE_AUTOMATION_TRANSACTION_BUCKET_MS
+    : transaction.occurredAtGameTimeMs;
+  return reportTime >= periodStart(period, currentGameTimeMs) && reportTime <= currentGameTimeMs;
 }
 
 function toBreakdowns(transactions: FinanceTransaction[]): FinanceBreakdown[] {

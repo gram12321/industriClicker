@@ -3,6 +3,7 @@ import { Inventory } from '@/game/inventory';
 import { Finance } from '@/game/finance';
 import { getRecipe, RecipeName } from '@/game/recipes';
 import { ResourceType } from '@/game/resources';
+import { Facility } from '@/game/facilities/facility';
 import { FacilityCollection } from '@/game/facilities/facilityCollection';
 import {
   calculateFacilityProductionMaintenanceCost,
@@ -285,6 +286,22 @@ describe('facility economics', () => {
 
     expect(economics.netGainPerMinute).toBeCloseTo(calculateFacilityNetGainPerMinute(economics.valuePerMinute, economics.decayCostPerMinute, economics.staffWagePerMinute));
     expect(economics.getOutputQuality(recipe.outputs[0]!.resourceType)).toBeGreaterThan(0);
+  });
+
+  it('does not reuse captured active-recipe inputs for another recipe preview', () => {
+    const { facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    const snapshot = facility.toSnapshot();
+    snapshot.recipeInputQ = 99;
+    snapshot.recipeInputEffects = { inputMultiplier: 0.5, outputMultiplier: 2, qualityBoost: 10 };
+    const restoredFacility = Facility.fromSnapshot(snapshot);
+    const previewRecipe = getRecipe(RecipeName.GrowSugar);
+    const inventory = new Inventory();
+    for (const input of previewRecipe.inputs) inventory.add(input.resourceType, input.amount);
+
+    const economics = calculateCurrentFacilityProductionEconomics(restoredFacility.getView(), previewRecipe, new Market(), inventory, 1, () => 10, () => 10);
+
+    expect(economics.inputQ).not.toBe(99);
+    expect(economics.getOutputQuality(previewRecipe.outputs[0]!.resourceType)).toBeLessThan(10);
   });
 });
 

@@ -178,7 +178,11 @@ export function calculateCurrentFacilityProductionEconomics(
   const definition = getFacilityDefinition(facility.facilityType);
   const optionalInputSettings = facility.optionalInputSettings[recipe.name];
   const availableInputPlan = getFacilityAvailableRecipeInputPlan(recipe, inventory, facility.sizeMultiplier, optionalInputSettings);
-  const inputQ = facility.recipeInputQ ?? calculateRecipeInputQ(recipe, inventory, facility.sizeMultiplier, optionalInputSettings);
+  const isActiveRecipe = recipe.name === facility.activeRecipeName;
+  const inputQ = isActiveRecipe && facility.recipeInputQ !== null
+    ? facility.recipeInputQ
+    : calculateRecipeInputQ(recipe, inventory, facility.sizeMultiplier, optionalInputSettings);
+  const capturedInputEffects = isActiveRecipe ? facility.recipeInputEffects : null;
   const effectiveWorkPerMinute = calculateFacilityEffectiveWork(facility, BASE_WORK_PER_MINUTE, recipeResearchWorkSpeedMultiplier);
   const decayCostPerMinute = calculateFacilityDecayCostPerMinute(
     definition.landCost * facility.sizeMultiplier,
@@ -201,7 +205,7 @@ export function calculateCurrentFacilityProductionEconomics(
       upgradeMaxQ: facility.upgradeMaxQ,
       productionMaxQ: getProductionMaxQ(resourceType),
       staffMaxQ: facility.staffQuality,
-      outputBonusQ: (output.outputBonusQ ?? 0) + (facility.recipeInputEffects?.qualityBoost ?? availableInputPlan.effects.qualityBoost),
+      outputBonusQ: (output.outputBonusQ ?? 0) + (capturedInputEffects?.qualityBoost ?? availableInputPlan.effects.qualityBoost),
     }).outputQ;
   };
   const staffWagePerMinute = calculateFacilityStaffWagePerMinute(facility.assignedWorkers, facility.staffWagePerWorkerPerMinute);

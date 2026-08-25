@@ -171,4 +171,14 @@ describe('foreground finance aggregation', () => {
     expect(wageTransactions.reduce((total, transaction) => total + transaction.occurrenceCount, 0)).toBe(90 * 60);
     expect(finance.getFacilityPerformance('farm-1', 'all-time', 90 * 60 * 1_000).staffWageExpense).toBeCloseTo(90);
   });
+
+  it('assigns aggregated minute entries to their bucket start in rolling reports', () => {
+    const finance = new Finance();
+    for (let second = 0; second < 120; second += 1) {
+      finance.applyTransaction({ aggregationKey: 'staff-wage:farm-1:1:1', amount: -1 / 60, description: 'Staff wages for Farm #1', detailLines: ['Workers: 1'], facilityAccounting: { facilityId: 'farm-1', classification: 'staff-wage', historicalValue: 1 / 60 }, kind: 'operating', source: 'facility-staff-wage', occurredAtGameTimeMs: second * 1_000 });
+    }
+
+    expect(finance.getFacilityPerformance('farm-1', 'minute', 119_000).staffWageExpense).toBeCloseTo(1);
+    expect(finance.getFacilityPerformance('farm-1', 'minute', 120_000).staffWageExpense).toBeCloseTo(1);
+  });
 });
