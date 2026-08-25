@@ -45,6 +45,17 @@ function noticeClone(notice: LoanCollectionNotice): LoanCollectionNotice { retur
 function restructureClone(offer: DebtRestructureOffer): DebtRestructureOffer { return { ...offer }; }
 function phaseRoll(period: number): number { const value = Math.sin((period + 1) * 12_989.17) * 43_758.5453; return value - Math.floor(value); }
 
+/**
+ * Report-time normalization for aggregated finance transactions.
+ * Aggregated records are attributed to their automation bucket start time.
+ */
+export function getFinanceTransactionReportTime(transaction: FinanceTransaction): number {
+  return transaction.aggregationKey
+    ? Math.floor(transaction.occurredAtGameTimeMs / FINANCE_AUTOMATION_TRANSACTION_BUCKET_MS)
+      * FINANCE_AUTOMATION_TRANSACTION_BUCKET_MS
+    : transaction.occurredAtGameTimeMs;
+}
+
 type FacilityPerformanceTotals = Omit<FacilityPerformance, 'operatingProfit' | 'investmentAdjustedResult'>;
 type FacilityAccountingTotals = { constructionInvestment: number; upgradeInvestment: number; maintenanceExpense: number };
 
@@ -133,9 +144,7 @@ export class Finance {
     if (durationMs === null) return withFacilityPerformanceDerivedValues(this.facilityPerformanceTotals.get(facilityId) ?? createFacilityPerformanceTotals());
     const startGameTimeMs = durationMs === null ? Number.NEGATIVE_INFINITY : currentGameTimeMs - durationMs;
     const totals = this.transactions.reduce((current, transaction) => {
-      const reportTime = transaction.aggregationKey
-        ? Math.floor(transaction.occurredAtGameTimeMs / FINANCE_AUTOMATION_TRANSACTION_BUCKET_MS) * FINANCE_AUTOMATION_TRANSACTION_BUCKET_MS
-        : transaction.occurredAtGameTimeMs;
+      const reportTime = getFinanceTransactionReportTime(transaction);
       if (reportTime < startGameTimeMs || reportTime > currentGameTimeMs) return current;
       const accounting = transaction.facilityAccounting;
       if (accounting?.facilityId === facilityId) {
