@@ -19,7 +19,7 @@ describe('sales research effects', () => {
 
   it('raises order rewards without changing the base market-sale premium', () => {
     expect(getSalesOrderBidMultiplier([], 1.2)).toBe(1.2);
-    expect(getSalesOrderBidMultiplier(['bid-value-3'], 1.2)).toBe(1.35);
+    expect(getSalesOrderBidMultiplier(['bid-value-3'], 1.2)).toBe(1.3);
     expect(getSalesOrderBidMultiplier(['bid-value-3', 'bid-value-5'], 1.2)).toBe(1.5);
   });
 

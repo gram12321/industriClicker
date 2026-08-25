@@ -36,7 +36,7 @@ describe('sales orders', () => {
 
     expect(rows).toHaveLength(81);
     expect(rows.every((row) => Number.isFinite(row.premiumPercent) && Number.isFinite(row.bidBonusPercent))).toBe(true);
-    expect(calculateSalesOrderBidPremium({ customerType: 'industrial-enterprise', companyPrestige: 20, relationship: 0, purchasingPower: 1, bidMultiplier: 1, economyPhase: 'stable', positiveTail: 0, pressurePenalty: 0 })).toBeCloseTo(0.2695);
+    expect(calculateSalesOrderBidPremium({ customerType: 'industrial-enterprise', companyPrestige: 20, relationship: 0, purchasingPower: 1, bidMultiplier: 1, economyPhase: 'stable', positiveTail: 0, pressurePenalty: 0 })).toBeCloseTo(0.0398);
     expect(calculateSalesOrderBidPremium({ customerType: 'industrial-enterprise', companyPrestige: 20, relationship: 1, purchasingPower: 1, bidMultiplier: 1, economyPhase: 'stable', positiveTail: 0, pressurePenalty: 0 })).toBeGreaterThan(4);
   });
 
@@ -45,16 +45,16 @@ describe('sales orders', () => {
     const lowCustomerFactors = calculateSalesOrderBidPremium({ ...input, purchasingPower: 0.5, bidMultiplier: 0.5 });
     const highCustomerFactors = calculateSalesOrderBidPremium({ ...input, purchasingPower: 1.5, bidMultiplier: 1.5 });
 
-    expect(lowCustomerFactors).toBeCloseTo(-0.7325);
-    expect(highCustomerFactors).toBeCloseTo(1.4075);
+    expect(lowCustomerFactors).toBeCloseTo(-0.755);
+    expect(highCustomerFactors).toBeCloseTo(1.205);
   });
 
-  it('applies economy as a -50% to +50% bid-premium multiplier', () => {
+  it('applies the shared 0.7-to-1.3 economy bid multiplier', () => {
     const input = { customerType: 'industrial-enterprise' as const, companyPrestige: 0, relationship: 0, purchasingPower: 1, bidMultiplier: 1, positiveTail: 0, pressurePenalty: 0 };
 
-    expect(calculateSalesOrderBidPremium({ ...input, economyPhase: 'crash' })).toBeCloseTo(-0.465);
-    expect(calculateSalesOrderBidPremium({ ...input, economyPhase: 'stable' })).toBeCloseTo(0.07);
-    expect(calculateSalesOrderBidPremium({ ...input, economyPhase: 'boom' })).toBeCloseTo(0.605);
+    expect(calculateSalesOrderBidPremium({ ...input, economyPhase: 'crash' })).toBeCloseTo(-0.314);
+    expect(calculateSalesOrderBidPremium({ ...input, economyPhase: 'stable' })).toBeCloseTo(-0.02);
+    expect(calculateSalesOrderBidPremium({ ...input, economyPhase: 'boom' })).toBeCloseTo(0.274);
   });
 
   it('samples at most one probabilistic arrival per acquisition check', () => {

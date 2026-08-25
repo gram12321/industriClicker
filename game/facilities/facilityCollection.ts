@@ -9,6 +9,12 @@ export type FacilityCollectionSnapshot = {   facilities: FacilitySnapshot[]; };
  */
 export class FacilityCollection {
   private facilities: Facility[] = [];
+  private staffWageBaseMultiplier = 1;
+
+  setStaffWageBaseMultiplier(multiplier: number): void {
+    this.staffWageBaseMultiplier = Number.isFinite(multiplier) ? Math.max(0.1, multiplier) : 1;
+    for (const facility of this.facilities) facility.setStaffWageBaseMultiplier(this.staffWageBaseMultiplier);
+  }
 
   has(facilityType: FacilityType): boolean {
     return this.facilities.some((facility) => facility.facilityType === facilityType);
@@ -38,7 +44,9 @@ export class FacilityCollection {
     const nextNumber = this.getAllByType(facilityType).reduce((highest, facility) => (
       Math.max(highest, Number(facility.id.split('-').at(-1)) || 0)
     ), 0) + 1;
-    this.facilities.push(new Facility(`${facilityType}-${nextNumber}`, facilityType, selectedSize));
+    const facility = new Facility(`${facilityType}-${nextNumber}`, facilityType, selectedSize);
+    facility.setStaffWageBaseMultiplier(this.staffWageBaseMultiplier);
+    this.facilities.push(facility);
     return true;
   }
 
@@ -63,7 +71,9 @@ export class FacilityCollection {
   }
 
   clone(): FacilityCollection {
-    return FacilityCollection.fromSnapshot(this.toSnapshot());
+    const clone = FacilityCollection.fromSnapshot(this.toSnapshot());
+    clone.setStaffWageBaseMultiplier(this.staffWageBaseMultiplier);
+    return clone;
   }
 
   toSnapshot(): FacilityCollectionSnapshot {

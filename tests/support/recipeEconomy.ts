@@ -19,7 +19,8 @@ const WORK_COMPLETION_EPSILON = 1e-9;
 export const RECIPE_ECONOMY_SHORT_WINDOW_MINUTES = 15;
 export const RECIPE_ECONOMY_LONG_WINDOW_MINUTES = 60;
 export const RECIPE_ECONOMY_EXTENDED_WINDOW_MINUTES = 180;
-export const RECIPE_ECONOMY_BREAK_EVEN_HORIZON_MINUTES = 4 * 60;
+/** Long enough to catch slow market-saturation losses without simulating an open-ended report. */
+export const RECIPE_ECONOMY_BREAK_EVEN_HORIZON_MINUTES = 24 * 60;
 export const RECIPE_ECONOMY_REPAIR_THRESHOLD = 0.7;
 
 export type RecipeEconomyScenario = {

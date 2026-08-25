@@ -21,7 +21,7 @@ Canonical shared names only. Product direction is in [design.md](design.md), rul
 | Quality research / quality upgrade | Resource-level research / facility-instance upgrade that raises an output-quality ceiling. |
 | Recipe | Named production transformation with inputs, outputs, and required work. Exact relationships are in `VariableRelationshipMap.md`. |
 | Production cycle | An ordered, repeating list of researched recipes owned by one facility instance. |
-| Facility | Numbered player-owned production unit. Current types: Farm, Animal Farm, Bakery, Small Utility Works, Mine, Quarry, Industrial Processing Factory, Chemical Plant, Electronics Factory, Assembly Plant, Construction Factory, Water Well, and Power Plant. |
+| Facility | Numbered player-owned production unit. Current types: Farm, Animal Farm, Bakery, Small Utility Works, Mine, Quarry, Industrial Processing Factory, Chemical Plant, Electronics Factory, Assembly Plant, Construction Factory, Water Well, Solar Plant, and Coal Power Plant. |
 | Farm footprint | Immutable Farm construction size in hectares. The default footprint is 5 ha; larger supported footprints scale the Farm's construction basis, staffing, recipe batch, and production work. |
 | Facility condition | Persisted 0–1 wear state affecting facility efficiency. |
 | Assigned workers / required workers | Facility staff count / calculated staffing target; each assigned worker receives the configured staff wage. Workers in training are temporarily unavailable for production and experience. |

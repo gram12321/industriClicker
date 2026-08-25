@@ -12,5 +12,6 @@ export enum FacilityType {
   AssemblyPlant = 'assembly-plant',
   ConstructionFactory = 'construction-factory',
   WaterWell = 'water-well',
-  PowerPlant = 'power-plant',
+  SolarPlant = 'solar-plant',
+  CoalPowerPlant = 'coal-power-plant',
 }

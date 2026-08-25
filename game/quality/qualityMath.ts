@@ -27,6 +27,11 @@ function finiteNonNegative(value: number): number {
   return Number.isFinite(value) ? Math.max(0, value) : 0;
 }
 
+/** Quality's current linear value multiplier, shared by market and construction credits. */
+export function calculateQualityValueMultiplier(quality: number): number {
+  return Number.isFinite(quality) && quality > 0 ? quality : 1;
+}
+
 /** Converts a progress value into a quality value that approaches, but never reaches, Q100. */
 export function calculateQualityFromProgress(progress: number): number {
   const safeProgress = finiteNonNegative(progress);

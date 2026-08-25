@@ -8,18 +8,18 @@ This is the authority for concrete variables, dependencies, commands, time effec
 
 | Resource | Produced by | Inputs per cycle |
 |---|---|---|
-| Water | Small Utility Works: Produce Water; Water Well: Manual / Electric Pumping | None / None / 1 Electricity |
-| Electricity | Small Utility Works: Produce Electricity; Power Plant: Coal / Solar Power | None / 0.5 Coal + 1 Water / None |
-| Grain | Farm: Grow Grain | 1 Water, 1 Electricity, 0.025 Fertilizer |
-| Sugar | Farm: Grow Sugar | 3 Water, 0.04 Fertilizer |
-| Fruit | Farm: Grow Fruit | 2 Water, 0.03 Fertilizer |
+| Water | Small Utility Works: Produce Water; Water Well: Manual / Electric Pumping | None / None / 0.5 Electricity |
+| Electricity | Small Utility Works: Produce Electricity; Coal Power Plant: Coal Power; Solar Plant: Solar Power | None / 0.5 Coal + 1 Water / None |
+| Grain | Farm: Grow Grain | 1 Water, 1 Electricity, 0.05 Fertilizer |
+| Sugar | Farm: Grow Sugar | 3 Water, 0.08 Fertilizer |
+| Fruit | Farm: Grow Fruit | 2 Water, 0.06 Fertilizer |
 | Meat | Animal Farm: Raise Cattle / Sheep / Chicken | 3 / 2 / 1 Grain, 2 / 1.5 / 1 Water, 1.25 / 1 / 0.75 Electricity |
 | Milk | Animal Farm: Raise Cattle | 3 Grain, 2 Water, 1.25 Electricity |
 | Wool | Animal Farm: Raise Sheep | 2 Grain, 1.5 Water, 1 Electricity |
 | Eggs | Animal Farm: Raise Chicken | 1 Grain, 1 Water, 0.75 Electricity |
 | Bread | Bakery: Bake Bread | 1.5 Grain, 1 Water, 1 Electricity |
 | Cake | Bakery: Bake Cake; Bakery: Bake Premium Cake (+Q1) | 1 Grain, 0.5 Eggs, 2 Water, 2 Electricity / 1 Grain, 0.5 Eggs, 1 Fruit, 1 Milk, 2 Water, 2 Electricity |
-| Meat Pie | Bakery: Bake Meat Pie | 1 Grain, 1 Meat, 1 Water, 2 Electricity |
+| Meat Pie | Bakery: Bake Meat Pie | 2 Grain, 2 Meat, 1 Water, 4 Electricity |
 | Coal | Mine: Mine Coal | 1 Water, 2 Electricity |
 | Iron | Mine: Mine Iron | 2 Water, 4 Electricity, 0.1 Chemicals |
 | Copper | Mine: Mine Copper | 2 Water, 5 Electricity, 0.1 Chemicals |
@@ -31,13 +31,13 @@ This is the authority for concrete variables, dependencies, commands, time effec
 | Steel | Industrial Processing Factory: Produce Steel | 2 Iron, 1 Coal, 2 Water, 6 Electricity |
 | Electric Circuits | Industrial Processing Factory: Produce Electric Circuits | 2 Copper, 1 Silicon, 1 Plastic, 1 Water, 4 Electricity |
 | Chemicals | Chemical Plant: Produce Chemicals | 2 Minerals, 2 Water, 4 Electricity |
-| Fertilizer | Chemical Plant: Synthesize Fertilizer; Animal Farm: Raise Cattle / Sheep / Chicken | 1 Chemicals, 1 Minerals, 1 Water, 2 Electricity / animal inputs |
+| Fertilizer | Chemical Plant: Synthesize Fertilizer; Animal Farm: Raise Cattle / Sheep / Chicken | 0.8 Chemicals, 0.8 Minerals, 0.8 Water, 1.6 Electricity / animal inputs |
 | Plastic | Chemical Plant: Produce Plastic | 2 Chemicals, 1 Water, 3 Electricity |
 | Silicon | Electronics Factory: Produce Silicon | 3 Minerals, 3 Sand, 5 Electricity |
 | Advanced Components | Electronics Factory: Produce Advanced Components | 2 Electric Circuits, 2 Silicon, 0.1 Gold, 1 Water, 4 Electricity |
 | Industrial Machines | Assembly Plant: Assemble Industrial Machines | 6 Steel, 3 Electric Circuits, 2 Advanced Components, 2 Water, 6 Electricity |
-| Bricks | Construction Factory: Produce Bricks | 2 Clay, 1 Sand, 1 Water, 3 Electricity |
-| Cement | Construction Factory: Produce Cement | 3 Stone, 1 Clay, 1 Minerals, 1 Water, 5 Electricity |
+| Bricks | Construction Factory: Produce Bricks | 2 Clay, 2 Sand, 1 Water, 3 Electricity |
+| Cement | Construction Factory: Produce Cement | 3 Stone, 1 Sand, 1 Clay, 1 Minerals, 1 Water, 5 Electricity |
 | Reinforced Concrete | Construction Factory: Produce Reinforced Concrete | 2 Cement, 3 Sand, 2 Stone, 2 Steel, 0.5 Minerals, 0.25 Chemicals, 2 Water, 2 Electricity |
 | Construction Materials | Construction Factory: Produce Construction Materials | 2 Bricks, 1 Reinforced Concrete, 1 Steel, 1 Sand, 1 Cement, 0.1 Chemicals, 0.2 Plastic, 2 Electricity |
 
@@ -49,8 +49,8 @@ flowchart LR
   electricPump --> water
 
   utilityPower([Small Utility Works: Produce Electricity]) --> electricity[Electricity]
-  solarPower([Power Plant: Solar Power]) --> electricity
-  coal --> coalPower([Power Plant: Coal Power])
+  solarPower([Solar Plant: Solar Power]) --> electricity
+  coal --> coalPower([Coal Power Plant: Coal Power])
   water --> coalPower
   coalPower --> electricity
 
@@ -217,7 +217,8 @@ flowchart LR
 | Bakery | Grain, Eggs, Fruit, Milk, Meat, Water, Electricity | Bread, Cake (Bake Premium Cake adds Q1), Meat Pie |
 | Small Utility Works | None | Water, Electricity |
 | Water Well | Electricity (electric mode) | Water |
-| Power Plant | Coal and Water (coal mode) | Electricity |
+| Coal Power Plant | Coal and Water | Electricity |
+| Solar Plant | None | Electricity |
 | Mine | Water, Electricity, Chemicals | Coal, Iron, Copper, Gold |
 | Quarry | Water, Electricity | Sand, Clay, Stone, Minerals |
 | Industrial Processing Factory | Iron, Coal, Copper, Silicon, Plastic, Water, Electricity | Steel, Electric Circuits |
@@ -257,7 +258,8 @@ flowchart LR
 
   utilityWorks([Small Utility Works])
   waterWell([Water Well])
-  powerPlant([Power Plant])
+  coalPowerPlant([Coal Power Plant])
+  solarPlant([Solar Plant])
   farm([Farm])
   animalFarm([Animal Farm])
   bakery([Bakery])

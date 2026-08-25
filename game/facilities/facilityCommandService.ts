@@ -1,15 +1,22 @@
 import type { Inventory } from '@/game/inventory';
+import { calculateQualityValueMultiplier } from '@/game/quality';
 import { ResourceType } from '@/game/resources';
 
-export type FacilityMaterialRequirements = {
-  constructionMaterials: number;
-  industrialMachines: number;
-};
+export type FacilityMaterialRequirements = ReadonlyArray<{
+  resourceType: ResourceType;
+  requiredUnits: number;
+}>;
 
-/** Finds the only two facility material inputs that must be sourced from the market. */
+/** Finds construction inputs still missing after applying their quality-adjusted inventory credits. */
 export function getMissingFacilityMaterials(inventory: Inventory, requirements: FacilityMaterialRequirements) {
-  return [
-    { resourceType: ResourceType.ConstructionMaterials, amount: Math.max(0, requirements.constructionMaterials - inventory.getAmount(ResourceType.ConstructionMaterials)) },
-    { resourceType: ResourceType.IndustrialMachines, amount: Math.max(0, requirements.industrialMachines - inventory.getAmount(ResourceType.IndustrialMachines)) },
-  ].filter((input) => input.amount > 0);
+  return requirements.map(({ resourceType, requiredUnits }) => ({
+    resourceType,
+    requiredUnits: Math.max(0, requiredUnits),
+    missingUnits: Math.max(0, requiredUnits - inventory.getAmount(resourceType) * calculateQualityValueMultiplier(inventory.getQuality(resourceType))),
+  })).filter((input) => input.missingUnits > 0);
+}
+
+/** Converts construction-value units into the physical quantity to consume from inventory. */
+export function getFacilityMaterialQuantityForUnits(inventory: Inventory, resourceType: ResourceType, requiredUnits: number): number {
+  return Math.max(0, requiredUnits) / calculateQualityValueMultiplier(inventory.getQuality(resourceType));
 }

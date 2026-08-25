@@ -5,7 +5,7 @@ import { Button, Card, Dialog, IconButton, List, Portal, SegmentedButtons, Text,
 import { colors } from '@/theme';
 import { LOAN_COLLECTION, calculateFacilityAssetValue, type Finance } from '@/game/finance';
 import { Facility, type FacilityCollection, type FacilityType } from '@/game/facilities';
-import { calculateFacilityResourcePayment, calculateProjectedFacilityConditionEconomics, FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_GROUPS, FACILITY_REPAIR_DURATION_PER_CONDITION_MS, FACILITY_REPAIR_EFFICIENCY_MULTIPLIER, FACILITY_STAFF_TRAINING_QUALITY_PROGRESS_PER_WORKER, getFacilityConstructionCosts, getFacilityDefinition, getFacilityEfficiency, getFacilityMaxStaffWage, getFacilityRepairCost, getFacilitySizeMultiplier, getFacilitySizeOptions, getStaffingChangeCost, getStaffingChangeDurationMs, getStaffTrainingCost, getStaffTrainingDurationMs, getStaffingEfficiency, getStaffQualityFromProgress, getStaffQualityWorkMultiplier } from '@/game/facilities';
+import { calculateFacilityResourcePayment, calculateProjectedFacilityConditionEconomics, FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_GROUPS, FACILITY_REPAIR_DURATION_PER_CONDITION_MS, FACILITY_REPAIR_EFFICIENCY_MULTIPLIER, FACILITY_STAFF_QUALITY_TREND_MEMORY_MINUTES, FACILITY_STAFF_TRAINING_QUALITY_PROGRESS_PER_WORKER, getFacilityConstructionCosts, getFacilityDefinition, getFacilityEfficiency, getFacilityMaxStaffWage, getFacilityRepairCost, getFacilitySizeMultiplier, getFacilitySizeOptions, getFacilityStaffTargetWage, getStaffingChangeCost, getStaffingChangeDurationMs, getStaffTrainingCost, getStaffTrainingDurationMs, getStaffingEfficiency, getStaffQualityFromProgress, getStaffQualityWagePressurePerMinute, getStaffQualityWorkMultiplier } from '@/game/facilities';
 import type { Inventory } from '@/game/inventory';
 import type { Market } from '@/game/market';
 import { ResourceType } from '@/game/resources';
@@ -13,9 +13,10 @@ import type { Recipe } from '@/game/recipes';
 import { clamp, formatCurrency, formatDuration, formatNumber, formatPercent, getColorClass } from '@/utils';
 import { WorkMetric } from '@/ui/dashboard/components/DashboardPrimitives';
 import { formatRecipeName } from '@/ui/dashboard/helpers/recipeFormatters';
+import { formatStaffQualityWagePressure } from '@/ui/dashboard/helpers/staffingFormatters';
 import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { APP_ICONS, RECIPE_ICONS } from '@/icons';
-import { TooltipResourceIcon, TooltipTextIcon } from '@/ui/dashboard/components/IconTooltip';
+import { TooltipMaterialIcon, TooltipResourceIcon, TooltipTextIcon } from '@/ui/dashboard/components/IconTooltip';
 import { RecipeResourceSummary } from '@/ui/dashboard/components/RecipeResourceSummary';
 
 function getMarketPurchaseCost(market: Market, resourceType: ResourceType, amount: number): number {
@@ -90,6 +91,7 @@ export function FacilityRepairDialog({
   recipeResearchWorkSpeedMultiplier: number;
   visible: boolean;
 }) {
+  const { height } = useWindowDimensions();
   const [targetCondition, setTargetCondition] = useState(1);
   const [autoRepairEnabled, setAutoRepairEnabled] = useState(false);
   const [autoRepairThreshold, setAutoRepairThreshold] = useState(0.7);
@@ -154,10 +156,11 @@ export function FacilityRepairDialog({
 
   return <Portal><Dialog dismissable onDismiss={onDismiss} visible={visible}>
     <Dialog.Title>{`Repair ${facilityView.displayName}`}</Dialog.Title>
-    <Dialog.Content style={styles.dialogSummaryContent}>
-      <Text style={styles.dialogDescription}>Choose a condition target. Costs and production projections update as you drag.</Text>
+    <Dialog.Content style={[styles.facilityDialogContent, { maxHeight: height * 0.6 }]}>
+      <ScrollView contentContainerStyle={styles.facilityDialogScrollContent} nestedScrollEnabled>
+      <Text style={styles.facilityDialogDescription}>Choose a condition target. Costs and production projections update as you drag.</Text>
       <View style={styles.repairConditionTargets}><View style={styles.facilityEfficiencyRow}><Text style={styles.facilityEfficiencyLabel}>Current condition</Text><Text style={styles.facilityEfficiencyValue}>{formatNumber(currentCondition * 100, { decimals: 0 })}%</Text></View><View style={styles.facilityEfficiencyRow}><Text style={styles.facilityEfficiencyLabel}>Repair target</Text><Text style={styles.repairTargetValue}>{formatNumber(selectedTarget * 100, { decimals: 0 })}%</Text></View></View>
-      <View accessibilityLabel={`Repair target ${formatNumber(selectedTarget * 100, { decimals: 0 })} percent`} style={styles.repairSlider}>
+      <View accessibilityLabel={`Repair target ${formatNumber(selectedTarget * 100, { decimals: 0 })} percent`} style={styles.facilityDialogRepairSlider}>
         <View onLayout={(event) => { sliderWidthRef.current = event.nativeEvent.layout.width; }} style={styles.marketSliderTouchArea} {...panResponder.panHandlers}>
           <View pointerEvents="none" style={styles.marketSliderTrack} />
           <View pointerEvents="none" style={[styles.marketSliderFill, { width: `${sliderProgress * 100}%` }]} />
@@ -165,20 +168,20 @@ export function FacilityRepairDialog({
         </View>
         <View style={styles.marketSliderLabels}>{repairTargetSteps.map((condition) => <Pressable accessibilityLabel={`Set repair target to ${formatNumber(condition * 100, { decimals: 0 })} percent`} accessibilityRole="button" key={condition} onPress={() => setTargetCondition(condition)} style={styles.marketSliderStep}><View style={[styles.marketSliderMarker, Math.abs(selectedTarget - condition) < 0.005 && styles.marketSliderMarkerActive]} /><Text style={[styles.marketSliderLabel, Math.abs(selectedTarget - condition) < 0.005 && styles.marketSliderLabelActive]}>{formatNumber(condition * 100, { decimals: 0 })}%</Text></Pressable>)}</View>
       </View>
-      <Card mode="contained" style={styles.dialogSummaryCard}><Card.Content style={styles.dialogSummaryContent}>
+      <Card mode="contained" style={styles.facilityDialogCard}><Card.Content style={styles.facilityDialogCardContent}>
         <View style={styles.dialogSummaryRow}><Text>Repair cost</Text><Text style={styles.repairTargetValue}>{formatCurrency(repairPayment.cashCost)}</Text></View>
         <View style={styles.dialogSummaryRow}><Text>Repair duration</Text><Text style={styles.repairTargetValue}>{formatDuration(repairDurationMs / 60_000)}</Text></View>
         <View style={styles.dialogSummaryRow}><Text>Temporary facility efficiency</Text><Text style={[styles.repairTargetValue, { color: getColorClass(Math.min(1, temporaryFacilityEfficiency)) }]}>{formatPercent(temporaryFacilityEfficiency, { decimals: 0 })}</Text></View>
         <Text style={styles.facilityRepairCost}>{`${formatCurrency(repairEuroCost)} repair + market purchases for missing inputs\n`}<TooltipResourceIcon resourceType={ResourceType.ConstructionMaterials} />{` Construction Materials: ${formatNumber(repairConstructionMaterialsCost, { smartDecimals: true })} | `}<TooltipResourceIcon resourceType={ResourceType.IndustrialMachines} />{` Industrial Machines: ${formatNumber(repairIndustrialMachinesCost, { smartDecimals: true })}`}</Text>
         {facilityView.pendingRepair && <Text style={styles.facilityRepairCost}>Repair in progress · {formatDuration(pendingRepairSeconds / 60)} remaining</Text>}
       </Card.Content></Card>
-      {projectedEconomics ? <Card mode="contained" style={styles.dialogSummaryCard}><Card.Content style={styles.dialogSummaryContent}>
+      {projectedEconomics ? <Card mode="contained" style={styles.facilityDialogCard}><Card.Content style={styles.facilityDialogCardContent}>
         <Text style={styles.facilityUpgradeLabel}>{`Projected at ${formatNumber(selectedTarget * 100, { decimals: 0 })}% condition`}</Text>
         <View style={styles.dialogSummaryRow}><Text>Value/min</Text><Text style={styles.repairTargetValue}>{formatCurrency(projectedEconomics.valuePerMinute)}</Text></View>
         <View style={styles.dialogSummaryRow}><Text>Maintenance/min</Text><Text style={styles.facilityRepairCost}>{formatCurrency(projectedEconomics.decayCostPerMinute)}</Text></View>
         <View style={styles.dialogSummaryRow}><Text>Net gain/min</Text><Text style={styles.repairTargetValue}>{formatCurrency(projectedEconomics.netGainPerMinute)}</Text></View>
-      </Card.Content></Card> : <Text style={styles.dialogDescription}>Start a recipe to preview value and net gain per minute.</Text>}
-      <Card mode="contained" style={styles.dialogSummaryCard}><Card.Content style={styles.dialogSummaryContent}>
+      </Card.Content></Card> : <Text style={styles.facilityDialogDescription}>Start a recipe to preview value and net gain per minute.</Text>}
+      <Card mode="contained" style={styles.facilityDialogCard}><Card.Content style={styles.facilityDialogCardContent}>
         <View style={styles.dialogSummaryRow}><Text style={styles.facilityUpgradeLabel}>Auto-repair</Text><Text style={styles.facilityRepairCost}>{autoRepairLimit > 0 ? `${autoRepairLimit} facility slot${autoRepairLimit === 1 ? '' : 's'} researched` : 'Research Repair Technician to unlock'}</Text></View>
         {autoRepairLimit > 0 && <>
           <Text style={styles.facilityRepairCost}>Repair this facility when condition reaches:</Text>
@@ -190,6 +193,7 @@ export function FacilityRepairDialog({
           {autoRepairMessage && <Text style={styles.facilityRepairCost}>{autoRepairMessage}</Text>}
         </>}
       </Card.Content></Card>
+      </ScrollView>
     </Dialog.Content>
     {repairActionMessage && <Text style={styles.productionError}>{repairActionMessage}</Text>}
     <Dialog.Actions><Button onPress={onDismiss}>Cancel</Button><Button disabled={!!facilityView.pendingRepair || selectedTarget <= currentCondition} mode="contained" onPress={submitRepair}>{facilityView.pendingRepair ? 'Repair in progress' : `Repair to ${formatNumber(selectedTarget * 100, { decimals: 0 })}%`}</Button></Dialog.Actions>
@@ -229,10 +233,11 @@ export function FacilityStaffWageDialog({
   const workerSliderMax = facilityView.assignedWorkers > initialWorkerSliderMax
     ? facilityView.assignedWorkers * 10
     : initialWorkerSliderMax;
-  const wageSliderMax = getFacilityMaxStaffWage(FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE);
+  const wageSliderMax = getFacilityMaxStaffWage(facilityView.staffWageTargetPerWorkerPerMinute);
   const totalWagePerMinute = selectedWage * selectedWorkers;
   const projectedFacility = activeRecipe ? Facility.fromSnapshot(facility.toSnapshot()) : null;
   if (projectedFacility) {
+    projectedFacility.setStaffWageBaseMultiplier(facility.getStaffWageBaseMultiplier());
     projectedFacility.setAssignedWorkers(selectedWorkers);
     projectedFacility.setStaffWagePerWorkerPerMinute(selectedWage);
   }
@@ -274,7 +279,8 @@ export function FacilityStaffWageDialog({
     const parsed = Number(wageInput.replace(',', '.'));
     updateWage(Number.isFinite(parsed) && parsed >= 0 ? parsed : selectedWage);
   };
-  const selectedStaffEfficiency = getStaffingEfficiency(selectedWorkers, facilityView.requiredWorkers, selectedWage, facilityView.staffQuality);
+  const selectedStaffTargetWage = getFacilityStaffTargetWage(facilityView.staffQuality, facility.getStaffWageBaseMultiplier());
+  const selectedStaffEfficiency = getStaffingEfficiency(selectedWorkers, facilityView.requiredWorkers, selectedWage, facilityView.staffQuality, selectedStaffTargetWage);
   const selectedFacilityEfficiency = getFacilityEfficiency(selectedStaffEfficiency, facilityView.facilityCondition);
   const staffingDelta = Math.abs(selectedWorkers - facilityView.assignedWorkers);
   const staffingIsHiring = selectedWorkers > facilityView.assignedWorkers;
@@ -282,38 +288,39 @@ export function FacilityStaffWageDialog({
   const staffingCost = getStaffingChangeCost(facilityView.assignedWorkers, selectedWorkers, selectedWage);
   const pendingStaffingSeconds = facilityView.pendingStaffingChange ? Math.max(0, facilityView.pendingStaffingChange.completesAtGameTimeMs - currentGameTimeMs) / 1_000 : 0;
   const staffQualityColor = getColorClass(Math.min(1, facilityView.staffQuality / 100));
+  const selectedStaffQualityWagePressurePerMinute = selectedWorkers <= 0 ? 0 : getStaffQualityWagePressurePerMinute(facilityView.staffQualityProgress, selectedWage, selectedStaffTargetWage);
   const efficiencyColor = getColorClass(Math.min(1, selectedStaffEfficiency));
 
   return <Portal><Dialog dismissable onDismiss={onDismiss} visible={visible}>
     <Dialog.Title>{`Staffing ${facilityView.displayName}`}</Dialog.Title>
-    <Dialog.Content style={[styles.dialogSummaryContent, { maxHeight: height * 0.68 }]}>
-      <ScrollView contentContainerStyle={styles.dialogSummaryContent}>
-      <Text style={styles.dialogDescription}>Set the number of assigned workers and their wage. Staff wages are paid every foreground minute.</Text>
-      <Card mode="contained" style={styles.dialogSummaryCard}><Card.Content style={styles.dialogSummaryContent}>
+    <Dialog.Content style={[styles.facilityDialogContent, { maxHeight: height * 0.6 }]}>
+      <ScrollView contentContainerStyle={styles.facilityDialogScrollContent} nestedScrollEnabled>
+      <Text style={styles.facilityDialogDescription}>Set the number of assigned workers and their wage. Staff wages are paid every foreground minute.</Text>
+      <Card mode="contained" style={styles.facilityDialogCard}><Card.Content style={styles.facilityDialogCardContent}>
         <View style={styles.dialogSummaryRow}><Text style={styles.facilityUpgradeLabel}>Staff</Text><Text style={styles.repairTargetValue}>{formatNumber(selectedWorkers)} / {formatNumber(facilityView.requiredWorkers)}</Text></View>
-        <View style={styles.dialogSummaryRow}><Text style={styles.facilityStaffingDetail}>Staff Quality</Text><Text style={[styles.facilityStaffingDetail, { color: staffQualityColor }]}>Q{formatNumber(facilityView.staffQuality, { decimals: 2, forceDecimals: true })} {facilityView.staffQualityTrend === 'rising' ? '↑' : facilityView.staffQualityTrend === 'falling' ? '↓' : '→'}</Text></View>
+        <View style={styles.dialogSummaryRow}><Text style={styles.facilityStaffingDetail}>{`Staff Quality (last ${FACILITY_STAFF_QUALITY_TREND_MEMORY_MINUTES}m)`}</Text><Text style={[styles.facilityStaffingDetail, { color: staffQualityColor }]}>Q{formatNumber(facilityView.staffQuality, { decimals: 2, forceDecimals: true })} {facilityView.staffQualityTrend === 'rising' ? '↑' : facilityView.staffQualityTrend === 'falling' ? '↓' : '→'}</Text></View>
+        <View style={styles.dialogSummaryRow}><View style={styles.facilityConditionLabel}><Text style={styles.facilityStaffingDetail}>Expected wage</Text><TooltipMaterialIcon color={colors.muted} label="Expected wage is the wage-only equilibrium for this facility's current Staff Quality and economy phase. It does not include training or production experience." name={APP_ICONS.help} size={13} /></View><Text style={styles.facilityStaffingDetail}>{formatCurrency(selectedStaffTargetWage)}/worker/min</Text></View>
+        <View style={styles.dialogSummaryRow}><View style={styles.facilityConditionLabel}><Text style={styles.facilityStaffingDetail}>Wage pressure</Text><TooltipMaterialIcon color={colors.muted} label="The farther the selected wage is from expected wage, the faster it pushes Staff Quality down toward Q1 or up toward Q100. Training and production experience are separate." name={APP_ICONS.help} size={13} /></View><Text style={styles.facilityStaffingDetail}>{formatStaffQualityWagePressure(selectedStaffQualityWagePressurePerMinute)}</Text></View>
         {facilityView.pendingStaffingChange && <Text style={styles.facilityRepairCost}>Staffing change pending: {formatNumber(facilityView.assignedWorkers)} → {formatNumber(facilityView.pendingStaffingChange.targetWorkers)} · {formatDuration(pendingStaffingSeconds / 60)}</Text>}
         <StaffingSlider accessibilityLabel={`Staff assigned ${formatNumber(selectedWorkers)} of ${formatNumber(facilityView.requiredWorkers)}`} max={workerSliderMax} onChange={setSelectedWorkers} step={1} value={selectedWorkers} />
-      </Card.Content></Card>
-      <Card mode="contained" style={styles.dialogSummaryCard}><Card.Content style={styles.dialogSummaryContent}>
         <Text style={styles.facilityUpgradeLabel}>Wage</Text>
         <View style={styles.dialogSummaryRow}><Text style={styles.facilityUpgradeLabel}>Wage per worker/min</Text><Text style={styles.repairTargetValue}>{formatCurrency(selectedWage)}</Text></View>
-        <TextInput dense inputMode="decimal" label="€/worker/min" mode="outlined" onBlur={normalizeWageInput} onChangeText={handleWageInput} style={{ marginBottom: 8 }} value={wageInput} />
+        <TextInput dense inputMode="decimal" label="€/worker/min" mode="outlined" onBlur={normalizeWageInput} onChangeText={handleWageInput} style={styles.facilityDialogWageInput} value={wageInput} />
         <StaffingSlider accessibilityLabel={`Wage ${formatCurrency(selectedWage)} per worker per minute`} max={wageSliderMax} onChange={updateWage} positionFromValue={(value, max) => wageSliderPosition(value, max)} valueFromPosition={(position, max) => wageFromSliderPosition(position, max)} step={0.01} value={selectedWage} />
         <View style={styles.dialogSummaryRow}><Text>Total wage/min</Text><Text style={styles.repairTargetValue}>{formatCurrency(totalWagePerMinute)}</Text></View>
       </Card.Content></Card>
-      <Card mode="contained" style={styles.dialogSummaryCard}><Card.Content style={styles.dialogSummaryContent}>
+      <Card mode="contained" style={styles.facilityDialogCard}><Card.Content style={styles.facilityDialogCardContent}>
         <Text style={styles.facilityUpgradeLabel}>Projected staffing</Text>
         <View style={styles.dialogSummaryRow}><Text>Staff efficiency</Text><Text style={[styles.repairTargetValue, { color: efficiencyColor }]}>{formatPercent(selectedStaffEfficiency, { decimals: 0 })}</Text></View>
         <View style={styles.dialogSummaryRow}><Text>Facility efficiency</Text><Text style={[styles.repairTargetValue, { color: getColorClass(Math.min(1, selectedFacilityEfficiency)) }]}>{formatPercent(selectedFacilityEfficiency, { decimals: 0 })}</Text></View>
         {staffingDelta > 0 && <><View style={styles.dialogSummaryRow}><Text>{staffingIsHiring ? 'Hiring cost' : 'Severance cost'}</Text><Text style={styles.repairTargetValue}>{formatCurrency(staffingCost)}</Text></View><View style={styles.dialogSummaryRow}><Text>{staffingIsHiring ? 'Hire time' : 'Fire time'}</Text><Text style={styles.repairTargetValue}>{formatDuration(staffingDurationMs / 60_000)}</Text></View></>}
-      </Card.Content></Card>
-      {projectedEconomics && <Card mode="contained" style={styles.dialogSummaryCard}><Card.Content style={styles.dialogSummaryContent}>
+        {projectedEconomics && <>
         <Text style={styles.facilityUpgradeLabel}>Projected facility economics</Text>
         <View style={styles.dialogSummaryRow}><Text>Value/min</Text><Text style={styles.repairTargetValue}>{formatCurrency(projectedEconomics.valuePerMinute)}</Text></View>
         <View style={styles.dialogSummaryRow}><Text>Net gain/min</Text><Text style={styles.repairTargetValue}>{formatCurrency(projectedEconomics.netGainPerMinute)}</Text></View>
         <View style={styles.dialogSummaryRow}><Text>Decay cost/min</Text><Text style={styles.facilityRepairCost}>{formatCurrency(projectedEconomics.decayCostPerMinute)}</Text></View>
-      </Card.Content></Card>}
+        </>}
+      </Card.Content></Card>
       </ScrollView>
     </Dialog.Content>
     {staffingActionMessage && <Text style={styles.productionError}>{staffingActionMessage}</Text>}
@@ -323,6 +330,7 @@ export function FacilityStaffWageDialog({
 
 export function FacilityStaffTrainingDialog({ currentGameTimeMs, facility, onDismiss, onTrainStaff, visible }: { currentGameTimeMs: number; facility: Facility; onDismiss: () => void; onTrainStaff?: (workerCount: number) => boolean; visible: boolean }) {
   const facilityView = facility.getView();
+  const { height } = useWindowDimensions();
   const activeTrainingWorkers = facilityView.staffTraining?.workers ?? 0;
   const [trainingWorkers, setTrainingWorkers] = useState(activeTrainingWorkers);
   const [trainingActionMessage, setTrainingActionMessage] = useState<string | null>(null);
@@ -330,7 +338,7 @@ export function FacilityStaffTrainingDialog({ currentGameTimeMs, facility, onDis
   const trainingSeconds = facilityView.staffTraining ? Math.max(0, facilityView.staffTraining.completesAtGameTimeMs - currentGameTimeMs) / 1_000 : 0;
   const trainingCost = getStaffTrainingCost(facilityView.staffQuality, additionalWorkers);
   const trainingDurationMs = getStaffTrainingDurationMs(additionalWorkers);
-  const trainingEfficiency = getStaffingEfficiency(Math.max(0, facilityView.assignedWorkers - trainingWorkers), facilityView.requiredWorkers, facilityView.staffWagePerWorkerPerMinute, facilityView.staffQuality);
+      const trainingEfficiency = getStaffingEfficiency(Math.max(0, facilityView.assignedWorkers - trainingWorkers), facilityView.requiredWorkers, facilityView.staffWagePerWorkerPerMinute, facilityView.staffQuality, facilityView.staffWageTargetPerWorkerPerMinute);
   const projectedTrainingQuality = getStaffQualityFromProgress(facilityView.staffQualityProgress + trainingWorkers * FACILITY_STAFF_TRAINING_QUALITY_PROGRESS_PER_WORKER);
 
   useEffect(() => {
@@ -353,18 +361,20 @@ export function FacilityStaffTrainingDialog({ currentGameTimeMs, facility, onDis
 
   return <Portal><Dialog dismissable onDismiss={onDismiss} visible={visible}>
     <Dialog.Title>{`Train staff · ${facilityView.displayName}`}</Dialog.Title>
-    <Dialog.Content style={styles.dialogSummaryContent}>
-      <Text style={styles.dialogDescription}>{facilityView.staffTraining ? 'Add more workers to the current training activity. Only the added workers are charged, and the completion time is extended.' : 'Select workers to train. They temporarily leave production, then return with improved Staff Quality.'}</Text>
-      <Card mode="contained" style={styles.dialogSummaryCard}><Card.Content style={styles.dialogSummaryContent}>
+    <Dialog.Content style={[styles.facilityDialogContent, { maxHeight: height * 0.6 }]}>
+      <ScrollView contentContainerStyle={styles.facilityDialogScrollContent} nestedScrollEnabled>
+      <Text style={styles.facilityDialogDescription}>{facilityView.staffTraining ? 'Add more workers to the current training activity. Only the added workers are charged, and everyone returns when the current activity completes.' : 'Select workers to train. They temporarily leave production, then return with improved Staff Quality.'}</Text>
+      <Card mode="contained" style={styles.facilityDialogCard}><Card.Content style={styles.facilityDialogCardContent}>
         <View style={styles.dialogSummaryRow}><Text>Staff available</Text><Text style={styles.repairTargetValue}>{formatNumber(facilityView.assignedWorkers - activeTrainingWorkers)}</Text></View>
         <View style={styles.dialogSummaryRow}><Text>Training staff</Text><Text style={styles.repairTargetValue}>{formatNumber(trainingWorkers)}</Text></View>
         <StaffingSlider accessibilityLabel={`Staff sent to training ${formatNumber(trainingWorkers)} of ${formatNumber(facilityView.assignedWorkers)}`} max={facilityView.assignedWorkers} min={activeTrainingWorkers} onChange={setTrainingWorkers} step={1} value={trainingWorkers} />
         <View style={styles.dialogSummaryRow}><Text>Training cost</Text><Text style={styles.repairTargetValue}>{formatCurrency(trainingCost)}</Text></View>
-        <View style={styles.dialogSummaryRow}><Text>{facilityView.staffTraining ? 'Added duration' : 'Training duration'}</Text><Text style={styles.repairTargetValue}>{formatDuration(trainingDurationMs / 60_000)}</Text></View>
+        <View style={styles.dialogSummaryRow}><Text>Training duration</Text><Text style={styles.repairTargetValue}>{facilityView.staffTraining ? formatDuration(trainingSeconds / 60) : formatDuration(trainingDurationMs / 60_000)}</Text></View>
         <View style={styles.dialogSummaryRow}><Text>Temporary staff efficiency</Text><Text style={styles.repairTargetValue}>{formatPercent(trainingEfficiency, { decimals: 0 })}</Text></View>
         <View style={styles.dialogSummaryRow}><Text>Expected StaffQ</Text><Text style={styles.repairTargetValue}>Q{formatNumber(projectedTrainingQuality, { decimals: 2, forceDecimals: true })}</Text></View>
         {facilityView.staffTraining && <Text style={styles.facilityRepairCost}>In progress · {formatDuration(trainingSeconds / 60)} remaining</Text>}
       </Card.Content></Card>
+      </ScrollView>
     </Dialog.Content>
     {trainingActionMessage && <Text style={styles.productionError}>{trainingActionMessage}</Text>}
     <Dialog.Actions><Button onPress={onDismiss}>Cancel</Button><Button disabled={!!facilityView.pendingStaffingChange || additionalWorkers <= 0 || !onTrainStaff} mode="contained" onPress={submitTraining}>{facilityView.staffTraining ? 'Add to training' : 'Start training'}</Button></Dialog.Actions>
@@ -390,7 +400,7 @@ function StaffingSlider({ accessibilityLabel, max, min = 0, onChange, positionFr
     onStartShouldSetPanResponder: () => true,
   })).current;
 
-  return <View accessibilityLabel={accessibilityLabel} style={styles.marketSlider}>
+  return <View accessibilityLabel={accessibilityLabel} style={styles.facilityDialogSlider}>
     <View onLayout={(event) => { sliderWidthRef.current = event.nativeEvent.layout.width; }} style={styles.marketSliderTouchArea} {...panResponder.panHandlers}>
       <View pointerEvents="none" style={styles.marketSliderTrack} />
       <View pointerEvents="none" style={[styles.marketSliderFill, { width: `${progress * 100}%` }]} />

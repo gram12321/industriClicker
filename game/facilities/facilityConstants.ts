@@ -1,7 +1,7 @@
 import { ALL_RECIPES, RecipeName, type Recipe } from '@/game/recipes';
 import { FacilityType } from './facilityTypes';
 
-export const FACILITY_TYPES = [FacilityType.Farm, FacilityType.AnimalFarm, FacilityType.Bakery, FacilityType.SmallUtilityWorks, FacilityType.Mine, FacilityType.Quarry, FacilityType.IndustrialProcessingFactory, FacilityType.ChemicalPlant, FacilityType.ElectronicsFactory, FacilityType.AssemblyPlant, FacilityType.ConstructionFactory, FacilityType.WaterWell, FacilityType.PowerPlant] as const;
+export const FACILITY_TYPES = [FacilityType.Farm, FacilityType.AnimalFarm, FacilityType.Bakery, FacilityType.SmallUtilityWorks, FacilityType.Mine, FacilityType.Quarry, FacilityType.IndustrialProcessingFactory, FacilityType.ChemicalPlant, FacilityType.ElectronicsFactory, FacilityType.AssemblyPlant, FacilityType.ConstructionFactory, FacilityType.WaterWell, FacilityType.SolarPlant, FacilityType.CoalPowerPlant] as const;
 export type FacilityGroup = 'agriculture' | 'extraction' | 'manufacturing' | 'utilities';
 
 /** Farm footprints offered during construction; the first option is the baseline field. */
@@ -14,7 +14,7 @@ export const FACILITY_GROUPS: ReadonlyArray<{ id: FacilityGroup; label: string; 
   { id: 'agriculture', label: 'Agriculture', facilities: [FacilityType.AnimalFarm, FacilityType.Bakery, FacilityType.Farm] },
   { id: 'extraction', label: 'Extraction', facilities: [FacilityType.Mine, FacilityType.Quarry] },
   { id: 'manufacturing', label: 'Manufacturing', facilities: [FacilityType.AssemblyPlant, FacilityType.ChemicalPlant, FacilityType.ConstructionFactory, FacilityType.ElectronicsFactory, FacilityType.IndustrialProcessingFactory] },
-  { id: 'utilities', label: 'Utilities', facilities: [FacilityType.PowerPlant, FacilityType.SmallUtilityWorks, FacilityType.WaterWell] },
+  { id: 'utilities', label: 'Utilities', facilities: [FacilityType.CoalPowerPlant, FacilityType.SmallUtilityWorks, FacilityType.SolarPlant, FacilityType.WaterWell] },
 ];
 export const FACILITY_UPGRADE_COST_GROWTH = 1.5;
 /** Fraction of a facility's construction resource requirement used by its first upgrade level. */
@@ -50,6 +50,10 @@ export const FACILITY_FIRE_COST_WAGE_MINUTES = 2;
 export const FACILITY_STAFF_QUALITY_WAGE_GAIN_PER_MINUTE = 0.02;
 export const FACILITY_STAFF_QUALITY_WAGE_LOSS_PER_MINUTE = 0.04;
 export const FACILITY_STAFF_QUALITY_EXPERIENCE_PROGRESS_PER_WORK = 0.002;
+/** Approximate foreground memory used by the player-facing Staff Quality trend. */
+export const FACILITY_STAFF_QUALITY_TREND_MEMORY_MINUTES = 1;
+/** Makes the weighted trend mostly forget changes after one memory window. */
+export const FACILITY_STAFF_QUALITY_TREND_DECAY_RATE = 3;
 export const FACILITY_STAFF_TRAINING_COST_WAGE_MINUTES = 10;
 export const FACILITY_STAFF_TRAINING_DURATION_PER_WORKER_MS = 120_000;
 /** Foreground repair time for restoring one full condition point. */
@@ -81,7 +85,8 @@ export const FACILITY_PRODUCTION_ORDER = [
   FacilityType.AssemblyPlant,
   FacilityType.ConstructionFactory,
   FacilityType.WaterWell,
-  FacilityType.PowerPlant,
+  FacilityType.SolarPlant,
+  FacilityType.CoalPowerPlant,
 ] as const;
 
 export type FacilityDefinition = {
@@ -162,9 +167,9 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     type: FacilityType.Bakery,
     name: 'Bakery',
     icon: 'bread-slice-outline',
-    landCost: 100,
-    constructionMaterialsCost: 80,
-    industrialMachinesCost: 8,
+    landCost: 50,
+    constructionMaterialsCost: 40,
+    industrialMachinesCost: 4,
     upgradeCost: 150,
     baseWorkers: 2,
     recipes: [ALL_RECIPES[RecipeName.BakeBread], ALL_RECIPES[RecipeName.BakeCake], ALL_RECIPES[RecipeName.BakePremiumCake], ALL_RECIPES[RecipeName.BakeMeatPie]],
@@ -197,7 +202,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     icon: 'terrain',
     landCost: 25,
     constructionMaterialsCost: 40,
-    industrialMachinesCost: 4,
+    industrialMachinesCost: 2,
     upgradeCost: 70,
     baseWorkers: 3,
     recipes: [ALL_RECIPES[RecipeName.QuarrySand], ALL_RECIPES[RecipeName.QuarryClay], ALL_RECIPES[RecipeName.QuarryStone], ALL_RECIPES[RecipeName.QuarryMinerals]],
@@ -218,8 +223,8 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     name: 'Chemical Plant',
     icon: 'flask-outline',
     landCost: 100,
-    constructionMaterialsCost: 120,
-    industrialMachinesCost: 14,
+    constructionMaterialsCost: 100,
+    industrialMachinesCost: 20,
     upgradeCost: 350,
     baseWorkers: 7,
     recipes: [ALL_RECIPES[RecipeName.ProduceChemicals], ALL_RECIPES[RecipeName.SynthesizeFertilizer], ALL_RECIPES[RecipeName.ProducePlastic]],
@@ -261,23 +266,34 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     type: FacilityType.WaterWell,
     name: 'Water Well',
     icon: 'water-well',
-    landCost: 80,
-    constructionMaterialsCost: 10,
-    industrialMachinesCost: 2,
+    landCost: 100,
+    constructionMaterialsCost: 80,
+    industrialMachinesCost: 5,
     upgradeCost: 60,
     baseWorkers: 1,
     recipes: [ALL_RECIPES[RecipeName.ManualPumping], ALL_RECIPES[RecipeName.ElectricPumping]],
   },
-  [FacilityType.PowerPlant]: {
-    type: FacilityType.PowerPlant,
-    name: 'Power Plant',
-    icon: 'factory',
+  [FacilityType.SolarPlant]: {
+    type: FacilityType.SolarPlant,
+    name: 'Solar Plant',
+    icon: 'white-balance-sunny',
     landCost: 100,
-    constructionMaterialsCost: 50,
+    constructionMaterialsCost: 30,
     industrialMachinesCost: 8,
     upgradeCost: 250,
+    baseWorkers: 1,
+    recipes: [ALL_RECIPES[RecipeName.SolarPower]],
+  },
+  [FacilityType.CoalPowerPlant]: {
+    type: FacilityType.CoalPowerPlant,
+    name: 'Coal Power Plant',
+    icon: 'factory',
+    landCost: 100,
+    constructionMaterialsCost: 80,
+    industrialMachinesCost: 35,
+    upgradeCost: 500,
     baseWorkers: 9,
-    recipes: [ALL_RECIPES[RecipeName.CoalPower], ALL_RECIPES[RecipeName.SolarPower]],
+    recipes: [ALL_RECIPES[RecipeName.CoalPower]],
   },
 };
 
