@@ -58,7 +58,14 @@ function hasCurrentResourceKeys(value: unknown): value is Record<ResourceType, u
 }
 
 function isFinanceTransactionSnapshot(value: unknown): boolean {
-  if (!isRecord(value) || typeof value.source !== 'string') return false;
+  if (!isRecord(value) || typeof value.source !== 'string'
+    || typeof value.occurrenceCount !== 'number' || !Number.isInteger(value.occurrenceCount) || value.occurrenceCount <= 0
+    || (value.aggregationKey !== undefined && (typeof value.aggregationKey !== 'string' || value.aggregationKey.length === 0))) return false;
+  if (value.marketTrade !== undefined && (!isRecord(value.marketTrade)
+    || !RESOURCE_TYPES.includes(value.marketTrade.resourceType as ResourceType)
+    || typeof value.marketTrade.quantity !== 'number' || !Number.isFinite(value.marketTrade.quantity) || value.marketTrade.quantity <= 0
+    || typeof value.marketTrade.qualityQuantity !== 'number' || !Number.isFinite(value.marketTrade.qualityQuantity) || value.marketTrade.qualityQuantity < 0
+    || typeof value.marketTrade.qualityAmount !== 'number' || !Number.isFinite(value.marketTrade.qualityAmount) || value.marketTrade.qualityAmount < 0)) return false;
   const facilitySource = value.source === 'facility-construction' || value.source === 'facility-upgrade' || value.source === 'facility-repair' || value.source === 'facility-staff-wage' || value.source === 'facility-staffing';
   if (value.source === 'facility-production') {
     return value.facilityAccounting === undefined

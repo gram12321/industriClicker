@@ -133,3 +133,64 @@ describe('cash-flow market details', () => {
     expect(detail).toMatchObject({ resourceType: ResourceType.Grain, totalQuantity: 5, totalQualityQuantity: 5, totalQualityAmount: 18 });
   });
 });
+
+describe('foreground finance aggregation', () => {
+  it('keeps cloned aggregated history isolated from later writes', () => {
+    const finance = new Finance();
+    const transaction = { aggregationKey: 'staff-wage:farm-1', amount: -1, description: 'Staff wages for Farm #1', detailLines: ['Workers: 1'], facilityAccounting: { facilityId: 'farm-1', classification: 'staff-wage' as const, historicalValue: 1 }, kind: 'operating' as const, source: 'facility-staff-wage' as const };
+    finance.applyTransaction({ ...transaction, occurredAtGameTimeMs: 1_000 });
+
+    const clone = finance.clone();
+    clone.applyTransaction({ ...transaction, occurredAtGameTimeMs: 2_000 });
+
+    expect(finance.getTransactions()[0]).toMatchObject({ amount: -1, occurrenceCount: 1 });
+    expect(clone.getTransactions()[0]).toMatchObject({ amount: -2, occurrenceCount: 2 });
+  });
+
+  it('combines repeated facility wages and production performance without changing totals', () => {
+    const finance = new Finance();
+
+    expect(finance.applyTransaction({ aggregationKey: 'staff-wage:farm-1', amount: -1, description: 'Staff wages for Farm #1', detailLines: ['Workers: 1', 'Wage: €60.00 per worker/min'], facilityAccounting: { facilityId: 'farm-1', classification: 'staff-wage', historicalValue: 1 }, kind: 'operating', source: 'facility-staff-wage', occurredAtGameTimeMs: 1_000 })).toBe(true);
+    expect(finance.applyTransaction({ aggregationKey: 'staff-wage:farm-1', amount: -1, description: 'Staff wages for Farm #1', detailLines: ['Workers: 1', 'Wage: €60.00 per worker/min'], facilityAccounting: { facilityId: 'farm-1', classification: 'staff-wage', historicalValue: 1 }, kind: 'operating', source: 'facility-staff-wage', occurredAtGameTimeMs: 2_000 })).toBe(true);
+    expect(finance.applyTransaction({ aggregationKey: 'facility-production:farm-1', amount: 0, description: 'Production completed by Farm #1', detailLines: ['Output market value: €2.00', 'Input cost + production wear: €1.00'], facilityPerformance: { facilityId: 'farm-1', outputValue: 2, sourceCost: 1 }, kind: 'operating', source: 'facility-production', occurredAtGameTimeMs: 3_000 })).toBe(true);
+    expect(finance.applyTransaction({ aggregationKey: 'facility-production:farm-1', amount: 0, description: 'Production completed by Farm #1', detailLines: ['Output market value: €3.00', 'Input cost + production wear: €1.50'], facilityPerformance: { facilityId: 'farm-1', outputValue: 3, sourceCost: 1.5 }, kind: 'operating', source: 'facility-production', occurredAtGameTimeMs: 4_000 })).toBe(true);
+
+    const transactions = finance.getTransactions();
+    expect(transactions).toHaveLength(2);
+    expect(transactions.find((transaction) => transaction.source === 'facility-staff-wage')).toMatchObject({ amount: -2, occurrenceCount: 2 });
+    expect(transactions.find((transaction) => transaction.source === 'facility-production')).toMatchObject({ occurrenceCount: 2, facilityPerformance: { outputValue: 5, sourceCost: 2.5 } });
+    expect(finance.getFacilityPerformance('farm-1', 'all-time', 4_000)).toMatchObject({ outputValue: 5, sourceCost: 2.5, staffWageExpense: 2, operatingProfit: 0.5 });
+  });
+
+  it('keeps aggregated market quantities, quality, and event counts in cash flow', () => {
+    const finance = new Finance();
+    const common = { aggregationKey: 'autobuy:water', description: 'Autobought water', kind: 'operating' as const, source: 'market-purchase' as const };
+    finance.applyTransaction({ ...common, amount: -2, detailLines: ['Unit price: €2.00', 'Quality: Q2.00'], marketTrade: { resourceType: ResourceType.Water, quantity: 1, qualityQuantity: 1, qualityAmount: 2 }, occurredAtGameTimeMs: 1_000 });
+    finance.applyTransaction({ ...common, amount: -8, detailLines: ['Unit price: €4.00', 'Quality: Q4.00'], marketTrade: { resourceType: ResourceType.Water, quantity: 2, qualityQuantity: 2, qualityAmount: 8 }, occurredAtGameTimeMs: 2_000 });
+
+    const data = buildFinanceStatementData({ achievements: new AchievementLedger(), companyStartedAtGameTimeMs: 0, currentGameTimeMs: 2_000, facilities: new FacilityCollection(), finance, inventory: new Inventory(), market: new Market(), period: 'all-time', research: new ResearchLedger() });
+    expect(data.cashFlowRows[0]?.detailGroups[0]?.details[0]).toMatchObject({ count: 2, resourceType: ResourceType.Water, totalQuantity: 3, totalQualityQuantity: 3, totalQualityAmount: 10 });
+  });
+
+  it('keeps a 90-minute per-second wage stream to one entry per foreground minute', () => {
+    const finance = new Finance();
+    for (let second = 0; second < 90 * 60; second += 1) {
+      finance.applyTransaction({ aggregationKey: 'staff-wage:farm-1:1:1', amount: -1 / 60, description: 'Staff wages for Farm #1', detailLines: ['Workers: 1', 'Wage: €1.00 per worker/min'], facilityAccounting: { facilityId: 'farm-1', classification: 'staff-wage', historicalValue: 1 / 60 }, kind: 'operating', source: 'facility-staff-wage', occurredAtGameTimeMs: second * 1_000 });
+    }
+
+    const wageTransactions = finance.getTransactions();
+    expect(wageTransactions).toHaveLength(90);
+    expect(wageTransactions.reduce((total, transaction) => total + transaction.occurrenceCount, 0)).toBe(90 * 60);
+    expect(finance.getFacilityPerformance('farm-1', 'all-time', 90 * 60 * 1_000).staffWageExpense).toBeCloseTo(90);
+  });
+
+  it('assigns aggregated minute entries to their bucket start in rolling reports', () => {
+    const finance = new Finance();
+    for (let second = 0; second < 120; second += 1) {
+      finance.applyTransaction({ aggregationKey: 'staff-wage:farm-1:1:1', amount: -1 / 60, description: 'Staff wages for Farm #1', detailLines: ['Workers: 1'], facilityAccounting: { facilityId: 'farm-1', classification: 'staff-wage', historicalValue: 1 / 60 }, kind: 'operating', source: 'facility-staff-wage', occurredAtGameTimeMs: second * 1_000 });
+    }
+
+    expect(finance.getFacilityPerformance('farm-1', 'minute', 119_000).staffWageExpense).toBeCloseTo(1);
+    expect(finance.getFacilityPerformance('farm-1', 'minute', 120_000).staffWageExpense).toBeCloseTo(1);
+  });
+});

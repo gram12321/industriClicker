@@ -20,7 +20,7 @@ Industri Clicker is a single-player, local-first industrial clicker for native A
 - **Markets and sales:** the local market is player-facing; regional/global pools are device-local. Customer orders are atomic bundles with deterministic local customers, company relationships, and research-controlled scale/targeting.
 - **Finance and progression:** Finance reports company and facility economics, including output source cost, maintenance, staff wages, and capital; loans, research, achievements, prestige, and grants are progression systems, not hidden UI rules.
 - **Onboarding:** the standard-start tutorial covers company orientation, first facility construction, recipe research, production, automation, economics, upgrades, and Inventory flow. It is replayable/dismissible and does not cover every later system.
-- **Mobile UX:** use touch-sized controls, safe areas, accessible labels, readable contrast, non-color-only status, and explicit foreground/background behavior.
+- **Mobile UX:** use touch-sized controls, safe areas, accessible labels, readable contrast, non-color-only status, and explicit foreground/background behavior. Facilities use a compact sortable overview; opening one mounts its single detailed workspace rather than expanding every facility at once.
 
 ## Deferred Scope
 

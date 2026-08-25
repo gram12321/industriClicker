@@ -37,13 +37,28 @@ function CompanyGamePersistence({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!activeCompanyId) return undefined;
     let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+    let isSaving = false;
+    let saveAgain = false;
 
-    const saveNow = (shouldProcessForegroundTime = AppState.currentState !== 'background' && AppState.currentState !== 'inactive') => {
+    const saveNow = async (shouldProcessForegroundTime = false) => {
       if (useCompanySessionStore.getState().activeCompany?.id !== activeCompanyId) return Promise.resolve();
       if (shouldProcessForegroundTime) useGameStore.getState().advanceRealtime(Date.now());
-      return saveCompanyGameSave(activeCompanyId, useGameStore.getState().createSnapshot()).catch(() => undefined);
+      if (isSaving) {
+        saveAgain = true;
+        return;
+      }
+      isSaving = true;
+      do {
+        saveAgain = false;
+        await saveCompanyGameSave(activeCompanyId, useGameStore.getState().createSnapshot()).catch(() => undefined);
+      } while (saveAgain && useCompanySessionStore.getState().activeCompany?.id === activeCompanyId);
+      isSaving = false;
     };
     const scheduleSave = () => {
+      if (isSaving) {
+        saveAgain = true;
+        return;
+      }
       if (saveTimeout) return;
       saveTimeout = setTimeout(() => {
         saveTimeout = null;

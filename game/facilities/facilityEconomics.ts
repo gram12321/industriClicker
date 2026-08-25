@@ -12,7 +12,7 @@ import {
   FACILITY_REPAIR_MATERIAL_COST_RATE,
   getFacilityDefinition,
 } from './facilityConstants';
-import { calculateFacilityEffectiveWork, calculateRecipeInputSourceCost, getFacilityRecipeInputPlan, type RecipeInputPlan, getRecipeProductionConditionLoss } from './facilityProduction';
+import { calculateFacilityEffectiveWork, calculateRecipeInputQ, calculateRecipeInputSourceCost, getFacilityAvailableRecipeInputPlan, getFacilityRecipeInputPlan, type RecipeInputPlan, getRecipeProductionConditionLoss } from './facilityProduction';
 import { getConditionDecayMultiplier, getFacilityConditionEfficiency, getOverstaffingConditionDecayMultiplier, type FacilityUpgradeKind } from './facilityUpgrades';
 
 function clamp(value: number, minimum: number, maximum: number): number {
@@ -122,6 +122,104 @@ export function calculateFacilityNetGainPerMinute(
   return valuePerMinute
     - Math.max(0, decayCostPerMinute)
     - Math.max(0, staffWagePerMinute);
+}
+
+/** Combines a recipe's current contribution margin with facility decay and staff wages. */
+export function calculateFacilityProductionEconomics(
+  recipe: Recipe,
+  market: Market,
+  outputMultiplier: number,
+  effectiveWorkPerMinute: number,
+  decayCostPerMinute: number,
+  staffWagePerMinute: number,
+  getInputQuality?: (resourceType: ResourceType) => number,
+  getOutputQuality?: (resourceType: ResourceType) => number,
+  sizeMultiplier = 1,
+  inputPlan?: RecipeInputPlan,
+  inputEffects?: Required<RecipeInputEffects>,
+): { netGainPerMinute: number; valuePerMinute: number } {
+  const valuePerMinute = calculateRecipeValuePerMinute(
+    recipe,
+    market,
+    outputMultiplier,
+    effectiveWorkPerMinute,
+    getInputQuality,
+    getOutputQuality,
+    sizeMultiplier,
+    inputPlan,
+    inputEffects,
+  );
+
+  return {
+    valuePerMinute,
+    netGainPerMinute: calculateFacilityNetGainPerMinute(valuePerMinute, decayCostPerMinute, staffWagePerMinute),
+  };
+}
+
+/** Resolves an active facility recipe's current work, quality, upkeep, and economics. */
+export function calculateCurrentFacilityProductionEconomics(
+  facility: FacilityView,
+  recipe: Recipe,
+  market: Market,
+  inventory: Inventory,
+  recipeResearchWorkSpeedMultiplier: number,
+  getResearchMaxQ: (resourceType: ResourceType) => number,
+  getProductionMaxQ: (resourceType: ResourceType) => number,
+): {
+  availableInputPlan: RecipeInputPlan;
+  decayCostPerMinute: number;
+  effectiveWorkPerMinute: number;
+  getOutputQuality: (resourceType: ResourceType) => number;
+  inputQ: number | null;
+  netGainPerMinute: number;
+  staffWagePerMinute: number;
+  valuePerMinute: number;
+} {
+  const definition = getFacilityDefinition(facility.facilityType);
+  const optionalInputSettings = facility.optionalInputSettings[recipe.name];
+  const availableInputPlan = getFacilityAvailableRecipeInputPlan(recipe, inventory, facility.sizeMultiplier, optionalInputSettings);
+  const isActiveRecipe = recipe.name === facility.activeRecipeName;
+  const inputQ = isActiveRecipe && facility.recipeInputQ !== null
+    ? facility.recipeInputQ
+    : calculateRecipeInputQ(recipe, inventory, facility.sizeMultiplier, optionalInputSettings);
+  const capturedInputEffects = isActiveRecipe ? facility.recipeInputEffects : null;
+  const effectiveWorkPerMinute = calculateFacilityEffectiveWork(facility, BASE_WORK_PER_MINUTE, recipeResearchWorkSpeedMultiplier);
+  const decayCostPerMinute = calculateFacilityDecayCostPerMinute(
+    definition.landCost * facility.sizeMultiplier,
+    definition.constructionMaterialsCost * facility.sizeMultiplier,
+    definition.industrialMachinesCost * facility.sizeMultiplier,
+    facility.facilityCondition,
+    facility.conditionDecayMultiplier * facility.overstaffingConditionDecayMultiplier,
+    effectiveWorkPerMinute,
+    recipe,
+    market.getLocalPrice(ResourceType.ConstructionMaterials),
+    market.getLocalPrice(ResourceType.IndustrialMachines),
+    facility.sizeMultiplier,
+  );
+  const getOutputQuality = (resourceType: ResourceType): number => {
+    const output = recipe.outputs.find((candidate) => candidate.resourceType === resourceType);
+    if (!output) return 1;
+    return calculateOutputQuality({
+      researchMaxQ: getResearchMaxQ(resourceType),
+      weightedInputQ: inputQ,
+      upgradeMaxQ: facility.upgradeMaxQ,
+      productionMaxQ: getProductionMaxQ(resourceType),
+      staffMaxQ: facility.staffQuality,
+      outputBonusQ: (output.outputBonusQ ?? 0) + (capturedInputEffects?.qualityBoost ?? availableInputPlan.effects.qualityBoost),
+    }).outputQ;
+  };
+  const staffWagePerMinute = calculateFacilityStaffWagePerMinute(facility.assignedWorkers, facility.staffWagePerWorkerPerMinute);
+  const economics = calculateFacilityProductionEconomics(recipe, market, facility.outputMultiplier, effectiveWorkPerMinute, decayCostPerMinute, staffWagePerMinute, (resourceType) => inventory.getQuality(resourceType), getOutputQuality, facility.sizeMultiplier, availableInputPlan);
+
+  return {
+    ...economics,
+    availableInputPlan,
+    decayCostPerMinute,
+    effectiveWorkPerMinute,
+    getOutputQuality,
+    inputQ,
+    staffWagePerMinute,
+  };
 }
 
 /** Projects the euro cost of condition wear, including cash and both repair inputs. */

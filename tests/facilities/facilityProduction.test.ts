@@ -3,9 +3,12 @@ import { Inventory } from '@/game/inventory';
 import { Finance } from '@/game/finance';
 import { getRecipe, RecipeName } from '@/game/recipes';
 import { ResourceType } from '@/game/resources';
+import { Facility } from '@/game/facilities/facility';
 import { FacilityCollection } from '@/game/facilities/facilityCollection';
 import {
   calculateFacilityProductionMaintenanceCost,
+  calculateFacilityProductionEconomics,
+  calculateCurrentFacilityProductionEconomics,
   calculateFacilityNetGainPerMinute,
   calculateRecipeContributionMargin,
   calculateFacilityResourcePayment,
@@ -269,6 +272,43 @@ describe('facility economics', () => {
     const decayCost = 0;
 
     expect(calculateFacilityNetGainPerMinute(valuePerMinute, decayCost, 7)).toBe(18);
+  });
+
+  it('returns shared value and net gain for facility production presentation', () => {
+    const market = new Market();
+    const recipe = getRecipe(RecipeName.GrowGrain);
+    const economics = calculateFacilityProductionEconomics(recipe, market, 1, 1.2, 3.5, 7, () => 2, () => 5);
+
+    expect(economics.valuePerMinute).toBeCloseTo(calculateRecipeValuePerMinute(recipe, market, 1, 1.2, () => 2, () => 5));
+    expect(economics.netGainPerMinute).toBeCloseTo(calculateFacilityNetGainPerMinute(economics.valuePerMinute, 3.5, 7));
+  });
+
+  it('resolves active facility economics once for every production presentation', () => {
+    const { facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    const inventory = new Inventory();
+    const recipe = getRecipe(RecipeName.GrowGrain);
+    for (const input of recipe.inputs) inventory.add(input.resourceType, input.amount);
+
+    const economics = calculateCurrentFacilityProductionEconomics(facility.getView(), recipe, new Market(), inventory, 1, () => 10, () => 10);
+
+    expect(economics.netGainPerMinute).toBeCloseTo(calculateFacilityNetGainPerMinute(economics.valuePerMinute, economics.decayCostPerMinute, economics.staffWagePerMinute));
+    expect(economics.getOutputQuality(recipe.outputs[0]!.resourceType)).toBeGreaterThan(0);
+  });
+
+  it('does not reuse captured active-recipe inputs for another recipe preview', () => {
+    const { facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    const snapshot = facility.toSnapshot();
+    snapshot.recipeInputQ = 99;
+    snapshot.recipeInputEffects = { inputMultiplier: 0.5, outputMultiplier: 2, qualityBoost: 10 };
+    const restoredFacility = Facility.fromSnapshot(snapshot);
+    const previewRecipe = getRecipe(RecipeName.GrowSugar);
+    const inventory = new Inventory();
+    for (const input of previewRecipe.inputs) inventory.add(input.resourceType, input.amount);
+
+    const economics = calculateCurrentFacilityProductionEconomics(restoredFacility.getView(), previewRecipe, new Market(), inventory, 1, () => 10, () => 10);
+
+    expect(economics.inputQ).not.toBe(99);
+    expect(economics.getOutputQuality(previewRecipe.outputs[0]!.resourceType)).toBeLessThan(10);
   });
 });
 
