@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getResource, ResourceType, RESOURCE_TYPES } from '@/game/resources';
 import { MARKET_SALES_ORDER_BID_MULTIPLIER } from '@/game/market';
-import { SALES_CUSTOMER_DOMAIN_PROFILES, SALES_ORDER_DURATION_MS, SalesOrders, calculateSalesCustomerAccessibility, calculateSalesOrderAcquisitionRate, calculateSalesOrderAcquisitionDetails, calculateSalesOrderBaseTargetValue, calculateSalesOrderBidPremium, calculateSalesOrderBundleLineCount, calculateSalesOrderCustomerSizeFitMultiplier, calculateSalesOrderCustomerTypeMaturity, calculateSalesOrderCustomerSelectionWeight, calculateSalesOrderDomainSelectionWeight, calculateSalesOrderEstimatedWaitMinutes, calculateSalesOrderInventoryReadiness, calculateSalesOrderInventoryValueReadiness, calculateSalesOrderMarketVolumeMultiplier, calculateSalesOrderResourceSelectionWeight, calculateSalesOrderTargetValue, getOfferableSalesOrderResourceTypes, sampleSalesOrderArrivalCount } from '@/game/sales';
+import { SALES_CUSTOMER_DOMAIN_PROFILES, SALES_ORDER_DURATION_MS, SalesOrders, calculateSalesCustomerAccessibility, calculateSalesOrderAcquisitionRate, calculateSalesOrderAcquisitionDetails, calculateSalesOrderBaseTargetValue, calculateSalesOrderBidPremium, calculateSalesOrderBundleLineCount, calculateSalesOrderCustomerSizeFitMultiplier, calculateSalesOrderCustomerTypeMaturity, calculateSalesOrderCustomerSelectionWeight, calculateSalesOrderDomainSelectionWeight, calculateSalesOrderEstimatedWaitMinutes, calculateSalesOrderInventoryReadiness, calculateSalesOrderInventoryValueReadiness, calculateSalesOrderMarketVolumeMultiplier, calculateSalesOrderResourceSelectionWeight, calculateSalesOrderTargetValue, getOfferableSalesOrderResourceTypes, getSalesResourceProfile, sampleSalesOrderArrivalCount } from '@/game/sales';
 
 function quantities(resourceType: ResourceType, amount: number): Record<ResourceType, number> {
   return RESOURCE_TYPES.reduce((result, candidate) => { result[candidate] = candidate === resourceType ? amount : 0; return result; }, {} as Record<ResourceType, number>);
@@ -10,6 +10,7 @@ function prices(value: number): Record<ResourceType, number> { return RESOURCE_T
 function benchmarkSupplies(): Record<ResourceType, number> { return RESOURCE_TYPES.reduce((result, resourceType) => { result[resourceType] = getResource(resourceType).market.globalBenchmarkSupply; return result; }, {} as Record<ResourceType, number>); }
 
 describe('sales orders', () => {
+  const waterStandardLot = getSalesResourceProfile(ResourceType.Water).standardOrderLot;
   it('spreads bid bonuses across company progression and customer conditions', () => {
     const bidBonusPercent = (premium: number) => ((1 + premium) * MARKET_SALES_ORDER_BID_MULTIPLIER - 1) * 100;
     const scenarioGroups = [
@@ -45,16 +46,16 @@ describe('sales orders', () => {
     const lowCustomerFactors = calculateSalesOrderBidPremium({ ...input, purchasingPower: 0.5, bidMultiplier: 0.5 });
     const highCustomerFactors = calculateSalesOrderBidPremium({ ...input, purchasingPower: 1.5, bidMultiplier: 1.5 });
 
-    expect(lowCustomerFactors).toBeCloseTo(-0.755);
-    expect(highCustomerFactors).toBeCloseTo(1.205);
+    expect(lowCustomerFactors).toBeCloseTo(-0.75);
+    expect(highCustomerFactors).toBeCloseTo(1.25);
   });
 
   it('applies the shared 0.7-to-1.3 economy bid multiplier', () => {
     const input = { customerType: 'industrial-enterprise' as const, companyPrestige: 0, relationship: 0, purchasingPower: 1, bidMultiplier: 1, positiveTail: 0, pressurePenalty: 0 };
 
-    expect(calculateSalesOrderBidPremium({ ...input, economyPhase: 'crash' })).toBeCloseTo(-0.314);
-    expect(calculateSalesOrderBidPremium({ ...input, economyPhase: 'stable' })).toBeCloseTo(-0.02);
-    expect(calculateSalesOrderBidPremium({ ...input, economyPhase: 'boom' })).toBeCloseTo(0.274);
+    expect(calculateSalesOrderBidPremium({ ...input, economyPhase: 'crash' })).toBeCloseTo(-0.3);
+    expect(calculateSalesOrderBidPremium({ ...input, economyPhase: 'stable' })).toBeCloseTo(0);
+    expect(calculateSalesOrderBidPremium({ ...input, economyPhase: 'boom' })).toBeCloseTo(0.3);
   });
 
   it('samples at most one probabilistic arrival per acquisition check', () => {
@@ -93,7 +94,7 @@ describe('sales orders', () => {
     const order = orders.getOfferedOrders()[0];
     expect(order.lines).toHaveLength(1);
     expect(order.lines[0].resourceType).toBe(ResourceType.Water);
-    expect(order.lines[0].quantity % 500).toBe(0);
+    expect(order.lines[0].quantity % waterStandardLot).toBe(0);
     expect(order.lines[0].globalReferenceUnitPrice).toBe(1);
     expect(order.lines[0].bidUnitPrice).toBeGreaterThan(0);
     expect(order.reward).toBe(order.lines[0].quantity * order.lines[0].bidUnitPrice);
@@ -143,7 +144,7 @@ describe('sales orders', () => {
 
   it('does not create a request when a meaningful lot alone exceeds the company-value cap', () => {
     const orders = new SalesOrders();
-    const result = orders.advanceTime({ currentGameTimeMs: 60_000, maximumOpenOrders: 2, maximumOrderValue: 100, companyPrestige: 500, economyPhase: 'boom', inventoryByResource: quantities(ResourceType.Water, 1_000), globalPrices: prices(1), globalSupplies: benchmarkSupplies(), candidateResourceTypes: [ResourceType.Water], getResourceWeight: () => 1, bidResearchMultiplier: 1 });
+    const result = orders.advanceTime({ currentGameTimeMs: 60_000, maximumOpenOrders: 2, maximumOrderValue: 100, companyPrestige: 500, economyPhase: 'boom', inventoryByResource: quantities(ResourceType.Water, 1_000), globalPrices: prices(2), globalSupplies: benchmarkSupplies(), candidateResourceTypes: [ResourceType.Water], getResourceWeight: () => 1, bidResearchMultiplier: 1 });
 
     expect(result.ordersCreated).toBe(0);
     expect(result.acquisitionRate).toBe(0);
@@ -152,16 +153,16 @@ describe('sales orders', () => {
   it('keeps over-budget standard lots out of the offerable resource pool', () => {
     expect(getOfferableSalesOrderResourceTypes({
       candidateResourceTypes: [ResourceType.Water],
-      globalPrices: prices(1),
+      globalPrices: prices(2),
       maximumOrderValue: 100,
     })).toEqual([]);
   });
 
   it('keeps unstocked resources offerable while inventory coverage raises readiness', () => {
     expect(getOfferableSalesOrderResourceTypes({ candidateResourceTypes: [ResourceType.Water], globalPrices: prices(1), maximumOrderValue: 10_000 })).toEqual([ResourceType.Water]);
-    expect(calculateSalesOrderInventoryReadiness(0, 500)).toBeCloseTo(0.25);
-    expect(calculateSalesOrderInventoryReadiness(10, 500)).toBeCloseTo(0.2802, 4);
-    expect(calculateSalesOrderInventoryReadiness(10, 500)).toBeGreaterThan(calculateSalesOrderInventoryReadiness(0, 500));
+    expect(calculateSalesOrderInventoryReadiness(0, waterStandardLot)).toBeCloseTo(0.25);
+    expect(calculateSalesOrderInventoryReadiness(10, waterStandardLot)).toBeCloseTo(0.381, 4);
+    expect(calculateSalesOrderInventoryReadiness(10, waterStandardLot)).toBeGreaterThan(calculateSalesOrderInventoryReadiness(0, waterStandardLot));
   });
 
   it('scales acquisition readiness from total inventory value relative to order capacity', () => {
@@ -294,7 +295,7 @@ describe('sales orders', () => {
 
     expect(result.ordersCreated).toBe(1);
     expect(orders.getOfferedOrders()[0].reward).toBeLessThanOrEqual(100);
-    expect(orders.getOfferedOrders()[0].lines[0].quantity).toBe(500);
+    expect(orders.getOfferedOrders()[0].lines[0].quantity).toBe(waterStandardLot);
   });
 
   it('scales target offer value with prestige and gives a modest repeat-customer volume bonus', () => {

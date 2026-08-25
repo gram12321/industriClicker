@@ -8,7 +8,7 @@ import { FACILITIES, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_PRODUC
 import { calculateFacilityStaffWagePerMinute } from '@/game/facilities/facilityEconomics';
 import type { Facility } from '@/game/facilities/facility';
 import { FacilityCollection } from '@/game/facilities/facilityCollection';
-import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, getRecipeProductionConditionLoss, type ProductionOutput } from '@/game/facilities/facilityProduction';
+import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, getFacilityAvailableRecipeInputPlan, getFacilityRecipeInputPlan, getFacilityRecipeOutputs, getFacilityRecipeRequiredWork, getRecipeProductionConditionLoss, type ProductionOutput } from '@/game/facilities/facilityProduction';
 import type { FacilityType } from '@/game/facilities/facilityTypes';
 import { getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceInvestmentCost } from '@/game/facilities/facilityUpgrades';
 
@@ -124,17 +124,20 @@ function advanceFacilityProduction(
   const outputs: ProductionOutput[] = [];
 
   while (remainingEffectiveWork > 0) {
-    if (progress === 0 && !recipe.inputs.every((input) => inventory.has(input.resourceType, input.amount))) break;
+    const inputPlan = getFacilityAvailableRecipeInputPlan(recipe, inventory, facilityView.sizeMultiplier, facilityView.optionalInputSettings[recipe.name]);
+    const requiredWork = getFacilityRecipeRequiredWork(recipe, facilityView.sizeMultiplier);
+    const scaledOutputs = getFacilityRecipeOutputs(recipe, facilityView.sizeMultiplier);
+    if (progress === 0 && !inputPlan.requiredInputs.every((input) => inventory.has(input.resourceType, input.amount))) break;
     if (progress === 0) {
-      for (const input of recipe.inputs) inventory.remove(input.resourceType, input.amount);
+      for (const input of inputPlan.inputs) inventory.remove(input.resourceType, input.amount);
     }
 
-    const appliedWork = Math.min(remainingEffectiveWork, recipe.requiredWork - progress);
+    const appliedWork = Math.min(remainingEffectiveWork, requiredWork - progress);
     progress += appliedWork;
     remainingEffectiveWork -= appliedWork;
-    if (progress + WORK_COMPLETION_EPSILON >= recipe.requiredWork) {
-      for (const output of recipe.outputs) {
-        const amount = output.amount * facilityView.outputMultiplier;
+    if (progress + WORK_COMPLETION_EPSILON >= requiredWork) {
+      for (const output of scaledOutputs) {
+        const amount = output.amount * facilityView.outputMultiplier * inputPlan.effects.outputMultiplier;
         inventory.add(output.resourceType, amount);
         outputs.push({ facilityId: facilityView.id, facilityType: facilityView.facilityType, recipeName: recipe.name, resourceType: output.resourceType, amount, quality: 1, sourceCostPerUnit: 0 });
       }
@@ -297,9 +300,11 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
   facility.setAssignedWorkers(facility.getView().requiredWorkers);
   const initialView = facility.getView();
   const initialCyclesPerMinute = calculateFacilityEffectiveWork(initialView, BASE_WORK_PER_MINUTE) / recipe.requiredWork;
-  const initialRevenuePerMinute = initialCyclesPerMinute * recipe.outputs
-    .reduce((total, output) => total + output.amount * initialView.outputMultiplier * market.getLocalPrice(output.resourceType), 0);
-  const initialInputCostPerMinute = initialCyclesPerMinute * recipe.inputs
+  const initialInputPlan = getFacilityRecipeInputPlan(recipe, initialView.sizeMultiplier, initialView.optionalInputSettings[recipe.name]);
+  const initialOutputs = getFacilityRecipeOutputs(recipe, initialView.sizeMultiplier);
+  const initialRevenuePerMinute = initialCyclesPerMinute * initialOutputs
+    .reduce((total, output) => total + output.amount * initialView.outputMultiplier * initialInputPlan.effects.outputMultiplier * market.getLocalPrice(output.resourceType), 0);
+  const initialInputCostPerMinute = initialCyclesPerMinute * initialInputPlan.inputs
     .reduce((total, input) => total + input.amount * market.getLocalPrice(input.resourceType), 0);
   const initialRepairCost = FACILITY_REPAIR_MATERIAL_COST_RATE * (
     definition.landCost
@@ -327,7 +332,8 @@ export function simulateRecipeEconomy({ recipeName, durationMinutes, speedUpgrad
     const cyclesToStart = Math.max(0, Math.ceil((progress + work - WORK_COMPLETION_EPSILON) / recipe.requiredWork) - (progress > 0 ? 1 : 0));
     let canProduce = true;
 
-    for (const input of recipe.inputs) {
+    const inputPlan = getFacilityRecipeInputPlan(recipe, view.sizeMultiplier, view.optionalInputSettings[recipeName]);
+    for (const input of inputPlan.inputs) {
       const amount = Math.max(0, input.amount * cyclesToStart - inventory.getAmount(input.resourceType));
       if (amount <= 0) continue;
       const trade = buyRecipeInput(market, input.resourceType, amount, electricityPriceCap);
@@ -519,7 +525,8 @@ export function simulateRecipeEconomyChain({
         const cyclesToStart = Math.max(0, Math.ceil((progress + work - WORK_COMPLETION_EPSILON) / recipe.requiredWork) - (progress > 0 ? 1 : 0));
         let canProduce = true;
 
-        for (const input of recipe.inputs) {
+        const inputPlan = getFacilityRecipeInputPlan(recipe, facility.getView().sizeMultiplier, facility.getView().optionalInputSettings[recipeName]);
+        for (const input of inputPlan.inputs) {
           const amount = Math.max(0, input.amount * cyclesToStart - inventory.getAmount(input.resourceType));
           if (amount <= 0) continue;
           const trade = buyRecipeInput(market, input.resourceType, amount, electricityPriceCap);
@@ -555,7 +562,8 @@ export function simulateRecipeEconomyChain({
       const work = calculateFacilityEffectiveWork(facility.getView(), BASE_WORK_PER_MINUTE);
       const progress = facility.getView().recipeProgress[recipeName] ?? 0;
       const cyclesToStart = Math.max(0, Math.ceil((progress + work - WORK_COMPLETION_EPSILON) / recipe.requiredWork) - (progress > 0 ? 1 : 0));
-      for (const input of recipe.inputs) {
+      const inputPlan = getFacilityRecipeInputPlan(recipe, facility.getView().sizeMultiplier, facility.getView().optionalInputSettings[recipeName]);
+      for (const input of inputPlan.inputs) {
         demand[input.resourceType] = (demand[input.resourceType] ?? 0) + input.amount * cyclesToStart;
       }
       return demand;

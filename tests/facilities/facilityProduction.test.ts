@@ -11,7 +11,7 @@ import {
   calculateFacilityResourcePayment,
   calculateRecipeValuePerMinute,
 } from '@/game/facilities/facilityEconomics';
-import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateRecipeInputQ, calculateRecipeInputSourceCost, getFacilityProductionCycleInputs, getRecipeProductionConditionLoss } from '@/game/facilities/facilityProduction';
+import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateRecipeInputQ, calculateRecipeInputSourceCost, getFacilityProductionCycleInputs, getFacilityRecipeInputPlan, getRecipeProductionConditionLoss } from '@/game/facilities/facilityProduction';
 import { calculateOutputQuality, calculateProductionMaxQ } from '@/game/quality';
 import { Market } from '@/game/market';
 import { FacilityType } from '@/game/facilities/facilityTypes';
@@ -22,12 +22,15 @@ function createActiveFacility(facilityType: FacilityType, recipeName: RecipeName
   facilities.build(facilityType);
   const facility = facilities.getAllByType(facilityType)[0]!;
   facility.setActiveRecipe(recipeName);
+  for (const input of getRecipe(recipeName).inputs) {
+    if (input.optional) facility.setOptionalInputEnabled(recipeName, input.resourceType, false);
+  }
 
   return { facilities, facility };
 }
 
 function addRecipeInputs(inventory: Inventory, recipeName: RecipeName, cycleCount: number): void {
-  for (const input of getRecipe(recipeName).inputs) {
+  for (const input of getRecipe(recipeName).inputs.filter((candidate) => !candidate.optional)) {
     inventory.add(input.resourceType, input.amount * cycleCount);
   }
 }
@@ -229,11 +232,15 @@ describe('facility economics', () => {
       workPerMinute,
       () => 2,
       () => 5,
+      1,
+      getFacilityRecipeInputPlan(recipe, 1, []),
+      getFacilityRecipeInputPlan(recipe, 1, []).effects,
     );
+    const inputPlan = getFacilityRecipeInputPlan(recipe, 1, []);
     const expectedCycleValue = recipe.outputs.reduce(
       (total, output) => total + output.amount * market.getLocalSalePrice(output.resourceType, 5),
       0,
-    ) - recipe.inputs.reduce(
+    ) - inputPlan.inputs.reduce(
       (total, input) => total + input.amount * market.getLocalSalePrice(input.resourceType, 2),
       0,
     );
@@ -247,9 +254,9 @@ describe('facility economics', () => {
     const recipe = getRecipe(RecipeName.GrowGrain);
     for (const input of recipe.inputs) inventory.add(input.resourceType, input.amount, 1, 2);
 
-    const margin = calculateRecipeContributionMargin(recipe, market, inventory, 1);
+    const inputCost = recipe.inputs.filter((input) => !input.optional).reduce((total, input) => total + input.amount * 2, 0);
+    const margin = calculateRecipeContributionMargin(recipe, market, inventory, 1, undefined, inputCost);
     const outputValue = recipe.outputs.reduce((total, output) => total + output.amount * market.getLocalPrice(output.resourceType), 0);
-    const inputCost = recipe.inputs.reduce((total, input) => total + input.amount * 2, 0);
     expect(margin).toBeCloseTo(outputValue - inputCost);
   });
 
@@ -285,6 +292,7 @@ describe('advanceAllFacilityProduction', () => {
     facilities.build(FacilityType.Farm, 25);
     const facility = facilities.getAllByType(FacilityType.Farm)[0]!;
     facility.setActiveRecipe(RecipeName.GrowGrain);
+    facility.setOptionalInputEnabled(RecipeName.GrowGrain, ResourceType.Fertilizer, false);
     const view = facility.getView();
     const recipe = getRecipe(RecipeName.GrowGrain);
     const inventory = new Inventory();
@@ -293,7 +301,7 @@ describe('advanceAllFacilityProduction', () => {
     expect(view.sizeHectares).toBe(25);
     expect(view.sizeMultiplier).toBe(5);
     expect(view.requiredWorkers).toBe(5);
-    expect(getFacilityProductionCycleInputs(view)).toEqual(recipe.inputs.map((input) => ({ ...input, amount: input.amount * 5 })));
+    expect(getFacilityProductionCycleInputs(view)).toEqual(getFacilityRecipeInputPlan(recipe, 5, view.optionalInputSettings[recipe.name]).inputs.map(({ resourceType, amount }) => ({ resourceType, amount })));
 
     const outputs = advanceAllFacilityProduction(facilities, inventory, (facilityView) => calculateFacilityEffectiveWork(facilityView, 1));
 
@@ -319,12 +327,15 @@ describe('advanceAllFacilityProduction', () => {
     inventory.add(ResourceType.Fertilizer, 0.025, 100);
     const recipe = getRecipe(RecipeName.GrowGrain);
 
+    expect(calculateRecipeInputQ(recipe, inventory, 1, [])).toBeCloseTo((2 + 4) / 2);
     const inputQ = calculateRecipeInputQ(recipe, inventory);
-    expect(inputQ).toBeCloseTo((2 + 4 + 0.025 * 100) / 2.025);
-    expect(calculateOutputQuality({ researchMaxQ: 20, weightedInputQ: inputQ }).outputQ).toBeCloseTo(5.197531);
-    expect(calculateOutputQuality({ researchMaxQ: 3, weightedInputQ: inputQ }).outputQ).toBe(3);
-    expect(calculateOutputQuality({ researchMaxQ: 20, weightedInputQ: inputQ, upgradeMaxQ: 2 }).outputQ).toBe(2);
-    expect(calculateOutputQuality({ researchMaxQ: 20, weightedInputQ: inputQ, upgradeMaxQ: 20, productionMaxQ: 2 }).outputQ).toBe(2);
+    expect(inputQ).not.toBeNull();
+    expect(inputQ).toBeCloseTo((0.95 * 2 + 0.95 * 4 + 0.025 * 100) / (0.95 + 0.95 + 0.025));
+    const weightedInputQ = inputQ!;
+    expect(calculateOutputQuality({ researchMaxQ: 20, weightedInputQ: weightedInputQ }).outputQ).toBeCloseTo(weightedInputQ + 1);
+    expect(calculateOutputQuality({ researchMaxQ: 3, weightedInputQ: weightedInputQ }).outputQ).toBe(3);
+    expect(calculateOutputQuality({ researchMaxQ: 20, weightedInputQ: weightedInputQ, upgradeMaxQ: 2 }).outputQ).toBe(2);
+    expect(calculateOutputQuality({ researchMaxQ: 20, weightedInputQ: weightedInputQ, upgradeMaxQ: 20, productionMaxQ: 2 }).outputQ).toBe(2);
   });
 
   it('carries direct material source cost into completed output', () => {
@@ -333,8 +344,8 @@ describe('advanceAllFacilityProduction', () => {
     const recipe = getRecipe(RecipeName.GrowGrain);
     for (const input of recipe.inputs) inventory.add(input.resourceType, input.amount, 1, 2);
 
-    const inputSourceCost = 2 * recipe.inputs.reduce((total, input) => total + input.amount, 0);
-    expect(calculateRecipeInputSourceCost(recipe, inventory)).toBeCloseTo(inputSourceCost);
+    const inputSourceCost = 2 * recipe.inputs.filter((input) => !input.optional).reduce((total, input) => total + input.amount, 0);
+    expect(calculateRecipeInputSourceCost(recipe, inventory, 1, [])).toBeCloseTo(inputSourceCost);
     advanceAllFacilityProduction(facilities, inventory, () => recipe.requiredWork);
 
     const totalOutput = recipe.outputs.reduce((total, output) => total + output.amount, 0);
@@ -348,7 +359,7 @@ describe('advanceAllFacilityProduction', () => {
     const recipe = getRecipe(RecipeName.GrowGrain);
     for (const input of recipe.inputs) inventory.add(input.resourceType, input.amount, 1, 2);
 
-    const inputSourceCost = 2 * recipe.inputs.reduce((total, input) => total + input.amount, 0);
+    const inputSourceCost = 2 * recipe.inputs.filter((input) => !input.optional).reduce((total, input) => total + input.amount, 0);
     const maintenanceCost = calculateFacilityProductionMaintenanceCost(facility.getView(), recipe, market);
     const outputs = advanceAllFacilityProduction(facilities, inventory, () => recipe.requiredWork, undefined, undefined, (view, completedRecipe) => calculateFacilityProductionMaintenanceCost(view, completedRecipe, market));
 
@@ -384,6 +395,8 @@ describe('advanceAllFacilityProduction', () => {
   it('runs repeated recipes in a configured cycle before returning to the start', () => {
     const { facilities, facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
     facility.setProductionCycle([RecipeName.GrowGrain, RecipeName.GrowGrain, RecipeName.GrowSugar]);
+    facility.setOptionalInputEnabled(RecipeName.GrowGrain, ResourceType.Fertilizer, false);
+    facility.setOptionalInputEnabled(RecipeName.GrowSugar, ResourceType.Fertilizer, false);
     const inventory = new Inventory();
     inventory.add(ResourceType.Water, 5);
     inventory.add(ResourceType.Electricity, 2);
@@ -404,10 +417,11 @@ describe('advanceAllFacilityProduction', () => {
     const { facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
     facility.setProductionCycle([RecipeName.GrowGrain, RecipeName.GrowGrain, RecipeName.GrowSugar]);
 
+    facility.setOptionalInputEnabled(RecipeName.GrowGrain, ResourceType.Fertilizer, false);
+    facility.setOptionalInputEnabled(RecipeName.GrowSugar, ResourceType.Fertilizer, false);
     expect(getFacilityProductionCycleInputs(facility.getView())).toEqual([
       { resourceType: ResourceType.Water, amount: 5 },
       { resourceType: ResourceType.Electricity, amount: 2 },
-      { resourceType: ResourceType.Fertilizer, amount: 0.09 },
     ]);
   });
 
@@ -477,7 +491,7 @@ describe('advanceAllFacilityProduction', () => {
 
     advanceAllFacilityProduction(facilities, inventory, () => 0.03, (input) => consumed.push(input));
 
-    expect(consumed).toEqual(getRecipe(RecipeName.GrowGrain).inputs);
+    expect(consumed).toEqual(getFacilityRecipeInputPlan(getRecipe(RecipeName.GrowGrain), 1, []).inputs);
   });
 
   it('applies the output upgrade when a cycle completes', () => {

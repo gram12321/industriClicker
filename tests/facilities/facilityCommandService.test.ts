@@ -20,7 +20,7 @@ describe('quality-adjusted construction inputs', () => {
     inventory.add(ResourceType.ConstructionMaterials, 25, 3);
 
     const missing = getMissingFacilityMaterials(inventory, requirements);
-    expect(missing[0]?.missingUnits).toBe(0);
+    expect(missing).toHaveLength(0);
     expect(getFacilityMaterialQuantityForUnits(inventory, ResourceType.ConstructionMaterials, 100)).toBeCloseTo(60);
   });
 });
