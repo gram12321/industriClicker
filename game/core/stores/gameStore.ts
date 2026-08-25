@@ -63,6 +63,7 @@ type GameState = {
   sellFacility: (facilityId: string) => boolean;
   setFacilityRecipe: (facilityId: string, recipeName: RecipeName | null) => boolean;
   setFacilityProductionCycle: (facilityId: string, recipeNames: readonly RecipeName[]) => boolean;
+  setFacilityOptionalInputEnabled: (facilityId: string, recipeName: RecipeName, resourceType: ResourceType, enabled: boolean) => boolean;
   setFacilityProductionActive: (facilityId: string, active: boolean) => boolean;
   setFacilityWorkers: (facilityId: string, workerCount: number) => boolean;
   setFacilityStaffWage: (facilityId: string, wagePerWorkerPerMinute: number) => boolean;
@@ -514,6 +515,14 @@ export const useGameStore = create<GameState>((set, get) => {
     set({ facilities });
     return true;
   },
+  setFacilityOptionalInputEnabled: (facilityId, recipeName, resourceType, enabled) => {
+    get().advanceRealtime(Date.now());
+    const facilities = get().facilities.clone();
+    const facility = facilities.get(facilityId);
+    if (!facility || !facility.setOptionalInputEnabled(recipeName, resourceType, enabled)) return false;
+    set({ facilities });
+    return true;
+  },
   setFacilityProductionActive: (facilityId, active) => {
     get().advanceRealtime(Date.now());
     const facilities = get().facilities.clone();
@@ -831,13 +840,13 @@ export const useGameStore = create<GameState>((set, get) => {
           facility,
           baseWork,
           getRecipeResearchWorkSpeedMultiplier(recipeName, research.getCompletedProjectIds()),
-        ), (input) => recordResourceFlow('facility-input', input.resourceType, -input.amount, stepEndGameTimeMs), (facilityView, output, weightedInputQ, upgradeMaxQ) => calculateOutputQuality({
+        ), (input) => recordResourceFlow('facility-input', input.resourceType, -input.amount, stepEndGameTimeMs), (facilityView, output, weightedInputQ, upgradeMaxQ, inputEffects) => calculateOutputQuality({
           weightedInputQ,
           researchMaxQ: getResourceResearchMaxQ(output.resourceType, research.getCompletedProjectIds()),
           upgradeMaxQ,
           productionMaxQ: calculateProductionMaxQ(resourceFlow.getLifetimeFacilityOutput(output.resourceType)),
           staffMaxQ: facilityView.staffQuality,
-          outputBonusQ: output.outputBonusQ,
+          outputBonusQ: (output.outputBonusQ ?? 0) + inputEffects.qualityBoost,
         }), (facility, recipe) => calculateFacilityProductionMaintenanceCost(facility, recipe, market!));
         if (outputs.length > 0) {
           producedOutput = true;

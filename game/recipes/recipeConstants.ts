@@ -2,13 +2,19 @@ import { ResourceType } from '../resources/resourceTypes';
 import { QUALITY_PREMIUM_CAKE_OUTPUT_BONUS } from '../quality/qualityConstants';
 import { Recipe, RecipeName } from './recipeTypes';
 
+const FARM_FERTILIZER_EFFECTS = {
+  qualityBoost: 1,
+  outputMultiplier: 1.1,
+  inputMultiplier: 0.95,
+} as const;
+
 export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
   [RecipeName.GrowGrain]: {
     name: RecipeName.GrowGrain,
     inputs: [
       { resourceType: ResourceType.Water, amount: 1 },
       { resourceType: ResourceType.Electricity, amount: 1 },
-      { resourceType: ResourceType.Fertilizer, amount: 0.025 },
+      { resourceType: ResourceType.Fertilizer, amount: 0.025, optional: true, effects: FARM_FERTILIZER_EFFECTS },
     ],
     outputs: [{ resourceType: ResourceType.Grain, amount: 1.35 }],
     requiredWork: 0.06,
@@ -43,7 +49,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     name: RecipeName.GrowSugar,
     inputs: [
       { resourceType: ResourceType.Water, amount: 3 },
-      { resourceType: ResourceType.Fertilizer, amount: 0.04 },
+      { resourceType: ResourceType.Fertilizer, amount: 0.04, optional: true, effects: FARM_FERTILIZER_EFFECTS },
     ],
     outputs: [{ resourceType: ResourceType.Sugar, amount: 1.4 }],
     requiredWork: 0.12,
@@ -53,7 +59,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     name: RecipeName.GrowFruit,
     inputs: [
       { resourceType: ResourceType.Water, amount: 2 },
-      { resourceType: ResourceType.Fertilizer, amount: 0.03 },
+      { resourceType: ResourceType.Fertilizer, amount: 0.03, optional: true, effects: FARM_FERTILIZER_EFFECTS },
     ],
     outputs: [{ resourceType: ResourceType.Fruit, amount: 2 }],
     requiredWork: 0.16,

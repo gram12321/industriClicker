@@ -1,4 +1,5 @@
-import type { RecipeName } from '@/game/recipes';
+import { getRecipe, type RecipeInputEffects, type RecipeName } from '@/game/recipes';
+import type { ResourceType } from '@/game/resources';
 import { calculateAsymmetricalScaler01 } from '@/game/core/math/scaling';
 import { calculateProgressFromQuality, calculateUpgradeMaxQ } from '@/game/quality';
 import { FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_INITIAL_STAFF_QUALITY, FACILITY_REPAIR_EFFICIENCY_MULTIPLIER, FACILITY_STAFF_QUALITY_EXPERIENCE_PROGRESS_PER_WORK, FACILITY_STAFF_QUALITY_WAGE_GAIN_PER_MINUTE, FACILITY_STAFF_QUALITY_WAGE_LOSS_PER_MINUTE, FACILITY_STAFF_TRAINING_QUALITY_PROGRESS_PER_WORKER, FARM_DEFAULT_SIZE_HECTARES, getFacilityDefinition, getFacilityMaxStaffWage, getFacilitySizeMultiplier, isValidFacilitySize } from './facilityConstants';
@@ -17,6 +18,8 @@ export type FacilitySnapshot = {
   recipeProgress: Partial<Record<RecipeName, number>>;
   recipeInputQ: number | null;
   recipeInputSourceCost: number | null;
+  recipeInputEffects: Required<RecipeInputEffects> | null;
+  optionalInputSettings: Partial<Record<RecipeName, ResourceType[]>>;
   qualityUpgradeLevel: number;
   speedUpgradeLevel?: number;
   outputUpgradeLevel?: number;
@@ -48,6 +51,8 @@ export type FacilityView = {
   recipeProgress: Readonly<Partial<Record<RecipeName, number>>>;
   recipeInputQ: number | null;
   recipeInputSourceCost: number | null;
+  recipeInputEffects: Required<RecipeInputEffects> | null;
+  optionalInputSettings: Partial<Record<RecipeName, ResourceType[]>>;
   qualityUpgradeLevel: number;
   upgradeMaxQ: number;
   speedUpgradeLevel: number;
@@ -85,6 +90,8 @@ export class Facility {
   private recipeProgress: Partial<Record<RecipeName, number>> = {};
   private recipeInputQ: number | null = null;
   private recipeInputSourceCost: number | null = null;
+  private recipeInputEffects: Required<RecipeInputEffects> | null = null;
+  private optionalInputSettings: Partial<Record<RecipeName, ResourceType[]>> = {};
   private qualityUpgradeLevel = 1;
   private speedUpgradeLevel = 0;
   private outputUpgradeLevel = 0;
@@ -139,6 +146,8 @@ export class Facility {
       recipeProgress: { ...this.recipeProgress },
       recipeInputQ: this.recipeInputQ,
       recipeInputSourceCost: this.recipeInputSourceCost,
+      recipeInputEffects: this.recipeInputEffects ? { ...this.recipeInputEffects } : null,
+      optionalInputSettings: Object.fromEntries(Object.entries(this.optionalInputSettings).map(([recipeName, resources]) => [recipeName, [...(resources ?? [])]])),
       qualityUpgradeLevel: this.qualityUpgradeLevel,
       upgradeMaxQ: calculateUpgradeMaxQ(this.qualityUpgradeLevel),
       speedUpgradeLevel: this.speedUpgradeLevel,
@@ -204,6 +213,7 @@ export class Facility {
       this.active = false;
       this.recipeInputQ = null;
       this.recipeInputSourceCost = null;
+      this.recipeInputEffects = null;
       return true;
     }
 
@@ -345,6 +355,7 @@ export class Facility {
     this.active = this.activeRecipeName !== null;
     this.recipeInputQ = null;
     this.recipeInputSourceCost = null;
+    this.recipeInputEffects = null;
     return true;
   }
 
@@ -406,6 +417,31 @@ export class Facility {
       : null;
   }
 
+  setRecipeInputEffects(effects: Required<RecipeInputEffects> | null): void {
+    this.recipeInputEffects = effects ? { ...effects } : null;
+  }
+
+  getOptionalInputEnabled(recipeName: RecipeName, resourceType: ResourceType): boolean {
+    const configured = this.optionalInputSettings[recipeName];
+    return configured === undefined || configured.includes(resourceType);
+  }
+
+  getOptionalInputSettings(recipeName: RecipeName): ResourceType[] | undefined {
+    const configured = this.optionalInputSettings[recipeName];
+    return configured ? [...configured] : undefined;
+  }
+
+  setOptionalInputEnabled(recipeName: RecipeName, resourceType: ResourceType, enabled: boolean): boolean {
+    const recipe = getFacilityDefinition(this.facilityType).recipes.find((candidate) => candidate.name === recipeName);
+    if (!recipe) return false;
+    const input = getRecipe(recipeName).inputs.find((candidate) => candidate.resourceType === resourceType && candidate.optional);
+    if (!input) return false;
+    const configured = new Set(this.optionalInputSettings[recipeName] ?? recipe.inputs.filter((candidate) => candidate.optional).map((candidate) => candidate.resourceType));
+    if (enabled) configured.add(resourceType); else configured.delete(resourceType);
+    this.optionalInputSettings[recipeName] = [...configured];
+    return true;
+  }
+
   toSnapshot(): FacilitySnapshot {
     return {
       id: this.id,
@@ -418,6 +454,8 @@ export class Facility {
       recipeProgress: { ...this.recipeProgress },
       recipeInputQ: this.recipeInputQ,
       recipeInputSourceCost: this.recipeInputSourceCost,
+      recipeInputEffects: this.recipeInputEffects ? { ...this.recipeInputEffects } : null,
+      optionalInputSettings: Object.fromEntries(Object.entries(this.optionalInputSettings).map(([recipeName, resources]) => [recipeName, [...(resources ?? [])]])),
       qualityUpgradeLevel: this.qualityUpgradeLevel,
       speedUpgradeLevel: this.speedUpgradeLevel,
       outputUpgradeLevel: this.outputUpgradeLevel,
@@ -459,6 +497,14 @@ export class Facility {
     this.recipeInputSourceCost = typeof recipeInputSourceCost === 'number' && Number.isFinite(recipeInputSourceCost) && recipeInputSourceCost >= 0
       ? recipeInputSourceCost
       : null;
+    const recipeInputEffects = snapshot.recipeInputEffects;
+    this.recipeInputEffects = recipeInputEffects && Number.isFinite(recipeInputEffects.qualityBoost) && recipeInputEffects.qualityBoost >= 0 && Number.isFinite(recipeInputEffects.outputMultiplier) && recipeInputEffects.outputMultiplier >= 0 && Number.isFinite(recipeInputEffects.inputMultiplier) && recipeInputEffects.inputMultiplier > 0 && recipeInputEffects.inputMultiplier <= 1
+      ? { ...recipeInputEffects }
+      : null;
+    this.optionalInputSettings = {};
+    for (const [recipeName, resources] of Object.entries(snapshot.optionalInputSettings)) {
+      if (Array.isArray(resources)) this.optionalInputSettings[recipeName as RecipeName] = [...resources];
+    }
     this.qualityUpgradeLevel = isValidUpgradeLevel(snapshot.qualityUpgradeLevel) ? Math.max(1, snapshot.qualityUpgradeLevel) : 1;
     this.speedUpgradeLevel = isValidUpgradeLevel(snapshot.speedUpgradeLevel) ? snapshot.speedUpgradeLevel : 0;
     this.outputUpgradeLevel = isValidUpgradeLevel(snapshot.outputUpgradeLevel) ? snapshot.outputUpgradeLevel : 0;

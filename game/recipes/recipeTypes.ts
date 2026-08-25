@@ -42,6 +42,19 @@ export enum RecipeName {
 export type RecipeInput = {
   resourceType: ResourceType;
   amount: number;
+  /** Optional inputs never stall a recipe and are consumed only when enabled and available. */
+  optional?: boolean;
+  /** Effects applied when this optional input is consumed for a cycle. */
+  effects?: RecipeInputEffects;
+};
+
+export type RecipeInputEffects = {
+  /** Added after the normal output-quality ceiling is resolved. */
+  qualityBoost?: number;
+  /** Multiplies every recipe output quantity. */
+  outputMultiplier?: number;
+  /** Multiplies the other required inputs for this cycle. */
+  inputMultiplier?: number;
 };
 
 export type RecipeOutput = {

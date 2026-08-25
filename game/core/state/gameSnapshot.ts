@@ -156,6 +156,21 @@ function isFacilityStaffSnapshot(value: Record<string, unknown>): boolean {
     && (training === null || (isRecord(training) && typeof training.workers === 'number' && training.workers <= assignedWorkers));
 }
 
+function isOptionalInputSettingsSnapshot(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return Object.entries(value).every(([recipeName, resources]) => Object.values(RecipeName).includes(recipeName as RecipeName)
+    && Array.isArray(resources)
+    && resources.every((resourceType) => Object.values(RESOURCE_TYPES).includes(resourceType as ResourceType)));
+}
+
+function isRecipeInputEffectsSnapshot(value: unknown): boolean {
+  if (value === null) return true;
+  if (!isRecord(value)) return false;
+  return typeof value.qualityBoost === 'number' && Number.isFinite(value.qualityBoost) && value.qualityBoost >= 0
+    && typeof value.outputMultiplier === 'number' && Number.isFinite(value.outputMultiplier) && value.outputMultiplier >= 0
+    && typeof value.inputMultiplier === 'number' && Number.isFinite(value.inputMultiplier) && value.inputMultiplier > 0 && value.inputMultiplier <= 1;
+}
+
 /** Structural guard used by the company-scoped SQLite save adapter. */
 export function isGameSnapshot(value: unknown): value is GameSnapshot {
   if (!isRecord(value) || !isRecord(value.finance) || !isRecord(value.inventory) || !ResourceFlowLedger.isSnapshot(value.resourceFlow)
@@ -223,6 +238,8 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
       && typeof facility.autoRepairTarget === 'number' && Number.isFinite(facility.autoRepairTarget) && facility.autoRepairTarget > facility.autoRepairThreshold && facility.autoRepairTarget <= 1
       && (facility.recipeInputQ === null || (typeof facility.recipeInputQ === 'number' && Number.isFinite(facility.recipeInputQ) && facility.recipeInputQ > 0))
       && (typeof facility.recipeInputSourceCost === 'number' && Number.isFinite(facility.recipeInputSourceCost) && facility.recipeInputSourceCost >= 0 || facility.recipeInputSourceCost === null)
+      && isRecipeInputEffectsSnapshot(facility.recipeInputEffects)
+      && isOptionalInputSettingsSnapshot(facility.optionalInputSettings)
        && typeof facility.qualityUpgradeLevel === 'number'
        && Number.isInteger(facility.qualityUpgradeLevel)
        && facility.qualityUpgradeLevel >= 1

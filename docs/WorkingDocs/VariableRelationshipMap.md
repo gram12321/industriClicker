@@ -372,7 +372,8 @@ flowchart LR
 | State | Owner | Changes through | Saved as |
 |---|---|---|---|
 | `inventory.entries.*.quantity/.quality/.sourceCostPerUnit` | Inventory | Resource commands and production additions/removals | `InventorySnapshot` |
-| `facility.recipeInputQ/.recipeInputSourceCost` | Facility | Captured at cycle input consumption; used at completion | Facility snapshot; production-maintenance allocation is added to output source cost |
+| `facility.recipeInputQ/.recipeInputSourceCost/.recipeInputEffects` | Facility | Captured at cycle input consumption; optional effects are selected by per-facility recipe settings and used at completion | Facility snapshot; production-maintenance allocation is added to output source cost |
+| `facility.optionalInputSettings` | Facility | Recipe-tab checkmarks configure which optional inputs are automatically used and autobought | Facility snapshot |
 | Facility upgrade levels, workers, staff wage, Staff Quality progress/trend, pending staffing/training, condition, auto-repair settings | Facility | Upgrade, staffing/wage, hiring/firing/training, repair, and foreground wear | Facility snapshot |
 | Resource-flow buckets and lifetime facility output | ResourceFlowLedger | Inventory-affecting commands and completed output | Game snapshot |
 | Finance balance, transactions, loans, lenders, searches, economy phase, staff-wage charges | Finance | Cash commands and foreground finance rules | `FinanceSnapshot` |
