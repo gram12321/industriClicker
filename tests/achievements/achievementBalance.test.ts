@@ -15,7 +15,7 @@ describe('early achievement balance', () => {
     const firstTier = ACHIEVEMENT_DEFINITIONS.find((achievement) => achievement.seriesId === 'facility_portfolio' && achievement.tier === 1);
     const secondTier = ACHIEVEMENT_DEFINITIONS.find((achievement) => achievement.seriesId === 'facility_portfolio' && achievement.tier === 2);
 
-    expect(firstTier?.prestigeHalfLifeForegroundHours).toBe(4);
-    expect(secondTier?.prestigeHalfLifeForegroundHours).toBe(10);
+    expect(firstTier?.prestigeHalfLifeForegroundHours).toBe(1);
+    expect(secondTier?.prestigeHalfLifeForegroundHours).toBe(5);
   });
 });
