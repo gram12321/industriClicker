@@ -135,6 +135,18 @@ describe('cash-flow market details', () => {
 });
 
 describe('foreground finance aggregation', () => {
+  it('keeps cloned aggregated history isolated from later writes', () => {
+    const finance = new Finance();
+    const transaction = { aggregationKey: 'staff-wage:farm-1', amount: -1, description: 'Staff wages for Farm #1', detailLines: ['Workers: 1'], facilityAccounting: { facilityId: 'farm-1', classification: 'staff-wage' as const, historicalValue: 1 }, kind: 'operating' as const, source: 'facility-staff-wage' as const };
+    finance.applyTransaction({ ...transaction, occurredAtGameTimeMs: 1_000 });
+
+    const clone = finance.clone();
+    clone.applyTransaction({ ...transaction, occurredAtGameTimeMs: 2_000 });
+
+    expect(finance.getTransactions()[0]).toMatchObject({ amount: -1, occurrenceCount: 1 });
+    expect(clone.getTransactions()[0]).toMatchObject({ amount: -2, occurrenceCount: 2 });
+  });
+
   it('combines repeated facility wages and production performance without changing totals', () => {
     const finance = new Finance();
 

@@ -7,8 +7,8 @@ import type { Market } from '@/game/market';
 import type { ResearchLedger } from '@/game/research';
 import { getResearchProject } from '@/game/research';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
-import { FINANCE_AUTOMATION_TRANSACTION_BUCKET_MS, FINANCE_REPORT_PERIODS, type FinanceReportPeriod } from './financeConstants';
-import type { Finance, FinanceTransaction, Loan } from './finance';
+import { FINANCE_REPORT_PERIODS, type FinanceReportPeriod } from './financeConstants';
+import { getFinanceTransactionReportTime, type Finance, type FinanceTransaction, type Loan } from './finance';
 import { calculateCreditRating, calculateLoanLimitBreakdown, type CreditRating, type LoanLimitBreakdown } from './loanService';
 
 export type IncomeStatement = { income: number; expenses: number; netIncome: number; incomeDetails: FinanceBreakdown[]; expenseDetails: FinanceBreakdown[] };
@@ -100,9 +100,7 @@ function periodStart(period: FinanceReportPeriod, currentGameTimeMs: number): nu
 }
 
 function inPeriod(transaction: FinanceTransaction, period: FinanceReportPeriod, currentGameTimeMs: number): boolean {
-  const reportTime = transaction.aggregationKey
-    ? Math.floor(transaction.occurredAtGameTimeMs / FINANCE_AUTOMATION_TRANSACTION_BUCKET_MS) * FINANCE_AUTOMATION_TRANSACTION_BUCKET_MS
-    : transaction.occurredAtGameTimeMs;
+  const reportTime = getFinanceTransactionReportTime(transaction);
   return reportTime >= periodStart(period, currentGameTimeMs) && reportTime <= currentGameTimeMs;
 }
 

@@ -174,12 +174,13 @@ function ProductionViewContent({
     const facilityView = facility.getView();
     return { facility, facilityView, group: facilityGroupsByType.get(facilityView.facilityType)! };
   });
-  const summaryProductionById = new Map(facilitiesWithGroups.map(({ facilityView }) => {
+  const summaryProductionById = new Map<string, ReturnType<typeof calculateCurrentFacilityProductionEconomics> | null>();
+  if (!isShowingFacilityDetail) for (const { facilityView } of facilitiesWithGroups) {
     const definition = getFacilityDefinition(facilityView.facilityType);
     const activeRecipe = definition.recipes.find((recipe) => recipe.name === facilityView.activeRecipeName);
-    return [facilityView.id, activeRecipe ? calculateCurrentFacilityProductionEconomics(facilityView, activeRecipe, market, inventory, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds), (resourceType) => getResourceResearchMaxQ(resourceType, completedResearchProjectIds), (resourceType) => calculateProductionMaxQ(producedByResource[resourceType])) : null] as const;
-  }));
-  const orderedFacilities = [...facilitiesWithGroups].sort((left, right) => {
+    summaryProductionById.set(facilityView.id, activeRecipe ? calculateCurrentFacilityProductionEconomics(facilityView, activeRecipe, market, inventory, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds), (resourceType) => getResourceResearchMaxQ(resourceType, completedResearchProjectIds), (resourceType) => calculateProductionMaxQ(producedByResource[resourceType])) : null);
+  }
+  const orderedFacilities = isShowingFacilityDetail ? facilitiesWithGroups : [...facilitiesWithGroups].sort((left, right) => {
     const leftView = left.facilityView;
     const rightView = right.facilityView;
     if (facilityListSort === 'condition') return leftView.facilityCondition - rightView.facilityCondition || leftView.displayName.localeCompare(rightView.displayName, undefined, { numeric: true });
@@ -187,8 +188,8 @@ function ProductionViewContent({
     if (facilityListSort === 'net-gain') return (summaryProductionById.get(rightView.id)?.netGainPerMinute ?? Number.NEGATIVE_INFINITY) - (summaryProductionById.get(leftView.id)?.netGainPerMinute ?? Number.NEGATIVE_INFINITY) || leftView.displayName.localeCompare(rightView.displayName, undefined, { numeric: true });
     return facilityTypeOrder.get(leftView.facilityType)! - facilityTypeOrder.get(rightView.facilityType)! || leftView.displayName.localeCompare(rightView.displayName, undefined, { numeric: true });
   });
-  const detailFacilities = isShowingFacilityDetail
-    ? orderedFacilities.filter(({ facilityView }) => facilityView.id === activeFacilityId)
+  const detailFacilities = selectedFacility
+    ? facilitiesWithGroups.filter(({ facilityView }) => facilityView.id === selectedFacility.id)
     : [];
   const measureFirstFacilityFocus = () => firstFacilityFocusRef.current?.measureInWindow((x, y, width, height) => onFirstFacilityFocusLayout?.({ height, width, x, y }));
 
