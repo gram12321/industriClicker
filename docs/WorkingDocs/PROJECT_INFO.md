@@ -36,7 +36,7 @@ theme.ts              Shared Paper theme/tokens
 
 ## Routes and Commands
 
-- `/`: local player/company selection, then Company, Inventory, Facility, Finance, Sales, Research, Profile, Settings, Achievements, IndustriPedia, and the Leaderboard placeholder. Admin is development-only.
+- `/`: local player/company selection, then Company, People, Inventory, Facility, Finance, Sales, Research, Profile, Settings, Achievements, IndustriPedia, and the Leaderboard placeholder. Admin is development-only.
 - `npm run start`: Expo Go server. `npm run android`: optional emulator. `npm run web`: browser layout aid.
 - `npm run typecheck`: TypeScript check. `npm test`: Vitest suite. `npm run economy:report`: generate economy evidence.
 
