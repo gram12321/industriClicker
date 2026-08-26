@@ -17,14 +17,10 @@ type MarketDiffusionPair = {
 };
 
 function calculateEquilibriumLowerSupply(
-  lower: MarketPoolEntry,
-  higher: MarketPoolEntry,
+  totalSupply: number,
   pair: MarketDiffusionPair,
 ): number {
-  const lowerPriceWeight = pair.lowerBenchmarkSupply * lower.quality;
-  const higherPriceWeight = pair.higherBenchmarkSupply * higher.quality;
-  const totalSupply = lower.supply + higher.supply;
-  return totalSupply * lowerPriceWeight / (lowerPriceWeight + higherPriceWeight);
+  return totalSupply * pair.lowerBenchmarkSupply / (pair.lowerBenchmarkSupply + pair.higherBenchmarkSupply);
 }
 
 function calculateEquilibriumQuality(lower: MarketPoolEntry, higher: MarketPoolEntry): number {
@@ -62,18 +58,23 @@ export function calculateMarketDiffusionDetails(
   pair: MarketDiffusionPair,
   elapsedMilliseconds = MARKET_DIFFUSION_REFERENCE_INTERVAL_MS,
 ): MarketDiffusionDetails {
+  // Quality affects trade prices, but transport balances physical stock against
+  // each market's capacity. Otherwise high-Q player sales can pull additional
+  // low-Q stock into an already saturated local market.
   const lowerPrice = calculateMarketPrice(pair.lowerBenchmarkSupply, lower);
   const higherPrice = calculateMarketPrice(pair.higherBenchmarkSupply, higher);
-  const priceRatio = higherPrice > 0 ? lowerPrice / higherPrice : 1;
-  const priceGap = Math.max(priceRatio, 1 / priceRatio) - 1;
-  const equilibriumLowerSupply = calculateEquilibriumLowerSupply(lower, higher, pair);
+  const lowerFillRatio = Math.max(lower.supply, 1) / pair.lowerBenchmarkSupply;
+  const higherFillRatio = Math.max(higher.supply, 1) / pair.higherBenchmarkSupply;
+  const saturationRatio = lowerFillRatio / higherFillRatio;
+  const saturationGap = Math.max(saturationRatio, 1 / saturationRatio) - 1;
+  const equilibriumLowerSupply = calculateEquilibriumLowerSupply(lower.supply + higher.supply, pair);
   const equilibriumHigherSupply = lower.supply + higher.supply - equilibriumLowerSupply;
   const equilibriumQuality = calculateEquilibriumQuality(lower, higher);
   const timeScale = Number.isFinite(elapsedMilliseconds) && elapsedMilliseconds > 0
     ? elapsedMilliseconds / MARKET_DIFFUSION_REFERENCE_INTERVAL_MS
     : 0;
 
-  if (lowerPrice === higherPrice || higherPrice <= 0) {
+  if (lowerFillRatio === higherFillRatio) {
     return {
       direction: 'none',
       amount: 0,
@@ -81,8 +82,10 @@ export function calculateMarketDiffusionDetails(
       higherMarket: pair.higherMarket,
       lowerPrice,
       higherPrice,
-      priceRatio,
-      priceGap,
+      lowerFillRatio,
+      higherFillRatio,
+      saturationRatio,
+      saturationGap,
       lowerTargetSupply: equilibriumLowerSupply,
       higherTargetSupply: equilibriumHigherSupply,
       logisticsMultiplier: definition.logisticsMultiplier,
@@ -96,7 +99,7 @@ export function calculateMarketDiffusionDetails(
     };
   }
 
-  const nonlinearResponse = priceGap * (1 + priceGap) ** MARKET_DIFFUSION_CURVATURE;
+  const nonlinearResponse = saturationGap * (1 + saturationGap) ** MARKET_DIFFUSION_CURVATURE;
   const rawAmount = pair.rateBaseSupply
     / MARKET_DIFFUSION_DIVISOR
     * nonlinearResponse
@@ -105,7 +108,7 @@ export function calculateMarketDiffusionDetails(
     * pair.diffusionMultiplier
     * timeScale;
 
-  if (lowerPrice > higherPrice) {
+  if (lowerFillRatio < higherFillRatio) {
     const equilibriumDistance = Math.max(0, equilibriumLowerSupply - lower.supply);
     const equilibriumCappedAmount = Math.min(
       rawAmount,
@@ -119,8 +122,10 @@ export function calculateMarketDiffusionDetails(
       higherMarket: pair.higherMarket,
       lowerPrice,
       higherPrice,
-      priceRatio,
-      priceGap,
+      lowerFillRatio,
+      higherFillRatio,
+      saturationRatio,
+      saturationGap,
       lowerTargetSupply: equilibriumLowerSupply,
       higherTargetSupply: equilibriumHigherSupply,
       logisticsMultiplier: definition.logisticsMultiplier,
@@ -146,8 +151,10 @@ export function calculateMarketDiffusionDetails(
     higherMarket: pair.higherMarket,
     lowerPrice,
     higherPrice,
-    priceRatio,
-    priceGap,
+    lowerFillRatio,
+    higherFillRatio,
+    saturationRatio,
+    saturationGap,
     lowerTargetSupply: equilibriumLowerSupply,
     higherTargetSupply: equilibriumHigherSupply,
     logisticsMultiplier: definition.logisticsMultiplier,

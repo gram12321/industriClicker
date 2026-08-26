@@ -9,18 +9,21 @@ import { TooltipResourceIcon } from '@/ui/dashboard/components/IconTooltip';
 export function InventoryControlCard({
   onSetInventoryAmount,
 }: {
-  onSetInventoryAmount: (resourceType: ResourceType, amount: number) => boolean;
+  onSetInventoryAmount: (resourceType: ResourceType, amount: number, quality: number) => boolean;
 }) {
   const [selectedResourceType, setSelectedResourceType] = useState<ResourceType>(RESOURCE_TYPES[0]);
   const [amountText, setAmountText] = useState('0');
+  const [qualityText, setQualityText] = useState('1');
   const [isResourceMenuOpen, setIsResourceMenuOpen] = useState(false);
   const [updatedResourceType, setUpdatedResourceType] = useState<ResourceType | null>(null);
   const selectedResource = getResource(selectedResourceType);
   const amount = Number(amountText);
+  const quality = Number(qualityText);
   const isAmountValid = amountText.trim().length > 0 && Number.isFinite(amount) && amount >= 0;
+  const isQualityValid = qualityText.trim().length > 0 && Number.isFinite(quality) && quality > 0;
 
   const setInventoryAmount = () => {
-    if (isAmountValid && onSetInventoryAmount(selectedResourceType, amount)) {
+    if (isAmountValid && isQualityValid && onSetInventoryAmount(selectedResourceType, amount, quality)) {
       setUpdatedResourceType(selectedResourceType);
     }
   };
@@ -30,7 +33,7 @@ export function InventoryControlCard({
       <Card.Content style={styles.cardContent}>
         <Text style={styles.cardKicker}>INVENTORY</Text>
         <Text variant="titleLarge">Set inventory amount</Text>
-        <Text style={styles.cardDescription}>Set the selected resource to any non-negative amount.</Text>
+        <Text style={styles.cardDescription}>Set the selected resource amount and quantity-weighted quality.</Text>
         <View style={styles.adminSalesOrderControls}>
           <Menu
             anchor={(
@@ -60,7 +63,17 @@ export function InventoryControlCard({
             style={styles.adminSalesOrderAmountInput}
             value={amountText}
           />
-          <Button disabled={!isAmountValid} icon={APP_ICONS.pencil} mode="contained" onPress={setInventoryAmount}>
+          <TextInput
+            accessibilityLabel="Inventory quality"
+            dense
+            keyboardType="decimal-pad"
+            label="Quality"
+            mode="outlined"
+            onChangeText={(value) => setQualityText(value.replace(/[^0-9.]/g, ''))}
+            style={styles.adminSalesOrderAmountInput}
+            value={qualityText}
+          />
+          <Button disabled={!isAmountValid || !isQualityValid} icon={APP_ICONS.pencil} mode="contained" onPress={setInventoryAmount}>
             Set amount
           </Button>
         </View>

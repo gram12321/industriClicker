@@ -92,13 +92,14 @@ export class Inventory {
     return true;
   }
 
-  setAmount(resourceType: ResourceType, amount: number): boolean {
-    if (!Number.isFinite(amount) || amount < 0) {
+  setAmount(resourceType: ResourceType, amount: number, quality = this.getQuality(resourceType)): boolean {
+    if (!Number.isFinite(amount) || amount < 0 || !Number.isFinite(quality) || quality <= 0) {
       return false;
     }
 
     const entry = this.entries[resourceType];
     entry.quantity = amount;
+    entry.quality = quality;
     if (amount === 0) entry.sourceCostPerUnit = 0;
     return true;
   }

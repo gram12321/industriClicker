@@ -522,6 +522,16 @@ const localStyles = StyleSheet.create({
     gap: 8,
     padding: 10,
   },
+  tradeQuote: { flex: 1, gap: 2, minWidth: 0 },
+  tradeQuoteAmount: { color: colors.charcoal, fontSize: 12, fontWeight: '700' },
+  tradeQuotePrice: { color: colors.marketGreen, fontSize: 13, fontWeight: '800' },
+  tradeQuotes: {
+    backgroundColor: colors.paleGreen,
+    borderRadius: 10,
+    flexDirection: 'row',
+    gap: 10,
+    padding: 10,
+  },
   marketRows: { gap: 6 },
   marketRow: {
     flex: 1,
@@ -571,6 +581,10 @@ function MarketCard({
       ? market.getMaximumLocalPurchaseAmountAtCash(resourceType, finance.getBalance())
       : multiplier;
   const sellAmount = multiplier === 'all' ? inventory.getAmount(resourceType) : multiplier;
+  const inventoryQuality = inventory.getQuality(resourceType);
+  const buyQuote = market.getLocalBuyQuote(resourceType, buyAmount);
+  const sellQuoteAmount = Math.min(sellAmount, inventory.getAmount(resourceType));
+  const sellQuote = market.getLocalSellQuote(resourceType, sellQuoteAmount, inventoryQuality);
   const localRegionalDiffusion = market.getLocalRegionalDiffusionInfo(resourceType);
   const regionalGlobalDiffusion = market.getRegionalGlobalDiffusionInfo(resourceType);
   const localSupplyTrend =
@@ -705,24 +719,42 @@ function MarketCard({
           </View>
         </View>
         </View>
+        <View style={localStyles.tradeQuotes}>
+          <TradeQuote
+            label="Buy from local"
+            quality={buyQuote.quality}
+            resourceName={resourceName}
+            total={buyQuote.success ? buyQuote.unitPrice * buyQuote.amount : null}
+            unitPrice={buyQuote.unitPrice}
+            amount={buyQuote.amount}
+          />
+          <TradeQuote
+            label="Sell from inventory"
+            quality={inventoryQuality}
+            resourceName={resourceName}
+            total={sellQuote.success ? sellQuote.unitPrice * sellQuote.amount : null}
+            unitPrice={sellQuote.unitPrice}
+            amount={sellQuote.amount}
+          />
+        </View>
         <View style={styles.marketActions}>
           <IconButton
-            accessibilityLabel={`Buy ${formatNumber(buyAmount)} ${resourceName}`}
+            accessibilityLabel={`Buy ${formatNumber(buyQuote.amount)} ${resourceName}`}
             containerColor={colors.marketBuy}
-            disabled={buyAmount <= 0}
+            disabled={!buyQuote.success}
             icon={APP_ICONS.marketBuy}
             iconColor={colors.onDark}
-            onPress={() => buyMarketResource(resourceType, buyAmount)}
+            onPress={() => buyMarketResource(resourceType, buyQuote.amount)}
             size={19}
             style={styles.marketActionButton}
           />
           <IconButton
-            accessibilityLabel={`Sell ${formatNumber(sellAmount)} ${resourceName}`}
+            accessibilityLabel={`Sell ${formatNumber(sellQuote.amount)} ${resourceName}`}
             containerColor={colors.marketSell}
-            disabled={sellAmount <= 0}
+            disabled={!sellQuote.success}
             icon={APP_ICONS.marketSell}
             iconColor={colors.onDark}
-            onPress={() => sellMarketResource(resourceType, sellAmount)}
+            onPress={() => sellMarketResource(resourceType, sellQuote.amount)}
             size={19}
             style={styles.marketActionButton}
           />
@@ -842,6 +874,33 @@ function ResourceFlowRow({
       <Text style={[localStyles.resourceFlowValue, { color }]}>
         {formattedValue}
       </Text>
+    </View>
+  );
+}
+
+function TradeQuote({
+  amount,
+  label,
+  quality,
+  resourceName,
+  total,
+  unitPrice,
+}: {
+  amount: number;
+  label: string;
+  quality: number;
+  resourceName: string;
+  total: number | null;
+  unitPrice: number;
+}) {
+  const isAvailable = total !== null;
+  return (
+    <View accessibilityLabel={`${label}: ${isAvailable ? `${formatNumber(amount)} ${resourceName} at ${formatCurrency(unitPrice)} per unit` : 'quote unavailable'}`} style={localStyles.tradeQuote}>
+      <Text style={styles.marketMetricLabel}>{label}</Text>
+      {isAvailable ? <>
+        <Text numberOfLines={1} style={localStyles.tradeQuoteAmount}>{`${formatNumber(amount, { smartDecimals: true })} Q${formatNumber(quality, { decimals: 2, forceDecimals: true })} ${resourceName}`}</Text>
+        <Text style={localStyles.tradeQuotePrice}>{`${formatCurrency(total)} · ${formatCurrency(unitPrice)}/unit`}</Text>
+      </> : <Text style={styles.marketMetricValue}>Quote unavailable</Text>}
     </View>
   );
 }

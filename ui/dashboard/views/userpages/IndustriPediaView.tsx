@@ -242,7 +242,7 @@ function MarketFlowSection({ market }: { market: Market }) {
   const regionalBalanceDelta = regionalGlobalDetails.lowerTargetSupply - regional.supply;
 
   return <>
-    <SectionHeading eyebrow="MARKET FLOW" title="Follow market balancing" subtitle="Prices guide resources through local, regional, and global reservoirs every five foreground seconds." />
+    <SectionHeading eyebrow="MARKET FLOW" title="Follow market balancing" subtitle="Supply saturation guides resources through local, regional, and global reservoirs every five foreground seconds." />
     <View style={localStyles.resourceTabs}>
       {RESOURCE_GROUPS.map((group) => <View key={group.id} style={localStyles.resourceGroupTabs}><Text style={styles.cardKicker}>{group.label}</Text><View style={localStyles.resourceGroupButtons}>{group.resources.map((resourceType) => <Button accessibilityLabel={getResource(resourceType).name} compact icon={() => <TooltipResourceIcon resourceType={resourceType} />} key={resourceType} mode={selectedResource === resourceType ? 'contained' : 'outlined'} onPress={() => setSelectedResource(resourceType)}>
         {getResource(resourceType).name}
@@ -279,9 +279,10 @@ function MarketFlowSection({ market }: { market: Market }) {
       <List.Accordion left={(props) => <List.Icon {...props} icon={APP_ICONS.help} />} title="Why is it moving?">
         <View style={localStyles.accordionBody}>
           <Text style={styles.cardDescription}>{getFlowDescription(details.direction)}</Text>
-          <BalanceRow label="Local price" value={<CurrencyValue value={details.lowerPrice} />} />
-          <BalanceRow label="Regional price" value={<CurrencyValue value={details.higherPrice} />} />
-          <BalanceRow label="Price ratio" value={formatNumber(details.priceRatio, { decimals: 3, forceDecimals: true })} />
+          <BalanceRow label="Local trade price" value={<CurrencyValue value={details.lowerPrice} />} />
+          <BalanceRow label="Regional trade price" value={<CurrencyValue value={details.higherPrice} />} />
+          <BalanceRow label="Local fill ratio" value={formatNumber(details.lowerFillRatio, { decimals: 3, forceDecimals: true })} />
+          <BalanceRow label="Regional fill ratio" value={formatNumber(details.higherFillRatio, { decimals: 3, forceDecimals: true })} />
         </View>
       </List.Accordion>
       <List.Accordion left={(props) => <List.Icon {...props} icon={APP_ICONS.globalMarket} />} title="Diffusion factors">
@@ -323,15 +324,15 @@ function MarketFlowConnector({ details }: { details: MarketDiffusionDetails }) {
   const isToHigherMarket = details.direction === `to-${details.higherMarket}`;
   const flowColor = isToLowerMarket ? colors.marketGreen : isToHigherMarket ? colors.marketGold : colors.muted;
   const flowIcon = isToLowerMarket ? APP_ICONS.marketFlowToLocal : isToHigherMarket ? APP_ICONS.marketFlowToGlobal : APP_ICONS.marketBalanced;
-  const pressureWidth = `${Math.min(details.priceGap * 50, 50)}%` as `${number}%`;
+  const pressureWidth = `${Math.min(details.saturationGap * 50, 50)}%` as `${number}%`;
   const pairLabel = `${capitalize(details.lowerMarket)}/${capitalize(details.higherMarket)}`;
 
   return <View accessibilityLabel={getFlowAccessibilityLabel(details.direction, details.amount)} style={localStyles.flowConnector}>
     <TooltipMaterialIcon color={flowColor} label={getFlowAccessibilityLabel(details.direction, details.amount)} name={flowIcon} size={28} />
-    <Text style={[localStyles.flowAmount, { color: flowColor }]}>{details.direction === 'none' ? 'Prices balanced' : `${formatNumber(details.amount, { smartDecimals: true })} / minute`}</Text>
+    <Text style={[localStyles.flowAmount, { color: flowColor }]}>{details.direction === 'none' ? 'Saturation balanced' : `${formatNumber(details.amount, { smartDecimals: true })} / minute`}</Text>
     <Text style={localStyles.flowDirection}>{getFlowDescription(details.direction)}</Text>
-    <Text style={localStyles.priceGapText}>{`${pairLabel} price gap: ${formatNumber(details.priceGap, { percent: true, decimals: 1 })}`}</Text>
-    <View accessibilityLabel={`${pairLabel} price gap ${formatNumber(details.priceGap, { percent: true, decimals: 1 })}`} style={localStyles.balanceTrack}>
+    <Text style={localStyles.priceGapText}>{`${pairLabel} saturation gap: ${formatNumber(details.saturationGap, { percent: true, decimals: 1 })}`}</Text>
+    <View accessibilityLabel={`${pairLabel} saturation gap ${formatNumber(details.saturationGap, { percent: true, decimals: 1 })}`} style={localStyles.balanceTrack}>
       <View style={localStyles.balanceCentre} />
       {details.direction !== 'none' && <View style={[localStyles.balanceFill, isToLowerMarket ? localStyles.balanceFillToLocal : localStyles.balanceFillToGlobal, { width: pressureWidth, backgroundColor: flowColor }]} />}
     </View>

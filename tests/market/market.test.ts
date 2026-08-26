@@ -24,7 +24,7 @@ describe('Market regional tier', () => {
     expect(totalAfter).toBeCloseTo(totalBefore);
   });
 
-  it('uses equal diffusion pressure for equal high and low price divergences', () => {
+  it('uses equal diffusion pressure for equal high and low saturation divergences', () => {
     const highPriceSnapshot = new Market().toSnapshot();
     highPriceSnapshot.local[ResourceType.Grain].supply = 100;
     const lowPriceSnapshot = new Market().toSnapshot();
@@ -35,9 +35,25 @@ describe('Market regional tier', () => {
 
     expect(highPriceDetails.direction).toBe('to-local');
     expect(lowPriceDetails.direction).toBe('to-regional');
-    expect(highPriceDetails.priceGap).toBeCloseTo(9);
-    expect(lowPriceDetails.priceGap).toBeCloseTo(9);
+    expect(highPriceDetails.saturationGap).toBeCloseTo(9);
+    expect(lowPriceDetails.saturationGap).toBeCloseTo(9);
     expect(highPriceDetails.rawAmount).toBeCloseTo(lowPriceDetails.rawAmount);
+  });
+
+  it('moves surplus outward by supply saturation even when local quality raises its trade price', () => {
+    const snapshot = new Market().toSnapshot();
+    snapshot.local[ResourceType.Grain] = { supply: 1_500, quality: 1.56 };
+    snapshot.regional[ResourceType.Grain] = { supply: 100_000, quality: 1 };
+    const market = Market.fromSnapshot(snapshot);
+
+    expect(market.getLocalPrice(ResourceType.Grain)).toBeGreaterThan(market.getRegionalPrice(ResourceType.Grain));
+
+    const details = market.getLocalRegionalDiffusionDetails(ResourceType.Grain);
+
+    expect(details.lowerFillRatio).toBeCloseTo(1.875);
+    expect(details.higherFillRatio).toBeCloseTo(1.25);
+    expect(details.direction).toBe('to-regional');
+    expect(details.lowerTargetSupply).toBeCloseTo(101_500 * 800 / 80_800);
   });
 
   it('uses regional initial supply as the local-regional diffusion rate base', () => {

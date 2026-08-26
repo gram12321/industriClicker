@@ -10,20 +10,23 @@ import { TooltipResourceIcon } from '@/ui/dashboard/components/IconTooltip';
 export function SalesOrderRequestCard({
   onCreateSalesOrderRequest,
 }: {
-  onCreateSalesOrderRequest: (resourceType: ResourceType, quantity: number) => boolean;
+  onCreateSalesOrderRequest: (resourceType: ResourceType, quantity: number, quality: number) => boolean;
 }) {
   const [selectedResourceType, setSelectedResourceType] = useState<ResourceType>(RESOURCE_TYPES[0]);
   const [quantityText, setQuantityText] = useState(String(SALES_ORDER_MINIMUM_QUANTITY));
+  const [qualityText, setQualityText] = useState('1');
   const [isResourceMenuOpen, setIsResourceMenuOpen] = useState(false);
   const [createdResourceType, setCreatedResourceType] = useState<ResourceType | null>(null);
   const selectedResource = getResource(selectedResourceType);
   const quantity = Number(quantityText);
+  const quality = Number(qualityText);
   const isQuantityValid = Number.isInteger(quantity)
     && quantity >= SALES_ORDER_MINIMUM_QUANTITY
     && quantity <= SALES_ORDER_MAXIMUM_QUANTITY;
+  const isQualityValid = qualityText.trim().length > 0 && Number.isFinite(quality) && quality > 0;
 
   const createRequest = () => {
-    if (isQuantityValid && onCreateSalesOrderRequest(selectedResourceType, quantity)) {
+    if (isQuantityValid && isQualityValid && onCreateSalesOrderRequest(selectedResourceType, quantity, quality)) {
       setCreatedResourceType(selectedResourceType);
     }
   };
@@ -34,7 +37,7 @@ export function SalesOrderRequestCard({
         <Text style={styles.cardKicker}>SALES</Text>
         <Text variant="titleLarge">Create customer order</Text>
         <Text style={styles.cardDescription}>
-          Create a development customer order for a selected resource and amount.
+          Create a development customer order for a selected resource, amount, and locked quality.
         </Text>
         <View style={styles.adminSalesOrderControls}>
           <Menu
@@ -69,7 +72,17 @@ export function SalesOrderRequestCard({
             style={styles.adminSalesOrderAmountInput}
             value={quantityText}
           />
-          <Button disabled={!isQuantityValid} icon={APP_ICONS.add} mode="contained" onPress={createRequest}>
+          <TextInput
+            accessibilityLabel="Customer order quality"
+            dense
+            keyboardType="decimal-pad"
+            label="Quality"
+            mode="outlined"
+            onChangeText={(value) => setQualityText(value.replace(/[^0-9.]/g, ''))}
+            style={styles.adminSalesOrderAmountInput}
+            value={qualityText}
+          />
+          <Button disabled={!isQuantityValid || !isQualityValid} icon={APP_ICONS.add} mode="contained" onPress={createRequest}>
             Create order
           </Button>
         </View>

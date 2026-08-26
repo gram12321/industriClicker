@@ -39,10 +39,14 @@ export type MarketDiffusionInfo = { direction: MarketDiffusionDirection; amount:
 export type MarketDiffusionDetails = MarketDiffusionInfo & {
   lowerMarket: MarketPoolKind;
   higherMarket: MarketPoolKind;
+  /** Quality-adjusted trade prices for the two pools. */
   lowerPrice: number;
   higherPrice: number;
-  priceRatio: number;
-  priceGap: number;
+  /** Supply divided by benchmark capacity. Diffusion moves from the higher fill ratio to the lower. */
+  lowerFillRatio: number;
+  higherFillRatio: number;
+  saturationRatio: number;
+  saturationGap: number;
   lowerTargetSupply: number;
   higherTargetSupply: number;
   logisticsMultiplier: number;

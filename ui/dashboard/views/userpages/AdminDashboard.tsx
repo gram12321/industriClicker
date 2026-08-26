@@ -14,12 +14,12 @@ export function AdminDashboard({ isTutorialEnabled, onAddFunds, onClearAllLocalD
   isTutorialEnabled: boolean;
   onAddFunds: (amount: number) => boolean;
   onClearAllLocalData: () => Promise<boolean>;
-  onCreateSalesOrderRequest: (resourceType: ResourceType, quantity: number) => boolean;
+  onCreateSalesOrderRequest: (resourceType: ResourceType, quantity: number, quality: number) => boolean;
   onDeleteCompany: () => Promise<boolean>;
   onDisableTutorial: () => Promise<void>;
   onEnableTutorial: () => Promise<void>;
   onSetBalance: (amount: number) => boolean;
-  onSetInventoryAmount: (resourceType: ResourceType, amount: number) => boolean;
+  onSetInventoryAmount: (resourceType: ResourceType, amount: number, quality: number) => boolean;
 }) {
   return <><View style={styles.sectionHeading}><Text style={styles.sectionEyebrow}>DEVELOPMENT</Text><Text variant="headlineSmall">Admin Dashboard</Text><Text style={styles.sectionSubtitle}>Development tools are available only from a local browser connection.</Text></View><TutorialControlCard isTutorialEnabled={isTutorialEnabled} onDisableTutorial={onDisableTutorial} onEnableTutorial={onEnableTutorial} /><MoneyControlCard onAddFunds={onAddFunds} onSetBalance={onSetBalance} /><SalesOrderRequestCard onCreateSalesOrderRequest={onCreateSalesOrderRequest} /><InventoryControlCard onSetInventoryAmount={onSetInventoryAmount} /><DeleteCompanyCard onDeleteCompany={onDeleteCompany} /><ClearLocalDataCard onClearAllLocalData={onClearAllLocalData} /></>;
 }

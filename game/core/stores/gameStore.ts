@@ -54,7 +54,7 @@ type GameState = {
   customerPipelineProgress: number;
   addAdminFunds: (amount: number) => boolean;
   setAdminBalance: (amount: number) => boolean;
-  setInventoryAmount: (resourceType: ResourceType, amount: number) => boolean;
+  setInventoryAmount: (resourceType: ResourceType, amount: number, quality?: number) => boolean;
   buyMarketResource: (resourceType: ResourceType, amount: number) => boolean;
   sellMarketResource: (resourceType: ResourceType, amount: number) => boolean;
   setMarketAutomation: (resourceType: ResourceType, updates: Partial<MarketAutomation>) => boolean;
@@ -75,7 +75,7 @@ type GameState = {
   advanceGameTime: (elapsedMilliseconds: number) => number;
   advanceRealtime: (nowMs: number) => number;
   fastForwardOneMinute: () => boolean;
-  createSalesOrderRequest: (resourceType: ResourceType, quantity: number) => boolean;
+  createSalesOrderRequest: (resourceType: ResourceType, quantity: number, quality?: number) => boolean;
   getSalesOrderAcquisitionStatus: () => SalesOrderAcquisitionStatus;
   fulfillSalesOrder: (orderId: string) => boolean;
   rejectSalesOrder: (orderId: string) => boolean;
@@ -349,10 +349,10 @@ export const useGameStore = create<GameState>((set, get) => {
     const currentBalance = get().finance.getBalance();
     return get().addAdminFunds(amount - currentBalance);
   },
-  setInventoryAmount: (resourceType, amount) => {
+  setInventoryAmount: (resourceType, amount, quality) => {
     const inventory = get().inventory.clone();
 
-    if (!inventory.setAmount(resourceType, amount)) {
+    if (!inventory.setAmount(resourceType, amount, quality)) {
       return false;
     }
 
@@ -1352,7 +1352,7 @@ export const useGameStore = create<GameState>((set, get) => {
     set({ research, finance, ...achievementResult });
     return true;
   },
-  createSalesOrderRequest: (resourceType, quantity) => {
+  createSalesOrderRequest: (resourceType, quantity, quality) => {
     const salesOrders = get().salesOrders.clone();
     if (!salesOrders.createDevelopmentOrderForResource(
       resourceType,
@@ -1361,6 +1361,7 @@ export const useGameStore = create<GameState>((set, get) => {
       getMaximumOpenSalesOrders(get().research.getCompletedProjectIds()),
       get().lastProcessedAtMs,
       calculateCompanyPrestigeSummary(get().prestige.getEvents(), get().lastProcessedAtMs).totalPrestige,
+      quality,
     )) {
       return false;
     }
