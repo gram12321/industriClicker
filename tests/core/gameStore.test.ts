@@ -104,7 +104,6 @@ describe('market sales', () => {
     const current = useGameStore.getState();
     expect(current.market.getLocalEntry(ResourceType.Grain).supply).toBeLessThan(grainSupplyBefore);
     expect(current.population.getHouseholdBalance()).toBeLessThan(householdBalanceBefore + 1 / 60);
-    expect(current.population.getCurrentMinuteConsumption()[ResourceType.Grain]).toBeGreaterThan(0);
   });
 
   it('charges staff wages every foreground second while aggregating the finance history, then pauses when the next wage cannot be paid', () => {
@@ -145,8 +144,8 @@ describe('market sales', () => {
     expect(isGameSnapshot(snapshot)).toBe(true);
     const { highestFacilityOutputQuality: _highestFacilityOutputQuality, ...staleResourceFlow } = snapshot.resourceFlow;
     expect(isGameSnapshot({ ...snapshot, resourceFlow: staleResourceFlow })).toBe(false);
-    const { currentMinuteConsumption: _currentMinuteConsumption, ...stalePopulation } = snapshot.population;
-    expect(isGameSnapshot({ ...snapshot, population: stalePopulation })).toBe(false);
+    expect(isGameSnapshot({ ...snapshot, population: {} })).toBe(false);
+    expect(isGameSnapshot({ ...snapshot, population: { ...snapshot.population, currentMinuteConsumption: {} } })).toBe(false);
     const { sourceCostPerUnit: _sourceCostPerUnit, ...staleInventoryEntry } = snapshot.inventory.entries[ResourceType.Grain];
     expect(isGameSnapshot({
       ...snapshot,

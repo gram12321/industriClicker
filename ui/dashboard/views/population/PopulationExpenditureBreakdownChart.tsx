@@ -2,12 +2,19 @@ import { useWindowDimensions, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Text } from 'react-native-paper';
 import Svg, { Circle, Path } from 'react-native-svg';
-import type { PopulationExpenditureBreakdown } from '@/game/population';
+import type { ResourceGroup } from '@/game/resources';
 import { colors } from '@/theme';
 import { formatCurrency, formatPercent } from '@/utils';
 
 type Props = {
   entries: readonly PopulationExpenditureBreakdown[];
+};
+
+type PopulationExpenditureBreakdown = {
+  id: ResourceGroup;
+  label: string;
+  projectedPurchaseCost: number;
+  expenditureShare: number;
 };
 
 const DOMAIN_APPEARANCE = {

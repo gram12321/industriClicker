@@ -1,17 +1,12 @@
-import { RESOURCE_GROUPS, ResourceType, type ResourceGroup } from '@/game/resources';
+import { ResourceType, type ResourceGroup } from '@/game/resources';
 
-export type PopulationConsumptionBasketDefinition = {
-  id: ResourceGroup;
-  label: string;
-  resourceTypes: readonly ResourceType[];
+export type PopulationConsumptionDefinition = {
+  amountPerPersonPerMinute: number;
+  baselinePreference: number;
+  luxury: number;
+  priceElasticity: number;
 };
 
-/** Current resource domains exposed as virtual household-consumption baskets. */
-export const POPULATION_CONSUMPTION_BASKETS: readonly PopulationConsumptionBasketDefinition[] = RESOURCE_GROUPS.map(
-  (group) => ({ id: group.id, label: group.label, resourceTypes: group.resources }),
-);
-
-/** Provisional total demand for each resource-domain basket per person/minute. */
 export const POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE: Readonly<Record<ResourceGroup, number>> = {
   food: 1,
   'raw-resources': 0.25,
@@ -20,55 +15,51 @@ export const POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE: Readonly<
   utilities: 0.7,
 };
 
-/**
- * Base resource demand for one population unit during one game-minute.
- *
- * These are provisional virtual-basket quantities, not shared physical units.
- * Each resource is a relative share of its domain total above. Food is
- * diversified; Water and Electricity cover direct utility use; Wool is a
- * deliberately small direct manufacturing good. The current non-zero raw and
- * construction entries are implementation probes and can be rebalanced later.
- */
-export const POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE: Readonly<Record<ResourceType, number>> = {
-  // [Food]
-  [ResourceType.Grain]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.food * 0.15,
-  [ResourceType.Bread]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.food * 0.4,
-  [ResourceType.Sugar]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.food * 0.03,
-  [ResourceType.Cake]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.food * 0.03,
-  [ResourceType.Eggs]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.food * 0.08,
-  [ResourceType.Fruit]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.food * 0.12,
-  [ResourceType.Meat]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.food * 0.09,
-  [ResourceType.MeatPie]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.food * 0.03,
-  [ResourceType.Milk]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.food * 0.07,
+/** Matches Simulus's pairwise relative-price response. */
+export const POPULATION_PRICE_ELASTICITY_FACTOR = 0.8;
+export const POPULATION_MAX_SUBSTITUTION_PER_PAIR = 1;
 
-  // [Utility]
-  [ResourceType.Water]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.utilities * 0.71,
-  [ResourceType.Electricity]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.utilities * 0.29,
+/** The single consumer catalogue: base quantity plus 0–1 selection values. */
+export const POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE: Readonly<Record<ResourceType, PopulationConsumptionDefinition>> = {
+  // Food
+  [ResourceType.Grain]: { amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.food * 0.15, baselinePreference: 0.65, luxury: 0.02, priceElasticity: 0.85 },
+  [ResourceType.Bread]: { amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.food * 0.4, baselinePreference: 0.95, luxury: 0.22, priceElasticity: 0.7 },
+  [ResourceType.Sugar]: { amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.food * 0.03, baselinePreference: 0.15, luxury: 0.7, priceElasticity: 0.9 },
+  [ResourceType.Cake]: { amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.food * 0.03, baselinePreference: 0.25, luxury: 0.9, priceElasticity: 0.9 },
+  [ResourceType.Eggs]: { amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.food * 0.08, baselinePreference: 0.45, luxury: 0.3, priceElasticity: 0.7 },
+  [ResourceType.Fruit]: { amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.food * 0.12, baselinePreference: 0.55, luxury: 0.25, priceElasticity: 0.65 },
+  [ResourceType.Meat]: { amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.food * 0.09, baselinePreference: 0.5, luxury: 0.45, priceElasticity: 0.8 },
+  [ResourceType.MeatPie]: { amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.food * 0.03, baselinePreference: 0.3, luxury: 0.65, priceElasticity: 0.85 },
+  [ResourceType.Milk]: { amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.food * 0.07, baselinePreference: 0.45, luxury: 0.25, priceElasticity: 0.6 },
 
-  // [Raw Resource]
-  [ResourceType.Coal]: 0,
-  [ResourceType.Iron]: 0,
-  [ResourceType.Copper]: 0,
-  [ResourceType.Gold]: 0,
-  [ResourceType.Minerals]: 0,
-  [ResourceType.Sand]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE['raw-resources'] * 0.4,
-  [ResourceType.Clay]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE['raw-resources'] * 0.4,
-  [ResourceType.Stone]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE['raw-resources'] * 0.2,
+  // Utilities
+  [ResourceType.Water]: { amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.utilities * 0.71, baselinePreference: 1, luxury: 0.01, priceElasticity: 0.1 },
+  [ResourceType.Electricity]: { amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.utilities * 0.29, baselinePreference: 0.9, luxury: 0.1, priceElasticity: 0.1 },
 
-  // [Construction]
-  [ResourceType.Bricks]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.construction * 0.2,
-  [ResourceType.Cement]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.construction * 0.2,
-  [ResourceType.ReinforcedConcrete]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.construction * 0.2,
-  [ResourceType.ConstructionMaterials]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.construction * 0.4,
+  // Raw resources
+  [ResourceType.Coal]: { amountPerPersonPerMinute: 0, baselinePreference: 0, luxury: 1, priceElasticity: 0 },
+  [ResourceType.Iron]: { amountPerPersonPerMinute: 0, baselinePreference: 0, luxury: 1, priceElasticity: 0 },
+  [ResourceType.Copper]: { amountPerPersonPerMinute: 0, baselinePreference: 0, luxury: 1, priceElasticity: 0 },
+  [ResourceType.Gold]: { amountPerPersonPerMinute: 0, baselinePreference: 0, luxury: 1, priceElasticity: 0 },
+  [ResourceType.Minerals]: { amountPerPersonPerMinute: 0, baselinePreference: 0, luxury: 1, priceElasticity: 0 },
+  [ResourceType.Sand]: { amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE['raw-resources'] * 0.4, baselinePreference: 0.5, luxury: 0.65, priceElasticity: 0.6 },
+  [ResourceType.Clay]: { amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE['raw-resources'] * 0.4, baselinePreference: 0.5, luxury: 0.65, priceElasticity: 0.6 },
+  [ResourceType.Stone]: { amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE['raw-resources'] * 0.2, baselinePreference: 0.4, luxury: 0.7, priceElasticity: 0.65 },
 
-  // [Manufacturing]
-  [ResourceType.Steel]: 0,
-  [ResourceType.ElectricCircuits]: 0,
-  [ResourceType.Chemicals]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0.0625,
-  [ResourceType.Fertilizer]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0.625,
-  [ResourceType.Plastic]: 0,
-  [ResourceType.Silicon]: 0,
-  [ResourceType.AdvancedComponents]: 0,
-  [ResourceType.IndustrialMachines]: 0,
-  [ResourceType.Wool]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0.3125,
+  // Construction
+  [ResourceType.Bricks]: { amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.construction * 0.2, baselinePreference: 0.5, luxury: 0.7, priceElasticity: 0.65 },
+  [ResourceType.Cement]: { amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.construction * 0.2, baselinePreference: 0.45, luxury: 0.75, priceElasticity: 0.65 },
+  [ResourceType.ReinforcedConcrete]: { amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.construction * 0.2, baselinePreference: 0.3, luxury: 0.85, priceElasticity: 0.8 },
+  [ResourceType.ConstructionMaterials]: { amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.construction * 0.4, baselinePreference: 0.6, luxury: 0.65, priceElasticity: 0.6 },
+
+  // Manufacturing
+  [ResourceType.Steel]: { amountPerPersonPerMinute: 0, baselinePreference: 0, luxury: 1, priceElasticity: 0 },
+  [ResourceType.ElectricCircuits]: { amountPerPersonPerMinute: 0, baselinePreference: 0, luxury: 1, priceElasticity: 0 },
+  [ResourceType.Chemicals]: { amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0.0625, baselinePreference: 0.25, luxury: 0.9, priceElasticity: 0.8 },
+  [ResourceType.Fertilizer]: { amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0.625, baselinePreference: 0.5, luxury: 0.75, priceElasticity: 0.7 },
+  [ResourceType.Plastic]: { amountPerPersonPerMinute: 0, baselinePreference: 0, luxury: 1, priceElasticity: 0 },
+  [ResourceType.Silicon]: { amountPerPersonPerMinute: 0, baselinePreference: 0, luxury: 1, priceElasticity: 0 },
+  [ResourceType.AdvancedComponents]: { amountPerPersonPerMinute: 0, baselinePreference: 0, luxury: 1, priceElasticity: 0 },
+  [ResourceType.IndustrialMachines]: { amountPerPersonPerMinute: 0, baselinePreference: 0, luxury: 1, priceElasticity: 0 },
+  [ResourceType.Wool]: { amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0.3125, baselinePreference: 0.4, luxury: 0.8, priceElasticity: 0.7 },
 };

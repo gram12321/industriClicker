@@ -137,12 +137,8 @@ function isInventoryEntrySnapshot(value: unknown): boolean {
 
 function isPopulationSnapshot(value: unknown): value is PopulationSnapshot {
   if (!isRecord(value)) return false;
-  const currentMinuteConsumption = value.currentMinuteConsumption;
-  return typeof value.householdBalance === 'number' && Number.isFinite(value.householdBalance) && value.householdBalance >= 0
-    && typeof value.currentConsumptionGameMinute === 'number' && Number.isInteger(value.currentConsumptionGameMinute) && value.currentConsumptionGameMinute >= 0
-    && hasCurrentResourceKeys(currentMinuteConsumption)
-    && RESOURCE_TYPES.every((resourceType) => typeof currentMinuteConsumption[resourceType] === 'number'
-      && Number.isFinite(currentMinuteConsumption[resourceType]) && currentMinuteConsumption[resourceType] >= 0);
+  return Object.keys(value).length === 1
+    && typeof value.householdBalance === 'number' && Number.isFinite(value.householdBalance) && value.householdBalance >= 0;
 }
 
 function isPendingStaffingChangeSnapshot(value: unknown): boolean {

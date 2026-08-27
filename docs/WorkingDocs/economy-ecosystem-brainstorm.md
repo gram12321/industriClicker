@@ -26,30 +26,30 @@ The important failure for Industri Clicker is that Simulus does not close the pr
 
 The lesson is not to copy Simulus's tax system at this stage. The valuable lesson is to connect production, income, purchasing power, demand, and resource consumption explicitly.
 
-## 2. What “closed loop” means
+## 2. Cash-free local-market clearing
 
-The primary requirement is closed monetary accounting. Every euro expense must be a transfer to another named sector, not a deletion. The initial private model should distinguish at least:
+The current private model uses a cash-free Local Market clearing convention. The market is a resource reservoir and exchange, not a cash-holding actor: company sales credit company Finance when stock enters Local Market, and population purchases debit household cash when stock leaves it. Those are the two sides of the market clearing flow, but the market persists neither a cash balance nor seller ownership. The current model distinguishes:
 
 - The player company: facility cash, inventories, capital, and financial obligations.
 - Households/workers: wages received, disposable income, and consumer spending.
-- A private-market or other-private-sector counterparty: the owner of goods and services that are bought from the market but are not produced by the player.
+- Local Market: the cash-free clearing reservoir for company and household trades.
 - Eventually, a shared global/external sector: inter-company trade, imports, and exports.
 
-The monetary invariant is:
+The current accounting boundary is:
 
 ```text
-Company cash + household/private-sector cash + external-sector cash = constant
+Company cash and household cash are recorded; Local Market inventory is recorded, while its balancing cash and seller position are intentionally not persisted.
 ```
 
-The exact number may change later if money creation, loans, or monetary policy are introduced, but those would need explicit rules. No ordinary production, purchase, wage, or consumption command should silently create or destroy cash.
+This is a deliberate simplification for the local-first stage. A future shared or external market must introduce its own explicit settlement rules rather than inheriting an implicit cash balance from Local Market.
 
 Examples:
 
 | Event | Company | Households / private market |
 | --- | ---: | ---: |
 | Facility pays €100 wages | -100 | +100 |
-| Company buys €100 local inputs | -100 | +100 |
-| Population buys €100 of company goods | +100 | -100 |
+| Company sells €100 of goods into Local Market | +100 | — |
+| Population buys €100 from Local Market | — | -100 |
 | Production transforms inputs into output | no cash change | no cash change |
 
 Physical resources do not have to be conserved in the same way. Household consumption is a legitimate final sink. Construction materials and machines become embodied in productive capital. Extraction, imports, quality loss, maintenance, and final consumption need explicit material sources and sinks, but they need not preserve every physical unit forever.
@@ -76,13 +76,13 @@ Population demand should be budget-constrained. A household or cohort may have d
 
 For the initial model, aggregate household or population cohorts are sufficient; individual bank accounts are not required. The model should still preserve the distinction between gross wages, disposable income, desired demand, fulfilled purchases, and savings.
 
-Population consumption should be treated as a purchase followed by a final resource sink:
+Population consumption is treated as a household purchase followed by a final resource sink:
 
-1. A household budget pays a seller.
-2. The seller receives the money.
-3. The purchased resource is removed from available stock as consumption.
+1. A household budget is debited at the Local Market execution price.
+2. The purchased resource is removed from Local Market stock as consumption.
+3. Local Market itself records neither cash nor seller ownership.
 
-This is more economically meaningful than subtracting resources from a market without recording who was paid.
+The convention deliberately keeps Local Market as an exchange rather than a separate economy actor.
 
 ## 4. Market layers and where population buys
 
@@ -241,14 +241,13 @@ The following boundaries are currently agreed:
 - Population demand must eventually be tied to disposable income, not only gross income or population count.
 - Population consumption must be a purchase/settlement plus a physical resource sink.
 - Local and regional markets are private layers before global demand is shared.
-- Global trade should be represented as an explicit account or sector, not as an invisible source or sink of money.
+- Global trade must define an explicit settlement rule before it is introduced; it does not inherit a Local Market cash balance.
 - Fixed demand fractions across local, regional, and global markets are not preferred.
 
 Choices still requiring detailed design later:
 
 - Whether the first demand implementation consumes physically from local stock, regional stock, or a local retail layer backed by regional stock.
-- How market inventory ownership/provenance is represented when households buy goods that originated from different sellers.
-- How the private-market counterparty receives and recirculates money from company purchases.
+- Whether later market layers need inventory ownership or provenance when households buy goods from different sellers.
 - Initial household money/endowments and how they coexist with the company's starting cash and seeded market stock.
 - Whether population is represented as aggregate cohorts or eventually as individual residents.
 - The exact demand cadence, budget allocation, price response, and source-routing formula.
@@ -257,4 +256,4 @@ Choices still requiring detailed design later:
 - How a future substitution strength combines need compatibility, processing/quality rung, recipe relationship, and possible hierarchy distance.
 - When and how the shared global market is introduced without requiring premature backend or multiplayer infrastructure.
 
-These are design questions, not implementation commitments. The smallest coherent next decision is the settlement boundary for private demand: define who owns local/regional goods and who receives the household's purchase money before choosing detailed consumption formulas.
+These are design questions, not commitments for every future layer. The initial consumer implementation now uses the existing resource-domain base basket, a wage-capped per-minute basket, luxury pressure, and reference-price elasticity within each domain. Future work can refine the balance values, candidate set, relationship strength, and market routing without changing that boundary.

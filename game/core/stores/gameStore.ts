@@ -9,7 +9,7 @@ import type { GameSnapshot } from '@/game/core/state';
 import { BASE_WORK_PER_MINUTE, FOREGROUND_SIMULATION_STEP_MS, REALTIME_WORK_MINUTE_MS, calculateRealtimeAdvance } from '@/game/core/time';
 import { SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP, SalesOrders, calculateSalesOrderAcquisitionRate, calculateSalesOrderAcquisitionDetails, calculateSalesOrderInventoryValueReadiness, getOfferableSalesOrderResourceTypes, getSalesOrderAcquisitionStatus as getSalesOrderAcquisitionStatusForState, type SalesOrderAcquisitionStatus } from '@/game/sales';
 import { AchievementLedger, createAchievementEvaluationContext, evaluateAchievementUnlocks, type AchievementCategory } from '@/game/achievements';
-import { getPopulationDemand, PopulationLedger } from '@/game/population';
+import { PopulationLedger, settlePopulationLocalMarketDemand } from '@/game/population';
 
 import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyAssetsPrestige, calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary, calculateFacilityConditionPrestige } from '@/game/prestige';
 import { evaluateGateRequirements, type GateContext, type GateEvaluation } from '@/game/gates';
@@ -814,45 +814,15 @@ export const useGameStore = create<GameState>((set, get) => {
         }
       }
 
-      // Local Market is a resource reservoir and clearing exchange. Population
-      // purchases debit households and remove goods; it owns no cash balance.
-      const populationDemand = getPopulationDemand(facilities);
-      if (populationDemand.population > 0) {
-        const trackingPopulation = population === get().population ? population.clone() : population;
-        if (trackingPopulation.advanceConsumptionMinute(stepEndGameTimeMs)) population = trackingPopulation;
-      }
-      const householdBalance = population.getHouseholdBalance();
-      if (populationDemand.population > 0 && householdBalance > 0) {
-        const purchaseMarket = market ?? get().market;
-        const desiredPurchases = RESOURCE_TYPES.map((resourceType) => {
-          const desiredAmount = populationDemand.totalConsumption[resourceType] * stepMs / REALTIME_WORK_MINUTE_MS;
-          const amount = Math.min(desiredAmount, purchaseMarket.getLocalEntry(resourceType).supply);
-          const quote = purchaseMarket.getLocalBuyQuote(resourceType, amount);
-          return quote.success ? { resourceType, amount: quote.amount, cost: quote.amount * quote.unitPrice } : null;
-        }).filter((purchase): purchase is { resourceType: ResourceType; amount: number; cost: number } => purchase !== null);
-        const desiredCost = desiredPurchases.reduce((total, purchase) => total + purchase.cost, 0);
-        const fulfilmentRatio = desiredCost > 0 ? Math.min(1, householdBalance / desiredCost) : 0;
-
-        if (fulfilmentRatio > 0) {
-          const buyingMarket: Market = market ?? purchaseMarket.clone();
-          const buyingPopulation = population === get().population ? population.clone() : population;
-          const settledPurchases = desiredPurchases.map((purchase) => {
-            const amount = purchase.amount * fulfilmentRatio;
-            const quote = buyingMarket.getLocalBuyQuote(purchase.resourceType, amount);
-            return quote.success ? { resourceType: purchase.resourceType, amount, cost: quote.amount * quote.unitPrice } : null;
-          }).filter((purchase): purchase is { resourceType: ResourceType; amount: number; cost: number } => purchase !== null);
-          const settledCost = settledPurchases.reduce((total, purchase) => total + purchase.cost, 0);
-
-          if (settledCost > 0 && buyingPopulation.spendHouseholdCash(settledCost)) {
-            for (const purchase of settledPurchases) {
-              const trade = buyingMarket.buyFromLocal(purchase.resourceType, purchase.amount);
-              if (trade.success) buyingPopulation.recordLocalMarketConsumption(purchase.resourceType, trade.amount, stepEndGameTimeMs);
-            }
-            market = buyingMarket;
-            population = buyingPopulation;
-          }
-        }
-      }
+      const populationMarket: Market = market ?? get().market;
+      const populationSettlement = settlePopulationLocalMarketDemand({
+        facilities,
+        market: populationMarket,
+        population,
+        stepMs,
+      });
+      population = populationSettlement.population;
+      if (populationSettlement.market !== populationMarket) market = populationSettlement.market;
 
       const networkMarket: Market = market ?? get().market;
       if (networkMarket.getLocalMarketNetworkActivations().length > 0) {

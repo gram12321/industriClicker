@@ -373,6 +373,7 @@ flowchart LR
 
 | State | Owner | Changes through | Saved as |
 |---|---|---|---|
+| Population household balance | PopulationLedger | Foreground paid wages and population Local Market settlement | `PopulationSnapshot` |
 | `inventory.entries.*.quantity/.quality/.sourceCostPerUnit` | Inventory | Resource commands and production additions/removals | `InventorySnapshot` |
 | `facility.recipeInputQ/.recipeInputSourceCost/.recipeInputEffects` | Facility | Captured at cycle input consumption; optional effects are selected by per-facility recipe settings and used at completion | Facility snapshot; production-maintenance allocation is added to output source cost |
 | `facility.optionalInputSettings` | Facility | Recipe-tab checkmarks configure which optional inputs are automatically used and autobought | Facility snapshot |

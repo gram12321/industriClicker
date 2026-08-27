@@ -1,143 +1,90 @@
 import { describe, expect, it } from 'vitest';
 import { FacilityCollection, FacilityType } from '@/game/facilities';
-import { calculatePopulationAffordability, calculatePopulationDemand, calculatePopulationDemandBaskets, calculatePopulationExpenditureBreakdown, calculatePopulationIncomeProjection, calculatePopulationLocalPurchaseCost, calculatePopulationTotalWagePayoutPerMinute, getPopulationCount, PopulationLedger, POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE, POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE, POPULATION_CONSUMPTION_BASKETS } from '@/game/population';
+import { Market } from '@/game/market';
+import { calculatePopulationConsumption, calculatePopulationTotalWagePayoutPerMinute, getPopulationCount, getPopulationReferenceUnitPrice, PopulationLedger, POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE, POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE, settlePopulationLocalMarketDemand } from '@/game/population';
 import { ResourceType } from '@/game/resources';
 
-describe('population demand', () => {
-  it('derives population from assigned workers, not available production workers', () => {
+describe('population consumption', () => {
+  it('derives population from assigned workers, including workers in training', () => {
     const facilities = new FacilityCollection();
     facilities.build(FacilityType.Farm);
-    facilities.build(FacilityType.Bakery);
-
-    const [farm, bakery] = facilities.getAll();
+    const farm = facilities.getAll()[0];
     expect(farm?.setAssignedWorkers(4)).toBe(true);
-    expect(bakery?.setAssignedWorkers(7)).toBe(true);
-    expect(farm?.scheduleStaffTraining(3, 0, 1_000)).toBe(true);
-
-    expect(getPopulationCount(facilities)).toBe(11);
+    expect(farm?.scheduleStaffTraining(2, 0, 1_000)).toBe(true);
+    expect(getPopulationCount(facilities)).toBe(4);
   });
 
-  it('scales each resource base rate by the derived population', () => {
-    const baseConsumption = {
-      ...POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE,
-      [ResourceType.Grain]: 0.25,
-      [ResourceType.Bread]: 0.5,
-    };
-
-    const demand = calculatePopulationDemand(4, baseConsumption);
-
-    expect(demand.population).toBe(4);
-    expect(demand.totalConsumption[ResourceType.Grain]).toBe(1);
-    expect(demand.totalConsumption[ResourceType.Bread]).toBe(2);
-    expect(demand.totalConsumption[ResourceType.Gold]).toBe(0);
+  it('uses the existing domain totals and one per-resource base catalogue', () => {
+    expect(POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE).toEqual({ food: 1, 'raw-resources': 0.25, construction: 0.05, manufacturing: 0.016, utilities: 0.7 });
+    expect(POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE[ResourceType.Grain].amountPerPersonPerMinute).toBe(0.15);
+    expect(POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE[ResourceType.Sand].amountPerPersonPerMinute).toBe(0.1);
+    expect(POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE[ResourceType.ConstructionMaterials].amountPerPersonPerMinute).toBeCloseTo(0.02);
+    expect(POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE[ResourceType.Grain]).toMatchObject({ baselinePreference: 0.65, luxury: 0.02, priceElasticity: 0.85 });
   });
 
-  it('projects local purchase cost without mutating market or population state', () => {
-    const demand = calculatePopulationDemand(10);
-    const cost = calculatePopulationLocalPurchaseCost(demand, (resourceType) => (
-      resourceType === ResourceType.Bread ? 4 : resourceType === ResourceType.Grain ? 2 : 0
-    ));
-
-    expect(demand.totalConsumption[ResourceType.Bread]).toBe(4);
-    expect(demand.totalConsumption[ResourceType.Grain]).toBe(1.5);
-    expect(cost.byResource[ResourceType.Bread]).toBe(16);
-    expect(cost.byResource[ResourceType.Grain]).toBe(3);
-    expect(cost.total).toBe(19);
+  it('uses initial local prices as the simple price-elasticity reference', () => {
+    expect(getPopulationReferenceUnitPrice(ResourceType.Grain)).toBeCloseTo(0.8);
+    expect(getPopulationReferenceUnitPrice(ResourceType.Bread)).toBeCloseTo(2.4);
   });
 
-  it('projects facility wages per game-minute for assigned workers', () => {
+  it('switches within the Food domain when Bread becomes expensive', () => {
+    const normalMarket = new Market();
+    const expensiveBreadSnapshot = normalMarket.toSnapshot();
+    expensiveBreadSnapshot.local[ResourceType.Bread].supply = 100;
+    const expensiveMarket = new Market(expensiveBreadSnapshot);
+    const normal = calculatePopulationConsumption(10, normalMarket);
+    const expensive = calculatePopulationConsumption(10, expensiveMarket);
+    expect(expensive.adjustedAmounts[ResourceType.Bread]).toBeLessThan(normal.adjustedAmounts[ResourceType.Bread]);
+    expect(expensive.adjustedAmounts[ResourceType.Grain]).toBeGreaterThan(normal.adjustedAmounts[ResourceType.Grain]);
+  });
+
+  it('keeps the base basket at reference prices and preserves each group total after substitution', () => {
+    const market = new Market();
+    const consumption = calculatePopulationConsumption(1, market);
+    expect(consumption.adjustedAmounts).toEqual(consumption.baseAmounts);
+
+    const snapshot = market.toSnapshot();
+    snapshot.local[ResourceType.Bread].supply = 100;
+    const adjusted = calculatePopulationConsumption(1, new Market(snapshot));
+    const foodBase = [ResourceType.Bread, ResourceType.Cake, ResourceType.Eggs, ResourceType.Fruit, ResourceType.Grain, ResourceType.Meat, ResourceType.MeatPie, ResourceType.Milk, ResourceType.Sugar].reduce((total, resource) => total + adjusted.baseAmounts[resource], 0);
+    const foodAdjusted = [ResourceType.Bread, ResourceType.Cake, ResourceType.Eggs, ResourceType.Fruit, ResourceType.Grain, ResourceType.Meat, ResourceType.MeatPie, ResourceType.Milk, ResourceType.Sugar].reduce((total, resource) => total + adjusted.adjustedAmounts[resource], 0);
+    expect(foodAdjusted).toBeCloseTo(foodBase);
+  });
+
+  it('calculates actual spending from the available household budget without tracking purchases', () => {
+    const consumption = calculatePopulationConsumption(1, new Market(), 1);
+    expect(consumption.actualSpendingPerMinute).toBeCloseTo(1);
+    expect(Object.values(consumption.actualSpendingByGroup).reduce((total, amount) => total + amount, 0)).toBeCloseTo(1);
+    expect(consumption.actualAmounts[ResourceType.Bread]).toBeLessThan(consumption.adjustedAmounts[ResourceType.Bread]);
+  });
+
+  it('spends the selected €5/min basket continuously over a full minute', () => {
     const facilities = new FacilityCollection();
     facilities.build(FacilityType.Farm);
-    facilities.build(FacilityType.Bakery);
-    const [farm, bakery] = facilities.getAll();
-
-    expect(farm?.setAssignedWorkers(2)).toBe(true);
-    expect(bakery?.setAssignedWorkers(3)).toBe(true);
-    expect(farm?.setStaffWagePerWorkerPerMinute(2)).toBe(true);
-    expect(bakery?.setStaffWagePerWorkerPerMinute(1.5)).toBe(true);
-
-    expect(calculatePopulationTotalWagePayoutPerMinute(facilities)).toBe(8.5);
-    expect(calculatePopulationIncomeProjection(facilities, 6)).toEqual({
-      totalWagePayoutPerMinute: 8.5,
-      projectedPurchaseCostPerMinute: 6,
-      surplusPerMinute: 2.5,
-    });
-  });
-
-  it('keeps credited wages in the aggregate household balance', () => {
-    const population = new PopulationLedger();
-
-    expect(population.creditWages(2.5)).toBe(true);
-    expect(population.creditWages(0)).toBe(false);
-    expect(population.spendHouseholdCash(1)).toBe(true);
-    expect(population.spendHouseholdCash(2)).toBe(false);
-    expect(population.getHouseholdBalance()).toBe(1.5);
-    expect(PopulationLedger.fromSnapshot(population.toSnapshot()).getHouseholdBalance()).toBe(1.5);
-  });
-
-  it('tracks fulfilled Local Market consumption for the current game minute', () => {
-    const population = new PopulationLedger();
-
-    expect(population.recordLocalMarketConsumption(ResourceType.Bread, 0.5, 1_000)).toBe(true);
-    expect(population.recordLocalMarketConsumption(ResourceType.Grain, 0.2, 59_000)).toBe(true);
-    expect(population.getCurrentMinuteConsumption()).toMatchObject({ [ResourceType.Bread]: 0.5, [ResourceType.Grain]: 0.2 });
-    expect(population.recordLocalMarketConsumption(ResourceType.Water, 0.4, 60_001)).toBe(true);
-    expect(population.getCurrentMinuteConsumption()).toMatchObject({ [ResourceType.Bread]: 0, [ResourceType.Grain]: 0, [ResourceType.Water]: 0.4 });
-    expect(population.advanceConsumptionMinute(120_001)).toBe(true);
-    expect(population.getCurrentMinuteConsumption()[ResourceType.Water]).toBe(0);
-    expect(PopulationLedger.fromSnapshot(population.toSnapshot()).getCurrentMinuteConsumption()[ResourceType.Water]).toBe(0);
-  });
-
-  it('keeps the current resource domains as baskets while excluding industrial inputs from direct consumption', () => {
-    const baskets = calculatePopulationDemandBaskets(calculatePopulationDemand(1));
-
-    expect(baskets.map((basket) => basket.id)).toEqual(POPULATION_CONSUMPTION_BASKETS.map((basket) => basket.id));
-    expect(baskets.find((basket) => basket.id === 'food')?.hasDirectConsumption).toBe(true);
-    expect(baskets.find((basket) => basket.id === 'utilities')?.hasDirectConsumption).toBe(true);
-    expect(baskets.find((basket) => basket.id === 'manufacturing')?.hasDirectConsumption).toBe(true);
-    expect(baskets.find((basket) => basket.id === 'raw-resources')?.hasDirectConsumption).toBe(true);
-    expect(baskets.find((basket) => basket.id === 'construction')?.hasDirectConsumption).toBe(true);
-  });
-
-  it('expresses each domain basket as a total with relative resource shares', () => {
-    const baskets = calculatePopulationDemandBaskets(calculatePopulationDemand(1));
-
-    for (const basket of baskets) {
-      expect(basket.baseConsumptionPerPerson).toBeCloseTo(POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE[basket.id]);
+    const farm = facilities.getAll()[0];
+    expect(farm?.setAssignedWorkers(1)).toBe(true);
+    expect(farm?.setStaffWagePerWorkerPerMinute(5)).toBe(true);
+    let population = new PopulationLedger();
+    let market = new Market();
+    const initialWaterSupply = market.getLocalEntry(ResourceType.Water).supply;
+    const initialElectricitySupply = market.getLocalEntry(ResourceType.Electricity).supply;
+    for (let second = 0; second < 60; second += 1) {
+      population.creditWages(5 / 60);
+      const settlement = settlePopulationLocalMarketDemand({ facilities, market, population, stepMs: 1_000 });
+      population = settlement.population;
+      market = settlement.market;
     }
-    expect(baskets.find((basket) => basket.id === 'food')?.baseConsumptionPerPerson).toBe(1);
-    expect(baskets.find((basket) => basket.id === 'food')?.totalConsumption).toBe(1);
+    expect(population.getHouseholdBalance()).toBeCloseTo(0);
+    expect(market.getLocalEntry(ResourceType.Water).supply).toBeLessThan(initialWaterSupply);
+    expect(market.getLocalEntry(ResourceType.Electricity).supply).toBeLessThan(initialElectricitySupply);
   });
 
-  it('projects whether household savings can fund the next desired basket', () => {
-    expect(calculatePopulationAffordability(30, 12)).toEqual({
-      householdBalance: 30,
-      projectedPurchaseCostPerMinute: 12,
-      affordableMinutes: 2.5,
-      unfundedPurchaseCost: 0,
-      canAffordFullBasket: true,
-    });
-    expect(calculatePopulationAffordability(5, 12)).toMatchObject({
-      affordableMinutes: 5 / 12,
-      unfundedPurchaseCost: 7,
-      canAffordFullBasket: false,
-    });
-  });
-
-  it('breaks projected local purchases into resource-domain expenditure shares', () => {
-    const demand = calculatePopulationDemand(1);
-    const purchaseCost = calculatePopulationLocalPurchaseCost(demand, (resourceType) => (
-      resourceType === ResourceType.Bread ? 4
-        : resourceType === ResourceType.Water ? 2
-          : resourceType === ResourceType.Sand ? 1
-            : resourceType === ResourceType.Bricks ? 2
-              : resourceType === ResourceType.Fertilizer ? 3 : 0
-    ));
-    const breakdown = calculatePopulationExpenditureBreakdown(demand, purchaseCost);
-
-    expect(purchaseCost.total).toBeCloseTo(2.744);
-    expect(breakdown.find((entry) => entry.id === 'food')).toMatchObject({ projectedPurchaseCost: 1.6 });
-    expect(breakdown.find((entry) => entry.id === 'utilities')?.projectedPurchaseCost).toBeCloseTo(0.994);
-    expect(breakdown.reduce((total, entry) => total + entry.expenditureShare, 0)).toBeCloseTo(1);
+  it('projects facility wages per minute', () => {
+    const facilities = new FacilityCollection();
+    facilities.build(FacilityType.Farm);
+    const farm = facilities.getAll()[0];
+    expect(farm?.setAssignedWorkers(2)).toBe(true);
+    expect(farm?.setStaffWagePerWorkerPerMinute(2.5)).toBe(true);
+    expect(calculatePopulationTotalWagePayoutPerMinute(facilities)).toBe(5);
   });
 });
