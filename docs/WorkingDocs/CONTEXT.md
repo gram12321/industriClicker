@@ -35,6 +35,8 @@ Canonical shared names only. Product direction is in [design.md](design.md), rul
 | Facility capital investment | Historical construction and upgrade value recorded by Finance. |
 | Facility maintenance expense | Historical repair value recorded separately from capital investment. |
 | Facility staff wage | Player-set euro wage per assigned worker per foreground minute; paid foreground charges are Finance operating expenses. If wages cannot be paid, production, training, and wage-driven experience/quality progression pause. |
+| Population / household balance | Each assigned facility worker is one aggregate population unit. Successfully paid facility wages credit one persisted household balance; foreground purchases debit it and remove fulfilled goods from Local Market stock. The ledger also retains each resource's fulfilled amount for the current foreground game minute. |
+| Population consumption basket | A code-owned, per-game-minute virtual household demand basket grouped by the existing Food, Raw Resources, Construction, Manufacturing, and Utilities resource domains. Each domain has a provisional total and its resources are relative shares; it is a demand projection, not a tradable tier resource or market transaction. |
 | Facility market revaluation | Informational difference between historical-cost book value and condition-adjusted replacement value at current local prices. |
 | Asset value | Derived value of cash, inventory, facilities, or completed research. |
 | Finance payment cycle | One foreground game minute used for loan repayment. |
