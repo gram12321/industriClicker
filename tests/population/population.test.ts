@@ -19,7 +19,7 @@ describe('population consumption', () => {
     expect(POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE[ResourceType.Grain].amountPerPersonPerMinute).toBe(0.15);
     expect(POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE[ResourceType.Sand].amountPerPersonPerMinute).toBe(0.1);
     expect(POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE[ResourceType.ConstructionMaterials].amountPerPersonPerMinute).toBeCloseTo(0.02);
-    expect(POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE[ResourceType.Grain]).toMatchObject({ baselinePreference: 0.65, luxury: 0.02, priceElasticity: 0.85 });
+    expect(POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE[ResourceType.Grain]).toMatchObject({ baselinePreference: 0.65, luxury: 0.02, resourceElasticity: 0.85 });
   });
 
   it('uses initial local prices as the simple price-elasticity reference', () => {
@@ -34,31 +34,55 @@ describe('population consumption', () => {
     const expensiveMarket = new Market(expensiveBreadSnapshot);
     const normal = calculatePopulationConsumption(10, normalMarket);
     const expensive = calculatePopulationConsumption(10, expensiveMarket);
-    expect(expensive.adjustedAmounts[ResourceType.Bread]).toBeLessThan(normal.adjustedAmounts[ResourceType.Bread]);
-    expect(expensive.adjustedAmounts[ResourceType.Grain]).toBeGreaterThan(normal.adjustedAmounts[ResourceType.Grain]);
+    expect(expensive.pricePreferenceAmounts[ResourceType.Bread]).toBeLessThan(normal.pricePreferenceAmounts[ResourceType.Bread]);
+    expect(expensive.pricePreferenceAmounts[ResourceType.Grain]).toBeGreaterThan(normal.pricePreferenceAmounts[ResourceType.Grain]);
   });
 
   it('keeps the base basket at reference prices and preserves each group total after substitution', () => {
     const market = new Market();
     const consumption = calculatePopulationConsumption(1, market);
-    expect(consumption.adjustedAmounts).toEqual(consumption.baseAmounts);
+    expect(consumption.pricePreferenceAmounts).toEqual(consumption.baseAmounts);
 
     const snapshot = market.toSnapshot();
     snapshot.local[ResourceType.Bread].supply = 100;
     const adjusted = calculatePopulationConsumption(1, new Market(snapshot));
     const foodBase = [ResourceType.Bread, ResourceType.Cake, ResourceType.Eggs, ResourceType.Fruit, ResourceType.Grain, ResourceType.Meat, ResourceType.MeatPie, ResourceType.Milk, ResourceType.Sugar].reduce((total, resource) => total + adjusted.baseAmounts[resource], 0);
-    const foodAdjusted = [ResourceType.Bread, ResourceType.Cake, ResourceType.Eggs, ResourceType.Fruit, ResourceType.Grain, ResourceType.Meat, ResourceType.MeatPie, ResourceType.Milk, ResourceType.Sugar].reduce((total, resource) => total + adjusted.adjustedAmounts[resource], 0);
+    const foodAdjusted = [ResourceType.Bread, ResourceType.Cake, ResourceType.Eggs, ResourceType.Fruit, ResourceType.Grain, ResourceType.Meat, ResourceType.MeatPie, ResourceType.Milk, ResourceType.Sugar].reduce((total, resource) => total + adjusted.pricePreferenceAmounts[resource], 0);
     expect(foodAdjusted).toBeCloseTo(foodBase);
   });
 
-  it('calculates actual spending from the available household budget without tracking purchases', () => {
+  it('spends the available household budget while the price basket is unaffordable', () => {
     const consumption = calculatePopulationConsumption(1, new Market(), 1);
+    expect(consumption.actualSpendingPerMinute).toBeGreaterThan(0);
     expect(consumption.actualSpendingPerMinute).toBeCloseTo(1);
-    expect(Object.values(consumption.actualSpendingByGroup).reduce((total, amount) => total + amount, 0)).toBeCloseTo(1);
+    expect(Object.values(consumption.actualSpendingByGroup).reduce((total, amount) => total + amount, 0)).toBeCloseTo(consumption.actualSpendingPerMinute);
     expect(consumption.actualAmounts[ResourceType.Bread]).toBeLessThan(consumption.adjustedAmounts[ResourceType.Bread]);
   });
 
-  it('spends the selected €5/min basket continuously over a full minute', () => {
+  it('spends savings and wages together until the price basket is fulfilled', () => {
+    const market = new Market();
+    const fullBasket = calculatePopulationConsumption(1, market, Number.MAX_SAFE_INTEGER);
+    const availableBudget = fullBasket.actualSpendingPerMinute / 2;
+    const consumption = calculatePopulationConsumption(1, market, availableBudget);
+
+    expect(consumption.actualSpendingPerMinute).toBeCloseTo(availableBudget);
+    for (const resourceType of Object.values(ResourceType)) {
+      expect(consumption.actualAmounts[resourceType]).toBeLessThanOrEqual(consumption.adjustedAmounts[resourceType]);
+    }
+  });
+
+  it('preserves baseline goods and reduces luxury goods faster when the basket is unaffordable', () => {
+    const consumption = calculatePopulationConsumption(1, new Market(), 1);
+    const waterBaselineScale = consumption.baselinePreferenceAmounts[ResourceType.Water] / consumption.pricePreferenceAmounts[ResourceType.Water];
+    const electricityBaselineScale = consumption.baselinePreferenceAmounts[ResourceType.Electricity] / consumption.pricePreferenceAmounts[ResourceType.Electricity];
+    const breadLuxuryScale = consumption.adjustedAmounts[ResourceType.Bread] / consumption.baselinePreferenceAmounts[ResourceType.Bread];
+    const cakeLuxuryScale = consumption.adjustedAmounts[ResourceType.Cake] / consumption.baselinePreferenceAmounts[ResourceType.Cake];
+
+    expect(waterBaselineScale).toBeGreaterThan(electricityBaselineScale);
+    expect(cakeLuxuryScale).toBeLessThan(breadLuxuryScale);
+  });
+
+  it('settles the selected basket continuously over a full minute', () => {
     const facilities = new FacilityCollection();
     facilities.build(FacilityType.Farm);
     const farm = facilities.getAll()[0];
@@ -74,7 +98,8 @@ describe('population consumption', () => {
       population = settlement.population;
       market = settlement.market;
     }
-    expect(population.getHouseholdBalance()).toBeCloseTo(0);
+    expect(population.getHouseholdBalance()).toBeGreaterThan(0);
+    expect(population.getHouseholdBalance()).toBeLessThan(5);
     expect(market.getLocalEntry(ResourceType.Water).supply).toBeLessThan(initialWaterSupply);
     expect(market.getLocalEntry(ResourceType.Electricity).supply).toBeLessThan(initialElectricitySupply);
   });

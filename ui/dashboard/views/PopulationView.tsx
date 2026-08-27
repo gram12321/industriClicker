@@ -26,7 +26,7 @@ export function PopulationView({ facilities, market, population }: { facilities:
   const populationCount = getPopulationCount(facilities);
   const wagePerMinute = calculatePopulationTotalWagePayoutPerMinute(facilities);
   const householdBalance = population.getHouseholdBalance();
-  const budgetPerMinute = Math.max(householdBalance, wagePerMinute);
+  const budgetPerMinute = householdBalance + wagePerMinute;
   const consumption = calculatePopulationConsumption(populationCount, market, budgetPerMinute);
   const expenditureBreakdown = RESOURCE_GROUPS.map((group) => ({
     id: group.id,
@@ -50,14 +50,14 @@ export function PopulationView({ facilities, market, population }: { facilities:
       <Card.Content style={styles.cardContent}>
         <Text style={styles.cardKicker}>EXPENDITURE BREAKDOWN</Text>
         <Text variant="titleMedium">Population spending by domain</Text>
-        <Text style={styles.cardDescription}>How the available household budget is currently allocated across the adjusted basket.</Text>
+        <Text style={styles.cardDescription}>How the available household budget is currently spent after price and scarcity preferences.</Text>
         <PopulationExpenditureBreakdownChart entries={expenditureBreakdown} />
       </Card.Content>
     </Card>
     <Card mode="contained" style={styles.featureCard}>
       <Card.Content style={styles.cardContent}>
         <Text variant="titleMedium">Total consumption by whole pop per minute</Text>
-        <Text style={styles.cardDescription}>Base is the fixed population basket. Adjusted applies pairwise price substitution. Actual is the adjusted basket scaled to the available household budget.</Text>
+        <Text style={styles.cardDescription}>Base is the fixed basket. Adjusted includes price, baseline, and luxury preferences. Actual is the adjusted basket scaled to the spending budget.</Text>
         <View style={localStyles.tableHeader}>
           <Text style={[localStyles.tableHeaderText, localStyles.resourceHeader]}>Category / Resource</Text>
           <Text style={localStyles.tableHeaderText}>Base / Adjusted / Actual</Text>
@@ -91,7 +91,7 @@ export function PopulationView({ facilities, market, population }: { facilities:
         <View style={localStyles.cashPanel}>
           <View style={localStyles.cashRow}><Text style={localStyles.cashLabel}>Household balance</Text><Text style={localStyles.cashValue}>{formatCurrency(householdBalance)}</Text></View>
           <View style={localStyles.cashRow}><Text style={localStyles.cashLabel}>Wages</Text><Text style={localStyles.cashValue}>{formatCurrency(wagePerMinute)}/min</Text></View>
-          <View style={[localStyles.cashRow, localStyles.cashTotal]}><Text style={localStyles.cashLabel}>Available to spend</Text><Text style={localStyles.cashValue}>{formatCurrency(Math.max(householdBalance, wagePerMinute))}/min</Text></View>
+          <View style={[localStyles.cashRow, localStyles.cashTotal]}><Text style={localStyles.cashLabel}>Available to spend</Text><Text style={localStyles.cashValue}>{formatCurrency(budgetPerMinute)}/min</Text></View>
         </View>
       </Card.Content>
     </Card>

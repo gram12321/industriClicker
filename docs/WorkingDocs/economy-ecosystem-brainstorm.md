@@ -256,4 +256,4 @@ Choices still requiring detailed design later:
 - How a future substitution strength combines need compatibility, processing/quality rung, recipe relationship, and possible hierarchy distance.
 - When and how the shared global market is introduced without requiring premature backend or multiplayer infrastructure.
 
-These are design questions, not commitments for every future layer. The initial consumer implementation now uses the existing resource-domain base basket, a wage-capped per-minute basket, luxury pressure, and reference-price elasticity within each domain. Future work can refine the balance values, candidate set, relationship strength, and market routing without changing that boundary.
+These are design questions, not commitments for every future layer. The initial consumer implementation uses the existing resource-domain base basket, reference-price elasticity within each domain, and baseline/luxury scarcity preferences. Future work can refine the balance values, candidate set, relationship strength, and market routing without changing that boundary.

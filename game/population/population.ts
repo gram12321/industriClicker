@@ -1,7 +1,7 @@
 import type { FacilityCollection } from '@/game/facilities';
 import type { Market } from '@/game/market';
 import { RESOURCE_GROUPS, RESOURCES, RESOURCE_TYPES, type ResourceGroup, type ResourceType } from '@/game/resources';
-import { POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE, POPULATION_MAX_SUBSTITUTION_PER_PAIR, POPULATION_PRICE_ELASTICITY_FACTOR } from './populationConstants';
+import { POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE, POPULATION_MAX_SUBSTITUTION_PER_PAIR } from './populationConstants';
 
 export type PopulationSnapshot = { householdBalance: number };
 
@@ -74,7 +74,7 @@ function calculateBaseAmounts(population: number): Record<ResourceType, number> 
   return amounts;
 }
 
-function calculateElasticityAdjustedAmounts(baseAmounts: Readonly<Record<ResourceType, number>>, market: Market): Record<ResourceType, number> {
+function calculatePricePreferenceAmounts(baseAmounts: Readonly<Record<ResourceType, number>>, market: Market): Record<ResourceType, number> {
   const adjustedAmounts = { ...baseAmounts };
   const pendingTransfers: Array<{ from: ResourceType; to: ResourceType; amount: number }> = [];
   const outgoingAmounts = emptyAmounts();
@@ -87,11 +87,11 @@ function calculateElasticityAdjustedAmounts(baseAmounts: Readonly<Record<Resourc
         const second = candidates[secondIndex]!;
         const currentRatio = market.getLocalPrice(first) / market.getLocalPrice(second);
         const referenceRatio = getPopulationReferenceUnitPrice(first) / getPopulationReferenceUnitPrice(second);
-        const adjustment = 1 + (1 - currentRatio / referenceRatio) * POPULATION_PRICE_ELASTICITY_FACTOR;
-        const transferShare = Math.min(Math.abs(adjustment - 1) * POPULATION_PRICE_ELASTICITY_FACTOR, POPULATION_MAX_SUBSTITUTION_PER_PAIR);
+        const adjustment = 1 + (1 - currentRatio / referenceRatio);
+        const from = adjustment < 1 ? first : second;
+        const transferShare = Math.min(Math.abs(adjustment - 1) * POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE[from].resourceElasticity, POPULATION_MAX_SUBSTITUTION_PER_PAIR);
         const amount = Math.min(baseAmounts[first] * transferShare, baseAmounts[second] * transferShare);
         if (amount <= 0) continue;
-        const from = adjustment < 1 ? first : second;
         const to = adjustment < 1 ? second : first;
         pendingTransfers.push({ from, to, amount });
         outgoingAmounts[from] += amount;
@@ -110,22 +110,63 @@ function calculateElasticityAdjustedAmounts(baseAmounts: Readonly<Record<Resourc
   return adjustedAmounts;
 }
 
+function applyPreferenceWithinGroups(
+  amounts: Readonly<Record<ResourceType, number>>,
+  getWeight: (resourceType: ResourceType) => number,
+): Record<ResourceType, number> {
+  const adjustedAmounts = emptyAmounts();
+  for (const group of RESOURCE_GROUPS) {
+    const totalAmount = group.resources.reduce((total, resourceType) => total + amounts[resourceType], 0);
+    const weightedAmount = group.resources.reduce((total, resourceType) => total + amounts[resourceType] * getWeight(resourceType), 0);
+    const normalization = weightedAmount > 0 ? totalAmount / weightedAmount : 0;
+    for (const resourceType of group.resources) adjustedAmounts[resourceType] = amounts[resourceType] * getWeight(resourceType) * normalization;
+  }
+  return adjustedAmounts;
+}
+
+function calculateBaselinePreferenceAmounts(pricePreferenceAmounts: Readonly<Record<ResourceType, number>>): Record<ResourceType, number> {
+  return applyPreferenceWithinGroups(pricePreferenceAmounts, (resourceType) => {
+    const { baselinePreference, resourceElasticity } = POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE[resourceType];
+    return baselinePreference ** resourceElasticity;
+  });
+}
+
+function calculateAdjustedAmounts(baselinePreferenceAmounts: Readonly<Record<ResourceType, number>>): Record<ResourceType, number> {
+  return applyPreferenceWithinGroups(baselinePreferenceAmounts, (resourceType) => {
+    const { luxury, resourceElasticity } = POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE[resourceType];
+    return (1 - luxury) ** resourceElasticity;
+  });
+}
+
+function calculateBudgetScaledAmounts(adjustedAmounts: Readonly<Record<ResourceType, number>>, market: Market, budget: number): Record<ResourceType, number> {
+  const fullCost = calculateCost(adjustedAmounts, market);
+  if (budget >= fullCost) return { ...adjustedAmounts };
+  let low = 0;
+  let high = 1;
+  for (let iteration = 0; iteration < 28; iteration += 1) {
+    const scale = (low + high) / 2;
+    const scaledAmounts = Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, adjustedAmounts[resourceType] * scale])) as Record<ResourceType, number>;
+    if (calculateCost(scaledAmounts, market) <= budget) low = scale;
+    else high = scale;
+  }
+  return Object.fromEntries(RESOURCE_TYPES.map((resourceType) => [resourceType, adjustedAmounts[resourceType] * low])) as Record<ResourceType, number>;
+}
+
 /**
- * Matches Simulus's aggregate demand shape: base resource amounts move only
- * within their existing resource group through pairwise price substitution.
+ * Price, baseline, and luxury preferences form the adjusted basket. Budget
+ * scaling then determines the actual affordable purchase.
  */
 export function calculatePopulationConsumption(population: number, market: Market, budgetPerMinute = 0) {
   const safePopulation = Number.isFinite(population) ? Math.max(0, Math.floor(population)) : 0;
   const safeBudget = Number.isFinite(budgetPerMinute) ? Math.max(0, budgetPerMinute) : 0;
   const baseAmounts = calculateBaseAmounts(safePopulation);
-  const adjustedAmounts = calculateElasticityAdjustedAmounts(baseAmounts, market);
-  const adjustedCost = calculateCost(adjustedAmounts, market);
-  const scale = adjustedCost > 0 ? safeBudget / adjustedCost : 0;
-  const actualAmounts = emptyAmounts();
-  for (const resourceType of RESOURCE_TYPES) actualAmounts[resourceType] = adjustedAmounts[resourceType] * scale;
-  const adjustedGroupCosts = calculateGroupCosts(adjustedAmounts, market);
-  const actualSpendingByGroup = Object.fromEntries(RESOURCE_GROUPS.map((group) => [group.id, adjustedGroupCosts[group.id] * scale])) as Record<ResourceGroup, number>;
-  return { baseAmounts, adjustedAmounts, actualAmounts, actualSpendingByGroup, actualSpendingPerMinute: adjustedCost * scale };
+  const pricePreferenceAmounts = calculatePricePreferenceAmounts(baseAmounts, market);
+  const baselinePreferenceAmounts = calculateBaselinePreferenceAmounts(pricePreferenceAmounts);
+  const adjustedAmounts = calculateAdjustedAmounts(baselinePreferenceAmounts);
+  const actualAmounts = calculateBudgetScaledAmounts(adjustedAmounts, market, safeBudget);
+  const actualSpendingByGroup = calculateGroupCosts(actualAmounts, market);
+  const actualSpendingPerMinute = Object.values(actualSpendingByGroup).reduce((total, amount) => total + amount, 0);
+  return { baseAmounts, pricePreferenceAmounts, baselinePreferenceAmounts, adjustedAmounts, actualAmounts, actualSpendingByGroup, actualSpendingPerMinute };
 }
 
 /** Settles the proportional share of the selected per-minute basket for one foreground step. */
@@ -133,7 +174,7 @@ export function settlePopulationLocalMarketDemand(input: { facilities: FacilityC
   const count = getPopulationCount(input.facilities);
   if (count <= 0 || input.population.getHouseholdBalance() <= 0) return { market: input.market, population: input.population };
   const perMinuteWages = calculatePopulationTotalWagePayoutPerMinute(input.facilities);
-  const budgetPerMinute = Math.max(input.population.getHouseholdBalance(), perMinuteWages);
+  const budgetPerMinute = input.population.getHouseholdBalance() + perMinuteWages;
   const consumption = calculatePopulationConsumption(count, input.market, budgetPerMinute);
   if (consumption.actualSpendingPerMinute <= 0) return { market: input.market, population: input.population };
   const market = input.market.clone();
