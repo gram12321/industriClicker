@@ -7,11 +7,14 @@ describe('tutorial flow', () => {
       { kind: 'first-facility' },
       { kind: 'first-facility-header' },
       { kind: 'first-facility-footprint' },
+      { kind: 'first-facility-staff-management' },
+      { kind: 'first-facility-staff-training' },
       { kind: 'first-facility-repair' },
       { kind: 'first-facility-efficiency' },
       { kind: 'first-facility-research' },
       { kind: 'first-facility-recipe-card' },
       { kind: 'first-facility-recipe-automation' },
+      { kind: 'first-facility-recipe-optional-inputs' },
       { kind: 'first-facility-recipe-economics' },
       { kind: 'first-facility-upgrades' },
       { kind: 'first-facility-inventory-transition' },
@@ -21,11 +24,14 @@ describe('tutorial flow', () => {
     expect(stages.map((stage) => getNextFirstFacilityTutorialStage(stage)?.kind ?? null)).toEqual([
       'first-facility-header',
       'first-facility-footprint',
+      'first-facility-staff-management',
+      'first-facility-staff-training',
       'first-facility-repair',
       'first-facility-efficiency',
       'first-facility-research',
       'first-facility-recipe-card',
       'first-facility-recipe-automation',
+      'first-facility-recipe-optional-inputs',
       'first-facility-recipe-economics',
       'first-facility-upgrades',
       'first-facility-inventory-transition',
@@ -33,6 +39,7 @@ describe('tutorial flow', () => {
       null,
     ]);
     expect(getPreviousFirstFacilityTutorialStage({ kind: 'first-facility-research' })).toEqual({ kind: 'first-facility-efficiency' });
+    expect(getPreviousFirstFacilityTutorialStage({ kind: 'first-facility-recipe-economics' })).toEqual({ kind: 'first-facility-recipe-optional-inputs' });
   });
 
   it('keeps the existing facility view highlights and tabs', () => {
@@ -46,6 +53,11 @@ describe('tutorial flow', () => {
       firstFacilityStep: 'footprint',
     });
     expect(getTutorialProductionPresentation({ kind: 'first-facility-research' }, null, false).firstFacilityFocus).toBeNull();
+    expect(getTutorialProductionPresentation({ kind: 'first-facility-recipe-optional-inputs' }, null, true)).toMatchObject({
+      firstFacilityFocus: null,
+      firstFacilityStep: 'recipe-optional-inputs',
+      isFirstFacilityTutorial: true,
+    });
   });
 
   it('recovers dismissed construction stages exactly as before', () => {

@@ -97,6 +97,8 @@ type ProductionViewContentProps = {
   currentGameTimeMs: number;
   finance: Finance;
   onFirstFacilityRecipeSelected?: (recipeName: Recipe['name']) => void;
+  onFirstFacilityStaffingOpened?: () => void;
+  onFirstFacilityStaffingClosed?: () => void;
   getResearchAvailability: (projectId: ResearchProjectId) => ResearchAvailability;
   inventory: Inventory;
   market: Market;
@@ -122,7 +124,7 @@ type ProductionViewContentProps = {
 };
 
 type ProductionViewProps = Pick<ProductionViewContentProps,
-  'collapsedFacilities' | 'onBuildFacilityLayout' | 'onFirstFacilityFocusLayout' | 'onFirstFacilityRecipeSelected' | 'onScrollBeginDrag' | 'openConstructionYard' | 'requestFacilityDestruction' | 'setCollapsedFacilities' | 'tutorial'>;
+  'collapsedFacilities' | 'onBuildFacilityLayout' | 'onFirstFacilityFocusLayout' | 'onFirstFacilityRecipeSelected' | 'onFirstFacilityStaffingOpened' | 'onFirstFacilityStaffingClosed' | 'onScrollBeginDrag' | 'openConstructionYard' | 'requestFacilityDestruction' | 'setCollapsedFacilities' | 'tutorial'>;
 
 export const ProductionView = memo(function ProductionView(props: ProductionViewProps) {
   const buyMarketResource = useGameStore((state) => state.buyMarketResource);
@@ -148,7 +150,7 @@ export const ProductionView = memo(function ProductionView(props: ProductionView
 });
 
 function ProductionViewContent({
-  buyMarketResource, collapsedFacilities, currentGameTimeMs, facilities, finance, getResearchAvailability, inventory, market, onBuildFacilityLayout, onFirstFacilityFocusLayout, onFirstFacilityRecipeSelected, onScrollBeginDrag, openConstructionYard, repairFacility, requestFacilityDestruction, research, resourceFlow, setCollapsedFacilities, setFacilityAutoRepair, setFacilityOptionalInputEnabled, setFacilityProductionActive, setFacilityProductionCycle, setFacilityStaffing, trainFacilityStaff, setMarketAutomation, startResearch, tutorial, upgradeFacility,
+  buyMarketResource, collapsedFacilities, currentGameTimeMs, facilities, finance, getResearchAvailability, inventory, market, onBuildFacilityLayout, onFirstFacilityFocusLayout, onFirstFacilityRecipeSelected, onFirstFacilityStaffingOpened, onFirstFacilityStaffingClosed, onScrollBeginDrag, openConstructionYard, repairFacility, requestFacilityDestruction, research, resourceFlow, setCollapsedFacilities, setFacilityAutoRepair, setFacilityOptionalInputEnabled, setFacilityProductionActive, setFacilityProductionCycle, setFacilityStaffing, trainFacilityStaff, setMarketAutomation, startResearch, tutorial, upgradeFacility,
 }: ProductionViewContentProps) {
   const { firstFacilityFocus, firstFacilityRecipeName, firstFacilityStep, isBuildFacilityTutorial, isFirstFacilityTutorial, isProductionTutorial } = tutorial;
   const [collapsedProductionCycles, setCollapsedProductionCycles] = useState<Record<string, boolean>>({});
@@ -191,13 +193,28 @@ function ProductionViewContent({
   const detailFacilities = selectedFacility
     ? facilitiesWithGroups.filter(({ facilityView }) => facilityView.id === selectedFacility.id)
     : [];
+  const measureBuildFacilityButton = () => buildFacilityButtonRef.current?.measureInWindow((x, y, width, height) => onBuildFacilityLayout?.({ height, width, x, y }));
   const measureFirstFacilityFocus = () => firstFacilityFocusRef.current?.measureInWindow((x, y, width, height) => onFirstFacilityFocusLayout?.({ height, width, x, y }));
+  const refreshTutorialHighlight = () => {
+    if (isBuildFacilityTutorial) measureBuildFacilityButton();
+    if (firstFacilityFocus) measureFirstFacilityFocus();
+  };
 
   useEffect(() => {
     if (firstFacilityFocus !== 'recipe') return;
     const frame = requestAnimationFrame(measureFirstFacilityFocus);
     return () => cancelAnimationFrame(frame);
   }, [firstFacilityFocus, firstFacilityRecipeName]);
+
+  useEffect(() => {
+    if ((firstFacilityStep === 'staff-management' || firstFacilityStep === 'staff-training') && tutorialFacilityId) {
+      setStaffWageFacilityId(tutorialFacilityId);
+      onFirstFacilityStaffingOpened?.();
+      return;
+    }
+    setStaffWageFacilityId((current) => current === tutorialFacilityId ? null : current);
+    onFirstFacilityStaffingClosed?.();
+  }, [firstFacilityStep, onFirstFacilityStaffingClosed, onFirstFacilityStaffingOpened, tutorialFacilityId]);
 
   useEffect(() => {
     if (selectedFacilityId && !facilities.get(selectedFacilityId)) setSelectedFacilityId(null);
@@ -216,18 +233,20 @@ function ProductionViewContent({
 
   if (!isShowingFacilityDetail) {
     return <FlatList
-      contentContainerStyle={[styles.content, isProductionTutorial && styles.tutorialScrollableContent]}
+      contentContainerStyle={[styles.content, (isProductionTutorial || isFirstFacilityTutorial) && styles.tutorialScrollableContent]}
       data={orderedFacilities}
       keyExtractor={({ facilityView }) => facilityView.id}
       ListEmptyComponent={<DetailRow label="Constructed facilities" value="None yet" />}
-      ListHeaderComponent={<View style={styles.facilityListHeader}><View style={isProductionTutorial ? styles.tutorialProductionOverview : undefined}><SectionHeading eyebrow="OPERATIONS" title="Facilities" subtitle="Manage your constructed facilities and build new ones." /><View ref={buildFacilityButtonRef} onLayout={() => buildFacilityButtonRef.current?.measureInWindow((x, y, width, height) => onBuildFacilityLayout?.({ height, width, x, y }))}><Button icon={APP_ICONS.add} mode="contained" style={isBuildFacilityTutorial ? styles.tutorialBuildFacilityButton : undefined} onPress={openConstructionYard}>Build facility</Button></View></View><View style={styles.facilityListControls}><Text style={styles.cardKicker}>SORT FACILITIES</Text><SegmentedButtons buttons={[{ label: 'Type', value: 'type' }, { label: 'Condition', value: 'condition' }, { label: 'Staff eff.', value: 'staff-efficiency' }, { label: 'Net gain', value: 'net-gain' }]} onValueChange={(value) => setFacilityListSort(value as FacilityListSort)} value={facilityListSort} />{facilityListSort !== 'type' && <Text style={styles.facilityListSortHint}>{facilityListSort === 'net-gain' ? 'Highest values first.' : 'Lowest values first.'}</Text>}</View></View>}
+      ListHeaderComponent={<View style={styles.facilityListHeader}><View style={isProductionTutorial ? styles.tutorialProductionOverview : undefined}><SectionHeading eyebrow="OPERATIONS" title="Facilities" subtitle="Manage your constructed facilities and build new ones." /><View ref={buildFacilityButtonRef} onLayout={measureBuildFacilityButton}><Button icon={APP_ICONS.add} mode="contained" style={isBuildFacilityTutorial ? styles.tutorialBuildFacilityButton : undefined} onPress={openConstructionYard}>Build facility</Button></View></View><View style={styles.facilityListControls}><Text style={styles.cardKicker}>SORT FACILITIES</Text><SegmentedButtons buttons={[{ label: 'Type', value: 'type' }, { label: 'Condition', value: 'condition' }, { label: 'Staff eff.', value: 'staff-efficiency' }, { label: 'Net gain', value: 'net-gain' }]} onValueChange={(value) => setFacilityListSort(value as FacilityListSort)} value={facilityListSort} />{facilityListSort !== 'type' && <Text style={styles.facilityListSortHint}>{facilityListSort === 'net-gain' ? 'Highest values first.' : 'Lowest values first.'}</Text>}</View></View>}
+      onScroll={refreshTutorialHighlight}
       onScrollBeginDrag={onScrollBeginDrag}
+      scrollEventThrottle={16}
       renderItem={renderFacilitySummary}
       showsVerticalScrollIndicator
     />;
   }
 
-  return <ScrollView contentContainerStyle={[styles.content, isProductionTutorial && styles.tutorialScrollableContent]} onScrollBeginDrag={onScrollBeginDrag} showsVerticalScrollIndicator>
+  return <ScrollView contentContainerStyle={[styles.content, (isProductionTutorial || isFirstFacilityTutorial) && styles.tutorialScrollableContent]} onScroll={refreshTutorialHighlight} onScrollBeginDrag={onScrollBeginDrag} scrollEventThrottle={16} showsVerticalScrollIndicator>
     <View style={isProductionTutorial ? styles.tutorialProductionOverview : undefined}><SectionHeading eyebrow="OPERATIONS" title="Facilities" subtitle="Manage your constructed facilities and build new ones." />
       {!isFirstFacilityTutorial && <Button icon="arrow-left" mode="outlined" onPress={() => setSelectedFacilityId(null)}>All facilities</Button>}
     </View>
@@ -276,7 +295,7 @@ function ProductionViewContent({
       const projectedOutputNetGain = activeRecipe && getActiveOutputQuality ? calculateProjectedFacilityUpgradeNetGainPerMinute(facility, activeRecipe, market, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds), 'output', (resourceType) => inventory.getQuality(resourceType), getActiveOutputQuality) : undefined;
       const projectedConditionNetGain = activeRecipe && getActiveOutputQuality ? calculateProjectedFacilityUpgradeNetGainPerMinute(facility, activeRecipe, market, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds), 'condition', (resourceType) => inventory.getQuality(resourceType), getActiveOutputQuality) : undefined;
       const isExpanded = collapsedFacilities[facilityId] !== true;
-      const activeDetailTab = isFirstFacilityTutorial && index === 0 ? (firstFacilityStep === 'upgrades' || firstFacilityStep === 'inventory-transition' ? 'upgrades' : firstFacilityStep === 'footprint' || firstFacilityStep === 'research' || firstFacilityStep === 'recipe-card' || firstFacilityStep === 'recipe-automation' || firstFacilityStep === 'recipe-economics' ? 'recipe' : 'efficiency') : (facilityDetailTabs[facilityId] ?? 'recipe');
+      const activeDetailTab = isFirstFacilityTutorial && index === 0 ? (firstFacilityStep === 'upgrades' || firstFacilityStep === 'inventory-transition' ? 'upgrades' : firstFacilityStep === 'footprint' || firstFacilityStep === 'research' || firstFacilityStep === 'recipe-card' || firstFacilityStep === 'recipe-automation' || firstFacilityStep === 'recipe-optional-inputs' || firstFacilityStep === 'recipe-economics' ? 'recipe' : 'efficiency') : (facilityDetailTabs[facilityId] ?? 'recipe');
       const financePeriod = facilityFinancePeriods[facilityId] ?? 'all-time';
       const assetBreakdown = (activeDetailTab === 'finance' ? calculateFacilityAssetBreakdown(facility, market, finance) : undefined) as ReturnType<typeof calculateFacilityAssetBreakdown>;
       const facilityPerformance = (activeDetailTab === 'finance' ? finance.getFacilityPerformance(facilityId, financePeriod, currentGameTimeMs) : undefined) as ReturnType<Finance['getFacilityPerformance']>;
@@ -428,7 +447,7 @@ function ProductionViewContent({
             <Text style={styles.facilityRepairCost}>Operating profit is output value less input cost, production wear, staff wages, and staffing/training costs in the selected period. Production wear is included here; actual repairs remain separate.</Text>
           </View>}
         </>}
-      </Card.Content></Card>{repairFacilityId === facilityId && <FacilityRepairDialog activeRecipe={activeRecipe ?? null} autoRepairLimit={getFacilityAutoRepairLimit(completedResearchProjectIds)} currentGameTimeMs={currentGameTimeMs} facility={facility} finance={finance} getInputQuality={(resourceType) => inventory.getQuality(resourceType)} getOutputQuality={getActiveOutputQuality} inventory={inventory} market={market} onDismiss={() => setRepairFacilityId(null)} onRepair={(targetCondition) => { const started = repairFacility(facilityId, targetCondition); if (started) setRepairFacilityId(null); return started; }} onSetAutoRepair={(enabled, threshold, target) => setFacilityAutoRepair(facilityId, enabled, threshold, target)} recipeResearchWorkSpeedMultiplier={activeRecipe ? getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds) : 1} visible />}{staffWageFacilityId === facilityId && <FacilityStaffWageDialog activeRecipe={activeRecipe ?? null} currentGameTimeMs={currentGameTimeMs} facility={facility} getInputQuality={(resourceType) => inventory.getQuality(resourceType)} getOutputQuality={getActiveOutputQuality} market={market} onDismiss={() => setStaffWageFacilityId(null)} onSetStaffing={(workerCount, wage) => setFacilityStaffing(facilityId, workerCount, wage)} recipeResearchWorkSpeedMultiplier={activeRecipe ? getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds) : 1} visible />}{staffTrainingFacilityId === facilityId && <FacilityStaffTrainingDialog currentGameTimeMs={currentGameTimeMs} facility={facility} onDismiss={() => setStaffTrainingFacilityId(null)} onTrainStaff={(workerCount) => trainFacilityStaff?.(facilityId, workerCount) ?? false} visible />}</View>;
+      </Card.Content></Card>{repairFacilityId === facilityId && <FacilityRepairDialog activeRecipe={activeRecipe ?? null} autoRepairLimit={getFacilityAutoRepairLimit(completedResearchProjectIds)} currentGameTimeMs={currentGameTimeMs} facility={facility} finance={finance} getInputQuality={(resourceType) => inventory.getQuality(resourceType)} getOutputQuality={getActiveOutputQuality} inventory={inventory} market={market} onDismiss={() => setRepairFacilityId(null)} onRepair={(targetCondition) => { const started = repairFacility(facilityId, targetCondition); if (started) setRepairFacilityId(null); return started; }} onSetAutoRepair={(enabled, threshold, target) => setFacilityAutoRepair(facilityId, enabled, threshold, target)} recipeResearchWorkSpeedMultiplier={activeRecipe ? getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds) : 1} visible />}{staffWageFacilityId === facilityId && <FacilityStaffWageDialog activeRecipe={activeRecipe ?? null} currentGameTimeMs={currentGameTimeMs} facility={facility} getInputQuality={(resourceType) => inventory.getQuality(resourceType)} getOutputQuality={getActiveOutputQuality} isTutorial={isFirstFacility && (firstFacilityStep === 'staff-management' || firstFacilityStep === 'staff-training')} market={market} onDismiss={() => setStaffWageFacilityId(null)} onSetStaffing={(workerCount, wage) => setFacilityStaffing(facilityId, workerCount, wage)} recipeResearchWorkSpeedMultiplier={activeRecipe ? getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds) : 1} visible />}{staffTrainingFacilityId === facilityId && <FacilityStaffTrainingDialog currentGameTimeMs={currentGameTimeMs} facility={facility} onDismiss={() => setStaffTrainingFacilityId(null)} onTrainStaff={(workerCount) => trainFacilityStaff?.(facilityId, workerCount) ?? false} visible />}</View>;
     })}
   </ScrollView>;
 }

@@ -296,6 +296,8 @@ export const styles = StyleSheet.create({
   tutorialReopenControl: { bottom: 88, height: 58, position: 'absolute', right: 12, width: 58, zIndex: 20 },
   tutorialReopenCharacter: { height: 68, width: 58 },
   tutorialScrollableContent: { paddingBottom: 380 },
+  tutorialStaffingDialog: { transform: [{ translateY: -48 }] },
+  tutorialStaffingDialogScrollContent: { paddingBottom: 220 },
   tutorialTimeSpotlight: { alignItems: 'center', backgroundColor: colors.primary, borderColor: '#FFD54F', borderRadius: 10, borderWidth: 2, flexDirection: 'row', gap: 3, paddingHorizontal: 6, paddingVertical: 4, position: 'absolute', right: 50, top: 10 },
   transactionCost: { color: colors.error, fontWeight: '700' },
   transactionDetails: { flex: 1, gap: 2, paddingRight: 12 },
