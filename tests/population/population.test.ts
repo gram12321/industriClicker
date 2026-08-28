@@ -51,6 +51,25 @@ describe('population consumption', () => {
     expect(foodAdjusted).toBeCloseTo(foodBase);
   });
 
+  it('moves a small amount of purchasing power from an expensive domain to a cheaper one', () => {
+    const normalMarket = new Market();
+    const expensiveFoodSnapshot = normalMarket.toSnapshot();
+    for (const resourceType of [ResourceType.Grain, ResourceType.Bread, ResourceType.Sugar, ResourceType.Cake, ResourceType.Eggs, ResourceType.Fruit, ResourceType.Meat, ResourceType.MeatPie, ResourceType.Milk]) {
+      expensiveFoodSnapshot.local[resourceType].supply = 100;
+    }
+    const expensiveFoodMarket = new Market(expensiveFoodSnapshot);
+    const normal = calculatePopulationConsumption(1, normalMarket);
+    const expensive = calculatePopulationConsumption(1, expensiveFoodMarket);
+    const foodResources = [ResourceType.Bread, ResourceType.Cake, ResourceType.Eggs, ResourceType.Fruit, ResourceType.Grain, ResourceType.Meat, ResourceType.MeatPie, ResourceType.Milk, ResourceType.Sugar];
+    const constructionResources = [ResourceType.Bricks, ResourceType.Cement, ResourceType.ConstructionMaterials, ResourceType.ReinforcedConcrete];
+    const foodNormal = foodResources.reduce((total, resourceType) => total + normal.pricePreferenceAmounts[resourceType], 0);
+    const foodExpensive = foodResources.reduce((total, resourceType) => total + expensive.pricePreferenceAmounts[resourceType], 0);
+    const constructionNormal = constructionResources.reduce((total, resourceType) => total + normal.pricePreferenceAmounts[resourceType], 0);
+    const constructionExpensive = constructionResources.reduce((total, resourceType) => total + expensive.pricePreferenceAmounts[resourceType], 0);
+    expect(foodExpensive).toBeLessThan(foodNormal);
+    expect(constructionExpensive).toBeGreaterThan(constructionNormal);
+  });
+
   it('spends the available household budget while the price basket is unaffordable', () => {
     const consumption = calculatePopulationConsumption(1, new Market(), 1);
     expect(consumption.actualSpendingPerMinute).toBeGreaterThan(0);

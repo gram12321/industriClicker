@@ -1,7 +1,13 @@
 import type { FacilityCollection } from '@/game/facilities';
 import type { Market } from '@/game/market';
 import { RESOURCE_GROUPS, RESOURCES, RESOURCE_TYPES, type ResourceGroup, type ResourceType } from '@/game/resources';
-import { POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE, POPULATION_MAX_SUBSTITUTION_PER_PAIR } from './populationConstants';
+import {
+  POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE,
+  POPULATION_DOMAIN_ESSENTIALS,
+  POPULATION_DOMAIN_MAX_SUBSTITUTION_PER_PAIR,
+  POPULATION_DOMAIN_PRICE_ELASTICITY,
+  POPULATION_MAX_SUBSTITUTION_PER_PAIR,
+} from './populationConstants';
 
 export type PopulationSnapshot = { householdBalance: number };
 
@@ -89,10 +95,13 @@ function calculatePricePreferenceAmounts(baseAmounts: Readonly<Record<ResourceTy
         const referenceRatio = getPopulationReferenceUnitPrice(first) / getPopulationReferenceUnitPrice(second);
         const adjustment = 1 + (1 - currentRatio / referenceRatio);
         const from = adjustment < 1 ? first : second;
-        const transferShare = Math.min(Math.abs(adjustment - 1) * POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE[from].resourceElasticity, POPULATION_MAX_SUBSTITUTION_PER_PAIR);
+        const to = adjustment < 1 ? second : first;
+        const fromElasticity = POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE[from].resourceElasticity;
+        const toElasticity = POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE[to].resourceElasticity;
+        const symmetricElasticity = Math.sqrt(fromElasticity * toElasticity);
+        const transferShare = Math.min(Math.abs(adjustment - 1) * symmetricElasticity, POPULATION_MAX_SUBSTITUTION_PER_PAIR);
         const amount = Math.min(baseAmounts[first] * transferShare, baseAmounts[second] * transferShare);
         if (amount <= 0) continue;
-        const to = adjustment < 1 ? second : first;
         pendingTransfers.push({ from, to, amount });
         outgoingAmounts[from] += amount;
       }
@@ -106,6 +115,57 @@ function calculatePricePreferenceAmounts(baseAmounts: Readonly<Record<ResourceTy
     const amount = transfer.amount * normalization;
     adjustedAmounts[transfer.from] -= amount;
     adjustedAmounts[transfer.to] += amount;
+  }
+  return adjustedAmounts;
+}
+
+function calculateDomainCost(amounts: Readonly<Record<ResourceType, number>>, group: { resources: readonly ResourceType[] }, market: Market, useReferencePrices: boolean): number {
+  return group.resources.reduce((total, resourceType) => {
+    const amount = amounts[resourceType];
+    const unitPrice = useReferencePrices ? getPopulationReferenceUnitPrice(resourceType) : market.getLocalPrice(resourceType);
+    return total + amount * unitPrice;
+  }, 0);
+}
+
+/**
+ * Shifts purchasing power between domains when one complete domain basket is
+ * relatively expensive. Physical quantities are scaled by the resulting
+ * domain-spending ratios; vertical substitution remains responsible for the
+ * mix inside each domain.
+ */
+function calculateDomainPricePreferenceAmounts(amounts: Readonly<Record<ResourceType, number>>, market: Market): Record<ResourceType, number> {
+  const adjustedAmounts = { ...amounts };
+  const currentCosts = Object.fromEntries(RESOURCE_GROUPS.map((group) => [group.id, calculateDomainCost(amounts, group, market, false)])) as Record<ResourceGroup, number>;
+  const referenceCosts = Object.fromEntries(RESOURCE_GROUPS.map((group) => [group.id, calculateDomainCost(amounts, group, market, true)])) as Record<ResourceGroup, number>;
+  const targetCosts = { ...currentCosts };
+
+  for (let firstIndex = 0; firstIndex < RESOURCE_GROUPS.length; firstIndex += 1) {
+    const first = RESOURCE_GROUPS[firstIndex]!.id;
+    for (let secondIndex = firstIndex + 1; secondIndex < RESOURCE_GROUPS.length; secondIndex += 1) {
+      const second = RESOURCE_GROUPS[secondIndex]!.id;
+      if (currentCosts[first] <= 0 || currentCosts[second] <= 0 || referenceCosts[first] <= 0 || referenceCosts[second] <= 0) continue;
+      const currentRatio = currentCosts[first] / currentCosts[second];
+      const referenceRatio = referenceCosts[first] / referenceCosts[second];
+      const adjustment = 1 + (1 - currentRatio / referenceRatio);
+      const from = adjustment < 1 ? first : second;
+      const to = adjustment < 1 ? second : first;
+      const essentiality = POPULATION_DOMAIN_ESSENTIALS[from];
+      const transferShare = Math.min(
+        Math.abs(adjustment - 1) * POPULATION_DOMAIN_PRICE_ELASTICITY * (1 - essentiality),
+        POPULATION_DOMAIN_MAX_SUBSTITUTION_PER_PAIR,
+      );
+      const transferCost = Math.min(currentCosts[from] * transferShare, currentCosts[to] * transferShare);
+      if (transferCost <= 0) continue;
+      targetCosts[from] -= transferCost;
+      targetCosts[to] += transferCost;
+    }
+  }
+
+  for (const group of RESOURCE_GROUPS) {
+    const currentCost = currentCosts[group.id];
+    const targetCost = Math.max(0, targetCosts[group.id]);
+    const scale = currentCost > 0 ? targetCost / currentCost : 0;
+    for (const resourceType of group.resources) adjustedAmounts[resourceType] *= scale;
   }
   return adjustedAmounts;
 }
@@ -160,7 +220,8 @@ export function calculatePopulationConsumption(population: number, market: Marke
   const safePopulation = Number.isFinite(population) ? Math.max(0, Math.floor(population)) : 0;
   const safeBudget = Number.isFinite(budgetPerMinute) ? Math.max(0, budgetPerMinute) : 0;
   const baseAmounts = calculateBaseAmounts(safePopulation);
-  const pricePreferenceAmounts = calculatePricePreferenceAmounts(baseAmounts, market);
+  const verticalPricePreferenceAmounts = calculatePricePreferenceAmounts(baseAmounts, market);
+  const pricePreferenceAmounts = calculateDomainPricePreferenceAmounts(verticalPricePreferenceAmounts, market);
   const pricePreferenceCost = calculateCost(pricePreferenceAmounts, market);
   const isScarce = safeBudget < pricePreferenceCost;
   const baselinePreferenceAmounts = isScarce ? calculateBaselinePreferenceAmounts(pricePreferenceAmounts) : { ...pricePreferenceAmounts };

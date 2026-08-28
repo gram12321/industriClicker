@@ -19,6 +19,19 @@ export const POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE: Readonly<
 /** Matches Simulus's pairwise relative-price response. */
 export const POPULATION_MAX_SUBSTITUTION_PER_PAIR = 1;
 
+/** Domain-level substitution is intentionally much weaker than resource-level substitution. */
+export const POPULATION_DOMAIN_MAX_SUBSTITUTION_PER_PAIR = 0.2;
+export const POPULATION_DOMAIN_PRICE_ELASTICITY = 0.2;
+
+/** Higher values make a domain more resistant to losing purchasing power to other domains. */
+export const POPULATION_DOMAIN_ESSENTIALS: Readonly<Record<ResourceGroup, number>> = {
+  food: 0.9,
+  'raw-resources': 0.15,
+  construction: 0.1,
+  manufacturing: 0.3,
+  utilities: 0.9,
+};
+
 /** The single consumer catalogue: base quantity plus 0–1 selection values. */
 export const POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE: Readonly<Record<ResourceType, PopulationConsumptionDefinition>> = {
   // Food
