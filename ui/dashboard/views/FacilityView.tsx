@@ -97,6 +97,8 @@ type ProductionViewContentProps = {
   currentGameTimeMs: number;
   finance: Finance;
   onFirstFacilityRecipeSelected?: (recipeName: Recipe['name']) => void;
+  onFirstFacilityStaffingOpened?: () => void;
+  onFirstFacilityStaffingClosed?: () => void;
   getResearchAvailability: (projectId: ResearchProjectId) => ResearchAvailability;
   inventory: Inventory;
   market: Market;
@@ -122,7 +124,7 @@ type ProductionViewContentProps = {
 };
 
 type ProductionViewProps = Pick<ProductionViewContentProps,
-  'collapsedFacilities' | 'onBuildFacilityLayout' | 'onFirstFacilityFocusLayout' | 'onFirstFacilityRecipeSelected' | 'onScrollBeginDrag' | 'openConstructionYard' | 'requestFacilityDestruction' | 'setCollapsedFacilities' | 'tutorial'>;
+  'collapsedFacilities' | 'onBuildFacilityLayout' | 'onFirstFacilityFocusLayout' | 'onFirstFacilityRecipeSelected' | 'onFirstFacilityStaffingOpened' | 'onFirstFacilityStaffingClosed' | 'onScrollBeginDrag' | 'openConstructionYard' | 'requestFacilityDestruction' | 'setCollapsedFacilities' | 'tutorial'>;
 
 export const ProductionView = memo(function ProductionView(props: ProductionViewProps) {
   const buyMarketResource = useGameStore((state) => state.buyMarketResource);
@@ -148,7 +150,7 @@ export const ProductionView = memo(function ProductionView(props: ProductionView
 });
 
 function ProductionViewContent({
-  buyMarketResource, collapsedFacilities, currentGameTimeMs, facilities, finance, getResearchAvailability, inventory, market, onBuildFacilityLayout, onFirstFacilityFocusLayout, onFirstFacilityRecipeSelected, onScrollBeginDrag, openConstructionYard, repairFacility, requestFacilityDestruction, research, resourceFlow, setCollapsedFacilities, setFacilityAutoRepair, setFacilityOptionalInputEnabled, setFacilityProductionActive, setFacilityProductionCycle, setFacilityStaffing, trainFacilityStaff, setMarketAutomation, startResearch, tutorial, upgradeFacility,
+  buyMarketResource, collapsedFacilities, currentGameTimeMs, facilities, finance, getResearchAvailability, inventory, market, onBuildFacilityLayout, onFirstFacilityFocusLayout, onFirstFacilityRecipeSelected, onFirstFacilityStaffingOpened, onFirstFacilityStaffingClosed, onScrollBeginDrag, openConstructionYard, repairFacility, requestFacilityDestruction, research, resourceFlow, setCollapsedFacilities, setFacilityAutoRepair, setFacilityOptionalInputEnabled, setFacilityProductionActive, setFacilityProductionCycle, setFacilityStaffing, trainFacilityStaff, setMarketAutomation, startResearch, tutorial, upgradeFacility,
 }: ProductionViewContentProps) {
   const { firstFacilityFocus, firstFacilityRecipeName, firstFacilityStep, isBuildFacilityTutorial, isFirstFacilityTutorial, isProductionTutorial } = tutorial;
   const [collapsedProductionCycles, setCollapsedProductionCycles] = useState<Record<string, boolean>>({});
@@ -200,6 +202,16 @@ function ProductionViewContent({
   }, [firstFacilityFocus, firstFacilityRecipeName]);
 
   useEffect(() => {
+    if ((firstFacilityStep === 'staff-management' || firstFacilityStep === 'staff-training') && tutorialFacilityId) {
+      setStaffWageFacilityId(tutorialFacilityId);
+      onFirstFacilityStaffingOpened?.();
+      return;
+    }
+    setStaffWageFacilityId((current) => current === tutorialFacilityId ? null : current);
+    onFirstFacilityStaffingClosed?.();
+  }, [firstFacilityStep, onFirstFacilityStaffingClosed, onFirstFacilityStaffingOpened, tutorialFacilityId]);
+
+  useEffect(() => {
     if (selectedFacilityId && !facilities.get(selectedFacilityId)) setSelectedFacilityId(null);
   }, [facilities, selectedFacilityId]);
 
@@ -216,7 +228,7 @@ function ProductionViewContent({
 
   if (!isShowingFacilityDetail) {
     return <FlatList
-      contentContainerStyle={[styles.content, isProductionTutorial && styles.tutorialScrollableContent]}
+      contentContainerStyle={[styles.content, (isProductionTutorial || isFirstFacilityTutorial) && styles.tutorialScrollableContent]}
       data={orderedFacilities}
       keyExtractor={({ facilityView }) => facilityView.id}
       ListEmptyComponent={<DetailRow label="Constructed facilities" value="None yet" />}
@@ -227,7 +239,7 @@ function ProductionViewContent({
     />;
   }
 
-  return <ScrollView contentContainerStyle={[styles.content, isProductionTutorial && styles.tutorialScrollableContent]} onScrollBeginDrag={onScrollBeginDrag} showsVerticalScrollIndicator>
+  return <ScrollView contentContainerStyle={[styles.content, (isProductionTutorial || isFirstFacilityTutorial) && styles.tutorialScrollableContent]} onScrollBeginDrag={onScrollBeginDrag} showsVerticalScrollIndicator>
     <View style={isProductionTutorial ? styles.tutorialProductionOverview : undefined}><SectionHeading eyebrow="OPERATIONS" title="Facilities" subtitle="Manage your constructed facilities and build new ones." />
       {!isFirstFacilityTutorial && <Button icon="arrow-left" mode="outlined" onPress={() => setSelectedFacilityId(null)}>All facilities</Button>}
     </View>
@@ -428,7 +440,7 @@ function ProductionViewContent({
             <Text style={styles.facilityRepairCost}>Operating profit is output value less input cost, production wear, staff wages, and staffing/training costs in the selected period. Production wear is included here; actual repairs remain separate.</Text>
           </View>}
         </>}
-      </Card.Content></Card>{repairFacilityId === facilityId && <FacilityRepairDialog activeRecipe={activeRecipe ?? null} autoRepairLimit={getFacilityAutoRepairLimit(completedResearchProjectIds)} currentGameTimeMs={currentGameTimeMs} facility={facility} finance={finance} getInputQuality={(resourceType) => inventory.getQuality(resourceType)} getOutputQuality={getActiveOutputQuality} inventory={inventory} market={market} onDismiss={() => setRepairFacilityId(null)} onRepair={(targetCondition) => { const started = repairFacility(facilityId, targetCondition); if (started) setRepairFacilityId(null); return started; }} onSetAutoRepair={(enabled, threshold, target) => setFacilityAutoRepair(facilityId, enabled, threshold, target)} recipeResearchWorkSpeedMultiplier={activeRecipe ? getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds) : 1} visible />}{staffWageFacilityId === facilityId && <FacilityStaffWageDialog activeRecipe={activeRecipe ?? null} currentGameTimeMs={currentGameTimeMs} facility={facility} getInputQuality={(resourceType) => inventory.getQuality(resourceType)} getOutputQuality={getActiveOutputQuality} market={market} onDismiss={() => setStaffWageFacilityId(null)} onSetStaffing={(workerCount, wage) => setFacilityStaffing(facilityId, workerCount, wage)} recipeResearchWorkSpeedMultiplier={activeRecipe ? getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds) : 1} visible />}{staffTrainingFacilityId === facilityId && <FacilityStaffTrainingDialog currentGameTimeMs={currentGameTimeMs} facility={facility} onDismiss={() => setStaffTrainingFacilityId(null)} onTrainStaff={(workerCount) => trainFacilityStaff?.(facilityId, workerCount) ?? false} visible />}</View>;
+      </Card.Content></Card>{repairFacilityId === facilityId && <FacilityRepairDialog activeRecipe={activeRecipe ?? null} autoRepairLimit={getFacilityAutoRepairLimit(completedResearchProjectIds)} currentGameTimeMs={currentGameTimeMs} facility={facility} finance={finance} getInputQuality={(resourceType) => inventory.getQuality(resourceType)} getOutputQuality={getActiveOutputQuality} inventory={inventory} market={market} onDismiss={() => setRepairFacilityId(null)} onRepair={(targetCondition) => { const started = repairFacility(facilityId, targetCondition); if (started) setRepairFacilityId(null); return started; }} onSetAutoRepair={(enabled, threshold, target) => setFacilityAutoRepair(facilityId, enabled, threshold, target)} recipeResearchWorkSpeedMultiplier={activeRecipe ? getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds) : 1} visible />}{staffWageFacilityId === facilityId && <FacilityStaffWageDialog activeRecipe={activeRecipe ?? null} currentGameTimeMs={currentGameTimeMs} facility={facility} getInputQuality={(resourceType) => inventory.getQuality(resourceType)} getOutputQuality={getActiveOutputQuality} isTutorial={isFirstFacility && (firstFacilityStep === 'staff-management' || firstFacilityStep === 'staff-training')} market={market} onDismiss={() => setStaffWageFacilityId(null)} onSetStaffing={(workerCount, wage) => setFacilityStaffing(facilityId, workerCount, wage)} recipeResearchWorkSpeedMultiplier={activeRecipe ? getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds) : 1} visible />}{staffTrainingFacilityId === facilityId && <FacilityStaffTrainingDialog currentGameTimeMs={currentGameTimeMs} facility={facility} onDismiss={() => setStaffTrainingFacilityId(null)} onTrainStaff={(workerCount) => trainFacilityStaff?.(facilityId, workerCount) ?? false} visible />}</View>;
     })}
   </ScrollView>;
 }

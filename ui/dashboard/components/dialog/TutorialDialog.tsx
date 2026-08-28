@@ -1,10 +1,10 @@
-import { Image, Pressable, View } from "react-native";
+import { Image, Pressable, ScrollView, useWindowDimensions, View } from "react-native";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Button, Dialog, IconButton, Menu, Portal, Text } from "react-native-paper";
 import { colors } from "@/theme";
-import { getFacilityDefinition, type FacilityType } from "@/game/facilities";
+import { getFacilityDefinition, getFacilitySizeOptions, type FacilityType } from "@/game/facilities";
 import type { Recipe } from "@/game/recipes";
 import {
   getRecipeResearchProjectId,
@@ -236,7 +236,7 @@ export function TutorialGuideDialog({
     </View>
   );
   const actions = (
-    <>
+    <View>
       <TutorialJumpActions onJumpToTutorial={onJumpToTutorial} />
       <View style={styles.tutorialActions}>
       <Button disabled={step === 1} onPress={onBack}>
@@ -245,7 +245,7 @@ export function TutorialGuideDialog({
       <Button onPress={onExit}>Exit tutorial</Button>
       <Button mode="contained" onPress={onNext}>Next</Button>
       </View>
-    </>
+    </View>
   );
   const collapseControl = (
     <TutorialCollapseControl
@@ -592,6 +592,8 @@ type FirstFacilityStep =
   | "header"
   | "footprint"
   | "efficiency"
+  | "staff-management"
+  | "staff-training"
   | "repair"
   | "research"
   | "recipe-card"
@@ -673,7 +675,9 @@ export function FirstFacilityTutorialDialog({
   onJumpToTutorial?: (tutorial: TutorialJumpTarget) => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const { height } = useWindowDimensions();
   if (!facilityType) return null;
+  const isStaffingStep = step === "staff-management" || step === "staff-training";
   const definition = getFacilityDefinition(facilityType);
   const selectedRecipe =
     (recipeName
@@ -727,23 +731,27 @@ export function FirstFacilityTutorialDialog({
       ? 6
       : step === "header"
         ? 7
-        : step === "efficiency"
-          ? 8
-          : step === "repair"
-            ? 9
+      : step === "efficiency"
+        ? 8
+        : step === "staff-management"
+          ? 9
+          : step === "staff-training"
+            ? 10
+        : step === "repair"
+          ? 11
             : step === "footprint"
-              ? 10
+              ? 12
               : step === "research"
-                ? 11
+                ? 13
                 : step === "recipe-card"
-                  ? 12
-                : step === "recipe-automation"
-                  ? 13
-                : step === "recipe-economics"
                   ? 14
+                : step === "recipe-automation"
+                  ? 15
+                : step === "recipe-economics"
+                  ? 16
                   : step === "upgrades"
-                    ? 15
-                    : 16;
+                    ? 17
+                    : 18;
   const title =
     step === "overview"
       ? "Your first facility"
@@ -751,8 +759,12 @@ export function FirstFacilityTutorialDialog({
         ? "Your facility header"
         : step === "footprint"
           ? "Industrial Footprint"
-          : step === "efficiency"
-            ? "Facility efficiency"
+            : step === "efficiency"
+              ? "Facility efficiency"
+              : step === "staff-management"
+                ? "Staff management"
+                : step === "staff-training"
+                  ? "Staff Quality and wages"
             : step === "repair"
               ? "Repair and condition"
               : step === "research"
@@ -798,6 +810,8 @@ export function FirstFacilityTutorialDialog({
       </>
     ) : step === "header" ||
       step === "efficiency" ||
+      step === "staff-management" ||
+      step === "staff-training" ||
       step === "repair" ||
       step === "footprint" ||
       step === "recipe-card" ||
@@ -993,7 +1007,19 @@ export function FirstFacilityTutorialDialog({
             name={APP_ICONS.staffing}
             size={15}
           />{" "}
-          current and required staff,{" "}
+          current and required staff
+          {getFacilitySizeOptions(facilityType).length > 1 && (
+            <>
+              ,{" "}
+              <TooltipMaterialIcon
+                color={colors.primary}
+                label="Facility size"
+                name={APP_ICONS.facilityFarm}
+                size={15}
+              />{" "}
+              facility size
+            </>
+          )},{" "}
           <TooltipMaterialIcon
             color={colors.primary}
             label="Efficiency"
@@ -1018,6 +1044,12 @@ export function FirstFacilityTutorialDialog({
             label="Durability upgrade"
             name={APP_ICONS.durability}
             size={15}
+          />{" "}
+          <TooltipMaterialIcon
+            color={colors.primary}
+            label="Quality upgrade"
+            name={APP_ICONS.quality}
+            size={15}
           />
           . Staffing directly affects efficiency. Upgrades influence efficiency
           indirectly, which we will explore later.
@@ -1037,12 +1069,36 @@ export function FirstFacilityTutorialDialog({
       resourceMessage
     ) : step === "efficiency" ? (
       <Text style={styles.dialogDescription}>
-        The Facility efficiency tab lets you set the staffing level for this
-        facility. Understaffing reduces efficiency. You can also staff above the
-        requirement, but extra staff increases wear and tear. You can try and
-        increase or decrease the staff now, you will see facility efficiency
-        move imidiatly
+        Open the{" "}
+          <TooltipMaterialIcon
+            color={colors.primary}
+            label="Staffing management"
+            name={APP_ICONS.staffing}
+            size={15}
+          />{" "}
+        staffing controls to see how your workers affect this facility.
       </Text>
+    ) : step === "staff-management" ? (
+      <Text style={styles.dialogDescription}>
+        Use the staff slider to set the number of workers. Understaffing reduces
+        facility efficiency; adding staff can improve it, but raises wear and
+        tear. Try changing the number now and watch the projected efficiency
+        update immediately.
+      </Text>
+    ) : step === "staff-training" ? (
+      <>
+        <Text style={styles.dialogDescription}>
+          Staff Q is the shared knowledge and experience of the assigned staff.
+          It affects staffing efficiency and lets the facility produce
+          higher-quality products. Training and production experience can raise
+          Staff Q over time.
+        </Text>
+        <Text style={styles.dialogDescription}>
+          Expected wage is neutral for the current Staff Q and economy. Paying
+          below or above it creates wage pressure that changes Staff Q over
+          time.
+        </Text>
+      </>
     ) : (
       <>
         <Text style={styles.dialogDescription}>
@@ -1093,7 +1149,10 @@ export function FirstFacilityTutorialDialog({
           {spotlight}
           <View
             pointerEvents="auto"
-            style={styles.tutorialFirstFacilityOverlayCard}
+            style={[
+              styles.tutorialFirstFacilityOverlayCard,
+              isStaffingStep && { maxHeight: height * 0.46 },
+            ]}
           >
             <TutorialGuideCharacter />
             <Text style={styles.tutorialDialogTitle}>{title}</Text>
@@ -1102,12 +1161,16 @@ export function FirstFacilityTutorialDialog({
               onPress={() => setCollapsed((value) => !value)}
             />
             {!collapsed && (
-              <View style={styles.tutorialDialogContent}>
+              <ScrollView
+                contentContainerStyle={styles.tutorialDialogContent}
+                nestedScrollEnabled
+                style={isStaffingStep ? { maxHeight: height * 0.22 } : undefined}
+              >
                 <Text
                   style={styles.sectionEyebrow}
-                >{`STEP ${stepNumber} OF 16`}</Text>
+                >{`STEP ${stepNumber} OF 18`}</Text>
                 {content}
-              </View>
+              </ScrollView>
             )}
             <TutorialActions nextLabel={step === "inventory-transition" ? "Go to Inventory" : undefined} onBack={onBack} onExit={onExit} onJumpToTutorial={onJumpToTutorial} onNext={onNext} />
           </View>

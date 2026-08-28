@@ -7,6 +7,8 @@ describe('tutorial flow', () => {
       { kind: 'first-facility' },
       { kind: 'first-facility-header' },
       { kind: 'first-facility-footprint' },
+      { kind: 'first-facility-staff-management' },
+      { kind: 'first-facility-staff-training' },
       { kind: 'first-facility-repair' },
       { kind: 'first-facility-efficiency' },
       { kind: 'first-facility-research' },
@@ -21,6 +23,8 @@ describe('tutorial flow', () => {
     expect(stages.map((stage) => getNextFirstFacilityTutorialStage(stage)?.kind ?? null)).toEqual([
       'first-facility-header',
       'first-facility-footprint',
+      'first-facility-staff-management',
+      'first-facility-staff-training',
       'first-facility-repair',
       'first-facility-efficiency',
       'first-facility-research',
