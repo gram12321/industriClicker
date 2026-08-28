@@ -127,7 +127,7 @@ function applyPreferenceWithinGroups(
 function calculateBaselinePreferenceAmounts(pricePreferenceAmounts: Readonly<Record<ResourceType, number>>): Record<ResourceType, number> {
   return applyPreferenceWithinGroups(pricePreferenceAmounts, (resourceType) => {
     const { baselinePreference, resourceElasticity } = POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE[resourceType];
-    return baselinePreference ** resourceElasticity;
+    return (1 - baselinePreference) ** resourceElasticity;
   });
 }
 
@@ -161,8 +161,10 @@ export function calculatePopulationConsumption(population: number, market: Marke
   const safeBudget = Number.isFinite(budgetPerMinute) ? Math.max(0, budgetPerMinute) : 0;
   const baseAmounts = calculateBaseAmounts(safePopulation);
   const pricePreferenceAmounts = calculatePricePreferenceAmounts(baseAmounts, market);
-  const baselinePreferenceAmounts = calculateBaselinePreferenceAmounts(pricePreferenceAmounts);
-  const adjustedAmounts = calculateAdjustedAmounts(baselinePreferenceAmounts);
+  const pricePreferenceCost = calculateCost(pricePreferenceAmounts, market);
+  const isScarce = safeBudget < pricePreferenceCost;
+  const baselinePreferenceAmounts = isScarce ? calculateBaselinePreferenceAmounts(pricePreferenceAmounts) : { ...pricePreferenceAmounts };
+  const adjustedAmounts = isScarce ? calculateAdjustedAmounts(baselinePreferenceAmounts) : { ...pricePreferenceAmounts };
   const actualAmounts = calculateBudgetScaledAmounts(adjustedAmounts, market, safeBudget);
   const actualSpendingByGroup = calculateGroupCosts(actualAmounts, market);
   const actualSpendingPerMinute = Object.values(actualSpendingByGroup).reduce((total, amount) => total + amount, 0);

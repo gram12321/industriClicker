@@ -57,27 +57,28 @@ export function PopulationView({ facilities, market, population }: { facilities:
     <Card mode="contained" style={styles.featureCard}>
       <Card.Content style={styles.cardContent}>
         <Text variant="titleMedium">Total consumption by whole pop per minute</Text>
-        <Text style={styles.cardDescription}>Base is the fixed basket. Adjusted includes price, baseline, and luxury preferences. Actual is the adjusted basket scaled to the spending budget.</Text>
+        <Text style={styles.cardDescription}>Base is the fixed basket. PriceAdj applies price substitution. Affordable applies scarcity preferences only when the full basket is unaffordable. Actual is Affordable scaled to the spending budget.</Text>
         <View style={localStyles.tableHeader}>
           <Text style={[localStyles.tableHeaderText, localStyles.resourceHeader]}>Category / Resource</Text>
-          <Text style={localStyles.tableHeaderText}>Base / Adjusted / Actual</Text>
+          <Text style={localStyles.tableHeaderText}>Base / PriceAdj / Affordable / Actual</Text>
         </View>
         <View style={localStyles.consumptionTable}>
           {RESOURCE_GROUPS.map((group) => {
             const resources = group.resources.filter((resourceType) => consumption.baseAmounts[resourceType] > 0 || consumption.adjustedAmounts[resourceType] > 0);
             if (resources.length === 0) return null;
             const baseTotal = resources.reduce((total, resourceType) => total + consumption.baseAmounts[resourceType], 0);
-            const adjustedTotal = resources.reduce((total, resourceType) => total + consumption.adjustedAmounts[resourceType], 0);
+            const priceAdjustedTotal = resources.reduce((total, resourceType) => total + consumption.pricePreferenceAmounts[resourceType], 0);
+            const affordableTotal = resources.reduce((total, resourceType) => total + consumption.adjustedAmounts[resourceType], 0);
             const actualTotal = resources.reduce((total, resourceType) => total + consumption.actualAmounts[resourceType], 0);
             const expanded = expandedGroups[group.id] ?? false;
             return <View key={group.id} style={localStyles.group}>
               <Pressable accessibilityLabel={`${expanded ? 'Hide' : 'Show'} ${group.label} consumption`} accessibilityRole="button" accessibilityState={{ expanded }} onPress={() => setExpandedGroups((current) => ({ ...current, [group.id]: !expanded }))} style={localStyles.groupHeader}>
                 <View style={localStyles.groupName}><MaterialCommunityIcons color={colors.primary} name={GROUP_ICONS[group.id]} size={18} /><Text style={localStyles.groupNameText}>{group.label}</Text></View>
-                <View style={localStyles.groupValue}><ConsumptionValues base={baseTotal} adjusted={adjustedTotal} actual={actualTotal} /><MaterialCommunityIcons color={colors.muted} name={expanded ? 'chevron-up' : 'chevron-down'} size={18} /></View>
+                <View style={localStyles.groupValue}><ConsumptionValues base={baseTotal} priceAdjusted={priceAdjustedTotal} affordable={affordableTotal} actual={actualTotal} /><MaterialCommunityIcons color={colors.muted} name={expanded ? 'chevron-up' : 'chevron-down'} size={18} /></View>
               </Pressable>
               {expanded && <View style={localStyles.resourceList}>{resources.map((resourceType) => <View key={resourceType} style={localStyles.resourceRow}>
                 <Text style={localStyles.resourceName}><TooltipResourceIcon resourceType={resourceType} /> {getResource(resourceType).name}</Text>
-                <ConsumptionValues base={consumption.baseAmounts[resourceType]} adjusted={consumption.adjustedAmounts[resourceType]} actual={consumption.actualAmounts[resourceType]} compact />
+                <ConsumptionValues base={consumption.baseAmounts[resourceType]} priceAdjusted={consumption.pricePreferenceAmounts[resourceType]} affordable={consumption.adjustedAmounts[resourceType]} actual={consumption.actualAmounts[resourceType]} compact />
               </View>)}</View>}
             </View>;
           })}
@@ -98,12 +99,13 @@ export function PopulationView({ facilities, market, population }: { facilities:
   </>;
 }
 
-function ConsumptionValues({ base, adjusted, actual, compact = false }: { base: number; adjusted: number; actual: number; compact?: boolean }) {
-  const adjustmentColor = adjusted < base ? colors.error : adjusted > base ? colors.primary : colors.charcoal;
+function ConsumptionValues({ base, priceAdjusted, affordable, actual, compact = false }: { base: number; priceAdjusted: number; affordable: number; actual: number; compact?: boolean }) {
+  const adjustmentColor = priceAdjusted < base ? colors.error : priceAdjusted > base ? colors.primary : colors.charcoal;
   return <View style={compact ? localStyles.compactValues : localStyles.groupValues}>
     <Text style={localStyles.baseValue}>{formatNumber(base, { smartDecimals: true })} /</Text>
-    <Text style={[localStyles.adjustedValue, { color: adjustmentColor }]}>{formatNumber(adjusted, { smartDecimals: true })}</Text>
-    <Text style={localStyles.actualValue}> / {formatNumber(actual, { smartDecimals: true })}</Text>
+    <Text style={[localStyles.adjustedValue, { color: adjustmentColor }]}>{formatNumber(priceAdjusted, { smartDecimals: true })} /</Text>
+    <Text style={localStyles.adjustedValue}>{formatNumber(affordable, { smartDecimals: true })} /</Text>
+    <Text style={localStyles.actualValue}>{formatNumber(actual, { smartDecimals: true })}</Text>
   </View>;
 }
 

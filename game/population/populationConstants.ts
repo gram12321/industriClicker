@@ -2,6 +2,7 @@ import { ResourceType, type ResourceGroup } from '@/game/resources';
 
 export type PopulationConsumptionDefinition = {
   amountPerPersonPerMinute: number;
+  /** Higher values describe goods preferred only once the household can afford the full basket. */
   baselinePreference: number;
   luxury: number;
   resourceElasticity: number;
@@ -79,13 +80,13 @@ export const POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE: Readonly<Record<
   // Utilities
   [ResourceType.Water]: {
     amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.utilities * 0.71,
-    baselinePreference: 1,
+    baselinePreference: 0,
     luxury: 0.01,
     resourceElasticity: 0.1,
   },
   [ResourceType.Electricity]: {
     amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.utilities * 0.29,
-    baselinePreference: 0.9,
+    baselinePreference: 0.1,
     luxury: 0.1,
     resourceElasticity: 0.1,
   },

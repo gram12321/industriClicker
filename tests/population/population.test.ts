@@ -15,11 +15,11 @@ describe('population consumption', () => {
   });
 
   it('uses the existing domain totals and one per-resource base catalogue', () => {
-    expect(POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE).toEqual({ food: 1, 'raw-resources': 0.25, construction: 0.05, manufacturing: 0.016, utilities: 0.7 });
+    expect(POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE).toEqual({ food: 1, 'raw-resources': 0.25, construction: 0.05, manufacturing: 0.016, utilities: 10.7 });
     expect(POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE[ResourceType.Grain].amountPerPersonPerMinute).toBe(0.15);
     expect(POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE[ResourceType.Sand].amountPerPersonPerMinute).toBe(0.1);
     expect(POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE[ResourceType.ConstructionMaterials].amountPerPersonPerMinute).toBeCloseTo(0.02);
-    expect(POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE[ResourceType.Grain]).toMatchObject({ baselinePreference: 0.65, luxury: 0.02, resourceElasticity: 0.85 });
+    expect(POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE[ResourceType.Grain]).toMatchObject({ baselinePreference: 0.25, luxury: 0.01, resourceElasticity: 0.85 });
   });
 
   it('uses initial local prices as the simple price-elasticity reference', () => {
@@ -65,20 +65,21 @@ describe('population consumption', () => {
     const availableBudget = fullBasket.actualSpendingPerMinute / 2;
     const consumption = calculatePopulationConsumption(1, market, availableBudget);
 
+    expect(fullBasket.adjustedAmounts).toEqual(fullBasket.pricePreferenceAmounts);
     expect(consumption.actualSpendingPerMinute).toBeCloseTo(availableBudget);
     for (const resourceType of Object.values(ResourceType)) {
       expect(consumption.actualAmounts[resourceType]).toBeLessThanOrEqual(consumption.adjustedAmounts[resourceType]);
     }
   });
 
-  it('preserves baseline goods and reduces luxury goods faster when the basket is unaffordable', () => {
+  it('shifts scarcity demand toward lower-baseline goods and reduces luxury goods faster', () => {
     const consumption = calculatePopulationConsumption(1, new Market(), 1);
-    const waterBaselineScale = consumption.baselinePreferenceAmounts[ResourceType.Water] / consumption.pricePreferenceAmounts[ResourceType.Water];
-    const electricityBaselineScale = consumption.baselinePreferenceAmounts[ResourceType.Electricity] / consumption.pricePreferenceAmounts[ResourceType.Electricity];
+    const breadBaselineScale = consumption.baselinePreferenceAmounts[ResourceType.Bread] / consumption.pricePreferenceAmounts[ResourceType.Bread];
+    const grainBaselineScale = consumption.baselinePreferenceAmounts[ResourceType.Grain] / consumption.pricePreferenceAmounts[ResourceType.Grain];
     const breadLuxuryScale = consumption.adjustedAmounts[ResourceType.Bread] / consumption.baselinePreferenceAmounts[ResourceType.Bread];
     const cakeLuxuryScale = consumption.adjustedAmounts[ResourceType.Cake] / consumption.baselinePreferenceAmounts[ResourceType.Cake];
 
-    expect(waterBaselineScale).toBeGreaterThan(electricityBaselineScale);
+    expect(grainBaselineScale).toBeGreaterThan(breadBaselineScale);
     expect(cakeLuxuryScale).toBeLessThan(breadLuxuryScale);
   });
 
