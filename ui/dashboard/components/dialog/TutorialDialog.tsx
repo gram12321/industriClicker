@@ -1,11 +1,12 @@
-import { Image, Pressable, View } from "react-native";
+import { Image, Pressable, ScrollView, useWindowDimensions, View } from "react-native";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Button, Dialog, IconButton, Menu, Portal, Text } from "react-native-paper";
 import { colors } from "@/theme";
-import { getFacilityDefinition, type FacilityType } from "@/game/facilities";
+import { getFacilityDefinition, getFacilitySizeOptions, type FacilityType } from "@/game/facilities";
 import type { Recipe } from "@/game/recipes";
+import type { FirstFacilityTutorialStep, TutorialStagePresentation } from "@/game/tutorial";
 import {
   getRecipeResearchProjectId,
   type ResearchLedger,
@@ -185,7 +186,7 @@ export function TutorialGuideDialog({
   onDismiss,
   onExit,
   onJumpToTutorial,
-  step,
+  tutorial,
   visible,
   onNext,
 }: {
@@ -195,25 +196,17 @@ export function TutorialGuideDialog({
   onBack: () => void;
   onDismiss: () => void;
   onExit: () => void;
-  step: 1 | 2 | 3 | 4 | 5;
+  tutorial: TutorialStagePresentation | null;
   visible: boolean;
   onNext: () => void;
   onJumpToTutorial?: (tutorial: TutorialJumpTarget) => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
-  const isBalanceStep = step === 2;
-  const isTimeStep = step === 3;
-  const isCompanyStep = step === 4;
-  const isProductionStep = step === 5;
-  const title = isBalanceStep
-    ? "Your company balance"
-    : isTimeStep
-      ? "Your company time"
-      : isCompanyStep
-        ? "Your company overview"
-        : isProductionStep
-          ? "Production"
-          : "Welcome to Industri Clicker";
+  if (!tutorial || tutorial.flow !== "welcome") return null;
+  const isBalanceStep = tutorial.kind === "welcome-balance";
+  const isTimeStep = tutorial.kind === "welcome-time";
+  const isCompanyStep = tutorial.kind === "welcome-overview";
+  const isProductionStep = tutorial.kind === "welcome-production";
   const description = isProductionStep
     ? "Press the Production tab below. I will introduce that view in the next dialog."
     : isCompanyStep
@@ -226,26 +219,26 @@ export function TutorialGuideDialog({
   const guideContent = (
     <View>
       <TutorialGuideCharacter useBalanceImage={isBalanceStep} />
-      <Text style={styles.tutorialDialogTitle}>{title}</Text>
+      <Text style={styles.tutorialDialogTitle}>{tutorial.title}</Text>
       {!collapsed && (
         <View style={styles.tutorialDialogContent}>
-          <Text style={styles.sectionEyebrow}>{`STEP ${step} OF 5`}</Text>
+          <Text style={styles.sectionEyebrow}>{`STEP ${tutorial.progress.step} OF ${tutorial.progress.total}`}</Text>
           <Text style={styles.dialogDescription}>{description}</Text>
         </View>
       )}
     </View>
   );
   const actions = (
-    <>
+    <View>
       <TutorialJumpActions onJumpToTutorial={onJumpToTutorial} />
       <View style={styles.tutorialActions}>
-      <Button disabled={step === 1} onPress={onBack}>
+      <Button disabled={tutorial.kind === "welcome-company"} onPress={onBack}>
         Back
       </Button>
       <Button onPress={onExit}>Exit tutorial</Button>
       <Button mode="contained" onPress={onNext}>Next</Button>
       </View>
-    </>
+    </View>
   );
   const collapseControl = (
     <TutorialCollapseControl
@@ -366,6 +359,7 @@ export function ProductionTutorialDialog({
   onDismiss,
   onExit,
   onJumpToTutorial,
+  tutorial,
 }: {
   visible: boolean;
   onBack: () => void;
@@ -373,8 +367,10 @@ export function ProductionTutorialDialog({
   onDismiss: () => void;
   onExit: () => void;
   onJumpToTutorial?: (tutorial: TutorialJumpTarget) => void;
+  tutorial: TutorialStagePresentation | null;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  if (!tutorial || tutorial.flow !== "facility") return null;
   return (
     <Portal>
       <Dialog
@@ -384,7 +380,7 @@ export function ProductionTutorialDialog({
         visible={visible}
       >
         <TutorialGuideCharacter />
-        <Dialog.Title>Production</Dialog.Title>
+        <Dialog.Title>{tutorial.title}</Dialog.Title>
         <TutorialCollapseControl
           collapsed={collapsed}
           onPress={() => setCollapsed((value) => !value)}
@@ -392,7 +388,7 @@ export function ProductionTutorialDialog({
         {!collapsed && (
           <Dialog.Content>
             <View style={styles.tutorialDialogContent}>
-              <Text style={styles.sectionEyebrow}>STEP 1 OF 10</Text>
+              <Text style={styles.sectionEyebrow}>STEP {tutorial.progress.step} OF {tutorial.progress.total}</Text>
               <Text style={styles.dialogDescription}>
                 This is the Production view. We will explore how your facilities
                 run here next.
@@ -420,6 +416,7 @@ export function BuildFacilityTutorialDialog({
   onExit,
   onJumpToTutorial,
   onNext,
+  tutorial,
   visible,
 }: {
   highlightLayout: HighlightLayout | null;
@@ -428,9 +425,11 @@ export function BuildFacilityTutorialDialog({
   onExit: () => void;
   onNext: () => void;
   onJumpToTutorial?: (tutorial: TutorialJumpTarget) => void;
+  tutorial: TutorialStagePresentation | null;
   visible: boolean;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  if (!tutorial || tutorial.flow !== "facility") return null;
   return (
     <Portal>
       {visible && (
@@ -442,14 +441,14 @@ export function BuildFacilityTutorialDialog({
           )}
           <View pointerEvents="auto" style={styles.tutorialBuildFacilityCard}>
             <TutorialGuideCharacter />
-            <Text style={styles.tutorialDialogTitle}>Build a facility</Text>
+            <Text style={styles.tutorialDialogTitle}>{tutorial.title}</Text>
             <TutorialCollapseControl
               collapsed={collapsed}
               onPress={() => setCollapsed((value) => !value)}
             />
             {!collapsed && (
               <View style={styles.tutorialDialogContent}>
-                <Text style={styles.sectionEyebrow}>STEP 2 OF 10</Text>
+                <Text style={styles.sectionEyebrow}>STEP {tutorial.progress.step} OF {tutorial.progress.total}</Text>
                 <Text style={styles.dialogDescription}>
                   Press “Build facility” to construct your first facility.
                 </Text>
@@ -464,28 +463,27 @@ export function BuildFacilityTutorialDialog({
 }
 
 function FacilityChoiceDialog({
-  title,
-  step,
   children,
   onBack,
   onExit,
   onJumpToTutorial,
   onNext,
+  tutorial,
   visible,
 }: NavigationProps & {
-  title: string;
-  step: number;
   children: ReactNode;
+  tutorial: TutorialStagePresentation | null;
   visible: boolean;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  if (!tutorial || tutorial.flow !== "facility") return null;
   return (
     <Portal>
       {visible && (
         <View pointerEvents="box-none" style={styles.tutorialProductionOverlay}>
           <View pointerEvents="auto" style={styles.tutorialFacilityChoiceCard}>
             <TutorialGuideCharacter />
-            <Text style={styles.tutorialDialogTitle}>{title}</Text>
+            <Text style={styles.tutorialDialogTitle}>{tutorial.title}</Text>
             <TutorialCollapseControl
               collapsed={collapsed}
               onPress={() => setCollapsed((value) => !value)}
@@ -494,7 +492,7 @@ function FacilityChoiceDialog({
               <View style={styles.tutorialFacilityChoiceContent}>
                 <Text
                   style={styles.sectionEyebrow}
-                >{`STEP ${step} OF 10`}</Text>
+                >STEP {tutorial.progress.step} OF {tutorial.progress.total}</Text>
                 {children}
               </View>
             )}
@@ -507,14 +505,10 @@ function FacilityChoiceDialog({
 }
 
 export function ConstructionTutorialDialog(
-  props: NavigationProps & { visible: boolean },
+  props: NavigationProps & { tutorial: TutorialStagePresentation | null; visible: boolean },
 ) {
   return (
-    <FacilityChoiceDialog
-      {...props}
-      step={3}
-      title="Choose your first facility"
-    >
+    <FacilityChoiceDialog {...props}>
       <Text style={styles.dialogDescription}>
         You can choose between three affordable starting facilities. Each choice
         opens a different production path.
@@ -532,10 +526,10 @@ export function ConstructionTutorialDialog(
 }
 
 export function FacilityChoiceTutorialDialog(
-  props: NavigationProps & { visible: boolean },
+  props: NavigationProps & { tutorial: TutorialStagePresentation | null; visible: boolean },
 ) {
   return (
-    <FacilityChoiceDialog {...props} step={4} title="Comparing facilities">
+    <FacilityChoiceDialog {...props}>
       <Text style={styles.dialogDescription}>
         Every facility has three costs:{" "}
         <TooltipMaterialIcon
@@ -565,12 +559,12 @@ export function FacilityChoiceTutorialDialog(
 }
 
 export function ConstructionConfirmationTutorialDialog(
-  props: NavigationProps & { visible: boolean },
+  props: NavigationProps & { tutorial: TutorialStagePresentation | null; visible: boolean },
 ) {
   if (!props.visible) return null;
 
   return (
-    <FacilityChoiceDialog {...props} step={5} title="Confirm construction">
+    <FacilityChoiceDialog {...props}>
       <Text style={styles.dialogDescription}>
         Review the land purchase and the Construction Materials and Industrial
         Machines taken from your inventory.
@@ -587,52 +581,47 @@ export function ConstructionConfirmationTutorialDialog(
   );
 }
 
-type FirstFacilityStep =
-  | "overview"
-  | "header"
-  | "footprint"
-  | "efficiency"
-  | "repair"
-  | "research"
-  | "recipe-card"
-  | "recipe-automation"
-  | "recipe-economics"
-  | "upgrades"
-  | "inventory-transition";
-
 export function InventoryTutorialDialog({
+  inventoryResource,
   onBack,
   onDismiss,
   onExit,
   onJumpToTutorial,
   onNext,
+  tutorial,
   visible,
-}: NavigationProps & { onDismiss: () => void; visible: boolean }) {
+}: NavigationProps & { inventoryResource: ResourceType | null; onDismiss: () => void; tutorial: TutorialStagePresentation | null; visible: boolean }) {
   const [collapsed, setCollapsed] = useState(false);
+  if (!tutorial || tutorial.flow !== "inventory") return null;
   return (
     <Portal>
       {visible && (
         <View pointerEvents="box-none" style={styles.tutorialFirstFacilityOverlay}>
-          <FullScreenDimmer onDismiss={onDismiss} />
+          {tutorial.kind !== 'inventory-resource' && <FullScreenDimmer onDismiss={onDismiss} />}
           <View pointerEvents="auto" style={styles.tutorialFirstFacilityOverlayCard}>
             <TutorialGuideCharacter />
-            <Text style={styles.tutorialDialogTitle}>Inventory and markets</Text>
+            <Text style={styles.tutorialDialogTitle}>{tutorial.title}</Text>
             <TutorialCollapseControl
               collapsed={collapsed}
               onPress={() => setCollapsed((value) => !value)}
             />
             {!collapsed && (
               <View style={styles.tutorialDialogContent}>
-                <Text style={styles.sectionEyebrow}>STEP 1 OF 1</Text>
-                <Text style={styles.dialogDescription}>
+                <Text style={styles.sectionEyebrow}>STEP {tutorial.progress.step} OF {tutorial.progress.total}</Text>
+                {tutorial.kind === 'inventory-resource' ? <Text style={styles.dialogDescription}>
+                  Expand {inventoryResource ? getResource(inventoryResource).name : 'the produced resource'} to inspect its market details and trading controls.
+                </Text> : <>
+                  <Text style={styles.dialogDescription}>
                   The resources your facilities produce can be seen in the
                   Inventory. This is also where you can see resource prices on
                   the different markets.
-                </Text>
-                <Text style={styles.dialogDescription}>
-                  You can manually buy and sell resources here, and set up
-                  automatic buying and selling orders.
-                </Text>
+                  </Text>
+                  <Text style={styles.dialogDescription}>
+                    You can manually buy and sell resources here, and set up
+                    automatic buying and selling orders.
+                  </Text>
+                </>
+                }
               </View>
             )}
             <TutorialActions onBack={onBack} onExit={onExit} onJumpToTutorial={onJumpToTutorial} onNext={onNext} />
@@ -656,6 +645,7 @@ export function FirstFacilityTutorialDialog({
   recipeName,
   research,
   step,
+  tutorial,
   visible,
 }: {
   facilityType: FacilityType | null;
@@ -668,12 +658,15 @@ export function FirstFacilityTutorialDialog({
   nextLabel?: string;
   recipeName: Recipe["name"] | null;
   research: ResearchLedger;
-  step: FirstFacilityStep;
+  step: FirstFacilityTutorialStep;
+  tutorial: TutorialStagePresentation | null;
   visible: boolean;
   onJumpToTutorial?: (tutorial: TutorialJumpTarget) => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
-  if (!facilityType) return null;
+  const { height } = useWindowDimensions();
+  if (!facilityType || !tutorial || tutorial.flow !== "facility") return null;
+  const isStaffingStep = step === "staff-management" || step === "staff-training";
   const definition = getFacilityDefinition(facilityType);
   const selectedRecipe =
     (recipeName
@@ -722,52 +715,8 @@ export function FirstFacilityTutorialDialog({
       </Text>
     </>
   );
-  const stepNumber =
-    step === "overview"
-      ? 6
-      : step === "header"
-        ? 7
-        : step === "efficiency"
-          ? 8
-          : step === "repair"
-            ? 9
-            : step === "footprint"
-              ? 10
-              : step === "research"
-                ? 11
-                : step === "recipe-card"
-                  ? 12
-                : step === "recipe-automation"
-                  ? 13
-                : step === "recipe-economics"
-                  ? 14
-                  : step === "upgrades"
-                    ? 15
-                    : 16;
-  const title =
-    step === "overview"
-      ? "Your first facility"
-      : step === "header"
-        ? "Your facility header"
-        : step === "footprint"
-          ? "Industrial Footprint"
-          : step === "efficiency"
-            ? "Facility efficiency"
-            : step === "repair"
-              ? "Repair and condition"
-              : step === "research"
-                ? "First Recipe"
-                : step === "recipe-card"
-                  ? "Recipe and production cycle"
-                  : step === "recipe-automation"
-                    ? "Automatic production"
-                  : step === "recipe-economics"
-                    ? "Recipe economics"
-                    : step === "upgrades"
-                      ? "Facility upgrades"
-                      : "Your facility is ready";
   const spotlight =
-    step === "research" && focusLayout ? (
+    step === "research" && focus && focusLayout ? (
       <View
         pointerEvents="none"
         style={[
@@ -798,10 +747,13 @@ export function FirstFacilityTutorialDialog({
       </>
     ) : step === "header" ||
       step === "efficiency" ||
+      step === "staff-management" ||
+      step === "staff-training" ||
       step === "repair" ||
       step === "footprint" ||
       step === "recipe-card" ||
       step === "recipe-automation" ||
+      step === "recipe-optional-inputs" ||
       step === "recipe-economics" ||
       step === "upgrades" ||
       step === "inventory-transition" ? null : (
@@ -879,13 +831,40 @@ export function FirstFacilityTutorialDialog({
       <Text style={styles.dialogDescription}>
         In the input/output card, the{" "}
         <TooltipMaterialIcon color={colors.primary} label="Buy resources" name={APP_ICONS.marketBuy} size={15} />{" "}
-        button buys the required input resources for one production round. The{" "}
+        button buys missing input resources for one production round. The{" "}
         <TooltipMaterialIcon color={colors.primary} label="Automatic resource buying" name={APP_ICONS.marketAutoBuy} size={15} />{" "}
-        button permanently activates automatic buying for the facility’s input
-        resources.
+        button permanently activates automatic buying for the facility’s
+        production-cycle input resources.
       </Text>
       <Text style={styles.dialogDescription}>
-        We will explain automatic resource buying in more detail later.
+        Automatic resource buying is covered in more detail later. Optional
+        inputs and their checkbox are explained in the next step.
+      </Text>
+    </>
+  );
+  const recipeOptionalInputsContent = (
+    <>
+      <Text style={styles.dialogDescription}>
+        Some recipes have optional inputs. They never stop a recipe from
+        running, but they can change the production result when consumed.
+      </Text>
+      <Text style={styles.dialogDescription}>
+        In the input/output card, the{" "}
+        <TooltipMaterialIcon
+          color={colors.primary}
+          label="Optional input enabled"
+          name="checkbox-marked"
+          size={15}
+        />{" "}
+        checkbox beside an optional resource toggles automatic use for the
+        recipes in your production cycle. When checked, the facility uses that
+        resource when it is available; when unchecked, it leaves the resource
+        out.
+      </Text>
+      <Text style={styles.dialogDescription}>
+        Optional inputs can change output amount, quality, or required input
+        amounts. When enabled, they are included in the cycle inputs used by
+        the Buy and Automatic buying buttons.
       </Text>
     </>
   );
@@ -914,6 +893,17 @@ export function FirstFacilityTutorialDialog({
         upgrades, so they can change as your company develops.
       </Text>
       <Text style={styles.dialogDescription}>
+        The{" "}
+        <TooltipMaterialIcon
+          color={colors.primary}
+          label="Quality upgrade"
+          name={APP_ICONS.quality}
+          size={15}
+        />{" "}
+        Quality upgrade raises the facilityâ€™s output-quality limit, which can
+        improve the quality of future products.
+      </Text>
+      <Text style={styles.dialogDescription}>
         We will explore market prices, research effects, upgrades, and
         production economics in more detail later.
       </Text>
@@ -926,6 +916,8 @@ export function FirstFacilityTutorialDialog({
       recipeCardContent
     ) : step === "recipe-automation" ? (
       recipeAutomationContent
+    ) : step === "recipe-optional-inputs" ? (
+      recipeOptionalInputsContent
     ) : step === "recipe-economics" ? (
       recipeEconomicsContent
     ) : step === "upgrades" ? (
@@ -993,7 +985,19 @@ export function FirstFacilityTutorialDialog({
             name={APP_ICONS.staffing}
             size={15}
           />{" "}
-          current and required staff,{" "}
+          current and required staff
+          {getFacilitySizeOptions(facilityType).length > 1 && (
+            <>
+              ,{" "}
+              <TooltipMaterialIcon
+                color={colors.primary}
+                label="Facility size"
+                name={APP_ICONS.facilityFarm}
+                size={15}
+              />{" "}
+              facility size
+            </>
+          )},{" "}
           <TooltipMaterialIcon
             color={colors.primary}
             label="Efficiency"
@@ -1018,6 +1022,12 @@ export function FirstFacilityTutorialDialog({
             label="Durability upgrade"
             name={APP_ICONS.durability}
             size={15}
+          />{" "}
+          <TooltipMaterialIcon
+            color={colors.primary}
+            label="Quality upgrade"
+            name={APP_ICONS.quality}
+            size={15}
           />
           . Staffing directly affects efficiency. Upgrades influence efficiency
           indirectly, which we will explore later.
@@ -1037,12 +1047,36 @@ export function FirstFacilityTutorialDialog({
       resourceMessage
     ) : step === "efficiency" ? (
       <Text style={styles.dialogDescription}>
-        The Facility efficiency tab lets you set the staffing level for this
-        facility. Understaffing reduces efficiency. You can also staff above the
-        requirement, but extra staff increases wear and tear. You can try and
-        increase or decrease the staff now, you will see facility efficiency
-        move imidiatly
+        Open the{" "}
+          <TooltipMaterialIcon
+            color={colors.primary}
+            label="Staffing management"
+            name={APP_ICONS.staffing}
+            size={15}
+          />{" "}
+        staffing controls to see how your workers affect this facility.
       </Text>
+    ) : step === "staff-management" ? (
+      <Text style={styles.dialogDescription}>
+        Use the staff slider to set the number of workers. Understaffing reduces
+        facility efficiency; adding staff can improve it, but raises wear and
+        tear. Try changing the number now and watch the projected efficiency
+        update immediately.
+      </Text>
+    ) : step === "staff-training" ? (
+      <>
+        <Text style={styles.dialogDescription}>
+          Staff Q is the shared knowledge and experience of the assigned staff.
+          It affects staffing efficiency and lets the facility produce
+          higher-quality products. Training and production experience can raise
+          Staff Q over time.
+        </Text>
+        <Text style={styles.dialogDescription}>
+          Expected wage is neutral for the current Staff Q and economy. Paying
+          below or above it creates wage pressure that changes Staff Q over
+          time.
+        </Text>
+      </>
     ) : (
       <>
         <Text style={styles.dialogDescription}>
@@ -1093,21 +1127,28 @@ export function FirstFacilityTutorialDialog({
           {spotlight}
           <View
             pointerEvents="auto"
-            style={styles.tutorialFirstFacilityOverlayCard}
+            style={[
+              styles.tutorialFirstFacilityOverlayCard,
+              isStaffingStep && { maxHeight: height * 0.46 },
+            ]}
           >
             <TutorialGuideCharacter />
-            <Text style={styles.tutorialDialogTitle}>{title}</Text>
+            <Text style={styles.tutorialDialogTitle}>{tutorial.title}</Text>
             <TutorialCollapseControl
               collapsed={collapsed}
               onPress={() => setCollapsed((value) => !value)}
             />
             {!collapsed && (
-              <View style={styles.tutorialDialogContent}>
+              <ScrollView
+                contentContainerStyle={styles.tutorialDialogContent}
+                nestedScrollEnabled
+                style={isStaffingStep ? { maxHeight: height * 0.22 } : undefined}
+              >
                 <Text
                   style={styles.sectionEyebrow}
-                >{`STEP ${stepNumber} OF 16`}</Text>
+                >STEP {tutorial.progress.step} OF {tutorial.progress.total}</Text>
                 {content}
-              </View>
+              </ScrollView>
             )}
             <TutorialActions nextLabel={step === "inventory-transition" ? "Go to Inventory" : undefined} onBack={onBack} onExit={onExit} onJumpToTutorial={onJumpToTutorial} onNext={onNext} />
           </View>

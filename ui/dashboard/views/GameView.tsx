@@ -33,6 +33,8 @@ export function GameViewContent({
   facilities,
   finance,
   onFirstFacilityRecipeSelected,
+  onFirstFacilityStaffingOpened,
+  onFirstFacilityStaffingClosed,
   onOpenCustomer,
   onOpenCustomerType,
   fulfillSalesOrder,
@@ -87,6 +89,8 @@ export function GameViewContent({
   facilities: FacilityCollection;
   finance: Finance;
   onFirstFacilityRecipeSelected?: (recipeName: Recipe['name']) => void;
+  onFirstFacilityStaffingOpened?: () => void;
+  onFirstFacilityStaffingClosed?: () => void;
   onOpenCustomer: (customerId: string) => void;
   onOpenCustomerType: (customerType: SalesCustomerType) => void;
   fulfillSalesOrder: (orderId: string) => boolean;
@@ -134,8 +138,8 @@ export function GameViewContent({
   switch (activeTab) {
     case 'company': return <CompanyView companyName={companyName} onCompanyOverviewLayout={onCompanyOverviewLayout} />;
     case 'inventory':
-    case 'market': return <InventoryView buyMarketResource={buyMarketResource} currentGameTimeMs={currentGameTimeMs} facilities={facilities} finance={finance} inventory={inventory} market={market} onlyInStock={onlyInStock} resourceFlow={resourceFlow} showActiveRecipeInputs={showActiveRecipeInputs} sellMarketResource={sellMarketResource} setMarketAutomation={setMarketAutomation} setOnlyInStock={setOnlyInStock} setShowActiveRecipeInputs={setShowActiveRecipeInputs} />;
-    case 'production': return <ProductionView collapsedFacilities={collapsedFacilities} tutorial={tutorial} onBuildFacilityLayout={onBuildFacilityLayout} onFirstFacilityFocusLayout={onFirstFacilityFocusLayout} onFirstFacilityRecipeSelected={onFirstFacilityRecipeSelected} onScrollBeginDrag={onScrollBeginDrag} openConstructionYard={openConstructionYard} requestFacilityDestruction={requestFacilityDestruction} setCollapsedFacilities={setCollapsedFacilities} />;
+    case 'market': return <InventoryView buyMarketResource={buyMarketResource} currentGameTimeMs={currentGameTimeMs} facilities={facilities} finance={finance} inventory={inventory} isTutorial={tutorial.tutorialStageKind === 'inventory' || tutorial.tutorialStageKind === 'inventory-resource'} isTutorialResourceStep={tutorial.tutorialStageKind === 'inventory-resource'} market={market} onlyInStock={onlyInStock} resourceFlow={resourceFlow} showActiveRecipeInputs={showActiveRecipeInputs} sellMarketResource={sellMarketResource} setMarketAutomation={setMarketAutomation} setOnlyInStock={setOnlyInStock} setShowActiveRecipeInputs={setShowActiveRecipeInputs} tutorialResource={tutorial.inventoryResource} />;
+    case 'production': return <ProductionView collapsedFacilities={collapsedFacilities} tutorial={tutorial} onBuildFacilityLayout={onBuildFacilityLayout} onFirstFacilityFocusLayout={onFirstFacilityFocusLayout} onFirstFacilityRecipeSelected={onFirstFacilityRecipeSelected} onFirstFacilityStaffingOpened={onFirstFacilityStaffingOpened} onFirstFacilityStaffingClosed={onFirstFacilityStaffingClosed} onScrollBeginDrag={onScrollBeginDrag} openConstructionYard={openConstructionYard} requestFacilityDestruction={requestFacilityDestruction} setCollapsedFacilities={setCollapsedFacilities} />;
     case 'sales': return <SalesView companyPrestige={companyPrestige} customerPipelineProgress={customerPipelineProgress} currentGameTimeMs={currentGameTimeMs} economyPhase={finance.getEconomyPhase()} fulfillSalesOrder={fulfillSalesOrder} getResearchAvailability={getResearchAvailability} inventory={inventory} market={market} maximumOpenOrders={maximumOpenOrders} onOpenCustomer={onOpenCustomer} onOpenCustomerType={onOpenCustomerType} rejectSalesOrder={rejectSalesOrder} research={research} salesOrderAcquisition={salesOrderAcquisition} salesOrders={salesOrders} startResearch={startResearch} />;
     case 'finance': return <FinanceView achievements={achievements} companyStartedAtGameTimeMs={companyStartedAtGameTimeMs} currentGameTimeMs={currentGameTimeMs} facilities={facilities} finance={finance} inventory={inventory} market={market} onAcceptLoanOffer={onAcceptLoanOffer} onExtraPayment={onExtraLoanPayment} onRemoveLoanOffer={onRemoveLoanOffer} onRemoveUnavailableLoanOffers={onRemoveUnavailableLoanOffers} onRepayInFull={onRepayLoanInFull} onStartLoanSearch={onStartLoanSearch} research={research} />;
   }

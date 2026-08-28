@@ -12,7 +12,7 @@ import {
   FACILITY_REPAIR_MATERIAL_COST_RATE,
   getFacilityDefinition,
 } from './facilityConstants';
-import { calculateFacilityEffectiveWork, calculateRecipeInputQ, calculateRecipeInputSourceCost, getFacilityAvailableRecipeInputPlan, getFacilityRecipeInputPlan, type RecipeInputPlan, getRecipeProductionConditionLoss } from './facilityProduction';
+import { calculateFacilityEffectiveWork, calculateRecipeInputQ, calculateRecipeInputSourceCost, getFacilityAvailableRecipeInputPlan, getFacilityRecipeInputPlan, getFacilityRecipeOutputRequiredWork, hasIndependentOutputProgress, type RecipeInputPlan, getRecipeProductionConditionLoss, getRecipeProductionConditionLossPerMinute } from './facilityProduction';
 import { getConditionDecayMultiplier, getFacilityConditionEfficiency, getOverstaffingConditionDecayMultiplier, type FacilityUpgradeKind } from './facilityUpgrades';
 
 function clamp(value: number, minimum: number, maximum: number): number {
@@ -75,12 +75,15 @@ export function calculateRecipeValuePerMinute(
   const effects = inputEffects ?? plan.effects;
 
   const cyclesPerMinute = workPerMinute / (recipe.requiredWork * multiplier);
-  const outputValue = recipe.outputs.reduce(
-    (total, output) => total + output.amount * multiplier * outputMultiplier * effects.outputMultiplier * (getOutputQuality
+  const outputValue = recipe.outputs.reduce((total, output) => {
+    const unitPrice = getOutputQuality
       ? market.getLocalSalePrice(output.resourceType, getOutputQuality(output.resourceType))
-      : market.getLocalPrice(output.resourceType)),
-    0,
-  );
+      : market.getLocalPrice(output.resourceType);
+    const outputCyclesPerMinute = hasIndependentOutputProgress(recipe)
+      ? workPerMinute / getFacilityRecipeOutputRequiredWork(recipe, output, multiplier)
+      : cyclesPerMinute;
+    return total + output.amount * multiplier * outputMultiplier * effects.outputMultiplier * unitPrice * outputCyclesPerMinute;
+  }, 0);
   const inputValue = plan.inputs.reduce(
     (total, input) => total + input.amount * (getInputQuality
       ? market.getLocalSalePrice(input.resourceType, getInputQuality(input.resourceType))
@@ -88,7 +91,7 @@ export function calculateRecipeValuePerMinute(
     0,
   );
 
-  return (outputValue - inputValue) * cyclesPerMinute;
+  return outputValue - inputValue * cyclesPerMinute;
 }
 
 /** Converts condition wear into the construction-material cost needed to repair it. */
@@ -101,8 +104,8 @@ export function calculateFacilityDecayMaterialCostPerMinute(
   sizeMultiplier = 1,
 ): number {
   const condition = clamp(facilityCondition, 0, 1);
-  const productionConditionLossPerMinute = recipe && recipe.requiredWork > 0
-    ? Math.max(0, effectiveWorkPerMinute) / (recipe.requiredWork * Math.max(1, sizeMultiplier)) * getRecipeProductionConditionLoss(recipe)
+  const productionConditionLossPerMinute = recipe
+    ? getRecipeProductionConditionLossPerMinute(recipe, Math.max(0, effectiveWorkPerMinute), sizeMultiplier)
     : 0;
   const conditionLossPerMinute = (
     FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE + productionConditionLossPerMinute
@@ -206,6 +209,7 @@ export function calculateCurrentFacilityProductionEconomics(
       productionMaxQ: getProductionMaxQ(resourceType),
       staffMaxQ: facility.staffQuality,
       outputBonusQ: (output.outputBonusQ ?? 0) + (capturedInputEffects?.qualityBoost ?? availableInputPlan.effects.qualityBoost),
+      outputQualityMultiplier: output.outputQualityMultiplier,
     }).outputQ;
   };
   const staffWagePerMinute = calculateFacilityStaffWagePerMinute(facility.assignedWorkers, facility.staffWagePerWorkerPerMinute);
@@ -236,8 +240,8 @@ export function calculateFacilityDecayCostPerMinute(
   sizeMultiplier = 1,
 ): number {
   const condition = clamp(facilityCondition, 0, 1);
-  const productionConditionLossPerMinute = recipe && recipe.requiredWork > 0
-    ? Math.max(0, effectiveWorkPerMinute) / (recipe.requiredWork * Math.max(1, sizeMultiplier)) * getRecipeProductionConditionLoss(recipe)
+  const productionConditionLossPerMinute = recipe
+    ? getRecipeProductionConditionLossPerMinute(recipe, Math.max(0, effectiveWorkPerMinute), sizeMultiplier)
     : 0;
   const conditionLossPerMinute = (
     FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE + productionConditionLossPerMinute
@@ -401,9 +405,9 @@ export function calculateProjectedFacilityQualityUpgradeNetGainPerMinute(
 
   return recipe.outputs.reduce((total, output) => {
     const productionMaxQ = productionMaxQForResource(output.resourceType);
-    const currentQuality = calculateOutputQuality({ researchMaxQ: researchMaxQForResource(output.resourceType), weightedInputQ, upgradeMaxQ: currentLimit, productionMaxQ, staffMaxQ, outputBonusQ: (output.outputBonusQ ?? 0) + (inputEffects?.qualityBoost ?? 0) }).outputQ;
-    const nextQuality = calculateOutputQuality({ researchMaxQ: researchMaxQForResource(output.resourceType), weightedInputQ, upgradeMaxQ: nextLimit, productionMaxQ, staffMaxQ, outputBonusQ: (output.outputBonusQ ?? 0) + (inputEffects?.qualityBoost ?? 0) }).outputQ;
-    const unitsPerMinute = output.amount * view.sizeMultiplier * view.outputMultiplier * (inputEffects?.outputMultiplier ?? 1) * effectiveWorkPerMinute / (recipe.requiredWork * view.sizeMultiplier);
+  const currentQuality = calculateOutputQuality({ researchMaxQ: researchMaxQForResource(output.resourceType), weightedInputQ, upgradeMaxQ: currentLimit, productionMaxQ, staffMaxQ, outputBonusQ: (output.outputBonusQ ?? 0) + (inputEffects?.qualityBoost ?? 0), outputQualityMultiplier: output.outputQualityMultiplier }).outputQ;
+  const nextQuality = calculateOutputQuality({ researchMaxQ: researchMaxQForResource(output.resourceType), weightedInputQ, upgradeMaxQ: nextLimit, productionMaxQ, staffMaxQ, outputBonusQ: (output.outputBonusQ ?? 0) + (inputEffects?.qualityBoost ?? 0), outputQualityMultiplier: output.outputQualityMultiplier }).outputQ;
+    const unitsPerMinute = output.amount * view.sizeMultiplier * view.outputMultiplier * (inputEffects?.outputMultiplier ?? 1) * effectiveWorkPerMinute / (hasIndependentOutputProgress(recipe) ? getFacilityRecipeOutputRequiredWork(recipe, output, view.sizeMultiplier) : recipe.requiredWork * view.sizeMultiplier);
     return total + unitsPerMinute * (market.getLocalSalePrice(output.resourceType, nextQuality) - market.getLocalSalePrice(output.resourceType, currentQuality));
   }, 0);
 }

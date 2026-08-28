@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PanResponder, Pressable, StyleSheet, View } from 'react-native';
 import {
   Button,
@@ -56,6 +56,9 @@ export function InventoryView({
   facilities,
   finance,
   inventory,
+  isTutorial = false,
+  isTutorialResourceStep = false,
+  tutorialResource,
   market,
   onlyInStock,
   resourceFlow,
@@ -70,6 +73,8 @@ export function InventoryView({
   facilities: FacilityCollection;
   finance: Finance;
   inventory: Inventory;
+  isTutorial?: boolean;
+  isTutorialResourceStep?: boolean;
   market: Market;
   onlyInStock: boolean;
   resourceFlow: ResourceFlowLedger;
@@ -78,6 +83,7 @@ export function InventoryView({
   setMarketAutomation: (resourceType: (typeof RESOURCE_TYPES)[number], updates: Partial<MarketAutomation>) => boolean;
   setOnlyInStock: (value: boolean) => void;
   setShowActiveRecipeInputs: (value: boolean) => void;
+  tutorialResource?: (typeof RESOURCE_TYPES)[number] | null;
 }) {
   const [multiplier, setMultiplier] = useState<MarketTradeMultiplier>(1);
   const [selectedResource, setSelectedResource] = useState<(typeof RESOURCE_TYPES)[number] | null>(null);
@@ -111,6 +117,9 @@ export function InventoryView({
       },
     }),
   ).current;
+  useEffect(() => {
+    if (isTutorialResourceStep && tutorialResource) setSelectedResource(tutorialResource);
+  }, [isTutorialResourceStep, tutorialResource]);
   const sliderAmount = multiplier === 'all' ? sliderMaximum : multiplier;
   const sliderProgress = sliderPosition(sliderAmount);
   const flowPeriod =
@@ -156,7 +165,7 @@ export function InventoryView({
         title="Inventory"
         subtitle="Review your resources, then open a resource to buy, sell, and automate its market flow."
       />
-      {selectedResource && (
+      {selectedResource && !isTutorial && (
         <View accessibilityLabel="Inventory flow period" style={localStyles.flowPeriodPicker}>
           {INVENTORY_FLOW_PERIODS.map((period) => (
             <Button
@@ -170,7 +179,7 @@ export function InventoryView({
           ))}
         </View>
       )}
-    <View accessibilityLabel={`Trade amount ${multiplier === 'all' ? 'all' : multiplier}`} style={styles.marketSlider}>
+    {!isTutorial && <View accessibilityLabel={`Trade amount ${multiplier === 'all' ? 'all' : multiplier}`} style={styles.marketSlider}>
       <View
         onLayout={(event) => {
           sliderWidthRef.current = event.nativeEvent.layout.width;
@@ -223,8 +232,8 @@ export function InventoryView({
           </Text>
         </Pressable>
       </View>
-    </View>
-    <Pressable
+    </View>}
+    {!isTutorial && <><Pressable
       accessibilityRole="checkbox"
       accessibilityState={{ checked: onlyInStock }}
       onPress={() => setOnlyInStock(!onlyInStock)}
@@ -241,7 +250,7 @@ export function InventoryView({
     >
       <Checkbox status={showActiveRecipeInputs ? 'checked' : 'unchecked'} />
       <Text>Always show active recipe inputs</Text>
-    </Pressable>
+    </Pressable></>}
     {RESOURCE_GROUPS.map((group) => {
       const activeRecipeInputs = new Set(facilities.getAll().flatMap((facility) => {
         const view = facility.getView();
@@ -249,9 +258,10 @@ export function InventoryView({
       }));
       const visibleResources = group.resources.filter(
         (resourceType) =>
-          !onlyInStock ||
+          (!isTutorial && !onlyInStock) ||
           inventory.getAmount(resourceType) > 0 ||
-          (showActiveRecipeInputs && activeRecipeInputs.has(resourceType)),
+          ((isTutorial || showActiveRecipeInputs) && activeRecipeInputs.has(resourceType)) ||
+          (isTutorial && tutorialResource === resourceType),
       );
       if (visibleResources.length === 0) return null;
       const isCollapsed = collapsedGroups[group.id] === true;
@@ -288,7 +298,7 @@ export function InventoryView({
             })} units, quality ${formatNumber(entry.quality, { smartDecimals: true })}`}
             accessibilityRole="button"
             onPress={() => setSelectedResource(isSelected ? null : resourceType)}
-            style={styles.detailRow}
+            style={[styles.detailRow, isTutorialResourceStep && tutorialResource === resourceType && styles.tutorialFirstFacilityCard]}
           >
           <Text variant="bodyLarge">{resource.icon} {resource.name}</Text>
             <View style={styles.inventoryQualityValue}>

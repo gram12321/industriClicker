@@ -153,6 +153,18 @@ export const POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE: Readonly<Record<
     luxury: 0.2,
     resourceElasticity: 0.65,
   },
+  [ResourceType.Timber]: {
+    amountPerPersonPerMinute: 0,
+    baselinePreference: 0.05,
+    luxury: 0.15,
+    resourceElasticity: 0.5,
+  },
+  [ResourceType.Leather]: {
+    amountPerPersonPerMinute: 0,
+    baselinePreference: 0.1,
+    luxury: 0.25,
+    resourceElasticity: 0.45,
+  },
 
   // Construction
   [ResourceType.Bricks]: {
@@ -206,7 +218,7 @@ export const POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE: Readonly<Record<
     resourceElasticity: 0.3,
   },
   [ResourceType.Plastic]: {
-    amountPerPersonPerMinute: 0.00,
+    amountPerPersonPerMinute: 0,
     baselinePreference: 0.01,
     luxury: 0.1,
     resourceElasticity: 0.1,
@@ -228,6 +240,18 @@ export const POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE: Readonly<Record<
     baselinePreference: 0,
     luxury: 1,
     resourceElasticity: 0,
+  },
+  [ResourceType.Planks]: {
+    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0.05,
+    baselinePreference: 0.2,
+    luxury: 0.3,
+    resourceElasticity: 0.45,
+  },
+  [ResourceType.Furniture]: {
+    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0.15,
+    baselinePreference: 0.4,
+    luxury: 0.5,
+    resourceElasticity: 0.35,
   },
   [ResourceType.Wool]: {
     amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0.3125,

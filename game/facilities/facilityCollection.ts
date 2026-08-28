@@ -1,5 +1,5 @@
 import { Facility, type FacilitySnapshot } from './facility';
-import { FACILITY_TYPES, FARM_DEFAULT_SIZE_HECTARES, isValidFacilitySize } from './facilityConstants';
+import { FACILITY_TYPES, getFacilityDefaultSize, isValidFacilitySize } from './facilityConstants';
 import { FacilityType } from './facilityTypes';
 /** Plain collection data used by the game snapshot and Expo SQLite adapter. */
 export type FacilityCollectionSnapshot = {   facilities: FacilitySnapshot[]; };
@@ -36,7 +36,7 @@ export class FacilityCollection {
   }
 
   build(facilityType: FacilityType, sizeHectares?: number): boolean {
-    const selectedSize = sizeHectares ?? (facilityType === FacilityType.Farm ? FARM_DEFAULT_SIZE_HECTARES : 1);
+    const selectedSize = sizeHectares ?? getFacilityDefaultSize(facilityType);
     if (!isValidFacilitySize(facilityType, selectedSize)) {
       return false;
     }

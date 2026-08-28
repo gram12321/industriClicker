@@ -186,6 +186,13 @@ function isRecipeInputEffectsSnapshot(value: unknown): boolean {
     && typeof value.inputMultiplier === 'number' && Number.isFinite(value.inputMultiplier) && value.inputMultiplier > 0 && value.inputMultiplier <= 1;
 }
 
+function isRecipeOutputProgressSnapshot(value: unknown): boolean {
+  return isRecord(value) && Object.entries(value).every(([recipeName, outputs]) => isRecord(outputs)
+    && Object.values(RecipeName).includes(recipeName as RecipeName)
+    && Object.entries(outputs).every(([resourceType, progress]) => RESOURCE_TYPES.includes(resourceType as ResourceType)
+      && typeof progress === 'number' && Number.isFinite(progress) && progress >= 0));
+}
+
 /** Structural guard used by the company-scoped SQLite save adapter. */
 export function isGameSnapshot(value: unknown): value is GameSnapshot {
   if (!isRecord(value) || !isPopulationSnapshot(value.population)
@@ -255,6 +262,7 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
       && (facility.recipeInputQ === null || (typeof facility.recipeInputQ === 'number' && Number.isFinite(facility.recipeInputQ) && facility.recipeInputQ > 0))
       && (typeof facility.recipeInputSourceCost === 'number' && Number.isFinite(facility.recipeInputSourceCost) && facility.recipeInputSourceCost >= 0 || facility.recipeInputSourceCost === null)
       && isRecipeInputEffectsSnapshot(facility.recipeInputEffects)
+      && isRecipeOutputProgressSnapshot(facility.recipeOutputProgress)
       && isOptionalInputSettingsSnapshot(facility.optionalInputSettings)
        && typeof facility.qualityUpgradeLevel === 'number'
        && Number.isInteger(facility.qualityUpgradeLevel)
