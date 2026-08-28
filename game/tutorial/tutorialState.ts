@@ -30,6 +30,7 @@ const TUTORIAL_STAGES = [
   { flow: 'facility', kind: 'first-facility-upgrades', firstFacilityStep: 'upgrades', title: 'Facility upgrades' },
   { flow: 'facility', kind: 'first-facility-inventory-transition', firstFacilityStep: 'inventory-transition', nextKind: 'inventory', title: 'Your facility is ready' },
   { flow: 'inventory', kind: 'inventory', previousKind: 'first-facility-upgrades', title: 'Inventory and markets' },
+  { flow: 'inventory', kind: 'inventory-resource', previousKind: 'inventory', title: 'Open a produced resource' },
 ] as const;
 
 type TutorialStageDefinition = (typeof TUTORIAL_STAGES)[number];
@@ -77,7 +78,7 @@ export function getNextTutorialStage(stage: TutorialStage): TutorialStage | null
   const flowStages = getTutorialFlowStages(definition.flow);
   const index = flowStages.findIndex((candidate) => candidate.kind === definition.kind);
   const nextStage = flowStages[index + 1];
-  if (nextStage) return { kind: nextStage.kind };
+  if (nextStage) return { kind: nextStage.kind } as TutorialStage;
   return 'nextKind' in definition ? { kind: definition.nextKind } as TutorialStage : null;
 }
 
@@ -88,7 +89,7 @@ export function getPreviousTutorialStage(stage: TutorialStage): TutorialStage | 
   const flowStages = getTutorialFlowStages(definition.flow);
   const index = flowStages.findIndex((candidate) => candidate.kind === definition.kind);
   const previousStage = flowStages[index - 1];
-  return previousStage ? { kind: previousStage.kind } : null;
+  return previousStage ? { kind: previousStage.kind } as TutorialStage : null;
 }
 
 export type TutorialProductionPresentation = {
@@ -98,6 +99,8 @@ export type TutorialProductionPresentation = {
   isBuildFacilityTutorial: boolean;
   isFirstFacilityTutorial: boolean;
   isProductionTutorial: boolean;
+  inventoryResource?: import('@/game/resources').ResourceType | null;
+  tutorialStageKind?: TutorialStage['kind'];
 };
 
 export function getTutorialProductionPresentation(stage: TutorialStage | null, recipeName: Recipe['name'] | null, isRecipeFocusActive: boolean): TutorialProductionPresentation {

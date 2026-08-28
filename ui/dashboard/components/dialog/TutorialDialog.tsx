@@ -582,6 +582,7 @@ export function ConstructionConfirmationTutorialDialog(
 }
 
 export function InventoryTutorialDialog({
+  inventoryResource,
   onBack,
   onDismiss,
   onExit,
@@ -589,14 +590,14 @@ export function InventoryTutorialDialog({
   onNext,
   tutorial,
   visible,
-}: NavigationProps & { onDismiss: () => void; tutorial: TutorialStagePresentation | null; visible: boolean }) {
+}: NavigationProps & { inventoryResource: ResourceType | null; onDismiss: () => void; tutorial: TutorialStagePresentation | null; visible: boolean }) {
   const [collapsed, setCollapsed] = useState(false);
   if (!tutorial || tutorial.flow !== "inventory") return null;
   return (
     <Portal>
       {visible && (
         <View pointerEvents="box-none" style={styles.tutorialFirstFacilityOverlay}>
-          <FullScreenDimmer onDismiss={onDismiss} />
+          {tutorial.kind !== 'inventory-resource' && <FullScreenDimmer onDismiss={onDismiss} />}
           <View pointerEvents="auto" style={styles.tutorialFirstFacilityOverlayCard}>
             <TutorialGuideCharacter />
             <Text style={styles.tutorialDialogTitle}>{tutorial.title}</Text>
@@ -607,15 +608,20 @@ export function InventoryTutorialDialog({
             {!collapsed && (
               <View style={styles.tutorialDialogContent}>
                 <Text style={styles.sectionEyebrow}>STEP {tutorial.progress.step} OF {tutorial.progress.total}</Text>
-                <Text style={styles.dialogDescription}>
+                {tutorial.kind === 'inventory-resource' ? <Text style={styles.dialogDescription}>
+                  Expand {inventoryResource ? getResource(inventoryResource).name : 'the produced resource'} to inspect its market details and trading controls.
+                </Text> : <>
+                  <Text style={styles.dialogDescription}>
                   The resources your facilities produce can be seen in the
                   Inventory. This is also where you can see resource prices on
                   the different markets.
-                </Text>
-                <Text style={styles.dialogDescription}>
-                  You can manually buy and sell resources here, and set up
-                  automatic buying and selling orders.
-                </Text>
+                  </Text>
+                  <Text style={styles.dialogDescription}>
+                    You can manually buy and sell resources here, and set up
+                    automatic buying and selling orders.
+                  </Text>
+                </>
+                }
               </View>
             )}
             <TutorialActions onBack={onBack} onExit={onExit} onJumpToTutorial={onJumpToTutorial} onNext={onNext} />
