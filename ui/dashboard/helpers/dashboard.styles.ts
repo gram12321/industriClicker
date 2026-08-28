@@ -223,6 +223,7 @@ export const styles = StyleSheet.create({
   productionProgressHeader: { alignItems: 'flex-start', flexDirection: 'row', gap: 8 },
   productionProgressMeta: { alignItems: 'flex-end', flexShrink: 1, gap: 1 },
   productionProgressValues: { flex: 1, minWidth: 0 },
+  productionInlineRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, minWidth: 0 },
   productionTimeLeft: { color: colors.muted, flexShrink: 1, fontSize: 12 },
   productionValue: { color: colors.primary, fontSize: 12, fontWeight: '700' },
   prestigeInline: { alignItems: 'center', flexDirection: 'row', gap: 3, minHeight: 44, paddingHorizontal: 4 },
