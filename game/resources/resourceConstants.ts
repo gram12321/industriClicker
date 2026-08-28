@@ -59,9 +59,15 @@ export const RESOURCE_TYPES = [
   ResourceType.Leather,
   ResourceType.Furniture,
   ResourceType.Wool,
+  ResourceType.HouseholdCleaningProducts,
+  ResourceType.PaintHomeCoatings,
+  ResourceType.GardenSupplies,
+  ResourceType.DisplayPanels,
+  ResourceType.PersonalElectronics,
+  ResourceType.HouseholdAppliances,
 ] as const;
 
-export type ResourceGroup = 'food' | 'raw-resources' | 'construction' | 'manufacturing' | 'utilities';
+export type ResourceGroup = 'food' | 'raw-resources' | 'construction' | 'intermediates' | 'manufacturing' | 'utilities';
 
 /** Player-facing resource groupings shared by Pedia and other catalogues; each group is alphabetized by display name. */
 export const RESOURCE_GROUPS: ReadonlyArray<{ id: ResourceGroup; label: string; resources: readonly ResourceType[] }> = [
@@ -89,9 +95,12 @@ export const RESOURCE_GROUPS: ReadonlyArray<{ id: ResourceGroup; label: string; 
       ResourceType.Copper,
       ResourceType.Gold,
       ResourceType.Iron,
+      ResourceType.Leather,
       ResourceType.Minerals,
       ResourceType.Sand,
       ResourceType.Stone,
+      ResourceType.Timber,
+      ResourceType.Wool,
     ],
   },
   {
@@ -101,22 +110,35 @@ export const RESOURCE_GROUPS: ReadonlyArray<{ id: ResourceGroup; label: string; 
       ResourceType.Bricks,
       ResourceType.Cement,
       ResourceType.ConstructionMaterials,
+      ResourceType.Planks,
       ResourceType.ReinforcedConcrete,
+      ResourceType.Steel,
+    ],
+  },
+  {
+    id: 'intermediates',
+    label: 'Intermediates',
+    resources: [
+      ResourceType.AdvancedComponents,
+      ResourceType.Chemicals,
+      ResourceType.DisplayPanels,
+      ResourceType.ElectricCircuits,
+      ResourceType.Plastic,
+      ResourceType.Silicon,
     ],
   },
   {
     id: 'manufacturing',
     label: 'Manufacturing',
     resources: [
-      ResourceType.AdvancedComponents,
-      ResourceType.Chemicals,
-      ResourceType.ElectricCircuits,
       ResourceType.Fertilizer,
+      ResourceType.Furniture,
+      ResourceType.GardenSupplies,
+      ResourceType.HouseholdAppliances,
+      ResourceType.HouseholdCleaningProducts,
       ResourceType.IndustrialMachines,
-      ResourceType.Plastic,
-      ResourceType.Silicon,
-      ResourceType.Steel,
-      ResourceType.Wool,
+      ResourceType.PaintHomeCoatings,
+      ResourceType.PersonalElectronics,
     ],
   },
   {
@@ -542,6 +564,30 @@ export const RESOURCES: Readonly<Record<ResourceType, { name: string; market: Re
       logisticsMultiplier: 0.7,
       valueDensityMultiplier: 1.1,
     },
+  },
+  [ResourceType.DisplayPanels]: {
+    name: 'Display Panels',
+    market: { localBenchmarkSupply: 600, localInitialSupply: 20, regionalBenchmarkSupply: 12_000, regionalInitialSupply: 400, globalBenchmarkSupply: 120_000, globalInitialSupply: 4_000, logisticsMultiplier: 1.15, valueDensityMultiplier: 1.45 },
+  },
+  [ResourceType.GardenSupplies]: {
+    name: 'Garden Supplies',
+    market: { localBenchmarkSupply: 900, localInitialSupply: 40, regionalBenchmarkSupply: 18_000, regionalInitialSupply: 800, globalBenchmarkSupply: 180_000, globalInitialSupply: 8_000, logisticsMultiplier: 0.6, valueDensityMultiplier: 1.1 },
+  },
+  [ResourceType.HouseholdAppliances]: {
+    name: 'Household Appliances',
+    market: { localBenchmarkSupply: 700, localInitialSupply: 30, regionalBenchmarkSupply: 14_000, regionalInitialSupply: 600, globalBenchmarkSupply: 140_000, globalInitialSupply: 6_000, logisticsMultiplier: 0.55, valueDensityMultiplier: 1.35 },
+  },
+  [ResourceType.HouseholdCleaningProducts]: {
+    name: 'Household Cleaning Products',
+    market: { localBenchmarkSupply: 1_200, localInitialSupply: 80, regionalBenchmarkSupply: 24_000, regionalInitialSupply: 1_600, globalBenchmarkSupply: 240_000, globalInitialSupply: 16_000, logisticsMultiplier: 0.5, valueDensityMultiplier: 1.05 },
+  },
+  [ResourceType.PaintHomeCoatings]: {
+    name: 'Paint & Home Coatings',
+    market: { localBenchmarkSupply: 1_000, localInitialSupply: 50, regionalBenchmarkSupply: 20_000, regionalInitialSupply: 1_000, globalBenchmarkSupply: 200_000, globalInitialSupply: 10_000, logisticsMultiplier: 0.55, valueDensityMultiplier: 1.15 },
+  },
+  [ResourceType.PersonalElectronics]: {
+    name: 'Personal Electronics',
+    market: { localBenchmarkSupply: 800, localInitialSupply: 25, regionalBenchmarkSupply: 16_000, regionalInitialSupply: 500, globalBenchmarkSupply: 160_000, globalInitialSupply: 5_000, logisticsMultiplier: 0.7, valueDensityMultiplier: 1.5 },
   },
 
   // Utilities (alphabetized)

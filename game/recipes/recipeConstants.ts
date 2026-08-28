@@ -342,6 +342,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Chemicals, amount: 0.1 },
       { resourceType: ResourceType.Plastic, amount: 0.2 },
       { resourceType: ResourceType.Planks, amount: 0.5 },
+      { resourceType: ResourceType.PaintHomeCoatings, amount: 0.25 },
       { resourceType: ResourceType.Electricity, amount: 2 },
     ],
     outputs: [{ resourceType: ResourceType.ConstructionMaterials, amount: 8 }],
@@ -462,6 +463,87 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     requiredWork: 0.8,
     conditionWearMultiplier: 1.05,
   },
+  [RecipeName.ProduceHouseholdCleaningProducts]: {
+    name: RecipeName.ProduceHouseholdCleaningProducts,
+    inputs: [
+      { resourceType: ResourceType.Chemicals, amount: 1 },
+      { resourceType: ResourceType.Water, amount: 1 },
+      { resourceType: ResourceType.Plastic, amount: 0.5 },
+      { resourceType: ResourceType.Electricity, amount: 2 },
+    ],
+    outputs: [{ resourceType: ResourceType.HouseholdCleaningProducts, amount: 4 }],
+    requiredWork: 1.1,
+    conditionWearMultiplier: 1.1,
+  },
+  [RecipeName.ProducePaintHomeCoatings]: {
+    name: RecipeName.ProducePaintHomeCoatings,
+    inputs: [
+      { resourceType: ResourceType.Chemicals, amount: 1 },
+      { resourceType: ResourceType.Minerals, amount: 1 },
+      { resourceType: ResourceType.Plastic, amount: 0.5 },
+      { resourceType: ResourceType.Water, amount: 1 },
+      { resourceType: ResourceType.Electricity, amount: 2 },
+    ],
+    outputs: [{ resourceType: ResourceType.PaintHomeCoatings, amount: 4 }],
+    requiredWork: 1.3,
+    conditionWearMultiplier: 1.15,
+  },
+  [RecipeName.ProduceGardenSupplies]: {
+    name: RecipeName.ProduceGardenSupplies,
+    inputs: [
+      { resourceType: ResourceType.Fertilizer, amount: 1 },
+      { resourceType: ResourceType.Plastic, amount: 0.5 },
+      { resourceType: ResourceType.Water, amount: 1 },
+      { resourceType: ResourceType.Electricity, amount: 1.5 },
+    ],
+    outputs: [{ resourceType: ResourceType.GardenSupplies, amount: 3 }],
+    requiredWork: 0.9,
+    conditionWearMultiplier: 1,
+  },
+  [RecipeName.ProduceDisplayPanels]: {
+    name: RecipeName.ProduceDisplayPanels,
+    inputs: [
+      { resourceType: ResourceType.Silicon, amount: 2 },
+      { resourceType: ResourceType.ElectricCircuits, amount: 1 },
+      { resourceType: ResourceType.Plastic, amount: 1 },
+      { resourceType: ResourceType.Chemicals, amount: 0.5 },
+      { resourceType: ResourceType.Water, amount: 1 },
+      { resourceType: ResourceType.Electricity, amount: 3 },
+    ],
+    outputs: [{ resourceType: ResourceType.DisplayPanels, amount: 1 }],
+    requiredWork: 1.8,
+    conditionWearMultiplier: 1.35,
+  },
+  [RecipeName.ProducePersonalElectronics]: {
+    name: RecipeName.ProducePersonalElectronics,
+    inputs: [
+      { resourceType: ResourceType.DisplayPanels, amount: 0.5 },
+      { resourceType: ResourceType.ElectricCircuits, amount: 1 },
+      { resourceType: ResourceType.Silicon, amount: 0.5 },
+      { resourceType: ResourceType.Plastic, amount: 1 },
+      { resourceType: ResourceType.Chemicals, amount: 0.25 },
+      { resourceType: ResourceType.Water, amount: 0.5 },
+      { resourceType: ResourceType.Electricity, amount: 2 },
+    ],
+    outputs: [{ resourceType: ResourceType.PersonalElectronics, amount: 1 }],
+    requiredWork: 2.2,
+    conditionWearMultiplier: 1.4,
+  },
+  [RecipeName.AssembleHouseholdAppliances]: {
+    name: RecipeName.AssembleHouseholdAppliances,
+    inputs: [
+      { resourceType: ResourceType.DisplayPanels, amount: 0.1 },
+      { resourceType: ResourceType.AdvancedComponents, amount: 1 },
+      { resourceType: ResourceType.Steel, amount: 1.5 },
+      { resourceType: ResourceType.ElectricCircuits, amount: 0.5 },
+      { resourceType: ResourceType.Plastic, amount: 1 },
+      { resourceType: ResourceType.Water, amount: 1 },
+      { resourceType: ResourceType.Electricity, amount: 3 },
+    ],
+    outputs: [{ resourceType: ResourceType.HouseholdAppliances, amount: 1 }],
+    requiredWork: 2.8,
+    conditionWearMultiplier: 1.5,
+  },
 };
 
 export const RECIPE_DISPLAY_NAMES: Readonly<Record<RecipeName, string>> = {
@@ -505,6 +587,12 @@ export const RECIPE_DISPLAY_NAMES: Readonly<Record<RecipeName, string>> = {
   [RecipeName.MillTimber]: 'Mill Timber',
   [RecipeName.AssembleFurniture]: 'Assemble Furniture',
   [RecipeName.ProduceSyntheticLeather]: 'Produce Synthetic Leather',
+  [RecipeName.ProduceHouseholdCleaningProducts]: 'Produce Household Cleaning Products',
+  [RecipeName.ProducePaintHomeCoatings]: 'Produce Paint & Home Coatings',
+  [RecipeName.ProduceGardenSupplies]: 'Produce Garden Supplies',
+  [RecipeName.ProduceDisplayPanels]: 'Produce Display Panels',
+  [RecipeName.ProducePersonalElectronics]: 'Produce Personal Electronics',
+  [RecipeName.AssembleHouseholdAppliances]: 'Assemble Household Appliances',
 };
 
 export function getRecipeDisplayName(recipeName: RecipeName): string {

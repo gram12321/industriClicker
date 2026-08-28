@@ -113,12 +113,13 @@ export const SALES_CUSTOMER_DOMAIN_PROFILES: Readonly<Record<SalesCustomerDomain
   marketShareMultiplier: number;
   customerTypeWeights: Readonly<Record<SalesCustomerType, number>>;
 }>> = {
-  food: { label: 'Food', bidRange: [0.96, 1.12], targetOrderValue: [20, 240], frequency: 1.15, relationshipGainMultiplier: 1, marketShareMultiplier: 0.12, customerTypeWeights: { 'private-customer': 0.55, 'retail-chain': 0.35, 'construction-contractor': 0, 'industrial-enterprise': 0, 'utility-operator': 0, 'government-procurement': 0.1 } },
-  'raw-materials': { label: 'Raw materials', bidRange: [0.9, 1.08], targetOrderValue: [30, 360], frequency: 1, relationshipGainMultiplier: 0.95, marketShareMultiplier: 0.2, customerTypeWeights: { 'private-customer': 0.03, 'retail-chain': 0, 'construction-contractor': 0.31, 'industrial-enterprise': 0.5, 'utility-operator': 0, 'government-procurement': 0.16 } },
-  'industrial-inputs': { label: 'Industrial inputs', bidRange: [0.98, 1.18], targetOrderValue: [50, 650], frequency: 0.85, relationshipGainMultiplier: 1.05, marketShareMultiplier: 0.35, customerTypeWeights: { 'private-customer': 0.04, 'retail-chain': 0, 'construction-contractor': 0.2, 'industrial-enterprise': 0.48, 'utility-operator': 0.18, 'government-procurement': 0.1 } },
-  'construction-materials': { label: 'Construction materials', bidRange: [0.94, 1.16], targetOrderValue: [60, 800], frequency: 0.8, relationshipGainMultiplier: 1.1, marketShareMultiplier: 0.45, customerTypeWeights: { 'private-customer': 0.08, 'retail-chain': 0.2, 'construction-contractor': 0.42, 'industrial-enterprise': 0.18, 'utility-operator': 0, 'government-procurement': 0.12 } },
-  electronics: { label: 'Electronics', bidRange: [1.04, 1.28], targetOrderValue: [75, 1_000], frequency: 0.7, relationshipGainMultiplier: 1.2, marketShareMultiplier: 0.28, customerTypeWeights: { 'private-customer': 0.35, 'retail-chain': 0.38, 'construction-contractor': 0, 'industrial-enterprise': 0.18, 'utility-operator': 0, 'government-procurement': 0.09 } },
-  utilities: { label: 'Utilities', bidRange: [0.88, 1.04], targetOrderValue: [25, 450], frequency: 0.7, relationshipGainMultiplier: 0.65, marketShareMultiplier: 0.5, customerTypeWeights: { 'private-customer': 0.18, 'retail-chain': 0, 'construction-contractor': 0.1, 'industrial-enterprise': 0.32, 'utility-operator': 0.3, 'government-procurement': 0.1 } },
+  food: { label: 'Food', bidRange: [0.96, 1.12], targetOrderValue: [20, 240], frequency: 1.15, relationshipGainMultiplier: 1, marketShareMultiplier: 0.12, customerTypeWeights: { 'local-businesses': 0.55, 'retail-chain': 0.35, 'construction-contractor': 0, 'industrial-enterprise': 0, 'utility-operator': 0, 'government-procurement': 0.1 } },
+  'raw-materials': { label: 'Raw materials', bidRange: [0.9, 1.08], targetOrderValue: [30, 360], frequency: 1, relationshipGainMultiplier: 0.95, marketShareMultiplier: 0.2, customerTypeWeights: { 'local-businesses': 0.03, 'retail-chain': 0, 'construction-contractor': 0.31, 'industrial-enterprise': 0.5, 'utility-operator': 0, 'government-procurement': 0.16 } },
+  'industrial-inputs': { label: 'Industrial inputs', bidRange: [0.98, 1.18], targetOrderValue: [50, 650], frequency: 0.85, relationshipGainMultiplier: 1.05, marketShareMultiplier: 0.35, customerTypeWeights: { 'local-businesses': 0.04, 'retail-chain': 0, 'construction-contractor': 0.2, 'industrial-enterprise': 0.48, 'utility-operator': 0.18, 'government-procurement': 0.1 } },
+  'construction-materials': { label: 'Construction materials', bidRange: [0.94, 1.16], targetOrderValue: [60, 800], frequency: 0.8, relationshipGainMultiplier: 1.1, marketShareMultiplier: 0.45, customerTypeWeights: { 'local-businesses': 0.08, 'retail-chain': 0.2, 'construction-contractor': 0.42, 'industrial-enterprise': 0.18, 'utility-operator': 0, 'government-procurement': 0.12 } },
+  electronics: { label: 'Electronics', bidRange: [1.04, 1.28], targetOrderValue: [75, 1_000], frequency: 0.7, relationshipGainMultiplier: 1.2, marketShareMultiplier: 0.28, customerTypeWeights: { 'local-businesses': 0.35, 'retail-chain': 0.38, 'construction-contractor': 0, 'industrial-enterprise': 0.18, 'utility-operator': 0, 'government-procurement': 0.09 } },
+  utilities: { label: 'Utilities', bidRange: [0.88, 1.04], targetOrderValue: [25, 450], frequency: 0.7, relationshipGainMultiplier: 0.65, marketShareMultiplier: 0.5, customerTypeWeights: { 'local-businesses': 0.18, 'retail-chain': 0, 'construction-contractor': 0.1, 'industrial-enterprise': 0.32, 'utility-operator': 0.3, 'government-procurement': 0.1 } },
+  'consumer-products': { label: 'Consumer Products', bidRange: [0.98, 1.2], targetOrderValue: [35, 700], frequency: 0.9, relationshipGainMultiplier: 1.05, marketShareMultiplier: 0.32, customerTypeWeights: { 'local-businesses': 0.55, 'retail-chain': 0.35, 'construction-contractor': 0, 'industrial-enterprise': 0, 'utility-operator': 0, 'government-procurement': 0.1 } },
 };
 
 export const SALES_CUSTOMER_TYPE_PROFILES: Readonly<Record<SalesCustomerType, {
@@ -135,10 +136,10 @@ export const SALES_CUSTOMER_TYPE_PROFILES: Readonly<Record<SalesCustomerType, {
   globalPremiumBaseline: number;
   marketShareScale: number;
 }>> = {
-  'private-customer': {
+  'local-businesses': {
     label: 'Local Businesses',
     description: 'Small, owner-operated local business with a strong preference for one resource.',
-    allowedOperatingDomains: ['food', 'raw-materials', 'industrial-inputs', 'construction-materials', 'electronics', 'utilities'],
+    allowedOperatingDomains: ['food', 'raw-materials', 'industrial-inputs', 'construction-materials', 'electronics', 'utilities', 'consumer-products'],
     crossDomainChance: 0,
     bundleAppetite: 0.08,
     frequencyMultiplier: 1.25,
@@ -152,7 +153,7 @@ export const SALES_CUSTOMER_TYPE_PROFILES: Readonly<Record<SalesCustomerType, {
   'retail-chain': {
     label: 'Retail Chain',
     description: 'Recurring retail demand; most chains specialise in one retail domain while some span two.',
-    allowedOperatingDomains: ['food', 'electronics', 'construction-materials'],
+    allowedOperatingDomains: ['food', 'electronics', 'construction-materials', 'consumer-products'],
     crossDomainChance: 0.28,
     bundleAppetite: 0.28,
     frequencyMultiplier: 1.08,
@@ -208,7 +209,7 @@ export const SALES_CUSTOMER_TYPE_PROFILES: Readonly<Record<SalesCustomerType, {
   'government-procurement': {
     label: 'Government Procurement',
     description: 'Rare public procurement that can span otherwise unrelated domains.',
-    allowedOperatingDomains: ['food', 'raw-materials', 'industrial-inputs', 'construction-materials', 'electronics', 'utilities'],
+    allowedOperatingDomains: ['food', 'raw-materials', 'industrial-inputs', 'construction-materials', 'electronics', 'utilities', 'consumer-products'],
     crossDomainChance: 0.88,
     bundleAppetite: 1,
     frequencyMultiplier: 0.38,
@@ -228,50 +229,58 @@ export const SALES_CUSTOMER_GENERATION = {
 
 export const SALES_RESOURCE_PROFILES: Readonly<Record<ResourceType, { domain: SalesCustomerDomain; standardOrderLot: number }>> = {
   // Food
-  grain: { domain: 'food', standardOrderLot: 100 },
   bread: { domain: 'food', standardOrderLot: 50 },
-  sugar: { domain: 'food', standardOrderLot: 75 },
   cake: { domain: 'food', standardOrderLot: 10 },
   eggs: { domain: 'food', standardOrderLot: 20 },
   fruit: { domain: 'food', standardOrderLot: 25 },
+  grain: { domain: 'food', standardOrderLot: 100 },
   meat: { domain: 'food', standardOrderLot: 8 },
   'meat-pie': { domain: 'food', standardOrderLot: 10 },
   milk: { domain: 'food', standardOrderLot: 20 },
+  sugar: { domain: 'food', standardOrderLot: 75 },
 
   // Raw materials
-  coal: { domain: 'raw-materials', standardOrderLot: 50 },
-  iron: { domain: 'raw-materials', standardOrderLot: 20 },
-  copper: { domain: 'raw-materials', standardOrderLot: 20 },
-  sand: { domain: 'raw-materials', standardOrderLot: 250 },
   clay: { domain: 'raw-materials', standardOrderLot: 125 },
-  stone: { domain: 'raw-materials', standardOrderLot: 50 },
-  minerals: { domain: 'raw-materials', standardOrderLot: 100 },
+  coal: { domain: 'raw-materials', standardOrderLot: 50 },
+  copper: { domain: 'raw-materials', standardOrderLot: 20 },
   gold: { domain: 'raw-materials', standardOrderLot: 1 },
-  timber: { domain: 'raw-materials', standardOrderLot: 50 },
+  iron: { domain: 'raw-materials', standardOrderLot: 20 },
   leather: { domain: 'raw-materials', standardOrderLot: 10 },
+  minerals: { domain: 'raw-materials', standardOrderLot: 100 },
+  sand: { domain: 'raw-materials', standardOrderLot: 250 },
+  stone: { domain: 'raw-materials', standardOrderLot: 50 },
+  timber: { domain: 'raw-materials', standardOrderLot: 50 },
 
   // Industrial inputs
-  steel: { domain: 'industrial-inputs', standardOrderLot: 40 },
   chemicals: { domain: 'industrial-inputs', standardOrderLot: 25 },
-  fertilizer: { domain: 'industrial-inputs', standardOrderLot: 10 },
-  plastic: { domain: 'industrial-inputs', standardOrderLot: 30 },
   planks: { domain: 'industrial-inputs', standardOrderLot: 25 },
-  furniture: { domain: 'industrial-inputs', standardOrderLot: 5 },
+  plastic: { domain: 'industrial-inputs', standardOrderLot: 30 },
+  steel: { domain: 'industrial-inputs', standardOrderLot: 40 },
   wool: { domain: 'industrial-inputs', standardOrderLot: 25 },
 
   // Construction materials
   bricks: { domain: 'construction-materials', standardOrderLot: 30 },
   cement: { domain: 'construction-materials', standardOrderLot: 50 },
-  'reinforced-concrete': { domain: 'construction-materials', standardOrderLot: 20 },
   'construction-materials': { domain: 'construction-materials', standardOrderLot: 10 },
+  'reinforced-concrete': { domain: 'construction-materials', standardOrderLot: 20 },
 
   // Electronics
+  'advanced-components': { domain: 'electronics', standardOrderLot: 5 },
+  'display-panels': { domain: 'electronics', standardOrderLot: 5 },
   'electric-circuits': { domain: 'electronics', standardOrderLot: 25 },
   silicon: { domain: 'electronics', standardOrderLot: 10 },
-  'advanced-components': { domain: 'electronics', standardOrderLot: 5 },
-  'industrial-machines': { domain: 'electronics', standardOrderLot: 1 },
+
+  // Consumer products
+  fertilizer: { domain: 'consumer-products', standardOrderLot: 10 },
+  furniture: { domain: 'consumer-products', standardOrderLot: 5 },
+  'garden-supplies': { domain: 'consumer-products', standardOrderLot: 10 },
+  'household-appliances': { domain: 'consumer-products', standardOrderLot: 5 },
+  'household-cleaning-products': { domain: 'consumer-products', standardOrderLot: 10 },
+  'industrial-machines': { domain: 'consumer-products', standardOrderLot: 1 },
+  'paint-home-coatings': { domain: 'consumer-products', standardOrderLot: 10 },
+  'personal-electronics': { domain: 'consumer-products', standardOrderLot: 5 },
 
   // Utilities
-  water: { domain: 'utilities', standardOrderLot: 100 },
   electricity: { domain: 'utilities', standardOrderLot: 100 },
+  water: { domain: 'utilities', standardOrderLot: 100 },
 };

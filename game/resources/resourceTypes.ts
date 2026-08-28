@@ -41,6 +41,12 @@ export enum ResourceType {
   Leather = 'leather',
   Furniture = 'furniture',
   Wool = 'wool',
+  HouseholdCleaningProducts = 'household-cleaning-products',
+  PaintHomeCoatings = 'paint-home-coatings',
+  GardenSupplies = 'garden-supplies',
+  DisplayPanels = 'display-panels',
+  PersonalElectronics = 'personal-electronics',
+  HouseholdAppliances = 'household-appliances',
 }
 
 /** Market seed values owned by each resource's code catalogue entry. */

@@ -167,7 +167,7 @@ export function calculateSalesOrderCustomerSizeFitMultiplier(input: { customerTy
   const relationshipProgress = clamp(input.relationship, 0, 1);
   const companyMaturity = (assetProgress + prestigeProgress + relationshipProgress) / 3;
   const retryIndex = Math.max(0, input.retryIndex ?? 0);
-  const isSmallCustomer = input.customerType === 'private-customer' || input.customerType === 'retail-chain';
+    const isSmallCustomer = input.customerType === 'local-businesses' || input.customerType === 'retail-chain';
   if (isSmallCustomer) return 1 + (1 - companyMaturity) * SALES_ORDER_CUSTOMER_SIZE_SCALING.smallTypeEarlyBonus + retryIndex * SALES_ORDER_CUSTOMER_SIZE_SCALING.retrySmallTypeBonus;
   return SALES_ORDER_CUSTOMER_SIZE_SCALING.largeTypeEarlyFloor + companyMaturity * SALES_ORDER_CUSTOMER_SIZE_SCALING.largeTypeMaturityBonus;
 }

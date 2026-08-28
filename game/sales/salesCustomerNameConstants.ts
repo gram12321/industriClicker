@@ -8,7 +8,7 @@ export const SALES_CUSTOMER_FIRST_NAMES = [
 
 /** Brand fragments are selected by customer type, while trade language is selected by domain. */
 export const SALES_CUSTOMER_NAME_BRANDS: Readonly<Record<SalesCustomerType, readonly string[]>> = {
-  'private-customer': [],
+  'local-businesses': [],
   'retail-chain': ['Freshway', 'Marketline', 'Townsend', 'Evergreen', 'Cedar', 'Beacon', 'Union', 'Plaza'],
   'construction-contractor': ['Stonebridge', 'Anchor', 'Keystone', 'Buildwell', 'Granite', 'Rivet', 'Pillar', 'Terrace'],
   'industrial-enterprise': ['Meridian', 'Apex', 'Catalyst', 'Foundry', 'Helix', 'Ironclad', 'Vertex', 'Pioneer'],
@@ -24,9 +24,10 @@ export const SALES_CUSTOMER_DOMAIN_NAME_TERMS: Readonly<Record<SalesCustomerDoma
   'construction-materials': ['Building Supplies', 'Civil Materials', 'Construction Supply', 'Project Materials', 'Infrastructure', 'Site Supply'],
   electronics: ['Electronic Components', 'Circuit Supply', 'Device Systems', 'Technology Trading', 'Component Works', 'Electronics'],
   utilities: ['Water Services', 'Power Supply', 'Energy Services', 'Utility Network', 'Grid Services', 'Resource Utility'],
+  'consumer-products': ['Home Goods', 'Household Supply', 'Consumer Goods', 'Retail Products', 'Domestic Supply', 'General Goods'],
 };
 
-export const SALES_CUSTOMER_NAME_TYPE_SUFFIXES: Readonly<Record<Exclude<SalesCustomerType, 'private-customer' | 'retail-chain'>, readonly string[]>> = {
+export const SALES_CUSTOMER_NAME_TYPE_SUFFIXES: Readonly<Record<Exclude<SalesCustomerType, 'local-businesses' | 'retail-chain'>, readonly string[]>> = {
   'construction-contractor': ['Contractors', 'Builders', 'Works'],
   'industrial-enterprise': ['Enterprise', 'Industries', 'Systems'],
   'utility-operator': ['Services', 'Authority', 'Network'],

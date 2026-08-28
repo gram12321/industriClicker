@@ -51,7 +51,7 @@ export function getSalesCustomerCatalogue(worldSeed = SALES_CUSTOMER_WORLD_SEED,
     const customers: SalesCustomerDefinition[] = []; let remainingShare = 1; let customerIndex = 0;
     while (remainingShare > 0 && customerIndex < SALES_CUSTOMER_GENERATION.maximumCustomersPerDomain) {
       const seed = `${worldSeed}:${catalogueVersion}:${domain}:${customerIndex}`;
-      const customerType = pickDeterministicWeighted(SALES_CUSTOMER_TYPES.map((value) => ({ value, weight: SALES_CUSTOMER_DOMAIN_PROFILES[domain].customerTypeWeights[value] })), `${seed}:customer-type`) ?? 'private-customer';
+      const customerType = pickDeterministicWeighted(SALES_CUSTOMER_TYPES.map((value) => ({ value, weight: SALES_CUSTOMER_DOMAIN_PROFILES[domain].customerTypeWeights[value] })), `${seed}:customer-type`) ?? 'local-businesses';
       const firstDraw = calculateSkewedMarketShareMultiplier(getDeterministicUnitInterval(`${seed}:share:0`)); let smallestDraw = firstDraw;
       for (let draw = 1; draw < getMarketShareDrawCount(firstDraw); draw += 1) smallestDraw = Math.min(smallestDraw, calculateSkewedMarketShareMultiplier(getDeterministicUnitInterval(`${seed}:share:${draw}`)));
       const isLastAllowedCustomer = customerIndex === SALES_CUSTOMER_GENERATION.maximumCustomersPerDomain - 1;

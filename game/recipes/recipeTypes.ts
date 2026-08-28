@@ -41,6 +41,12 @@ export enum RecipeName {
   MillTimber = 'mill-timber',
   AssembleFurniture = 'assemble-furniture',
   ProduceSyntheticLeather = 'produce-synthetic-leather',
+  ProduceHouseholdCleaningProducts = 'produce-household-cleaning-products',
+  ProducePaintHomeCoatings = 'produce-paint-home-coatings',
+  ProduceGardenSupplies = 'produce-garden-supplies',
+  ProduceDisplayPanels = 'produce-display-panels',
+  ProducePersonalElectronics = 'produce-personal-electronics',
+  AssembleHouseholdAppliances = 'assemble-household-appliances',
 }
 
 export type RecipeInput = {

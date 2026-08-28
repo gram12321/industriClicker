@@ -36,12 +36,27 @@ export const RESOURCE_ICONS: Readonly<Record<ResourceType, string>> = {
   [ResourceType.Meat]: '🥩',
   [ResourceType.MeatPie]: '🥧',
   [ResourceType.Milk]: '🥛',
-  [ResourceType.Timber]: '🪵',
+  [ResourceType.Timber]: '🌲',
   [ResourceType.Planks]: '🪵',
   [ResourceType.Leather]: '🧤',
   [ResourceType.Furniture]: '🪑',
   [ResourceType.Wool]: '🧶',
+  [ResourceType.HouseholdCleaningProducts]: '🧼',
+  [ResourceType.PaintHomeCoatings]: '🎨',
+  [ResourceType.GardenSupplies]: '🪴',
+  [ResourceType.DisplayPanels]: '🖥️',
+  [ResourceType.PersonalElectronics]: '📱',
+  [ResourceType.HouseholdAppliances]: '🧺',
 };
+
+export const GROUP_ICONS = {
+  food: 'food-apple-outline',
+  'raw-resources': 'pickaxe',
+  construction: 'wall',
+  intermediates: 'flask-outline',
+  manufacturing: 'factory',
+  utilities: 'lightning-bolt-outline',
+} as const;
 
 /** Shared Material Community icon names used by the app UI. */
 export const APP_ICONS = {
@@ -140,7 +155,7 @@ export const ECONOMY_PHASE_ICONS: Readonly<Record<EconomyPhase, string>> = {
 };
 
 export const SALES_CUSTOMER_TYPE_ICONS = {
-  'private-customer': 'account-outline',
+  'local-businesses': 'account-outline',
   'retail-chain': 'storefront-outline',
   'construction-contractor': 'hammer-wrench',
   'industrial-enterprise': 'factory',
@@ -155,6 +170,7 @@ export const SALES_CUSTOMER_DOMAIN_ICONS: Readonly<Record<SalesCustomerDomain, s
   'construction-materials': 'crane',
   electronics: 'chip',
   utilities: 'transmission-tower',
+  'consumer-products': 'storefront-outline',
 };
 
 /** Emoji glyphs for recipe presentation. */
@@ -199,4 +215,10 @@ export const RECIPE_ICONS: Readonly<Record<RecipeName, string>> = {
   [RecipeName.AssembleFurniture]: '🪑',
   [RecipeName.ProduceSyntheticLeather]: '🧤',
   [RecipeName.SolarPower]: '☀️',
+  [RecipeName.ProduceHouseholdCleaningProducts]: '🧼',
+  [RecipeName.ProducePaintHomeCoatings]: '🎨',
+  [RecipeName.ProduceGardenSupplies]: '🪴',
+  [RecipeName.ProduceDisplayPanels]: '🖥️',
+  [RecipeName.ProducePersonalElectronics]: '📱',
+  [RecipeName.AssembleHouseholdAppliances]: '🧺',
 };

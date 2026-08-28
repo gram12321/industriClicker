@@ -4,10 +4,10 @@ import { SALES_CUSTOMER_DOMAINS, SALES_CUSTOMER_TYPE_PROFILES, SALES_CUSTOMER_TY
 
 describe('sales customer catalogue', () => {
   it('uses the customer type for the name form and the home domain for its vocabulary', () => {
-    expect(generateSalesCustomerName({ seed: 'food-local', domain: 'food', customerType: 'private-customer' })).toMatch(/'s (Drinks & Juices|Liquor Store|Delicatessen|Food Import|Provisions|Grocers)$/);
-    expect(generateSalesCustomerName({ seed: 'construction-local', domain: 'construction-materials', customerType: 'private-customer' })).toMatch(/'s (Building Supplies|Civil Materials|Construction Supply|Project Materials|Infrastructure|Site Supply)$/);
+    expect(generateSalesCustomerName({ seed: 'food-local', domain: 'food', customerType: 'local-businesses' })).toMatch(/'s (Drinks & Juices|Liquor Store|Delicatessen|Food Import|Provisions|Grocers)$/);
+    expect(generateSalesCustomerName({ seed: 'construction-local', domain: 'construction-materials', customerType: 'local-businesses' })).toMatch(/'s (Building Supplies|Civil Materials|Construction Supply|Project Materials|Infrastructure|Site Supply)$/);
     expect(generateSalesCustomerName({ seed: 'food-chain', domain: 'food', customerType: 'retail-chain' })).not.toContain("'s");
-    expect(SALES_CUSTOMER_TYPE_PROFILES['private-customer'].label).toBe('Local Businesses');
+    expect(SALES_CUSTOMER_TYPE_PROFILES['local-businesses'].label).toBe('Local Businesses');
   });
 
   it('is deterministic and generates variable customer counts that normalize market share within each domain', () => {
@@ -43,8 +43,8 @@ describe('sales customer catalogue', () => {
 
   it('makes large market shares rare for private customers', () => {
     const catalogue = getSalesCustomerCatalogue();
-    const privateCustomers = catalogue.filter((customer) => customer.customerType === 'private-customer');
-    const largerBuyers = catalogue.filter((customer) => customer.customerType !== 'private-customer');
+    const privateCustomers = catalogue.filter((customer) => customer.customerType === 'local-businesses');
+    const largerBuyers = catalogue.filter((customer) => customer.customerType !== 'local-businesses');
 
     expect(Math.max(...privateCustomers.map((customer) => customer.marketShare))).toBeLessThan(0.25);
     expect(largerBuyers.some((customer) => customer.marketShare > 0.1)).toBe(true);

@@ -255,7 +255,7 @@ describe('sales orders', () => {
 
   it('makes large customer types possible but exceptionally unlikely before prestige', () => {
     const earlyGovernmentAccess = calculateSalesCustomerAccessibility('government-procurement', 0);
-    const earlyPrivateAccess = calculateSalesCustomerAccessibility('private-customer', 0);
+    const earlyPrivateAccess = calculateSalesCustomerAccessibility('local-businesses', 0);
     const lateGovernmentAccess = calculateSalesCustomerAccessibility('government-procurement', 1_000);
 
     expect(earlyGovernmentAccess).toBeGreaterThan(0);
@@ -264,9 +264,9 @@ describe('sales orders', () => {
   });
 
   it('favors small customer types for immature companies and large types as the company matures', () => {
-    const earlyPrivate = calculateSalesOrderCustomerSizeFitMultiplier({ customerType: 'private-customer', companyAssets: 0, companyPrestige: 0, relationship: 0 });
+    const earlyPrivate = calculateSalesOrderCustomerSizeFitMultiplier({ customerType: 'local-businesses', companyAssets: 0, companyPrestige: 0, relationship: 0 });
     const earlyIndustrial = calculateSalesOrderCustomerSizeFitMultiplier({ customerType: 'industrial-enterprise', companyAssets: 0, companyPrestige: 0, relationship: 0 });
-    const maturePrivate = calculateSalesOrderCustomerSizeFitMultiplier({ customerType: 'private-customer', companyAssets: 10_000, companyPrestige: 1_000, relationship: 1 });
+    const maturePrivate = calculateSalesOrderCustomerSizeFitMultiplier({ customerType: 'local-businesses', companyAssets: 10_000, companyPrestige: 1_000, relationship: 1 });
     const matureIndustrial = calculateSalesOrderCustomerSizeFitMultiplier({ customerType: 'industrial-enterprise', companyAssets: 10_000, companyPrestige: 1_000, relationship: 1 });
 
     expect(earlyPrivate).toBeGreaterThan(earlyIndustrial);
@@ -323,7 +323,7 @@ describe('sales orders', () => {
   });
 
   it('allows private-customer discounts to reduce mature order targets', () => {
-    const discountedValue = calculateSalesOrderTargetValue({ baseTargetValue: 154.716157913208, companyPrestige: 10.330655, relationship: 0.04027785574815941, customerType: 'private-customer', customerTypeMultiplier: 0.345517685089726 });
+    const discountedValue = calculateSalesOrderTargetValue({ baseTargetValue: 154.716157913208, companyPrestige: 10.330655, relationship: 0.04027785574815941, customerType: 'local-businesses', customerTypeMultiplier: 0.345517685089726 });
     const undiscountedValue = calculateSalesOrderTargetValue({ baseTargetValue: 154.716157913208, companyPrestige: 10.330655, relationship: 0.04027785574815941 });
 
     expect(discountedValue).toBeLessThan(undiscountedValue * 0.6);

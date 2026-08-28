@@ -21,6 +21,7 @@ const DOMAIN_APPEARANCE = {
   food: { backgroundColor: '#E0F4E7', color: '#179C51', icon: 'food-apple-outline' },
   'raw-resources': { backgroundColor: '#FFF0DA', color: '#C66A0A', icon: 'pickaxe' },
   construction: { backgroundColor: '#FFE8DE', color: '#D85F2C', icon: 'crane' },
+  intermediates: { backgroundColor: '#E8F1FF', color: '#4169A1', icon: 'flask-outline' },
   manufacturing: { backgroundColor: '#EEE5FF', color: '#7A4FD5', icon: 'factory' },
   utilities: { backgroundColor: '#E1ECFC', color: '#3476D4', icon: 'transmission-tower' },
 } as const;

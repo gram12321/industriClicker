@@ -12,6 +12,7 @@ export const POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE: Readonly<
   food: 1,
   'raw-resources': 0.25,
   construction: 0.05,
+  intermediates: 0.016,
   manufacturing: 0.016,
   utilities: 10.7,
 };
@@ -28,6 +29,7 @@ export const POPULATION_DOMAIN_ESSENTIALS: Readonly<Record<ResourceGroup, number
   food: 0.9,
   'raw-resources': 0.15,
   construction: 0.1,
+  intermediates: 0.01,
   manufacturing: 0.3,
   utilities: 0.9,
 };
@@ -106,31 +108,31 @@ export const POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE: Readonly<Record<
 
   // Raw resources
   [ResourceType.Coal]: {
-    amountPerPersonPerMinute: 0.1,
+    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE['raw-resources'] * 0.4,
     baselinePreference: 0.01,
     luxury: 0.1,
     resourceElasticity: 0.5,
   },
   [ResourceType.Iron]: {
-    amountPerPersonPerMinute: 0.1,
+    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE['raw-resources'] * 0.4,
     baselinePreference: 0.01,
     luxury: 0.1,
     resourceElasticity: 0.5,
   },
   [ResourceType.Copper]: {
-    amountPerPersonPerMinute: 0.1,
+    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE['raw-resources'] * 0.4,
     baselinePreference: 0.01,
     luxury: 0.1,
     resourceElasticity: 0.5,
   },
   [ResourceType.Gold]: {
-    amountPerPersonPerMinute: 0.01,
+    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE['raw-resources'] * 0.04,
     baselinePreference: 0.2,
     luxury: 1,
     resourceElasticity: 0.01,
   },
   [ResourceType.Minerals]: {
-    amountPerPersonPerMinute: 0.1,
+    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE['raw-resources'] * 0.4,
     baselinePreference: 0.01,
     luxury: 0.1,
     resourceElasticity: 0.5,
@@ -154,13 +156,13 @@ export const POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE: Readonly<Record<
     resourceElasticity: 0.65,
   },
   [ResourceType.Timber]: {
-    amountPerPersonPerMinute: 0,
+    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE['raw-resources'] * 0,
     baselinePreference: 0.05,
     luxury: 0.15,
     resourceElasticity: 0.5,
   },
   [ResourceType.Leather]: {
-    amountPerPersonPerMinute: 0,
+    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE['raw-resources'] * 0,
     baselinePreference: 0.1,
     luxury: 0.25,
     resourceElasticity: 0.45,
@@ -194,19 +196,19 @@ export const POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE: Readonly<Record<
 
   // Manufacturing
   [ResourceType.Steel]: {
-    amountPerPersonPerMinute: 0.001,
+    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.construction * 0.02,
     baselinePreference: 0.1,
     luxury: 0.9,
     resourceElasticity: 0.1,
   },
   [ResourceType.ElectricCircuits]: {
-    amountPerPersonPerMinute: 0.01,
+    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.intermediates * 0.625,
     baselinePreference: 0.3,
     luxury: 0.5,
     resourceElasticity: 0.2,
   },
   [ResourceType.Chemicals]: {
-    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0.00625,
+    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.intermediates * 0.00625,
     baselinePreference: 0.25,
     luxury: 0.3,
     resourceElasticity: 0.3,
@@ -218,31 +220,31 @@ export const POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE: Readonly<Record<
     resourceElasticity: 0.3,
   },
   [ResourceType.Plastic]: {
-    amountPerPersonPerMinute: 0,
+    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.intermediates * 0,
     baselinePreference: 0.01,
     luxury: 0.1,
     resourceElasticity: 0.1,
   },
   [ResourceType.Silicon]: {
-    amountPerPersonPerMinute: 0,
+    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.intermediates * 0,
     baselinePreference: 0,
     luxury: 1,
     resourceElasticity: 0,
   },
   [ResourceType.AdvancedComponents]: {
-    amountPerPersonPerMinute: 0.01,
+    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.intermediates * 0.625,
     baselinePreference: 0.8,
     luxury: 1,
     resourceElasticity: 0.2,
   },
   [ResourceType.IndustrialMachines]: {
-    amountPerPersonPerMinute: 0,
+    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0,
     baselinePreference: 0,
     luxury: 1,
     resourceElasticity: 0,
   },
   [ResourceType.Planks]: {
-    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0.05,
+    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.construction * 0.016,
     baselinePreference: 0.2,
     luxury: 0.3,
     resourceElasticity: 0.45,
@@ -258,5 +260,41 @@ export const POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE: Readonly<Record<
     baselinePreference: 0.4,
     luxury: 0.2,
     resourceElasticity: 0.3,
+  },
+  [ResourceType.DisplayPanels]: {
+    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.intermediates * 0,
+    baselinePreference: 0,
+    luxury: 1,
+    resourceElasticity: 0,
+  },
+  [ResourceType.HouseholdCleaningProducts]: {
+    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0.2,
+    baselinePreference: 0.15,
+    luxury: 0.1,
+    resourceElasticity: 0.15,
+  },
+  [ResourceType.PaintHomeCoatings]: {
+    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0.15,
+    baselinePreference: 0.25,
+    luxury: 0.6,
+    resourceElasticity: 0.4,
+  },
+  [ResourceType.GardenSupplies]: {
+    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0.15,
+    baselinePreference: 0.3,
+    luxury: 0.7,
+    resourceElasticity: 0.55,
+  },
+  [ResourceType.PersonalElectronics]: {
+    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0.2,
+    baselinePreference: 0.7,
+    luxury: 0.8,
+    resourceElasticity: 0.4,
+  },
+  [ResourceType.HouseholdAppliances]: {
+    amountPerPersonPerMinute: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0.15,
+    baselinePreference: 0.85,
+    luxury: 0.7,
+    resourceElasticity: 0.35,
   },
 };

@@ -15,7 +15,7 @@ function selectFrom<T>(values: readonly T[], seed: string): T {
 export function generateSalesCustomerName(input: { seed: string; domain: SalesCustomerDomain; customerType: SalesCustomerType }): string {
   const domainTerm = selectFrom(SALES_CUSTOMER_DOMAIN_NAME_TERMS[input.domain], `${input.seed}:domain-term`);
 
-  if (input.customerType === 'private-customer') {
+  if (input.customerType === 'local-businesses') {
     return `${selectFrom(SALES_CUSTOMER_FIRST_NAMES, `${input.seed}:first-name`)}'s ${domainTerm}`;
   }
 

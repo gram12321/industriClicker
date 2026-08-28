@@ -5,12 +5,13 @@ export const SALES_CUSTOMER_DOMAINS = [
   'construction-materials',
   'electronics',
   'utilities',
+  'consumer-products',
 ] as const;
 
 export type SalesCustomerDomain = typeof SALES_CUSTOMER_DOMAINS[number];
 
 export const SALES_CUSTOMER_TYPES = [
-  'private-customer',
+  'local-businesses',
   'retail-chain',
   'construction-contractor',
   'industrial-enterprise',

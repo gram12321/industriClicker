@@ -39,11 +39,14 @@ This is the authority for concrete variables, dependencies, commands, time effec
 | Plastic | Chemical Plant: Produce Plastic | 2 Chemicals, 1 Water, 3 Electricity |
 | Silicon | Electronics Factory: Produce Silicon | 3 Minerals, 3 Sand, 5 Electricity |
 | Advanced Components | Electronics Factory: Produce Advanced Components | 2 Electric Circuits, 2 Silicon, 0.1 Gold, 1 Water, 4 Electricity |
+| Display Panels | Electronics Factory: Produce Display Panels; input to Personal Electronics and Household Appliances | 2 Silicon, 1 Electric Circuits, 1 Plastic, 0.5 Chemicals, 1 Water, 3 Electricity |
+| Personal Electronics | Electronics Factory: Produce Personal Electronics | 0.5 Display Panels, 1 Electric Circuits, 0.5 Silicon, 1 Plastic, 0.25 Chemicals, 0.5 Water, 2 Electricity |
+| Household Appliances | Assembly Plant: Assemble Household Appliances | 0.1 Display Panels, 1 Advanced Components, 1.5 Steel, 0.5 Electric Circuits, 1 Plastic, 1 Water, 3 Electricity |
 | Industrial Machines | Assembly Plant: Assemble Industrial Machines | 6 Steel, 3 Electric Circuits, 2 Advanced Components, 2 Water, 6 Electricity |
 | Bricks | Construction Factory: Produce Bricks | 2 Clay, 2 Sand, 1 Water, 3 Electricity |
 | Cement | Construction Factory: Produce Cement | 3 Stone, 1 Sand, 1 Clay, 1 Minerals, 1 Water, 5 Electricity |
 | Reinforced Concrete | Construction Factory: Produce Reinforced Concrete | 2 Cement, 3 Sand, 2 Stone, 2 Steel, 0.5 Minerals, 0.25 Chemicals, 2 Water, 2 Electricity |
-| Construction Materials | Construction Factory: Produce Construction Materials | 2 Bricks, 1 Reinforced Concrete, 1 Steel, 1 Sand, 1 Cement, 0.1 Chemicals, 0.2 Plastic, 0.5 Planks, 2 Electricity |
+| Construction Materials | Construction Factory: Produce Construction Materials | 2 Bricks, 1 Reinforced Concrete, 1 Steel, 1 Sand, 1 Cement, 0.1 Chemicals, 0.2 Plastic, 0.5 Planks, 0.25 Paint & Home Coatings, 2 Electricity |
 
 ```mermaid
 flowchart LR

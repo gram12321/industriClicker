@@ -15,7 +15,7 @@ describe('population consumption', () => {
   });
 
   it('uses the existing domain totals and one per-resource base catalogue', () => {
-    expect(POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE).toEqual({ food: 1, 'raw-resources': 0.25, construction: 0.05, manufacturing: 0.016, utilities: 10.7 });
+    expect(POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE).toEqual({ food: 1, 'raw-resources': 0.25, construction: 0.05, intermediates: 0.016, manufacturing: 0.016, utilities: 10.7 });
     expect(POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE[ResourceType.Grain].amountPerPersonPerMinute).toBe(0.15);
     expect(POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE[ResourceType.Sand].amountPerPersonPerMinute).toBe(0.1);
     expect(POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE[ResourceType.ConstructionMaterials].amountPerPersonPerMinute).toBeCloseTo(0.02);

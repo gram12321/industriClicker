@@ -7,7 +7,7 @@ Canonical shared names only. Product direction is in [design.md](design.md), rul
 | Term | Meaning |
 |---|---|
 | Industrial clicker | The game's genre and setting. |
-| Resource | A typed item that can be gained, spent, transformed, and stored. Current names: Grain, Bread, Water, Electricity, Sugar, Fruit, Eggs, Meat, Milk, Timber, Planks, Leather, Furniture, Wool, Cake, Meat Pie, Coal, Iron, Copper, Gold, Minerals, Steel, Electric Circuits, Chemicals, Fertilizer, Plastic, Silicon, Advanced Components, Industrial Machines, Bricks, Cement, Reinforced Concrete, Construction Materials, Sand, Clay, and Stone. |
+| Resource | A typed item that can be gained, spent, transformed, and stored. Current names: Grain, Bread, Water, Electricity, Sugar, Fruit, Eggs, Meat, Milk, Timber, Planks, Leather, Furniture, Wool, Cake, Meat Pie, Coal, Iron, Copper, Gold, Minerals, Steel, Electric Circuits, Chemicals, Fertilizer, Plastic, Silicon, Advanced Components, Display Panels, Industrial Machines, Bricks, Cement, Reinforced Concrete, Construction Materials, Paint & Home Coatings, Household Cleaning Products, Garden Supplies, Personal Electronics, Household Appliances, Sand, Clay, and Stone. |
 | Resource catalogue | Code-owned resource identity, display name, benchmark, supply, logistics, value-density, and market metadata. Exact values live in `game/resources/resourceConstants.ts`. |
 | Inventory | Company-owned resource quantity, quality, and quantity-weighted source cost. |
 | Resource flow | Categorized signed resource change: production, input, market, customer order, facility spending, or reward. |

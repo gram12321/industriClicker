@@ -8,18 +8,11 @@ import type { PopulationLedger } from '@/game/population';
 import { calculatePopulationConsumption, calculatePopulationTotalWagePayoutPerMinute, getPopulationCount, getResource, RESOURCE_GROUPS, type ResourceGroup } from '@/game';
 import { colors } from '@/theme';
 import { formatCurrency, formatNumber } from '@/utils';
+import { GROUP_ICONS } from '@/icons';
 import { SectionHeading } from '@/ui/dashboard/components/DashboardPrimitives';
 import { TooltipResourceIcon } from '@/ui/dashboard/components/IconTooltip';
 import { styles } from '@/ui/dashboard/helpers/dashboard.styles';
 import { PopulationExpenditureBreakdownChart } from './population/PopulationExpenditureBreakdownChart';
-
-const GROUP_ICONS: Readonly<Record<ResourceGroup, 'food-apple-outline' | 'pickaxe' | 'wall' | 'factory' | 'lightning-bolt-outline'>> = {
-  food: 'food-apple-outline',
-  'raw-resources': 'pickaxe',
-  construction: 'wall',
-  manufacturing: 'factory',
-  utilities: 'lightning-bolt-outline',
-};
 
 export function PopulationView({ facilities, market, population }: { facilities: FacilityCollection; market: Market; population: PopulationLedger }) {
   const [expandedGroups, setExpandedGroups] = useState<Partial<Record<ResourceGroup, boolean>>>({ food: true });

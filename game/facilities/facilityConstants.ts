@@ -272,7 +272,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     industrialMachinesCost: 20,
     upgradeCost: 350,
     baseWorkers: 7,
-    recipes: [ALL_RECIPES[RecipeName.ProduceChemicals], ALL_RECIPES[RecipeName.SynthesizeFertilizer], ALL_RECIPES[RecipeName.ProducePlastic], ALL_RECIPES[RecipeName.ProduceSyntheticLeather]],
+    recipes: [ALL_RECIPES[RecipeName.ProduceChemicals], ALL_RECIPES[RecipeName.SynthesizeFertilizer], ALL_RECIPES[RecipeName.ProducePlastic], ALL_RECIPES[RecipeName.ProduceSyntheticLeather], ALL_RECIPES[RecipeName.ProduceHouseholdCleaningProducts], ALL_RECIPES[RecipeName.ProducePaintHomeCoatings], ALL_RECIPES[RecipeName.ProduceGardenSupplies]],
   },
   [FacilityType.ElectronicsFactory]: {
     type: FacilityType.ElectronicsFactory,
@@ -283,7 +283,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     industrialMachinesCost: 18,
     upgradeCost: 400,
     baseWorkers: 6,
-    recipes: [ALL_RECIPES[RecipeName.ProduceSilicon], ALL_RECIPES[RecipeName.ProduceAdvancedComponents]],
+    recipes: [ALL_RECIPES[RecipeName.ProduceSilicon], ALL_RECIPES[RecipeName.ProduceAdvancedComponents], ALL_RECIPES[RecipeName.ProduceDisplayPanels], ALL_RECIPES[RecipeName.ProducePersonalElectronics]],
   },
   [FacilityType.AssemblyPlant]: {
     type: FacilityType.AssemblyPlant,
@@ -294,7 +294,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     industrialMachinesCost: 30,
     upgradeCost: 600,
     baseWorkers: 12,
-    recipes: [ALL_RECIPES[RecipeName.AssembleIndustrialMachines]],
+    recipes: [ALL_RECIPES[RecipeName.AssembleIndustrialMachines], ALL_RECIPES[RecipeName.AssembleHouseholdAppliances]],
   },
   [FacilityType.ConstructionFactory]: {
     type: FacilityType.ConstructionFactory,
