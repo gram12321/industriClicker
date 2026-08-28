@@ -144,7 +144,10 @@ function GameShell({ companyName }: { companyName: string }) {
     advanceFirstFacilityTutorial();
   }, [advanceFirstFacilityTutorial]);
   const handleFacilityTutorialScroll = useCallback(() => {
-    if (tutorialStage?.kind === 'first-facility-research') setFirstFacilityRecipeFocusActive(false);
+    if (tutorialStage?.kind === 'first-facility-research') {
+      setFirstFacilityRecipeFocusActive(false);
+      setFirstFacilityFocusLayout(null);
+    }
   }, [tutorialStage]);
   const retreatFirstFacilityTutorial = () => setTutorialStage(getPreviousFirstFacilityTutorialStage(tutorialStage ?? { kind: 'build-facility' }));
   const reopenTutorial = () => {

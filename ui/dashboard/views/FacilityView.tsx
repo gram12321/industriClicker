@@ -193,7 +193,12 @@ function ProductionViewContent({
   const detailFacilities = selectedFacility
     ? facilitiesWithGroups.filter(({ facilityView }) => facilityView.id === selectedFacility.id)
     : [];
+  const measureBuildFacilityButton = () => buildFacilityButtonRef.current?.measureInWindow((x, y, width, height) => onBuildFacilityLayout?.({ height, width, x, y }));
   const measureFirstFacilityFocus = () => firstFacilityFocusRef.current?.measureInWindow((x, y, width, height) => onFirstFacilityFocusLayout?.({ height, width, x, y }));
+  const refreshTutorialHighlight = () => {
+    if (isBuildFacilityTutorial) measureBuildFacilityButton();
+    if (firstFacilityFocus) measureFirstFacilityFocus();
+  };
 
   useEffect(() => {
     if (firstFacilityFocus !== 'recipe') return;
@@ -232,14 +237,16 @@ function ProductionViewContent({
       data={orderedFacilities}
       keyExtractor={({ facilityView }) => facilityView.id}
       ListEmptyComponent={<DetailRow label="Constructed facilities" value="None yet" />}
-      ListHeaderComponent={<View style={styles.facilityListHeader}><View style={isProductionTutorial ? styles.tutorialProductionOverview : undefined}><SectionHeading eyebrow="OPERATIONS" title="Facilities" subtitle="Manage your constructed facilities and build new ones." /><View ref={buildFacilityButtonRef} onLayout={() => buildFacilityButtonRef.current?.measureInWindow((x, y, width, height) => onBuildFacilityLayout?.({ height, width, x, y }))}><Button icon={APP_ICONS.add} mode="contained" style={isBuildFacilityTutorial ? styles.tutorialBuildFacilityButton : undefined} onPress={openConstructionYard}>Build facility</Button></View></View><View style={styles.facilityListControls}><Text style={styles.cardKicker}>SORT FACILITIES</Text><SegmentedButtons buttons={[{ label: 'Type', value: 'type' }, { label: 'Condition', value: 'condition' }, { label: 'Staff eff.', value: 'staff-efficiency' }, { label: 'Net gain', value: 'net-gain' }]} onValueChange={(value) => setFacilityListSort(value as FacilityListSort)} value={facilityListSort} />{facilityListSort !== 'type' && <Text style={styles.facilityListSortHint}>{facilityListSort === 'net-gain' ? 'Highest values first.' : 'Lowest values first.'}</Text>}</View></View>}
+      ListHeaderComponent={<View style={styles.facilityListHeader}><View style={isProductionTutorial ? styles.tutorialProductionOverview : undefined}><SectionHeading eyebrow="OPERATIONS" title="Facilities" subtitle="Manage your constructed facilities and build new ones." /><View ref={buildFacilityButtonRef} onLayout={measureBuildFacilityButton}><Button icon={APP_ICONS.add} mode="contained" style={isBuildFacilityTutorial ? styles.tutorialBuildFacilityButton : undefined} onPress={openConstructionYard}>Build facility</Button></View></View><View style={styles.facilityListControls}><Text style={styles.cardKicker}>SORT FACILITIES</Text><SegmentedButtons buttons={[{ label: 'Type', value: 'type' }, { label: 'Condition', value: 'condition' }, { label: 'Staff eff.', value: 'staff-efficiency' }, { label: 'Net gain', value: 'net-gain' }]} onValueChange={(value) => setFacilityListSort(value as FacilityListSort)} value={facilityListSort} />{facilityListSort !== 'type' && <Text style={styles.facilityListSortHint}>{facilityListSort === 'net-gain' ? 'Highest values first.' : 'Lowest values first.'}</Text>}</View></View>}
+      onScroll={refreshTutorialHighlight}
       onScrollBeginDrag={onScrollBeginDrag}
+      scrollEventThrottle={16}
       renderItem={renderFacilitySummary}
       showsVerticalScrollIndicator
     />;
   }
 
-  return <ScrollView contentContainerStyle={[styles.content, (isProductionTutorial || isFirstFacilityTutorial) && styles.tutorialScrollableContent]} onScrollBeginDrag={onScrollBeginDrag} showsVerticalScrollIndicator>
+  return <ScrollView contentContainerStyle={[styles.content, (isProductionTutorial || isFirstFacilityTutorial) && styles.tutorialScrollableContent]} onScroll={refreshTutorialHighlight} onScrollBeginDrag={onScrollBeginDrag} scrollEventThrottle={16} showsVerticalScrollIndicator>
     <View style={isProductionTutorial ? styles.tutorialProductionOverview : undefined}><SectionHeading eyebrow="OPERATIONS" title="Facilities" subtitle="Manage your constructed facilities and build new ones." />
       {!isFirstFacilityTutorial && <Button icon="arrow-left" mode="outlined" onPress={() => setSelectedFacilityId(null)}>All facilities</Button>}
     </View>
@@ -288,7 +295,7 @@ function ProductionViewContent({
       const projectedOutputNetGain = activeRecipe && getActiveOutputQuality ? calculateProjectedFacilityUpgradeNetGainPerMinute(facility, activeRecipe, market, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds), 'output', (resourceType) => inventory.getQuality(resourceType), getActiveOutputQuality) : undefined;
       const projectedConditionNetGain = activeRecipe && getActiveOutputQuality ? calculateProjectedFacilityUpgradeNetGainPerMinute(facility, activeRecipe, market, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds), 'condition', (resourceType) => inventory.getQuality(resourceType), getActiveOutputQuality) : undefined;
       const isExpanded = collapsedFacilities[facilityId] !== true;
-      const activeDetailTab = isFirstFacilityTutorial && index === 0 ? (firstFacilityStep === 'upgrades' || firstFacilityStep === 'inventory-transition' ? 'upgrades' : firstFacilityStep === 'footprint' || firstFacilityStep === 'research' || firstFacilityStep === 'recipe-card' || firstFacilityStep === 'recipe-automation' || firstFacilityStep === 'recipe-economics' ? 'recipe' : 'efficiency') : (facilityDetailTabs[facilityId] ?? 'recipe');
+      const activeDetailTab = isFirstFacilityTutorial && index === 0 ? (firstFacilityStep === 'upgrades' || firstFacilityStep === 'inventory-transition' ? 'upgrades' : firstFacilityStep === 'footprint' || firstFacilityStep === 'research' || firstFacilityStep === 'recipe-card' || firstFacilityStep === 'recipe-automation' || firstFacilityStep === 'recipe-optional-inputs' || firstFacilityStep === 'recipe-economics' ? 'recipe' : 'efficiency') : (facilityDetailTabs[facilityId] ?? 'recipe');
       const financePeriod = facilityFinancePeriods[facilityId] ?? 'all-time';
       const assetBreakdown = (activeDetailTab === 'finance' ? calculateFacilityAssetBreakdown(facility, market, finance) : undefined) as ReturnType<typeof calculateFacilityAssetBreakdown>;
       const facilityPerformance = (activeDetailTab === 'finance' ? finance.getFacilityPerformance(facilityId, financePeriod, currentGameTimeMs) : undefined) as ReturnType<Finance['getFacilityPerformance']>;

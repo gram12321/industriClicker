@@ -598,6 +598,7 @@ type FirstFacilityStep =
   | "research"
   | "recipe-card"
   | "recipe-automation"
+  | "recipe-optional-inputs"
   | "recipe-economics"
   | "upgrades"
   | "inventory-transition";
@@ -747,11 +748,13 @@ export function FirstFacilityTutorialDialog({
                   ? 14
                 : step === "recipe-automation"
                   ? 15
-                : step === "recipe-economics"
+                : step === "recipe-optional-inputs"
                   ? 16
+                : step === "recipe-economics"
+                  ? 17
                   : step === "upgrades"
-                    ? 17
-                    : 18;
+                    ? 18
+                    : 19;
   const title =
     step === "overview"
       ? "Your first facility"
@@ -773,13 +776,15 @@ export function FirstFacilityTutorialDialog({
                   ? "Recipe and production cycle"
                   : step === "recipe-automation"
                     ? "Automatic production"
+                  : step === "recipe-optional-inputs"
+                    ? "Optional inputs"
                   : step === "recipe-economics"
                     ? "Recipe economics"
                     : step === "upgrades"
                       ? "Facility upgrades"
                       : "Your facility is ready";
   const spotlight =
-    step === "research" && focusLayout ? (
+    step === "research" && focus && focusLayout ? (
       <View
         pointerEvents="none"
         style={[
@@ -816,6 +821,7 @@ export function FirstFacilityTutorialDialog({
       step === "footprint" ||
       step === "recipe-card" ||
       step === "recipe-automation" ||
+      step === "recipe-optional-inputs" ||
       step === "recipe-economics" ||
       step === "upgrades" ||
       step === "inventory-transition" ? null : (
@@ -893,13 +899,33 @@ export function FirstFacilityTutorialDialog({
       <Text style={styles.dialogDescription}>
         In the input/output card, the{" "}
         <TooltipMaterialIcon color={colors.primary} label="Buy resources" name={APP_ICONS.marketBuy} size={15} />{" "}
-        button buys the required input resources for one production round. The{" "}
+        button buys missing input resources for one production round. The{" "}
         <TooltipMaterialIcon color={colors.primary} label="Automatic resource buying" name={APP_ICONS.marketAutoBuy} size={15} />{" "}
-        button permanently activates automatic buying for the facility’s input
-        resources.
+        button permanently activates automatic buying for the facility’s
+        production-cycle input resources.
       </Text>
       <Text style={styles.dialogDescription}>
-        We will explain automatic resource buying in more detail later.
+        Automatic resource buying is covered in more detail later. Optional
+        inputs and their checkbox are explained in the next step.
+      </Text>
+    </>
+  );
+  const recipeOptionalInputsContent = (
+    <>
+      <Text style={styles.dialogDescription}>
+        Some recipes have optional inputs. They never stop a recipe from
+        running, but they can change the production result when consumed.
+      </Text>
+      <Text style={styles.dialogDescription}>
+        In the input/output card, the checkbox beside an optional resource
+        toggles automatic use for the recipes in your production cycle. When
+        enabled, the facility uses that resource when it is available; when
+        disabled, it leaves the resource out.
+      </Text>
+      <Text style={styles.dialogDescription}>
+        Optional inputs can change output amount, quality, or required input
+        amounts. When enabled, they are included in the cycle inputs used by
+        the Buy and Automatic buying buttons.
       </Text>
     </>
   );
@@ -940,6 +966,8 @@ export function FirstFacilityTutorialDialog({
       recipeCardContent
     ) : step === "recipe-automation" ? (
       recipeAutomationContent
+    ) : step === "recipe-optional-inputs" ? (
+      recipeOptionalInputsContent
     ) : step === "recipe-economics" ? (
       recipeEconomicsContent
     ) : step === "upgrades" ? (
@@ -1168,7 +1196,7 @@ export function FirstFacilityTutorialDialog({
               >
                 <Text
                   style={styles.sectionEyebrow}
-                >{`STEP ${stepNumber} OF 18`}</Text>
+                >{`STEP ${stepNumber} OF 19`}</Text>
                 {content}
               </ScrollView>
             )}
