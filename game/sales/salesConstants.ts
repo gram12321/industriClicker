@@ -247,6 +247,7 @@ export const SALES_RESOURCE_PROFILES: Readonly<Record<ResourceType, { domain: Sa
   stone: { domain: 'raw-materials', standardOrderLot: 50 },
   minerals: { domain: 'raw-materials', standardOrderLot: 100 },
   gold: { domain: 'raw-materials', standardOrderLot: 1 },
+  timber: { domain: 'raw-materials', standardOrderLot: 50 },
 
   // Industrial inputs
   steel: { domain: 'industrial-inputs', standardOrderLot: 40 },

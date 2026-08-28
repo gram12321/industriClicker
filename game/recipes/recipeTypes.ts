@@ -37,6 +37,7 @@ export enum RecipeName {
   ElectricPumping = 'electric-pumping',
   CoalPower = 'coal-power',
   SolarPower = 'solar-power',
+  ForestManagement = 'forest-management',
 }
 
 export type RecipeInput = {
@@ -60,6 +61,8 @@ export type RecipeInputEffects = {
 export type RecipeOutput = {
   resourceType: ResourceType;
   amount: number;
+  /** Optional independent work requirement for this output. Async outputs are supported only by no-input recipes. */
+  requiredWork?: number;
   /** Quality added after normal production ceilings are resolved. */
   outputBonusQ?: number;
 };

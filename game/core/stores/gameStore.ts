@@ -1,6 +1,6 @@
 import { Finance, LOAN_COLLECTION, buildFinanceStatementData, calculateAssets, calculateFacilityAssetValue, calculateLoanSearchEstimate, generateLoanOffers, getEconomyStaffWageMultiplier, LENDER_TYPES, refreshLoanOfferAvailability, type LoanOffer, type LoanSearchCriteria } from '@/game/finance';
 import { Inventory, ResourceFlowLedger } from '@/game/inventory';
-import { FACILITIES, FacilityCollection, FacilityMaintenanceStatistics, FacilityType, advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateFacilityProductionMaintenanceCost, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_REPAIR_DURATION_PER_CONDITION_MS, FARM_DEFAULT_SIZE_HECTARES, getFacilityConstructionCosts, getFacilityDefinition, getFacilityMissingInputs, getFacilityMaterialQuantityForUnits, getMissingFacilityMaterials, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, getStaffingChangeCost, getStaffingChangeDurationMs, getStaffTrainingCost, getStaffTrainingDurationMs, isValidFacilitySize, type FacilityUpgradeKind } from '@/game/facilities';
+import { FACILITIES, FacilityCollection, FacilityMaintenanceStatistics, FacilityType, advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateFacilityProductionMaintenanceCost, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_REPAIR_DURATION_PER_CONDITION_MS, getFacilityConstructionCosts, getFacilityDefaultSize, getFacilityDefinition, getFacilityMissingInputs, getFacilityMaterialQuantityForUnits, getMissingFacilityMaterials, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, getStaffingChangeCost, getStaffingChangeDurationMs, getStaffTrainingCost, getStaffTrainingDurationMs, isValidFacilitySize, type FacilityUpgradeKind } from '@/game/facilities';
 import { calculateOutputQuality, calculateProductionMaxQ } from '@/game/quality';
 import { getRecipe, type RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
@@ -408,7 +408,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const inventory = get().inventory.clone();
     const market = get().market.clone();
     const finance = get().finance.clone();
-    const selectedSize = sizeHectares ?? (facilityType === FacilityType.Farm ? FARM_DEFAULT_SIZE_HECTARES : 1);
+    const selectedSize = sizeHectares ?? getFacilityDefaultSize(facilityType);
     if (!isValidFacilitySize(facilityType, selectedSize)) return false;
     const constructionCosts = getFacilityConstructionCosts(facilityType, definition, selectedSize);
     const missingInputs = getMissingFacilityMaterials(inventory, [
@@ -440,7 +440,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const finance = get().finance.clone();
     const inventory = get().inventory.clone();
     const definition = getFacilityDefinition(facilityType);
-    const selectedSize = sizeHectares ?? (facilityType === FacilityType.Farm ? FARM_DEFAULT_SIZE_HECTARES : 1);
+    const selectedSize = sizeHectares ?? getFacilityDefaultSize(facilityType);
     if (!isValidFacilitySize(facilityType, selectedSize)) return false;
     const constructionCosts = getFacilityConstructionCosts(facilityType, definition, selectedSize);
     const isFirstFacility = facilities.getAll().length === 0;
@@ -460,7 +460,7 @@ export const useGameStore = create<GameState>((set, get) => {
     }
 
     const builtFacility = facilities.getAllByType(facilityType).at(-1);
-    if (!builtFacility || !finance.applyTransaction({ amount: -constructionCosts.landCost, description: `Purchased land for ${builtFacility.getView().displayName}`, detailLines: [`Facility size: ${selectedSize}${facilityType === FacilityType.Farm ? ' ha' : ''}`, `Construction materials committed: ${constructionCosts.constructionMaterialsCost}`, `Industrial machines installed: ${constructionCosts.industrialMachinesCost}`], facilityAccounting: { facilityId: builtFacility.id, classification: 'construction', historicalValue: constructionInvestment }, kind: 'investing', source: 'facility-construction', occurredAtGameTimeMs: get().lastProcessedAtMs })
+    if (!builtFacility || !finance.applyTransaction({ amount: -constructionCosts.landCost, description: `Purchased land for ${builtFacility.getView().displayName}`, detailLines: [`Facility size: ${selectedSize}${definition.size?.unit ? ` ${definition.size.unit}` : ''}`, `Construction materials committed: ${constructionCosts.constructionMaterialsCost}`, `Industrial machines installed: ${constructionCosts.industrialMachinesCost}`], facilityAccounting: { facilityId: builtFacility.id, classification: 'construction', historicalValue: constructionInvestment }, kind: 'investing', source: 'facility-construction', occurredAtGameTimeMs: get().lastProcessedAtMs })
       || !inventory.remove(ResourceType.ConstructionMaterials, constructionMaterialsQuantity)
       || !inventory.remove(ResourceType.IndustrialMachines, industrialMachinesQuantity)) {
       return false;

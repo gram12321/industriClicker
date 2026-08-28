@@ -17,6 +17,7 @@ import {
   FacilityType,
   getConditionDecayMultiplier,
   getFacilityDefinition,
+  getFacilityRecipeOutputRequiredWork,
   getFacilityProductionCycleInputs,
   getFacilityAvailableRecipeInputPlan,
   getFacilityRecipeInputPlan,
@@ -24,6 +25,8 @@ import {
   getFacilityUpgradeCost,
   getFacilityUpgradeResourceCost,
   getOutputUpgradeMultiplier,
+  getFacilitySizeDefinition,
+  hasIndependentOutputProgress,
   getSpeedUpgradeWorkSpeedMultiplier,
   type FacilityCollection,
   type RecipeInputPlan,
@@ -227,8 +230,9 @@ function ProductionViewContent({
     const productionEconomics = summaryProductionById.get(facilityView.id) ?? null;
     const productionStatus = getFacilityProductionStatus(facilityView, inventory);
     const showGroup = facilityListSort === 'type' && (index === 0 || orderedFacilities[index - 1].group.id !== group.id);
-    const progressPercent = activeRecipe ? clamp(((facilityView.recipeProgress[activeRecipe.name] ?? 0) / (activeRecipe.requiredWork * facilityView.sizeMultiplier)) * 100, 0, 100) : null;
-    return <FacilitySummaryCard conditionColor={getColorClass(facilityView.facilityCondition)} conditionLabel={formatPercent(facilityView.facilityCondition, { decimals: 0 })} displayName={facilityView.displayName} facilityId={facilityView.id} groupLabel={group.label} icon={definition.icon} isPaused={productionStatus === 'missing-inputs' || productionStatus === 'paused'} netGainLabel={productionEconomics ? formatCurrency(productionEconomics.netGainPerMinute) : null} onSelectFacility={setSelectedFacilityId} progressLabel={activeRecipe && productionEconomics ? formatRecipeProgress(facilityView.recipeProgress[activeRecipe.name] ?? 0, activeRecipe.requiredWork * facilityView.sizeMultiplier, productionEconomics.effectiveWorkPerMinute) : null} progressPercent={progressPercent} recipeLabel={activeRecipe ? formatRecipeName(activeRecipe) : 'No active recipe'} showGroup={showGroup} staffEfficiencyColor={getColorClass(Math.min(1, facilityView.staffingEfficiency))} staffEfficiencyLabel={formatPercent(facilityView.staffingEfficiency, { decimals: 0 })} staffingLabel={`${formatNumber(facilityView.assignedWorkers)}/${formatNumber(facilityView.requiredWorkers)}`} />;
+    const usesIndependentOutputProgress = activeRecipe ? hasIndependentOutputProgress(activeRecipe) : false;
+    const progressPercent = activeRecipe && !usesIndependentOutputProgress ? clamp(((facilityView.recipeProgress[activeRecipe.name] ?? 0) / (activeRecipe.requiredWork * facilityView.sizeMultiplier)) * 100, 0, 100) : null;
+    return <FacilitySummaryCard conditionColor={getColorClass(facilityView.facilityCondition)} conditionLabel={formatPercent(facilityView.facilityCondition, { decimals: 0 })} displayName={facilityView.displayName} facilityId={facilityView.id} groupLabel={group.label} icon={definition.icon} isPaused={productionStatus === 'missing-inputs' || productionStatus === 'paused'} netGainLabel={productionEconomics ? formatCurrency(productionEconomics.netGainPerMinute) : null} onSelectFacility={setSelectedFacilityId} progressLabel={activeRecipe && productionEconomics ? usesIndependentOutputProgress ? 'Independent outputs' : formatRecipeProgress(facilityView.recipeProgress[activeRecipe.name] ?? 0, activeRecipe.requiredWork * facilityView.sizeMultiplier, productionEconomics.effectiveWorkPerMinute) : null} progressPercent={progressPercent} recipeLabel={activeRecipe ? formatRecipeName(activeRecipe) : 'No active recipe'} showGroup={showGroup} staffEfficiencyColor={getColorClass(Math.min(1, facilityView.staffingEfficiency))} staffEfficiencyLabel={formatPercent(facilityView.staffingEfficiency, { decimals: 0 })} staffingLabel={`${formatNumber(facilityView.assignedWorkers)}/${formatNumber(facilityView.requiredWorkers)}`} />;
   };
 
   if (!isShowingFacilityDetail) {
@@ -261,6 +265,7 @@ function ProductionViewContent({
       const effectiveWorkPerMinute = activeProductionEconomics?.effectiveWorkPerMinute ?? 0;
       const productionStatus = getFacilityProductionStatus(facilityView, inventory);
       const { assignedWorkers, conditionDecayMultiplier, conditionDecayUpgradeLevel, facilityEfficiency, facilityCondition, outputMultiplier, outputUpgradeLevel, overstaffingConditionDecayMultiplier, sizeHectares, sizeMultiplier, staffQuality, staffQualityTrend, staffQualityWagePressurePerMinute, staffQualityWageTrend, staffWageTargetPerWorkerPerMinute, pendingRepair, pendingStaffingChange, staffTraining, upgradeMaxQ, qualityUpgradeLevel, requiredWorkers, speedUpgradeLevel, speedUpgradeWorkSpeedMultiplier } = facilityView;
+      const sizeDefinition = getFacilitySizeDefinition(facilityView.facilityType);
       const totalConditionDecayMultiplier = conditionDecayMultiplier * overstaffingConditionDecayMultiplier;
       const pendingStaffingSeconds = pendingStaffingChange ? Math.max(0, pendingStaffingChange.completesAtGameTimeMs - currentGameTimeMs) / 1_000 : 0;
       const staffTrainingSeconds = staffTraining ? Math.max(0, staffTraining.completesAtGameTimeMs - currentGameTimeMs) / 1_000 : 0;
@@ -323,12 +328,17 @@ function ProductionViewContent({
       const showGroup = index === 0 || orderedFacilities[index - 1].group.id !== group.id;
       return <View key={facilityId}>{showGroup && <Text style={styles.cardKicker}>{group.label}</Text>}<Card mode="contained" style={[styles.featureCard, isFirstFacility && !focusTarget && styles.tutorialFirstFacilityCard]}><Card.Content>
         <View ref={isFirstFacility && focusTarget === 'header' ? firstFacilityFocusRef : undefined} onLayout={isFirstFacility && focusTarget === 'header' ? measureFirstFacilityFocus : undefined} style={isFirstFacility && focusTarget === 'header' ? styles.tutorialFirstFacilityHeader : undefined}>
-        <List.Item
-          description={<View style={styles.facilityHeader}>
-            <View style={styles.facilityHeaderRow}><Text style={styles.cardDescription}>{activeRecipe ? formatRecipeName(activeRecipe) : 'No active recipe'}</Text>{activeRecipe && <WorkMetric value={formatRecipeProgress(facilityView.recipeProgress[activeRecipe.name] ?? 0, activeRecipe.requiredWork * sizeMultiplier, effectiveWorkPerMinute)} />}</View>
+        <View style={styles.facilityDetailHeader}>
+          <View style={styles.facilityDetailIdentity}>
+            <TooltipMaterialIcon color={colors.muted} label={definition.name} name={definition.icon} size={24} />
+            <Text style={styles.facilityTitle}>{facilityName}</Text>
+          </View>
+          <View style={styles.facilityTopActions}>{activeRecipe && <IconButton accessibilityLabel={`${facilityView.isActive ? 'Pause' : 'Resume'} ${facilityName}`} icon={facilityView.isActive ? APP_ICONS.pause : APP_ICONS.resume} onPress={() => setFacilityProductionActive(facilityId, !facilityView.isActive)} size={20} />}<IconButton accessibilityLabel={`Sell ${facilityName}`} icon={APP_ICONS.destroy} iconColor={colors.error} onPress={() => requestFacilityDestruction(facilityId)} size={20} /><IconButton accessibilityLabel={`${isExpanded ? 'Collapse' : 'Expand'} ${facilityName}`} icon={isExpanded ? APP_ICONS.collapse : APP_ICONS.expand} onPress={() => setCollapsedFacilities((current) => ({ ...current, [facilityId]: isExpanded }))} size={20} /></View>
+          <View style={styles.facilityHeader}>
+            <View style={styles.facilityHeaderRow}><Text style={styles.cardDescription}>{activeRecipe ? formatRecipeName(activeRecipe) : 'No active recipe'}</Text>{activeRecipe && <WorkMetric value={hasIndependentOutputProgress(activeRecipe) ? 'Independent outputs' : formatRecipeProgress(facilityView.recipeProgress[activeRecipe.name] ?? 0, activeRecipe.requiredWork * sizeMultiplier, effectiveWorkPerMinute)} />}</View>
             <View style={styles.facilityMetrics}>
               <FacilityMetric icon={APP_ICONS.staffing} label="Staffing" value={`${formatNumber(assignedWorkers)}/${formatNumber(requiredWorkers)}`} />
-              {facilityView.facilityType === FacilityType.Farm && <FacilityMetric icon={APP_ICONS.facilityFarm} label="Farm size" value={`${formatNumber(sizeHectares)} ha`} />}
+              {sizeDefinition && <FacilityMetric icon={definition.icon} label={sizeDefinition.label} value={`${formatNumber(sizeHectares)} ${sizeDefinition.unit}`} />}
               <FacilityMetric color={getColorClass(Math.min(1, facilityEfficiency))} icon={APP_ICONS.efficiency} label="Efficiency" value={formatPercent(facilityEfficiency, { decimals: 0 })} />
               <FacilityMetric icon={APP_ICONS.speed} label="Speed upgrade" value={`L${formatNumber(speedUpgradeLevel)}`} />
               <FacilityMetric icon={APP_ICONS.output} label="Output upgrade" value={`L${formatNumber(outputUpgradeLevel)}`} />
@@ -336,14 +346,10 @@ function ProductionViewContent({
               <FacilityMetric icon={APP_ICONS.durability} label="Durability upgrade" value={`L${formatNumber(conditionDecayUpgradeLevel)}`} />
               {(productionStatus === 'missing-inputs' || productionStatus === 'paused') && <View accessibilityLabel={productionStatus === 'missing-inputs' ? 'Production paused: missing inputs' : 'Production manually paused'} style={styles.facilityPauseMetric}><TooltipMaterialIcon color={colors.error} label={productionStatus === 'missing-inputs' ? 'Production paused: missing inputs' : 'Production manually paused'} name={APP_ICONS.pause} size={14} /></View>}
             </View>
-          </View>}
-          left={() => <TooltipMaterialIcon color={colors.muted} label={definition.name} name={definition.icon} size={24} />}
-          right={() => <View style={styles.facilityTopActions}>{activeRecipe && <IconButton accessibilityLabel={`${facilityView.isActive ? 'Pause' : 'Resume'} ${facilityName}`} icon={facilityView.isActive ? APP_ICONS.pause : APP_ICONS.resume} onPress={() => setFacilityProductionActive(facilityId, !facilityView.isActive)} size={20} />}<IconButton accessibilityLabel={`Sell ${facilityName}`} icon={APP_ICONS.destroy} iconColor={colors.error} onPress={() => requestFacilityDestruction(facilityId)} size={20} /><IconButton accessibilityLabel={`${isExpanded ? 'Collapse' : 'Expand'} ${facilityName}`} icon={isExpanded ? APP_ICONS.collapse : APP_ICONS.expand} onPress={() => setCollapsedFacilities((current) => ({ ...current, [facilityId]: isExpanded }))} size={20} /></View>}
-          title={facilityName}
-          titleStyle={styles.facilityTitle}
-        />
+          </View>
         </View>
-        {!isExpanded && activeRecipe && activeProductionEconomics && <FacilityProductionStatus compact decayCostPerMinute={decayCostPerMinute} effectiveWorkPerMinute={effectiveWorkPerMinute} inputEffects={activeInputPlan?.effects} netGainPerMinute={activeProductionEconomics.netGainPerMinute} outputMultiplier={outputMultiplier} progress={facilityView.recipeProgress[activeRecipe.name] ?? 0} recipe={activeRecipe} sizeMultiplier={sizeMultiplier} status={productionStatus} valuePerMinute={activeProductionEconomics.valuePerMinute} />}
+        </View>
+        {!isExpanded && activeRecipe && activeProductionEconomics && <FacilityProductionStatus compact decayCostPerMinute={decayCostPerMinute} effectiveWorkPerMinute={effectiveWorkPerMinute} inputEffects={activeInputPlan?.effects} netGainPerMinute={activeProductionEconomics.netGainPerMinute} outputMultiplier={outputMultiplier} outputProgress={facilityView.recipeOutputProgress[activeRecipe.name]} progress={facilityView.recipeProgress[activeRecipe.name] ?? 0} recipe={activeRecipe} sizeMultiplier={sizeMultiplier} status={productionStatus} valuePerMinute={activeProductionEconomics.valuePerMinute} />}
         {isExpanded && <>
           <View style={styles.facilityProductionSection}>
             {activeRecipe && <View style={styles.facilityProductionTop}><FacilityResourceSummary inputPlan={activeInputPlan ?? undefined} inputQ={qualityInputQ} inputSourceCost={facilityView.recipeInputSourceCost} maintenanceCost={calculateFacilityProductionMaintenanceCost(facilityView, activeRecipe, market)} sizeMultiplier={sizeMultiplier} staffMaxQ={facilityView.staffQuality} getQualityBreakdown={(output, weightedInputQ, facilityMaxQ) => calculateOutputQuality({ researchMaxQ: getResourceResearchMaxQ(output.resourceType, completedResearchProjectIds), weightedInputQ, upgradeMaxQ: facilityMaxQ, productionMaxQ: calculateProductionMaxQ(producedByResource[output.resourceType]), staffMaxQ: facilityView.staffQuality, outputBonusQ: (output.outputBonusQ ?? 0) + (facilityView.recipeInputEffects?.qualityBoost ?? activeInputPlan?.effects.qualityBoost ?? 0) })} inventory={inventory} outputMultiplier={outputMultiplier * (facilityView.recipeInputEffects?.outputMultiplier ?? activeInputPlan?.effects.outputMultiplier ?? 1)} recipe={activeRecipe} upgradeMaxQ={upgradeMaxQ} /><View style={styles.facilityRecipeActions}>
@@ -351,7 +357,7 @@ function ProductionViewContent({
               <IconButton accessibilityLabel="Buy missing inputs for one production cycle" containerColor={colors.marketBuy} disabled={!hasMissingCycleInputs} icon={APP_ICONS.marketBuy} iconColor={colors.onDark} onPress={() => productionCycleInputs.forEach((input) => { const missingAmount = Math.max(0, input.amount - inventory.getAmount(input.resourceType)); if (missingAmount > 0) buyMarketResource(input.resourceType, missingAmount); })} size={16} style={styles.facilityRecipeActionButton} />
               {optionalInputOptions.map(({ input, recipeNames }) => { const enabled = recipeNames.every((recipeName) => { const settings = facilityView.optionalInputSettings[recipeName]; return settings === undefined || settings.includes(input.resourceType); }); const resourceName = getResource(input.resourceType).name; return <View key={input.resourceType} accessible accessibilityLabel={`${enabled ? 'Disable' : 'Enable'} automatic use of ${resourceName} across production-cycle recipes`} style={styles.facilityOptionalInputToggle}><TooltipResourceIcon resourceType={input.resourceType} /><Checkbox status={enabled ? 'checked' : 'unchecked'} onPress={() => recipeNames.forEach((recipeName) => setFacilityOptionalInputEnabled(facilityId, recipeName, input.resourceType, !enabled))} /></View>; })}
             </View></View>}
-            <FacilityProductionStatus decayCostPerMinute={decayCostPerMinute} effectiveWorkPerMinute={effectiveWorkPerMinute} inputEffects={activeInputPlan?.effects} netGainPerMinute={activeProductionEconomics?.netGainPerMinute ?? 0} outputMultiplier={outputMultiplier} progress={activeRecipe ? facilityView.recipeProgress[activeRecipe.name] ?? 0 : 0} recipe={activeRecipe ?? null} sizeMultiplier={sizeMultiplier} status={productionStatus} valuePerMinute={activeProductionEconomics?.valuePerMinute ?? 0} />
+            <FacilityProductionStatus decayCostPerMinute={decayCostPerMinute} effectiveWorkPerMinute={effectiveWorkPerMinute} inputEffects={activeInputPlan?.effects} netGainPerMinute={activeProductionEconomics?.netGainPerMinute ?? 0} outputMultiplier={outputMultiplier} outputProgress={activeRecipe ? facilityView.recipeOutputProgress[activeRecipe.name] : undefined} progress={activeRecipe ? facilityView.recipeProgress[activeRecipe.name] ?? 0 : 0} recipe={activeRecipe ?? null} sizeMultiplier={sizeMultiplier} status={productionStatus} valuePerMinute={activeProductionEconomics?.valuePerMinute ?? 0} />
           </View>
           <View style={styles.facilityTabList}>
             <View ref={isFirstFacility && focusTarget === 'efficiency' ? firstFacilityFocusRef : undefined} onLayout={isFirstFacility && focusTarget === 'efficiency' ? measureFirstFacilityFocus : undefined} style={[styles.facilityTabContainer, isFirstFacility && focusTarget === 'efficiency' && styles.tutorialFirstFacilityHeader]}><TouchableRipple accessibilityLabel={`Show facility efficiency and staff for ${facilityName}`} onPress={() => setFacilityDetailTabs((current) => ({ ...current, [facilityId]: 'efficiency' }))} style={[styles.facilityTab, activeDetailTab === 'efficiency' && styles.facilityTabActive]}><Text numberOfLines={1} style={[styles.facilityTabLabel, activeDetailTab === 'efficiency' && styles.facilityTabLabelActive]}>Facility efficiency and staff</Text></TouchableRipple></View>
@@ -524,8 +530,28 @@ function FacilityResourceSummary({ getQualityBreakdown, inputPlan, inputQ, input
   </View>;
 }
 
-function FacilityProductionStatus({ compact = false, decayCostPerMinute, effectiveWorkPerMinute, inputEffects, netGainPerMinute, outputMultiplier, progress, recipe, sizeMultiplier = 1, status, valuePerMinute }: { compact?: boolean; decayCostPerMinute: number; effectiveWorkPerMinute: number; inputEffects?: Required<RecipeInputEffects>; netGainPerMinute: number; outputMultiplier: number; progress: number; recipe: Recipe | null; sizeMultiplier?: number; status: 'not-started' | 'paused' | 'missing-inputs' | 'producing'; valuePerMinute: number }) {
+function FacilityProductionStatus({ compact = false, decayCostPerMinute, effectiveWorkPerMinute, inputEffects, netGainPerMinute, outputMultiplier, outputProgress, progress, recipe, sizeMultiplier = 1, status, valuePerMinute }: { compact?: boolean; decayCostPerMinute: number; effectiveWorkPerMinute: number; inputEffects?: Required<RecipeInputEffects>; netGainPerMinute: number; outputMultiplier: number; outputProgress?: Partial<Record<ResourceType, number>>; progress: number; recipe: Recipe | null; sizeMultiplier?: number; status: 'not-started' | 'paused' | 'missing-inputs' | 'producing'; valuePerMinute: number }) {
   if (!recipe) return <Text style={styles.productionError}>Production is not started. Choose a recipe to begin.</Text>;
+  if (hasIndependentOutputProgress(recipe)) {
+    return <View style={styles.productionProgress}>
+      <Text style={styles.productionValue}>Value/min: {formatCurrency(valuePerMinute)}</Text>
+      <Text style={styles.productionTimeLeft}>Net gain/min: {formatCurrency(netGainPerMinute)}</Text>
+      <Text style={styles.productionTimeLeft}>Decay cost/min: {formatCurrency(decayCostPerMinute)}</Text>
+      {recipe.outputs.map((output) => {
+        const requiredWork = getFacilityRecipeOutputRequiredWork(recipe, output, sizeMultiplier);
+        const currentProgress = outputProgress?.[output.resourceType] ?? 0;
+        const progressPercent = clamp((currentProgress / requiredWork) * 100, 0, 100);
+        const minutesRemaining = effectiveWorkPerMinute > 0 ? Math.max(0, requiredWork - currentProgress) / effectiveWorkPerMinute : 0;
+        const amountPerMinute = output.amount * sizeMultiplier * outputMultiplier * (inputEffects?.outputMultiplier ?? 1) * effectiveWorkPerMinute / requiredWork;
+        return <View key={output.resourceType} accessibilityLabel={`${getResource(output.resourceType).name} production progress ${formatPercent(progressPercent, { decimals: 0, input: 'percent' })}`} style={styles.productionProgress}>
+          <View style={styles.productionProgressHeader}><Text style={styles.productionValue}>{getResource(output.resourceType).name}</Text><Text style={styles.productionPercent}>{formatPercent(progressPercent, { decimals: 0, input: 'percent' })}</Text></View>
+          <Text style={styles.productionTimeLeft}>Production/min: {formatNumber(amountPerMinute, { smartDecimals: true })}</Text>
+          <Text style={styles.productionTimeLeft}>Time left: {formatDuration(minutesRemaining)}</Text>
+          <ProgressBar color={colors.primary} progress={progressPercent / 100} style={styles.productionProgressBar} />
+        </View>;
+      })}
+    </View>;
+  }
   const requiredWork = recipe.requiredWork * sizeMultiplier;
   const progressPercent = clamp((progress / requiredWork) * 100, 0, 100);
   const workPerMinute = effectiveWorkPerMinute;

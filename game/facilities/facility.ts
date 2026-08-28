@@ -2,7 +2,7 @@ import { getRecipe, type RecipeInputEffects, type RecipeName } from '@/game/reci
 import type { ResourceType } from '@/game/resources';
 import { calculateAsymmetricalScaler01 } from '@/game/core/math/scaling';
 import { calculateProgressFromQuality, calculateUpgradeMaxQ } from '@/game/quality';
-import { FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_INITIAL_STAFF_QUALITY, FACILITY_REPAIR_EFFICIENCY_MULTIPLIER, FACILITY_STAFF_QUALITY_EXPERIENCE_PROGRESS_PER_WORK, FACILITY_STAFF_QUALITY_TREND_DECAY_RATE, FACILITY_STAFF_QUALITY_TREND_MEMORY_MINUTES, FACILITY_STAFF_TRAINING_QUALITY_PROGRESS_PER_WORKER, FARM_DEFAULT_SIZE_HECTARES, getFacilityDefinition, getFacilityMaxStaffWage, getFacilitySizeMultiplier, isValidFacilitySize } from './facilityConstants';
+import { FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_INITIAL_STAFF_QUALITY, FACILITY_REPAIR_EFFICIENCY_MULTIPLIER, FACILITY_STAFF_QUALITY_EXPERIENCE_PROGRESS_PER_WORK, FACILITY_STAFF_QUALITY_TREND_DECAY_RATE, FACILITY_STAFF_QUALITY_TREND_MEMORY_MINUTES, FACILITY_STAFF_TRAINING_QUALITY_PROGRESS_PER_WORKER, getFacilityDefaultSize, getFacilityDefinition, getFacilityMaxStaffWage, getFacilitySizeMultiplier, isValidFacilitySize } from './facilityConstants';
 import { FacilityType } from './facilityTypes';
 import { getConditionDecayMultiplier, getFacilityConditionEfficiency, getFacilityEfficiency, getFacilityStaffTargetWage, getOutputUpgradeMultiplier, getOverstaffingConditionDecayMultiplier, getRequiredWorkers, getSpeedUpgradeWorkSpeedMultiplier, getStaffingEfficiency, getStaffQualityFromProgress, getStaffQualityWagePressurePerMinute, getStaffQualityWageProgressChangePerMinute, getWageEfficiency } from './facilityUpgrades';
 
@@ -16,6 +16,7 @@ export type FacilitySnapshot = {
   productionCycleIndex: number;
   isActive: boolean;
   recipeProgress: Partial<Record<RecipeName, number>>;
+  recipeOutputProgress: Partial<Record<RecipeName, Partial<Record<ResourceType, number>>>>;
   recipeInputQ: number | null;
   recipeInputSourceCost: number | null;
   recipeInputEffects: Required<RecipeInputEffects> | null;
@@ -49,6 +50,7 @@ export type FacilityView = {
   productionCycleIndex: number;
   isActive: boolean;
   recipeProgress: Readonly<Partial<Record<RecipeName, number>>>;
+  recipeOutputProgress: Readonly<Partial<Record<RecipeName, Partial<Record<ResourceType, number>>>>>;
   recipeInputQ: number | null;
   recipeInputSourceCost: number | null;
   recipeInputEffects: Required<RecipeInputEffects> | null;
@@ -91,6 +93,7 @@ export class Facility {
   private productionCycleIndex = 0;
   private active = false;
   private recipeProgress: Partial<Record<RecipeName, number>> = {};
+  private recipeOutputProgress: Partial<Record<RecipeName, Partial<Record<ResourceType, number>>>> = {};
   private recipeInputQ: number | null = null;
   private recipeInputSourceCost: number | null = null;
   private recipeInputEffects: Required<RecipeInputEffects> | null = null;
@@ -116,14 +119,14 @@ export class Facility {
   constructor(
     public readonly id: string,
     public readonly facilityType: FacilityType,
-    sizeHectaresOrSnapshot: number | FacilitySnapshot = facilityType === FacilityType.Farm ? FARM_DEFAULT_SIZE_HECTARES : 1,
+    sizeHectaresOrSnapshot: number | FacilitySnapshot = getFacilityDefaultSize(facilityType),
     snapshot?: FacilitySnapshot,
   ) {
     const suppliedSnapshot = typeof sizeHectaresOrSnapshot === 'object' ? sizeHectaresOrSnapshot : snapshot;
     const suppliedSize = typeof sizeHectaresOrSnapshot === 'number' ? sizeHectaresOrSnapshot : suppliedSnapshot?.sizeHectares;
     this.sizeHectares = isValidFacilitySize(facilityType, suppliedSize)
       ? suppliedSize
-      : (facilityType === FacilityType.Farm ? FARM_DEFAULT_SIZE_HECTARES : 1);
+      : getFacilityDefaultSize(facilityType);
     if (suppliedSnapshot) {
       this.restore(suppliedSnapshot);
     } else {
@@ -158,6 +161,7 @@ export class Facility {
       productionCycleIndex: this.productionCycleIndex,
       isActive: this.active,
       recipeProgress: { ...this.recipeProgress },
+      recipeOutputProgress: Object.fromEntries(Object.entries(this.recipeOutputProgress).map(([recipeName, outputs]) => [recipeName, { ...outputs }])),
       recipeInputQ: this.recipeInputQ,
       recipeInputSourceCost: this.recipeInputSourceCost,
       recipeInputEffects: this.recipeInputEffects ? { ...this.recipeInputEffects } : null,
@@ -443,6 +447,16 @@ export class Facility {
     return true;
   }
 
+  /** Internal production-state command for independently progressing recipe outputs. */
+  setRecipeOutputProgress(recipeName: RecipeName, resourceType: ResourceType, progress: number): boolean {
+    const recipe = getFacilityDefinition(this.facilityType).recipes.find((candidate) => candidate.name === recipeName);
+    const output = recipe?.outputs.find((candidate) => candidate.resourceType === resourceType);
+    const requiredWork = (output?.requiredWork ?? recipe?.requiredWork ?? 0) * getFacilitySizeMultiplier(this.facilityType, this.sizeHectares);
+    if (!output || !Number.isFinite(progress) || progress < 0 || progress >= requiredWork) return false;
+    this.recipeOutputProgress[recipeName] = { ...this.recipeOutputProgress[recipeName], [resourceType]: progress };
+    return true;
+  }
+
   /** Records the weighted quality of inputs consumed for the in-progress cycle. */
   setRecipeInputQ(inputQ: number | null): void {
     this.recipeInputQ = inputQ !== null && Number.isFinite(inputQ) && inputQ > 0 ? inputQ : null;
@@ -490,6 +504,7 @@ export class Facility {
       productionCycleIndex: this.productionCycleIndex,
       isActive: this.active,
       recipeProgress: { ...this.recipeProgress },
+      recipeOutputProgress: Object.fromEntries(Object.entries(this.recipeOutputProgress).map(([recipeName, outputs]) => [recipeName, { ...outputs }])),
       recipeInputQ: this.recipeInputQ,
       recipeInputSourceCost: this.recipeInputSourceCost,
       recipeInputEffects: this.recipeInputEffects ? { ...this.recipeInputEffects } : null,
@@ -527,6 +542,7 @@ export class Facility {
     this.active = snapshot.isActive;
 
     this.recipeProgress = {};
+    this.recipeOutputProgress = {};
     const recipeInputQ = snapshot.recipeInputQ;
     this.recipeInputQ = typeof recipeInputQ === 'number' && Number.isFinite(recipeInputQ) && recipeInputQ > 0
       ? recipeInputQ
@@ -573,6 +589,16 @@ export class Facility {
 
       if (Number.isFinite(progress) && progress !== undefined && progress >= 0 && progress < recipe.requiredWork * getFacilitySizeMultiplier(this.facilityType, this.sizeHectares)) {
         this.recipeProgress[recipe.name] = progress;
+      }
+
+      const savedOutputProgress = snapshot.recipeOutputProgress[recipe.name];
+      if (!savedOutputProgress) continue;
+      for (const output of recipe.outputs) {
+        const outputProgress = savedOutputProgress[output.resourceType];
+        const requiredWork = (output.requiredWork ?? recipe.requiredWork) * getFacilitySizeMultiplier(this.facilityType, this.sizeHectares);
+        if (Number.isFinite(outputProgress) && outputProgress !== undefined && outputProgress >= 0 && outputProgress < requiredWork) {
+          this.recipeOutputProgress[recipe.name] = { ...this.recipeOutputProgress[recipe.name], [output.resourceType]: outputProgress };
+        }
       }
     }
   }

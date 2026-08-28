@@ -13,7 +13,8 @@ This is the authority for concrete variables, dependencies, commands, time effec
 | Grain | Farm: Grow Grain | 1 Water, 1 Electricity, 0.05 Fertilizer |
 | Sugar | Farm: Grow Sugar | 3 Water, 0.08 Fertilizer |
 | Fruit | Farm: Grow Fruit | 2 Water, 0.06 Fertilizer |
-| Meat | Animal Farm: Raise Cattle / Sheep / Chicken | 3 / 2 / 1 Grain, 2 / 1.5 / 1 Water, 1.25 / 1 / 0.75 Electricity |
+| Meat | Animal Farm: Raise Cattle / Sheep / Chicken; Forestry: Forest Management | 3 / 2 / 1 Grain, 2 / 1.5 / 1 Water, 1.25 / 1 / 0.75 Electricity / None |
+| Timber | Forestry: Forest Management | None |
 | Milk | Animal Farm: Raise Cattle | 3 Grain, 2 Water, 1.25 Electricity |
 | Wool | Animal Farm: Raise Sheep | 2 Grain, 1.5 Water, 1 Electricity |
 | Eggs | Animal Farm: Raise Chicken | 1 Grain, 1 Water, 0.75 Electricity |
@@ -374,12 +375,12 @@ flowchart LR
 | State | Owner | Changes through | Saved as |
 |---|---|---|---|
 | `inventory.entries.*.quantity/.quality/.sourceCostPerUnit` | Inventory | Resource commands and production additions/removals | `InventorySnapshot` |
-| `facility.recipeInputQ/.recipeInputSourceCost/.recipeInputEffects` | Facility | Captured at cycle input consumption; optional effects are selected by per-facility recipe settings and used at completion | Facility snapshot; production-maintenance allocation is added to output source cost |
+| `facility.recipeInputQ/.recipeInputSourceCost/.recipeInputEffects/.recipeOutputProgress` | Facility | Inputs are captured at cycle start; no-input asynchronous outputs retain their own work progress and complete separately | Facility snapshot; production-maintenance allocation is added to output source cost |
 | `facility.optionalInputSettings` | Facility | Recipe-tab checkmarks configure which optional inputs are automatically used and autobought | Facility snapshot |
 | Facility upgrade levels, workers, staff wage, Staff Quality progress/trend, pending staffing/training, condition, auto-repair settings | Facility | Upgrade, staffing/wage, hiring/firing/training, repair, and foreground wear | Facility snapshot |
 | Resource-flow buckets and lifetime facility output | ResourceFlowLedger | Inventory-affecting commands and completed output | Game snapshot |
 | Finance balance, transactions, loans, lenders, searches, economy phase, staff-wage charges | Finance | Cash commands and foreground finance rules | `FinanceSnapshot` |
-| Numbered facilities, Farm footprint, recipe order/position/progress, maintenance statistics | FacilityCollection | Construction, cycle setup, upgrades, production, repair | Facility snapshot |
+| Numbered facilities, land footprint, recipe order/position/progress, maintenance statistics | FacilityCollection | Construction, cycle setup, upgrades, production, repair | Facility snapshot |
 | Offered/completed orders, customer states, next order number | SalesOrders | Create, fulfil, reject, expire, relationship progression | `SalesOrdersSnapshot` |
 | Achievements, prestige events, research/grants | Their ledgers | Post-command evaluation and research commands | Their snapshots |
 | Market pools, automation, depth multiplier, network activations | Market | Trades, order fulfilment, diffusion, activations | `MarketSnapshot` |
@@ -394,7 +395,7 @@ Derived values include facility efficiency/output, worker/wage efficiency, produ
 | Command/group | Reads | Writes |
 |---|---|---|
 | Inventory and market trades | Resource, amount, market quote, quality | Inventory, market, Finance, Resource Flow |
-| Construction/material purchase | Facility definition, selected Farm footprint, prices, supply, balance | Facilities, market, inventory, Finance |
+| Construction/material purchase | Facility definition, selected land footprint, prices, supply, balance | Facilities, market, inventory, Finance |
 | Facility commands | Definition, research, inputs, balance, facility state, staff wage, Staff Quality | Facility collection, inventory, Finance, Resource Flow |
 | Finance commands | Loan/search criteria, lender policies, credit report, active loan | Finance, prestige, achievements |
 | Research commands | Catalogue, gates, grants, Finance, research ledger | Research, grants, Finance, prestige, achievements |

@@ -36,6 +36,7 @@ export enum ResourceType {
   Meat = 'meat',
   MeatPie = 'meat-pie',
   Milk = 'milk',
+  Timber = 'timber',
   Wool = 'wool',
 }
 

@@ -415,6 +415,16 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     requiredWork: 0.933,
     conditionWearMultiplier: 0.8,
   },
+  [RecipeName.ForestManagement]: {
+    name: RecipeName.ForestManagement,
+    inputs: [],
+    outputs: [
+      { resourceType: ResourceType.Meat, amount: 0.25, requiredWork: 0.2 },
+      { resourceType: ResourceType.Timber, amount: 1, requiredWork: 0.4 },
+    ],
+    requiredWork: 0.4,
+    conditionWearMultiplier: 0.7,
+  },
 };
 
 export const RECIPE_DISPLAY_NAMES: Readonly<Record<RecipeName, string>> = {
@@ -454,6 +464,7 @@ export const RECIPE_DISPLAY_NAMES: Readonly<Record<RecipeName, string>> = {
   [RecipeName.ElectricPumping]: 'Electric Pumping',
   [RecipeName.CoalPower]: 'Coal Power',
   [RecipeName.SolarPower]: 'Solar Power',
+  [RecipeName.ForestManagement]: 'Forest Management',
 };
 
 export function getRecipeDisplayName(recipeName: RecipeName): string {

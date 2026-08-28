@@ -327,6 +327,39 @@ describe('facility staffing changes', () => {
 });
 
 describe('advanceAllFacilityProduction', () => {
+  it('runs no-input forestry outputs independently while retaining land-size scaling', () => {
+    const facilities = new FacilityCollection();
+    facilities.build(FacilityType.Forestry, 5);
+    const facility = facilities.getAllByType(FacilityType.Forestry)[0]!;
+    facility.setActiveRecipe(RecipeName.ForestManagement);
+    const inventory = new Inventory();
+
+    advanceAllFacilityProduction(facilities, inventory, () => 0.1);
+    expect(facility.getView().recipeOutputProgress[RecipeName.ForestManagement]).toEqual({
+      [ResourceType.Meat]: 0.1,
+      [ResourceType.Timber]: 0.1,
+    });
+
+    const firstOutputs = advanceAllFacilityProduction(facilities, inventory, () => 0.1);
+    expect(firstOutputs).toMatchObject([{ resourceType: ResourceType.Meat, amount: 0.25 }]);
+    expect(facility.getView().recipeOutputProgress[RecipeName.ForestManagement]).toEqual({
+      [ResourceType.Meat]: 0,
+      [ResourceType.Timber]: 0.2,
+    });
+
+    advanceAllFacilityProduction(facilities, inventory, () => 0.1);
+    const laterOutputs = advanceAllFacilityProduction(facilities, inventory, () => 0.1);
+    expect(laterOutputs).toMatchObject([
+      { resourceType: ResourceType.Meat, amount: 0.25 },
+      { resourceType: ResourceType.Timber, amount: 1 },
+    ]);
+    expect(inventory.getAmount(ResourceType.Meat)).toBeCloseTo(0.5);
+    expect(inventory.getAmount(ResourceType.Timber)).toBeCloseTo(1);
+
+    const snapshot = facility.toSnapshot();
+    expect(Facility.fromSnapshot(snapshot).getView().recipeOutputProgress).toEqual(facility.getView().recipeOutputProgress);
+  });
+
   it('scales a large farm footprint across staffing, cycle inputs, work, and output', () => {
     const facilities = new FacilityCollection();
     facilities.build(FacilityType.Farm, 25);

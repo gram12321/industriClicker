@@ -88,6 +88,14 @@ export function getFacilityRecipeOutputs(recipe: Recipe, sizeMultiplier = 1): Re
   return recipe.outputs.map((output) => ({ ...output, amount: scaleAmount(output.amount, sizeMultiplier) }));
 }
 
+export function getFacilityRecipeOutputRequiredWork(recipe: Recipe, output: RecipeOutput, sizeMultiplier = 1): number {
+  return scaleAmount(output.requiredWork ?? recipe.requiredWork, sizeMultiplier);
+}
+
+export function hasIndependentOutputProgress(recipe: Recipe): boolean {
+  return recipe.inputs.length === 0 && recipe.outputs.some((output) => output.requiredWork !== undefined);
+}
+
 /** Calculates the amount-weighted quality of a recipe's consumed inputs. */
 export function calculateRecipeInputQ(recipe: Recipe, inventory: Inventory, sizeMultiplier = 1, enabledOptionalInputs?: readonly ResourceType[]): number | null {
   return calculateWeightedInputQ(getFacilityAvailableRecipeInputPlan(recipe, inventory, sizeMultiplier, enabledOptionalInputs).inputs.map((input) => ({
@@ -108,6 +116,19 @@ export function calculateRecipeInputSourceCost(recipe: Recipe, inventory: Invent
 export function getRecipeProductionConditionLoss(recipe: Recipe): number {
   return (recipe.requiredWork * FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT + FACILITY_PRODUCTION_CONDITION_LOSS_PER_CYCLE)
     * recipe.conditionWearMultiplier;
+}
+
+/** Condition loss per minute for ordinary cycles or simultaneously progressing no-input outputs. */
+export function getRecipeProductionConditionLossPerMinute(recipe: Recipe, effectiveWorkPerMinute: number, sizeMultiplier = 1): number {
+  if (recipe.requiredWork <= 0 || effectiveWorkPerMinute <= 0) return 0;
+  const scaledRecipeWork = getFacilityRecipeRequiredWork(recipe, sizeMultiplier);
+  if (!hasIndependentOutputProgress(recipe)) return effectiveWorkPerMinute / scaledRecipeWork * getRecipeProductionConditionLoss(recipe);
+  return recipe.outputs.reduce((total, output) => {
+    const outputWork = getFacilityRecipeOutputRequiredWork(recipe, output, sizeMultiplier);
+    if (outputWork <= 0) return total;
+    const conditionLoss = getRecipeProductionConditionLoss(recipe) * outputWork / scaledRecipeWork;
+    return total + effectiveWorkPerMinute / outputWork * conditionLoss;
+  }, 0);
 }
 
 /** Returns the speed-adjusted work an individual facility can apply. */
@@ -179,6 +200,42 @@ export function advanceAllFacilityProduction(
       let currentRecipeName = recipeName;
       let progress = facilityView.recipeProgress[currentRecipeName] ?? 0;
       let remainingStepFraction = 1;
+
+      const activeRecipe = getRecipe(currentRecipeName);
+      if (hasIndependentOutputProgress(activeRecipe)) {
+        const effectiveWork = getEffectiveWork(facilityView, currentRecipeName);
+        if (!Number.isFinite(effectiveWork) || effectiveWork <= 0) continue;
+
+        for (const output of getFacilityRecipeOutputs(activeRecipe, facilityView.sizeMultiplier)) {
+          const requiredWork = getFacilityRecipeOutputRequiredWork(activeRecipe, output, facilityView.sizeMultiplier);
+          if (requiredWork <= 0) continue;
+          let outputProgress = facilityView.recipeOutputProgress[currentRecipeName]?.[output.resourceType] ?? 0;
+          let remainingWork = effectiveWork;
+
+          while (remainingWork > 0) {
+            const appliedWork = Math.min(remainingWork, requiredWork - outputProgress);
+            outputProgress += appliedWork;
+            remainingWork -= appliedWork;
+            if (outputProgress + WORK_COMPLETION_EPSILON < requiredWork) break;
+
+            const inputEffects = DEFAULT_INPUT_EFFECTS;
+            const amount = output.amount * facilityView.outputMultiplier;
+            const maintenanceFraction = requiredWork / getFacilityRecipeRequiredWork(activeRecipe, facilityView.sizeMultiplier);
+            const productionMaintenanceCost = Math.max(0, getProductionMaintenanceCost?.(facility.getView(), activeRecipe) ?? 0) * maintenanceFraction;
+            const outputSourceCostPerUnit = amount > 0 ? productionMaintenanceCost / amount : 0;
+            const qualityBreakdown = resolveOutputQuality?.(facilityView, output, null, facilityView.upgradeMaxQ, inputEffects)
+              ?? calculateOutputQuality({ weightedInputQ: null, researchMaxQ: 1, upgradeMaxQ: facilityView.upgradeMaxQ, outputBonusQ: output.outputBonusQ ?? 0 });
+            inventory.add(output.resourceType, amount, qualityBreakdown.outputQ, outputSourceCostPerUnit);
+            outputs.push({ facilityId: facilityView.id, facilityType: facilityView.facilityType, recipeName: activeRecipe.name, resourceType: output.resourceType, amount, quality: qualityBreakdown.outputQ, sourceCostPerUnit: outputSourceCostPerUnit });
+            facility.applyConditionLoss(getRecipeProductionConditionLoss(activeRecipe) * maintenanceFraction);
+            facility.gainStaffExperience(output.requiredWork ?? activeRecipe.requiredWork);
+            outputProgress = 0;
+          }
+
+          facility.setRecipeOutputProgress(currentRecipeName, output.resourceType, outputProgress);
+        }
+        continue;
+      }
 
       while (remainingStepFraction > 0) {
         const recipe = getRecipe(currentRecipeName);
