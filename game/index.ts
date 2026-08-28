@@ -8,6 +8,7 @@ export * from './finance';
 export * from './inventory';
 export * from './market';
 export * from './prestige';
+export * from './population';
 export * from './recipes';
 export * from './resources';
 export * from './research';

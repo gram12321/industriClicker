@@ -85,6 +85,28 @@ describe('market autobuy', () => {
 });
 
 describe('market sales', () => {
+  it('debits household cash and removes fulfilled population purchases from Local Market stock', () => {
+    const state = useGameStore.getState();
+    const definition = FACILITIES[FacilityType.Farm];
+    const snapshot = createStartingGameSnapshot(0);
+    snapshot.population.householdBalance = 100;
+    state.restoreSnapshot(snapshot);
+    state.setAdminBalance(1_000);
+    state.setInventoryAmount(ResourceType.ConstructionMaterials, definition.constructionMaterialsCost);
+    state.setInventoryAmount(ResourceType.IndustrialMachines, definition.industrialMachinesCost);
+    expect(state.buildFacility(FacilityType.Farm)).toBe(true);
+    expect(useGameStore.getState().facilities.get('farm-1')?.setAssignedWorkers(1)).toBe(true);
+    const grainSupplyBefore = useGameStore.getState().market.getLocalEntry(ResourceType.Grain).supply;
+    const householdBalanceBefore = useGameStore.getState().population.getHouseholdBalance();
+
+    state.advanceGameTime(1_000);
+
+    const current = useGameStore.getState();
+    expect(current.market.getLocalEntry(ResourceType.Grain).supply).toBeLessThan(grainSupplyBefore);
+    expect(current.population.getHouseholdBalance()).toBeLessThan(householdBalanceBefore + 1 / 60);
+    expect(current.population.getCurrentMinuteConsumption()[ResourceType.Grain]).toBeGreaterThan(0);
+  });
+
   it('charges staff wages every foreground second while aggregating the finance history, then pauses when the next wage cannot be paid', () => {
     const state = useGameStore.getState();
     const definition = FACILITIES[FacilityType.Farm];
@@ -123,6 +145,8 @@ describe('market sales', () => {
     expect(isGameSnapshot(snapshot)).toBe(true);
     const { highestFacilityOutputQuality: _highestFacilityOutputQuality, ...staleResourceFlow } = snapshot.resourceFlow;
     expect(isGameSnapshot({ ...snapshot, resourceFlow: staleResourceFlow })).toBe(false);
+    const { currentMinuteConsumption: _currentMinuteConsumption, ...stalePopulation } = snapshot.population;
+    expect(isGameSnapshot({ ...snapshot, population: stalePopulation })).toBe(false);
     const { sourceCostPerUnit: _sourceCostPerUnit, ...staleInventoryEntry } = snapshot.inventory.entries[ResourceType.Grain];
     expect(isGameSnapshot({
       ...snapshot,
@@ -273,7 +297,9 @@ describe('local market network activation', () => {
     ]);
 
     state.advanceGameTime(60_000);
-    expect(useGameStore.getState().market.getLocalEntry(ResourceType.Grain).supply).toBeCloseTo(1_050);
+    const grainSupply = useGameStore.getState().market.getLocalEntry(ResourceType.Grain).supply;
+    expect(grainSupply).toBeGreaterThan(1_049);
+    expect(grainSupply).toBeLessThan(1_050);
   });
 });
 

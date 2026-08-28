@@ -36,6 +36,10 @@ export const RESOURCE_ICONS: Readonly<Record<ResourceType, string>> = {
   [ResourceType.Meat]: '🥩',
   [ResourceType.MeatPie]: '🥧',
   [ResourceType.Milk]: '🥛',
+  [ResourceType.Timber]: '🪵',
+  [ResourceType.Planks]: '🪵',
+  [ResourceType.Leather]: '🧤',
+  [ResourceType.Furniture]: '🪑',
   [ResourceType.Wool]: '🧶',
 };
 
@@ -63,6 +67,7 @@ export const APP_ICONS = {
   facilityAnimalFarm: 'cow',
   facilityBakery: 'toaster-oven',
   facilityFarm: 'tractor',
+  facilityForestry: 'forest',
   facilityMine: 'pickaxe',
   facilityPowerPlant: 'factory',
   facilityUtilityWorks: 'transmission-tower',
@@ -189,5 +194,9 @@ export const RECIPE_ICONS: Readonly<Record<RecipeName, string>> = {
   [RecipeName.ManualPumping]: '🪠',
   [RecipeName.ElectricPumping]: '🌀',
   [RecipeName.CoalPower]: '🔥',
+  [RecipeName.ForestManagement]: '🌲',
+  [RecipeName.MillTimber]: '🪵',
+  [RecipeName.AssembleFurniture]: '🪑',
+  [RecipeName.ProduceSyntheticLeather]: '🧤',
   [RecipeName.SolarPower]: '☀️',
 };

@@ -1,6 +1,6 @@
 import { Finance, LOAN_COLLECTION, buildFinanceStatementData, calculateAssets, calculateFacilityAssetValue, calculateLoanSearchEstimate, generateLoanOffers, getEconomyStaffWageMultiplier, LENDER_TYPES, refreshLoanOfferAvailability, type LoanOffer, type LoanSearchCriteria } from '@/game/finance';
 import { Inventory, ResourceFlowLedger } from '@/game/inventory';
-import { FACILITIES, FacilityCollection, FacilityMaintenanceStatistics, FacilityType, advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateFacilityProductionMaintenanceCost, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_REPAIR_DURATION_PER_CONDITION_MS, FARM_DEFAULT_SIZE_HECTARES, getFacilityConstructionCosts, getFacilityDefinition, getFacilityMissingInputs, getFacilityMaterialQuantityForUnits, getMissingFacilityMaterials, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, getStaffingChangeCost, getStaffingChangeDurationMs, getStaffTrainingCost, getStaffTrainingDurationMs, isValidFacilitySize, type FacilityUpgradeKind } from '@/game/facilities';
+import { FACILITIES, FacilityCollection, FacilityMaintenanceStatistics, FacilityType, advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateFacilityProductionMaintenanceCost, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_REPAIR_DURATION_PER_CONDITION_MS, getFacilityConstructionCosts, getFacilityDefaultSize, getFacilityDefinition, getFacilityMissingInputs, getFacilityMaterialQuantityForUnits, getMissingFacilityMaterials, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, getStaffingChangeCost, getStaffingChangeDurationMs, getStaffTrainingCost, getStaffTrainingDurationMs, isValidFacilitySize, type FacilityUpgradeKind } from '@/game/facilities';
 import { calculateOutputQuality, calculateProductionMaxQ } from '@/game/quality';
 import { getRecipe, type RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
@@ -9,6 +9,7 @@ import type { GameSnapshot } from '@/game/core/state';
 import { BASE_WORK_PER_MINUTE, FOREGROUND_SIMULATION_STEP_MS, REALTIME_WORK_MINUTE_MS, calculateRealtimeAdvance } from '@/game/core/time';
 import { SALES_ORDER_MINIMUM_COMPANY_VALUE_CAP, SalesOrders, calculateSalesOrderAcquisitionRate, calculateSalesOrderAcquisitionDetails, calculateSalesOrderInventoryValueReadiness, getOfferableSalesOrderResourceTypes, getSalesOrderAcquisitionStatus as getSalesOrderAcquisitionStatusForState, type SalesOrderAcquisitionStatus } from '@/game/sales';
 import { AchievementLedger, createAchievementEvaluationContext, evaluateAchievementUnlocks, type AchievementCategory } from '@/game/achievements';
+import { getPopulationDemand, PopulationLedger } from '@/game/population';
 
 import { PrestigeLedger, PRESTIGE_FOREGROUND_HOUR_MS, calculateCompanyAssetsPrestige, calculateCompanyBalancePrestige, calculateCompanyPrestigeSummary, calculateFacilityConditionPrestige } from '@/game/prestige';
 import { evaluateGateRequirements, type GateContext, type GateEvaluation } from '@/game/gates';
@@ -30,6 +31,7 @@ export type ResearchAvailability = GateEvaluation & {
 export type { SalesOrderAcquisitionStatus } from '@/game/sales';
 
 type GameState = {
+  population: PopulationLedger;
   finance: Finance;
   inventory: Inventory;
   resourceFlow: ResourceFlowLedger;
@@ -245,6 +247,7 @@ export function createStartingGameSnapshot(nowMs = Date.now()): GameSnapshot {
   inventory.setAmount(ResourceType.ConstructionMaterials, STANDARD_START_CONSTRUCTION_MATERIALS);
   inventory.setAmount(ResourceType.IndustrialMachines, STANDARD_START_INDUSTRIAL_MACHINES);
   return {
+    population: new PopulationLedger().toSnapshot(),
     finance: finance.toSnapshot(),
     inventory: inventory.toSnapshot(),
     resourceFlow: new ResourceFlowLedger().toSnapshot(),
@@ -320,6 +323,7 @@ export const useGameStore = create<GameState>((set, get) => {
   const initialFinance = new Finance();
 
   return ({
+  population: new PopulationLedger(),
   finance: initialFinance,
   inventory: new Inventory(),
   resourceFlow: new ResourceFlowLedger(),
@@ -404,7 +408,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const inventory = get().inventory.clone();
     const market = get().market.clone();
     const finance = get().finance.clone();
-    const selectedSize = sizeHectares ?? (facilityType === FacilityType.Farm ? FARM_DEFAULT_SIZE_HECTARES : 1);
+    const selectedSize = sizeHectares ?? getFacilityDefaultSize(facilityType);
     if (!isValidFacilitySize(facilityType, selectedSize)) return false;
     const constructionCosts = getFacilityConstructionCosts(facilityType, definition, selectedSize);
     const missingInputs = getMissingFacilityMaterials(inventory, [
@@ -436,7 +440,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const finance = get().finance.clone();
     const inventory = get().inventory.clone();
     const definition = getFacilityDefinition(facilityType);
-    const selectedSize = sizeHectares ?? (facilityType === FacilityType.Farm ? FARM_DEFAULT_SIZE_HECTARES : 1);
+    const selectedSize = sizeHectares ?? getFacilityDefaultSize(facilityType);
     if (!isValidFacilitySize(facilityType, selectedSize)) return false;
     const constructionCosts = getFacilityConstructionCosts(facilityType, definition, selectedSize);
     const isFirstFacility = facilities.getAll().length === 0;
@@ -456,7 +460,7 @@ export const useGameStore = create<GameState>((set, get) => {
     }
 
     const builtFacility = facilities.getAllByType(facilityType).at(-1);
-    if (!builtFacility || !finance.applyTransaction({ amount: -constructionCosts.landCost, description: `Purchased land for ${builtFacility.getView().displayName}`, detailLines: [`Facility size: ${selectedSize}${facilityType === FacilityType.Farm ? ' ha' : ''}`, `Construction materials committed: ${constructionCosts.constructionMaterialsCost}`, `Industrial machines installed: ${constructionCosts.industrialMachinesCost}`], facilityAccounting: { facilityId: builtFacility.id, classification: 'construction', historicalValue: constructionInvestment }, kind: 'investing', source: 'facility-construction', occurredAtGameTimeMs: get().lastProcessedAtMs })
+    if (!builtFacility || !finance.applyTransaction({ amount: -constructionCosts.landCost, description: `Purchased land for ${builtFacility.getView().displayName}`, detailLines: [`Facility size: ${selectedSize}${definition.size?.unit ? ` ${definition.size.unit}` : ''}`, `Construction materials committed: ${constructionCosts.constructionMaterialsCost}`, `Industrial machines installed: ${constructionCosts.industrialMachinesCost}`], facilityAccounting: { facilityId: builtFacility.id, classification: 'construction', historicalValue: constructionInvestment }, kind: 'investing', source: 'facility-construction', occurredAtGameTimeMs: get().lastProcessedAtMs })
       || !inventory.remove(ResourceType.ConstructionMaterials, constructionMaterialsQuantity)
       || !inventory.remove(ResourceType.IndustrialMachines, industrialMachinesQuantity)) {
       return false;
@@ -762,6 +766,7 @@ export const useGameStore = create<GameState>((set, get) => {
     let salesOrders: SalesOrders | null = null;
     let market: Market | null = null;
     let marketFinance: Finance | null = null;
+    let population = get().population;
     let research = get().research;
     let facilityMaintenance = get().facilityMaintenance;
     let autoRepairOccurred = false;
@@ -800,8 +805,52 @@ export const useGameStore = create<GameState>((set, get) => {
             facility.pauseStaffTraining(stepMs);
             continue;
           }
+          if (staffWageExpense > 0) {
+            if (population === get().population) population = population.clone();
+            population.creditWages(staffWageExpense);
+          }
           facility.processStaffTraining(stepEndGameTimeMs);
           facility.advanceStaffQuality(stepMs / REALTIME_WORK_MINUTE_MS);
+        }
+      }
+
+      // Local Market is a resource reservoir and clearing exchange. Population
+      // purchases debit households and remove goods; it owns no cash balance.
+      const populationDemand = getPopulationDemand(facilities);
+      if (populationDemand.population > 0) {
+        const trackingPopulation = population === get().population ? population.clone() : population;
+        if (trackingPopulation.advanceConsumptionMinute(stepEndGameTimeMs)) population = trackingPopulation;
+      }
+      const householdBalance = population.getHouseholdBalance();
+      if (populationDemand.population > 0 && householdBalance > 0) {
+        const purchaseMarket = market ?? get().market;
+        const desiredPurchases = RESOURCE_TYPES.map((resourceType) => {
+          const desiredAmount = populationDemand.totalConsumption[resourceType] * stepMs / REALTIME_WORK_MINUTE_MS;
+          const amount = Math.min(desiredAmount, purchaseMarket.getLocalEntry(resourceType).supply);
+          const quote = purchaseMarket.getLocalBuyQuote(resourceType, amount);
+          return quote.success ? { resourceType, amount: quote.amount, cost: quote.amount * quote.unitPrice } : null;
+        }).filter((purchase): purchase is { resourceType: ResourceType; amount: number; cost: number } => purchase !== null);
+        const desiredCost = desiredPurchases.reduce((total, purchase) => total + purchase.cost, 0);
+        const fulfilmentRatio = desiredCost > 0 ? Math.min(1, householdBalance / desiredCost) : 0;
+
+        if (fulfilmentRatio > 0) {
+          const buyingMarket: Market = market ?? purchaseMarket.clone();
+          const buyingPopulation = population === get().population ? population.clone() : population;
+          const settledPurchases = desiredPurchases.map((purchase) => {
+            const amount = purchase.amount * fulfilmentRatio;
+            const quote = buyingMarket.getLocalBuyQuote(purchase.resourceType, amount);
+            return quote.success ? { resourceType: purchase.resourceType, amount, cost: quote.amount * quote.unitPrice } : null;
+          }).filter((purchase): purchase is { resourceType: ResourceType; amount: number; cost: number } => purchase !== null);
+          const settledCost = settledPurchases.reduce((total, purchase) => total + purchase.cost, 0);
+
+          if (settledCost > 0 && buyingPopulation.spendHouseholdCash(settledCost)) {
+            for (const purchase of settledPurchases) {
+              const trade = buyingMarket.buyFromLocal(purchase.resourceType, purchase.amount);
+              if (trade.success) buyingPopulation.recordLocalMarketConsumption(purchase.resourceType, trade.amount, stepEndGameTimeMs);
+            }
+            market = buyingMarket;
+            population = buyingPopulation;
+          }
         }
       }
 
@@ -877,6 +926,7 @@ export const useGameStore = create<GameState>((set, get) => {
           productionMaxQ: calculateProductionMaxQ(resourceFlow.getLifetimeFacilityOutput(output.resourceType)),
           staffMaxQ: facilityView.staffQuality,
           outputBonusQ: (output.outputBonusQ ?? 0) + inputEffects.qualityBoost,
+          outputQualityMultiplier: output.outputQualityMultiplier,
         }), (facility, recipe) => calculateFacilityProductionMaintenanceCost(facility, recipe, market!));
         if (outputs.length > 0) {
           producedOutput = true;
@@ -1176,6 +1226,7 @@ export const useGameStore = create<GameState>((set, get) => {
       ...(achievementResult.inventory !== get().inventory ? { inventory: achievementResult.inventory } : {}),
       ...(resourceFlow !== get().resourceFlow ? { resourceFlow } : {}),
       ...(marketFinance ? { finance: marketFinance } : {}),
+      ...(population !== get().population ? { population } : {}),
       ...(salesOrders ? { salesOrders } : {}),
       ...(market ? { market } : {}),
       ...(research !== get().research ? { research } : {}),
@@ -1440,6 +1491,7 @@ export const useGameStore = create<GameState>((set, get) => {
     }
   },
   createSnapshot: () => ({
+    population: get().population.toSnapshot(),
     finance: get().finance.toSnapshot(),
     inventory: get().inventory.toSnapshot(),
     resourceFlow: get().resourceFlow.toSnapshot(),
@@ -1459,6 +1511,7 @@ export const useGameStore = create<GameState>((set, get) => {
     },
   }),
   restoreSnapshot: (snapshot) => {
+    const population = PopulationLedger.fromSnapshot(snapshot.population);
     const finance = Finance.fromSnapshot(snapshot.finance);
     const market = Market.fromSnapshot(snapshot.market);
     const facilities = FacilityCollection.fromSnapshot(snapshot.facilities);
@@ -1490,6 +1543,7 @@ export const useGameStore = create<GameState>((set, get) => {
     });
 
     set({
+    population,
     finance,
     inventory: achievementResult.inventory,
     resourceFlow,

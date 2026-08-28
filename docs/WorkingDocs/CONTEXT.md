@@ -7,7 +7,7 @@ Canonical shared names only. Product direction is in [design.md](design.md), rul
 | Term | Meaning |
 |---|---|
 | Industrial clicker | The game's genre and setting. |
-| Resource | A typed item that can be gained, spent, transformed, and stored. Current names: Grain, Bread, Water, Electricity, Sugar, Fruit, Eggs, Meat, Milk, Wool, Cake, Meat Pie, Coal, Iron, Copper, Gold, Minerals, Steel, Electric Circuits, Chemicals, Fertilizer, Plastic, Silicon, Advanced Components, Industrial Machines, Bricks, Cement, Reinforced Concrete, Construction Materials, Sand, Clay, and Stone. |
+| Resource | A typed item that can be gained, spent, transformed, and stored. Current names: Grain, Bread, Water, Electricity, Sugar, Fruit, Eggs, Meat, Milk, Timber, Planks, Leather, Furniture, Wool, Cake, Meat Pie, Coal, Iron, Copper, Gold, Minerals, Steel, Electric Circuits, Chemicals, Fertilizer, Plastic, Silicon, Advanced Components, Industrial Machines, Bricks, Cement, Reinforced Concrete, Construction Materials, Sand, Clay, and Stone. |
 | Resource catalogue | Code-owned resource identity, display name, benchmark, supply, logistics, value-density, and market metadata. Exact values live in `game/resources/resourceConstants.ts`. |
 | Inventory | Company-owned resource quantity, quality, and quantity-weighted source cost. |
 | Resource flow | Categorized signed resource change: production, input, market, customer order, facility spending, or reward. |
@@ -19,10 +19,10 @@ Canonical shared names only. Product direction is in [design.md](design.md), rul
 | Facility operating profit | Selected-period output value minus output source cost, staff wages, and staffing/training expense; actual repair settlements remain visible as maintenance expense, while production-caused wear is already in output source cost. |
 | Resource quality | Quantity-weighted Q value on inventory and market reservoirs. It affects sale value and is one input to future facility-output quality. |
 | Quality research / quality upgrade | Resource-level research / facility-instance upgrade that raises an output-quality ceiling. |
-| Recipe | Named production transformation with inputs, outputs, and required work. Exact relationships are in `VariableRelationshipMap.md`. |
+| Recipe | Named production transformation with inputs, outputs, and required work. A no-input recipe may give outputs independent work requirements, so each output progresses and completes separately. Optional inputs may be marked as an exclusive alternative group so at most one is consumed per cycle. Exact relationships are in `VariableRelationshipMap.md`. |
 | Production cycle | An ordered, repeating list of researched recipes owned by one facility instance. |
-| Facility | Numbered player-owned production unit. Current types: Farm, Animal Farm, Bakery, Small Utility Works, Mine, Quarry, Industrial Processing Factory, Chemical Plant, Electronics Factory, Assembly Plant, Construction Factory, Water Well, Solar Plant, and Coal Power Plant. |
-| Farm footprint | Immutable Farm construction size in hectares. The default footprint is 5 ha; larger supported footprints scale the Farm's construction basis, staffing, recipe batch, and production work. |
+| Facility | Numbered player-owned production unit. Current types: Farm, Forestry, Timber Works, Animal Farm, Bakery, Small Utility Works, Mine, Quarry, Industrial Processing Factory, Chemical Plant, Electronics Factory, Assembly Plant, Construction Factory, Water Well, Solar Plant, and Coal Power Plant. |
+| Land footprint | Immutable Farm or Forestry construction size in hectares. The default footprint is 5 ha; larger supported footprints scale construction basis, staffing, recipe batch, and production work. |
 | Facility condition | Persisted 0–1 wear state affecting facility efficiency. |
 | Assigned workers / required workers | Facility staff count / calculated staffing target; each assigned worker receives the configured staff wage. Workers in training are temporarily unavailable for production and experience. |
 | Staff Quality | Facility knowledge level shared by the assigned staff group; training raises it, wage payment drives it over time, and firing removes the fired workers' proportional pooled knowledge share. |
@@ -35,6 +35,8 @@ Canonical shared names only. Product direction is in [design.md](design.md), rul
 | Facility capital investment | Historical construction and upgrade value recorded by Finance. |
 | Facility maintenance expense | Historical repair value recorded separately from capital investment. |
 | Facility staff wage | Player-set euro wage per assigned worker per foreground minute; paid foreground charges are Finance operating expenses. If wages cannot be paid, production, training, and wage-driven experience/quality progression pause. |
+| Population / household balance | Each assigned facility worker is one aggregate population unit. Successfully paid facility wages credit one persisted household balance; foreground purchases debit it and remove fulfilled goods from Local Market stock. The ledger also retains each resource's fulfilled amount for the current foreground game minute. |
+| Population consumption basket | A code-owned, per-game-minute virtual household demand basket grouped by the existing Food, Raw Resources, Construction, Manufacturing, and Utilities resource domains. Each domain has a provisional total and its resources are relative shares; it is a demand projection, not a tradable tier resource or market transaction. |
 | Facility market revaluation | Informational difference between historical-cost book value and condition-adjusted replacement value at current local prices. |
 | Asset value | Derived value of cash, inventory, facilities, or completed research. |
 | Finance payment cycle | One foreground game minute used for loan repayment. |

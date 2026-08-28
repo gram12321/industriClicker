@@ -1,6 +1,27 @@
 import { ResourceType, type ResourceMarketDefinition } from './resourceTypes';
 import { RESOURCE_ICONS } from '@/icons';
 
+/**
+ * Deferred material and consumer-industry roadmap. These are design notes only;
+ * they are intentionally not part of the active resource or facility catalogue.
+ *
+ * - Material refining: Hides + Chemicals + Water → Leather; Wool + Water +
+ *   Electricity + Chemicals → Wool Fabric.
+ * - Silk: a future Plantation can consume Sugar and produce Raw Silk, followed
+ *   by Silk Refining into Luxury Fabric with supporting inputs.
+ * - Textiles: a future Textile Mill or Clothing Factory can produce Basic
+ *   Clothing and Luxury Clothing, creating additional uses for Plastic and Gold
+ *   (for example, jewellery or trim in luxury garments).
+ * - Automotive industry: future vehicle recipes may consume Leather and Rubber.
+
+  'Material refining: Hides to Leather and Wool to Wool Fabric.',
+  'Plantation and silk chain: Sugar to Raw Silk to Luxury Fabric.',
+  'Textile/clothing industry: Basic Clothing and Luxury Clothing, with Plastic and Gold inputs.',
+  'Automotive industry: future vehicle products using Leather and Rubber.',
+
+* REMEMBER TO REARRANGE THE RESOURCE_GROUPS: WE WANT A CONSUMER GOODS, AND WE WANT TO MOVE STEEL TO CONSTRUCTION. ETC.
+
+ */
 export const RESOURCE_TYPES = [
   ResourceType.Grain,
   ResourceType.Bread,
@@ -33,6 +54,10 @@ export const RESOURCE_TYPES = [
   ResourceType.Meat,
   ResourceType.MeatPie,
   ResourceType.Milk,
+  ResourceType.Timber,
+  ResourceType.Planks,
+  ResourceType.Leather,
+  ResourceType.Furniture,
   ResourceType.Wool,
 ] as const;
 
@@ -41,9 +66,9 @@ export type ResourceGroup = 'food' | 'raw-resources' | 'construction' | 'manufac
 /** Player-facing resource groupings shared by Pedia and other catalogues; each group is alphabetized by display name. */
 export const RESOURCE_GROUPS: ReadonlyArray<{ id: ResourceGroup; label: string; resources: readonly ResourceType[] }> = [
   { id: 'food', label: 'Food', resources: [ResourceType.Bread, ResourceType.Cake, ResourceType.Eggs, ResourceType.Fruit, ResourceType.Grain, ResourceType.Meat, ResourceType.MeatPie, ResourceType.Milk, ResourceType.Sugar] },
-  { id: 'raw-resources', label: 'Raw Resources', resources: [ResourceType.Clay, ResourceType.Coal, ResourceType.Copper, ResourceType.Gold, ResourceType.Iron, ResourceType.Minerals, ResourceType.Sand, ResourceType.Stone] },
+  { id: 'raw-resources', label: 'Raw Resources', resources: [ResourceType.Clay, ResourceType.Coal, ResourceType.Copper, ResourceType.Gold, ResourceType.Iron, ResourceType.Leather, ResourceType.Minerals, ResourceType.Sand, ResourceType.Stone, ResourceType.Timber] },
   { id: 'construction', label: 'Construction', resources: [ResourceType.Bricks, ResourceType.Cement, ResourceType.ConstructionMaterials, ResourceType.ReinforcedConcrete] },
-  { id: 'manufacturing', label: 'Manufacturing', resources: [ResourceType.AdvancedComponents, ResourceType.Chemicals, ResourceType.ElectricCircuits, ResourceType.Fertilizer, ResourceType.IndustrialMachines, ResourceType.Plastic, ResourceType.Silicon, ResourceType.Steel, ResourceType.Wool] },
+  { id: 'manufacturing', label: 'Manufacturing', resources: [ResourceType.AdvancedComponents, ResourceType.Chemicals, ResourceType.ElectricCircuits, ResourceType.Fertilizer, ResourceType.Furniture, ResourceType.IndustrialMachines, ResourceType.Planks, ResourceType.Plastic, ResourceType.Silicon, ResourceType.Steel, ResourceType.Wool] },
   { id: 'utilities', label: 'Utilities', resources: [ResourceType.Electricity, ResourceType.Water] },
 ];
 
@@ -173,11 +198,29 @@ export const RESOURCES: Readonly<Record<ResourceType, { name: string; market: Re
     name: 'Milk',
     market: { localBenchmarkSupply: 800, localInitialSupply: 200, regionalBenchmarkSupply: 16_000, regionalInitialSupply: 4_000, globalBenchmarkSupply: 160_000, globalInitialSupply: 40_000, logisticsMultiplier: 0.5, valueDensityMultiplier: 0.9 },
   },
+  [ResourceType.Timber]: {
+    name: 'Timber',
+    market: { localBenchmarkSupply: 900, localInitialSupply: 500, regionalBenchmarkSupply: 18_000, regionalInitialSupply: 10_000, globalBenchmarkSupply: 180_000, globalInitialSupply: 100_000, logisticsMultiplier: 0.5, valueDensityMultiplier: 0.85 },
+  },
+  [ResourceType.Planks]: {
+    name: 'Planks',
+    market: { localBenchmarkSupply: 1_200, localInitialSupply: 300, regionalBenchmarkSupply: 24_000, regionalInitialSupply: 6_000, globalBenchmarkSupply: 240_000, globalInitialSupply: 60_000, logisticsMultiplier: 0.45, valueDensityMultiplier: 0.9 },
+  },
+  [ResourceType.Leather]: {
+    name: 'Leather',
+    market: { localBenchmarkSupply: 2_400, localInitialSupply: 120, regionalBenchmarkSupply: 48_000, regionalInitialSupply: 2_400, globalBenchmarkSupply: 480_000, globalInitialSupply: 24_000, logisticsMultiplier: 0.7, valueDensityMultiplier: 1.25 },
+  },
+  [ResourceType.Furniture]: {
+    name: 'Furniture',
+    market: { localBenchmarkSupply: 6_000, localInitialSupply: 100, regionalBenchmarkSupply: 120_000, regionalInitialSupply: 2_000, globalBenchmarkSupply: 1_200_000, globalInitialSupply: 20_000, logisticsMultiplier: 0.35, valueDensityMultiplier: 1.35 },
+  },
   [ResourceType.Wool]: {
     name: 'Wool',
     market: { localBenchmarkSupply: 1_800, localInitialSupply: 150, regionalBenchmarkSupply: 36_000, regionalInitialSupply: 3_000, globalBenchmarkSupply: 360_000, globalInitialSupply: 30_000, logisticsMultiplier: 0.7, valueDensityMultiplier: 1.1 },
   },
 };
+
+
 
 export function getResource(resourceType: ResourceType) {
   return { ...RESOURCES[resourceType], icon: RESOURCE_ICONS[resourceType] };

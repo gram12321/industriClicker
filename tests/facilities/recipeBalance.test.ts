@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { getRecipe, RecipeName } from '@/game/recipes';
 import { Facility } from '@/game/facilities/facility';
-import { calculateFacilityEffectiveWork } from '@/game/facilities/facilityProduction';
+import { calculateFacilityEffectiveWork, getFacilityRecipeOutputRequiredWork } from '@/game/facilities/facilityProduction';
 import { FacilityType } from '@/game/facilities/facilityTypes';
+import { ResourceType } from '@/game/resources';
 
 type RecipeTimingCase = {
   facilityType: FacilityType;
@@ -59,5 +60,19 @@ describe('recipe balance', () => {
     const seconds = getRecipe(recipeName).requiredWork / getBaselineWorkPerMinute(facilityType) * 60;
 
     expect(seconds).toBeCloseTo(expectedSeconds, 1);
+  });
+
+  it('gives Forest Management independent meat and timber timings', () => {
+    const facility = new Facility('forestry-1', FacilityType.Forestry);
+    const recipe = getRecipe(RecipeName.ForestManagement);
+    const workPerMinute = calculateFacilityEffectiveWork(facility.getView(), 1);
+    const meat = recipe.outputs.find((output) => output.resourceType === ResourceType.Meat)!;
+    const timber = recipe.outputs.find((output) => output.resourceType === ResourceType.Timber)!;
+
+    const meatSeconds = getFacilityRecipeOutputRequiredWork(recipe, meat) / workPerMinute * 60;
+    const timberSeconds = getFacilityRecipeOutputRequiredWork(recipe, timber) / workPerMinute * 60;
+
+    expect(timberSeconds).toBeCloseTo(meatSeconds * 2);
+    expect(timberSeconds).toBeGreaterThan(meatSeconds);
   });
 });

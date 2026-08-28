@@ -1,6 +1,8 @@
 /** The closed catalogue of facilities currently available to the player. */
 export enum FacilityType {
   Farm = 'farm',
+  Forestry = 'forestry',
+  TimberWorks = 'timber-works',
   AnimalFarm = 'animal-farm',
   Bakery = 'bakery',
   SmallUtilityWorks = 'small-utility-works',

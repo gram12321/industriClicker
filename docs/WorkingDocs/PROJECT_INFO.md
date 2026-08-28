@@ -6,7 +6,7 @@ Verified repository facts. Documentation ownership is defined in the root [readm
 
 - Stage: pre-alpha foundation.
 - Product: single-player, mobile-first native Android game.
-- Implemented domains: local profile/company saves, tutorial onboarding, facilities and production (including selectable Farm footprints, staffing, wages, Staff Quality, hiring/firing/training, and production-maintenance allocation), inventory/markets/quality, Finance/loans, customer orders, research, achievements, prestige, grants, repairs, and IndustriPedia.
+- Implemented domains: local profile/company saves, tutorial onboarding, facilities and production (including selectable land footprints, independently progressing no-input recipe outputs, staffing, wages, Staff Quality, hiring/firing/training, and production-maintenance allocation), inventory/markets/quality, Finance/loans, customer orders, research, achievements, prestige, grants, repairs, and IndustriPedia.
 - Facility presentation: the Facility screen owns a virtualized compact overview and directly selects its game data; opening a facility mounts its one detailed workspace.
 - Deferred: offline catch-up, cloud/accounts, iOS/web release, and workforce systems beyond current staffing and repair automation.
 
@@ -36,7 +36,7 @@ theme.ts              Shared Paper theme/tokens
 
 ## Routes and Commands
 
-- `/`: local player/company selection, then Company, Inventory, Facility, Finance, Sales, Research, Profile, Settings, Achievements, IndustriPedia, and the Leaderboard placeholder. Admin is development-only.
+- `/`: local player/company selection, then Company, People, Inventory, Facility, Finance, Sales, Research, Profile, Settings, Achievements, IndustriPedia, and the Leaderboard placeholder. Admin is development-only.
 - `npm run start`: Expo Go server. `npm run android`: optional emulator. `npm run web`: browser layout aid.
 - `npm run typecheck`: TypeScript check. `npm test`: Vitest suite. `npm run economy:report`: generate economy evidence.
 

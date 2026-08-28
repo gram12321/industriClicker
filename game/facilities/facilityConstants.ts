@@ -1,19 +1,30 @@
 import { ALL_RECIPES, RecipeName, type Recipe } from '@/game/recipes';
 import { FacilityType } from './facilityTypes';
 
-export const FACILITY_TYPES = [FacilityType.Farm, FacilityType.AnimalFarm, FacilityType.Bakery, FacilityType.SmallUtilityWorks, FacilityType.Mine, FacilityType.Quarry, FacilityType.IndustrialProcessingFactory, FacilityType.ChemicalPlant, FacilityType.ElectronicsFactory, FacilityType.AssemblyPlant, FacilityType.ConstructionFactory, FacilityType.WaterWell, FacilityType.SolarPlant, FacilityType.CoalPowerPlant] as const;
+export const FACILITY_TYPES = [FacilityType.Farm, FacilityType.Forestry, FacilityType.TimberWorks, FacilityType.AnimalFarm, FacilityType.Bakery, FacilityType.SmallUtilityWorks, FacilityType.Mine, FacilityType.Quarry, FacilityType.IndustrialProcessingFactory, FacilityType.ChemicalPlant, FacilityType.ElectronicsFactory, FacilityType.AssemblyPlant, FacilityType.ConstructionFactory, FacilityType.WaterWell, FacilityType.SolarPlant, FacilityType.CoalPowerPlant] as const;
 export type FacilityGroup = 'agriculture' | 'extraction' | 'manufacturing' | 'utilities';
 
-/** Farm footprints offered during construction; the first option is the baseline field. */
-export const FARM_SIZE_OPTIONS_HECTARES = [5, 10, 25, 50] as const;
-export const FARM_DEFAULT_SIZE_HECTARES = FARM_SIZE_OPTIONS_HECTARES[0];
-export type FarmSizeHectares = (typeof FARM_SIZE_OPTIONS_HECTARES)[number];
+export type FacilitySizeDefinition = {
+  label: string;
+  unit: string;
+  options: readonly number[];
+  defaultValue: number;
+  baselineValue: number;
+};
+
+const LAND_SIZE_DEFINITION: FacilitySizeDefinition = {
+  label: 'Land size',
+  unit: 'ha',
+  options: [5, 10, 25, 50],
+  defaultValue: 5,
+  baselineValue: 5,
+};
 
 /** Player-facing facility groupings shared by Pedia and other catalogues; each group is alphabetized by display name. */
 export const FACILITY_GROUPS: ReadonlyArray<{ id: FacilityGroup; label: string; facilities: readonly FacilityType[] }> = [
-  { id: 'agriculture', label: 'Agriculture', facilities: [FacilityType.AnimalFarm, FacilityType.Bakery, FacilityType.Farm] },
+  { id: 'agriculture', label: 'Agriculture', facilities: [FacilityType.AnimalFarm, FacilityType.Farm, FacilityType.Forestry, FacilityType.Bakery] },
   { id: 'extraction', label: 'Extraction', facilities: [FacilityType.Mine, FacilityType.Quarry] },
-  { id: 'manufacturing', label: 'Manufacturing', facilities: [FacilityType.AssemblyPlant, FacilityType.ChemicalPlant, FacilityType.ConstructionFactory, FacilityType.ElectronicsFactory, FacilityType.IndustrialProcessingFactory] },
+  { id: 'manufacturing', label: 'Manufacturing', facilities: [FacilityType.AssemblyPlant, FacilityType.ChemicalPlant, FacilityType.ConstructionFactory, FacilityType.ElectronicsFactory, FacilityType.IndustrialProcessingFactory, FacilityType.TimberWorks] },
   { id: 'utilities', label: 'Utilities', facilities: [FacilityType.CoalPowerPlant, FacilityType.SmallUtilityWorks, FacilityType.SolarPlant, FacilityType.WaterWell] },
 ];
 export const FACILITY_UPGRADE_COST_GROWTH = 1.5;
@@ -75,6 +86,8 @@ export const FACILITY_REPAIR_MATERIAL_COST_RATE = 0.45;
 export const FACILITY_PRODUCTION_ORDER = [
   FacilityType.SmallUtilityWorks,
   FacilityType.Farm,
+  FacilityType.Forestry,
+  FacilityType.TimberWorks,
   FacilityType.AnimalFarm,
   FacilityType.Bakery,
   FacilityType.Mine,
@@ -103,25 +116,33 @@ export type FacilityDefinition = {
   upgradeCost: number;
   baseWorkers: number;
   recipes: readonly Recipe[];
+  size?: FacilitySizeDefinition;
 };
 
-/** Returns the construction scale for a facility instance. Non-farms remain one baseline unit. */
-export function getFacilitySizeMultiplier(facilityType: FacilityType, sizeHectares = 1): number {
-  if (facilityType !== FacilityType.Farm) return 1;
-  return Math.max(1, sizeHectares / FARM_DEFAULT_SIZE_HECTARES);
+export function getFacilitySizeDefinition(facilityType: FacilityType): FacilitySizeDefinition | null {
+  return getFacilityDefinition(facilityType).size ?? null;
 }
 
-export function isValidFacilitySize(facilityType: FacilityType, sizeHectares: unknown): sizeHectares is number {
-  return typeof sizeHectares === 'number'
-    && Number.isFinite(sizeHectares)
-    && sizeHectares > 0
-    && (facilityType !== FacilityType.Farm
-      ? sizeHectares === 1
-      : FARM_SIZE_OPTIONS_HECTARES.includes(sizeHectares as FarmSizeHectares));
+export function getFacilityDefaultSize(facilityType: FacilityType): number {
+  return getFacilitySizeDefinition(facilityType)?.defaultValue ?? 1;
+}
+
+export function getFacilitySizeMultiplier(facilityType: FacilityType, sizeValue = 1): number {
+  const size = getFacilitySizeDefinition(facilityType);
+  if (!size) return 1;
+  return Math.max(1, sizeValue / size.baselineValue);
+}
+
+export function isValidFacilitySize(facilityType: FacilityType, sizeValue: unknown): sizeValue is number {
+  const size = getFacilitySizeDefinition(facilityType);
+  return typeof sizeValue === 'number'
+    && Number.isFinite(sizeValue)
+    && sizeValue > 0
+    && (size ? size.options.includes(sizeValue) : sizeValue === 1);
 }
 
 export function getFacilitySizeOptions(facilityType: FacilityType): readonly number[] {
-  return facilityType === FacilityType.Farm ? FARM_SIZE_OPTIONS_HECTARES : [1];
+  return getFacilitySizeDefinition(facilityType)?.options ?? [1];
 }
 
 export type FacilityConstructionCosts = {
@@ -151,6 +172,30 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     upgradeCost: 40,
     baseWorkers: 1,
     recipes: [ALL_RECIPES[RecipeName.GrowGrain], ALL_RECIPES[RecipeName.GrowSugar], ALL_RECIPES[RecipeName.GrowFruit]],
+    size: LAND_SIZE_DEFINITION,
+  },
+  [FacilityType.Forestry]: {
+    type: FacilityType.Forestry,
+    name: 'Forestry',
+    icon: 'forest',
+    landCost: 55,
+    constructionMaterialsCost: 4,
+    industrialMachinesCost: 1,
+    upgradeCost: 45,
+    baseWorkers: 1,
+    recipes: [ALL_RECIPES[RecipeName.ForestManagement]],
+    size: LAND_SIZE_DEFINITION,
+  },
+  [FacilityType.TimberWorks]: {
+    type: FacilityType.TimberWorks,
+    name: 'Timber Works',
+    icon: 'saw-blade',
+    landCost: 75,
+    constructionMaterialsCost: 60,
+    industrialMachinesCost: 8,
+    upgradeCost: 220,
+    baseWorkers: 5,
+    recipes: [ALL_RECIPES[RecipeName.MillTimber], ALL_RECIPES[RecipeName.AssembleFurniture]],
   },
   [FacilityType.AnimalFarm]: {
     type: FacilityType.AnimalFarm,
@@ -227,7 +272,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     industrialMachinesCost: 20,
     upgradeCost: 350,
     baseWorkers: 7,
-    recipes: [ALL_RECIPES[RecipeName.ProduceChemicals], ALL_RECIPES[RecipeName.SynthesizeFertilizer], ALL_RECIPES[RecipeName.ProducePlastic]],
+    recipes: [ALL_RECIPES[RecipeName.ProduceChemicals], ALL_RECIPES[RecipeName.SynthesizeFertilizer], ALL_RECIPES[RecipeName.ProducePlastic], ALL_RECIPES[RecipeName.ProduceSyntheticLeather]],
   },
   [FacilityType.ElectronicsFactory]: {
     type: FacilityType.ElectronicsFactory,

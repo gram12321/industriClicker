@@ -5,9 +5,21 @@ import { Image, Pressable, ScrollView, useWindowDimensions, View, type StyleProp
 import { Avatar, Divider, IconButton, Menu, Portal, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { APP_ICONS, ECONOMY_PHASE_ICONS } from '@/icons';
-import { calculateCompanyPrestigeSummary, FARM_DEFAULT_SIZE_HECTARES, FacilityType, getMaximumOpenSalesOrders, getNextTutorialStage, getPreviousTutorialStage, getTutorialProductionPresentation, getTutorialStagePresentation, recoverTutorialStage, type TutorialStage, useCompanySessionStore } from '@/game';
+import {
+  calculateCompanyPrestigeSummary,
+  FacilityType,
+  getFacilityDefaultSize,
+  getMaximumOpenSalesOrders,
+  getNextTutorialStage,
+  getPreviousTutorialStage,
+  getTutorialProductionPresentation,
+  getTutorialStagePresentation,
+  recoverTutorialStage,
+  type TutorialStage,
+  useCompanySessionStore,
+} from '@/game';
 import { colors } from '@/theme';
-import { ActiveProcessesOverlay, AdminDashboard, AchievementsView, CollectionDialog, ConstructionConfirmationTutorialDialog, ConstructionTutorialDialog, FacilityChoiceTutorialDialog, FirstFacilityTutorialDialog, GameViewContent, FacilityConstructionDialog, BuildFacilityTutorialDialog, IndustriPediaView, isDevAdminSurfaceAvailable, LeaderboardScreen, PrestigeDialog, ProfileScreen, ResearchView, SettingsScreen, styles, ProductionTutorialDialog, TutorialGuideDialog, LoginView, type GameViewId, type IndustriPediaSection } from '@/ui';
+import { ActiveProcessesOverlay, AdminDashboard, AchievementsView, CollectionDialog, ConstructionConfirmationTutorialDialog, ConstructionTutorialDialog, FacilityChoiceTutorialDialog, FirstFacilityTutorialDialog, GameViewContent, FacilityConstructionDialog, BuildFacilityTutorialDialog, IndustriPediaView, isDevAdminSurfaceAvailable, LeaderboardScreen, PopulationView, PrestigeDialog, ProfileScreen, ResearchView, SettingsScreen, styles, ProductionTutorialDialog, TutorialGuideDialog, LoginView, type GameViewId, type IndustriPediaSection } from '@/ui';
 import { InventoryTutorialDialog } from '@/ui/dashboard/components/dialog/TutorialDialog';
 import { formatCurrency, formatElapsedTime, formatNumber } from '@/utils';
 import { TooltipMaterialIcon } from '@/ui/dashboard/components/IconTooltip';
@@ -16,7 +28,7 @@ import type { Recipe } from '@/game/recipes';
 import { getRecipe } from '@/game/recipes';
 import type { SalesCustomerType } from '@/game/sales';
 
-type ActiveScreen = GameViewId | 'achievements' | 'admin' | 'profile' | 'pedia' | 'settings' | 'leaderboard';
+type ActiveScreen = GameViewId | 'population' | 'achievements' | 'admin' | 'profile' | 'pedia' | 'settings' | 'leaderboard';
 type PendingConstruction = { facilityType: FacilityType; sizeHectares: number };
 
 const tabs: Array<{ key: GameViewId; label: string; symbol: string; icon?: string }> = [
@@ -28,6 +40,7 @@ const tabs: Array<{ key: GameViewId; label: string; symbol: string; icon?: strin
 
 const salesTab: { key: GameViewId; label: string; symbol: string; icon?: string } = { key: 'sales', label: 'Sales', symbol: '$' };
 const researchTab: { key: GameViewId; label: string; symbol: string; icon?: string } = { key: 'research', label: 'Research', symbol: '', icon: APP_ICONS.research };
+const populationTab: { key: 'population'; label: string; symbol: string; icon?: string } = { key: 'population', label: 'People', symbol: '', icon: APP_ICONS.staffing };
 const SIMULUCIUS_TUTORIAL_BUTTON = require('../assets/simulucius/frontremovebg.png');
 
 export default function HomeScreen() {
@@ -59,7 +72,7 @@ function GameShell({ companyName }: { companyName: string }) {
   const [companyOverviewLayout, setCompanyOverviewLayout] = useState<{ height: number; width: number; x: number; y: number } | null>(null);
   const [pendingConstruction, setPendingConstruction] = useState<PendingConstruction | null>(null);
   const [pendingDestruction, setPendingDestruction] = useState<string | null>(null);
-  const { acknowledgeCollectionNotice, acceptDebtRestructure, acceptLoanOffer, achievements, addAdminFunds, advanceGameTime, advanceRealtime, buildFacility, buyMarketResource, buyMissingConstructionInputs, cancelResearch, companyStartedAtGameTimeMs, createSalesOrderRequest, customerPipelineProgress, facilities, facilityMaintenance, fastForwardOneMinute, finance, fulfillSalesOrder, getResearchAvailability, getSalesOrderAcquisitionStatus, inventory, lastProcessedAtMs, makeExtraLoanPayment, market, prestige, rejectSalesOrder, removeLoanOffer, removeUnavailableLoanOffers, repairFacility, repayLoanInFull, research, resourceFlow, salesOrders, sellFacility, sellMarketResource, setAdminBalance, setFacilityAutoRepair, setFacilityOptionalInputEnabled, setFacilityProductionActive, setFacilityProductionCycle, setFacilityStaffing, trainFacilityStaff, setInventoryAmount, setMarketAutomation, startLoanSearch, startResearch, upgradeFacility } = useDashboardGameState();
+  const { acknowledgeCollectionNotice, acceptDebtRestructure, acceptLoanOffer, achievements, addAdminFunds, advanceGameTime, advanceRealtime, buildFacility, buyMarketResource, buyMissingConstructionInputs, cancelResearch, companyStartedAtGameTimeMs, createSalesOrderRequest, customerPipelineProgress, facilities, facilityMaintenance, fastForwardOneMinute, finance, fulfillSalesOrder, getResearchAvailability, getSalesOrderAcquisitionStatus, inventory, lastProcessedAtMs, makeExtraLoanPayment, market, population, prestige, rejectSalesOrder, removeLoanOffer, removeUnavailableLoanOffers, repairFacility, repayLoanInFull, research, resourceFlow, salesOrders, sellFacility, sellMarketResource, setAdminBalance, setFacilityAutoRepair, setFacilityOptionalInputEnabled, setFacilityProductionActive, setFacilityProductionCycle, setFacilityStaffing, trainFacilityStaff, setInventoryAmount, setMarketAutomation, startLoanSearch, startResearch, upgradeFacility } = useDashboardGameState();
   const playerName = useCompanySessionStore((state) => state.selectedProfile?.displayName ?? 'Local player');
   const tutorial = useCompanySessionStore((state) => state.tutorial);
   const deleteActiveCompany = useCompanySessionStore((state) => state.deleteActiveCompany);
@@ -239,12 +252,45 @@ function GameShell({ companyName }: { companyName: string }) {
                 : activeView === 'settings' ? <SettingsScreen onLogout={logout} />
                   : activeView === 'leaderboard' ? <LeaderboardScreen />
                     : activeView === 'pedia' ? <IndustriPediaView companyPrestige={prestigeSummary.totalPrestige} currentGameTimeMs={lastProcessedAtMs} economyPhase={economyPhase} initialCustomerId={pediaInitialCustomerId} initialSection={pediaInitialSection} market={market} salesOrders={salesOrders} />
+                    : activeView === 'population' ? <PopulationView facilities={facilities} market={market} population={population} />
                     : <GameViewContent achievements={achievements} activeTab={activeView === 'admin' ? 'company' : activeView} buyMarketResource={buyMarketResource} collapsedFacilities={collapsedFacilities} companyName={companyName} companyPrestige={prestigeSummary.totalPrestige} companyStartedAtGameTimeMs={companyStartedAtGameTimeMs} currentGameTimeMs={lastProcessedAtMs} customerPipelineProgress={customerPipelineProgress} facilities={facilities} finance={finance} fulfillSalesOrder={fulfillSalesOrder} getResearchAvailability={getResearchAvailability} inventory={inventory} market={market} maximumOpenOrders={maximumOpenOrders} onAcceptLoanOffer={acceptLoanOffer} onBuildFacilityLayout={setBuildFacilityButtonLayout} onCompanyOverviewLayout={setCompanyOverviewLayout} onFirstFacilityFocusLayout={setFirstFacilityFocusLayout} onFirstFacilityRecipeSelected={handleFirstFacilityRecipeSelected} onFirstFacilityStaffingClosed={() => setIsFirstFacilityStaffingTutorialReady(false)} onFirstFacilityStaffingOpened={() => setIsFirstFacilityStaffingTutorialReady(true)} onOpenCustomer={(customerId) => { setPediaInitialCustomerId(customerId); setPediaInitialSection('customers'); setActiveView('pedia'); }} onOpenCustomerType={(_customerType: SalesCustomerType) => { setPediaInitialCustomerId(null); setPediaInitialSection('customer-types'); setActiveView('pedia'); }} onExtraLoanPayment={makeExtraLoanPayment} onRemoveLoanOffer={removeLoanOffer} onRemoveUnavailableLoanOffers={removeUnavailableLoanOffers} onRepayLoanInFull={repayLoanInFull} onStartLoanSearch={startLoanSearch} onScrollBeginDrag={handleFacilityTutorialScroll} onlyInStock={onlyInStock} openConstructionYard={openConstructionYard} rejectSalesOrder={rejectSalesOrder} repairFacility={repairFacility} requestFacilityDestruction={setPendingDestruction} research={research} resourceFlow={resourceFlow} salesOrderAcquisition={salesOrderAcquisition} salesOrders={salesOrders} sellMarketResource={sellMarketResource} setCollapsedFacilities={setCollapsedFacilities} setFacilityAutoRepair={setFacilityAutoRepair} setFacilityOptionalInputEnabled={setFacilityOptionalInputEnabled} setFacilityProductionActive={setFacilityProductionActive} setFacilityProductionCycle={setFacilityProductionCycle} setFacilityStaffing={setFacilityStaffing} trainFacilityStaff={trainFacilityStaff} setMarketAutomation={setMarketAutomation} setOnlyInStock={setOnlyInStock} setShowActiveRecipeInputs={setShowActiveRecipeInputs} showActiveRecipeInputs={showActiveRecipeInputs} startResearch={startResearch} tutorial={tutorialPresentation} upgradeFacility={upgradeFacility} />}
-
         </ScrollView>}
-        <View style={styles.bottomNavigation}>{(tutorial.completedWelcome ? [...tabs.slice(0, 3), salesTab, researchTab, ...tabs.slice(3)] : isInventoryTutorialOpen || isInventoryTutorialMinimized ? [tabs[0], tabs[1], tabs[2]] : firstFacilityTutorialStep === 'inventory-transition' ? [tabs[0], tabs[1], tabs[2]] : tutorialStep === 5 || isFirstFacilityTutorialOpen || isProductionTutorialOpen || isBuildFacilityTutorialOpen || isConstructionTutorialOpen || isFacilityChoiceTutorialOpen || isConstructionConfirmationTutorialOpen ? [tabs[0], tabs[2]] : [tabs[0]]).map((tab) => <BottomNavigationItem active={activeView === tab.key} highlight={(tutorialStep === 5 && activeView !== 'production' && tab.key === 'production') || ((isInventoryTutorialOpen || firstFacilityTutorialStep === 'inventory-transition') && tab.key === 'inventory')} icon={tab.icon} key={tab.key} label={tab.label} onPress={() => { if (!tutorial.completedWelcome && (isInventoryTutorialOpen || firstFacilityTutorialStep === 'inventory-transition') && tab.key === 'inventory') { setActiveView('inventory'); setTutorialStage({ kind: 'inventory' }); return; } setActiveView(tab.key); if (tutorial.completedWelcome) return; if (isInventoryTutorialOpen) { setTutorialStage({ kind: 'inventory' }); return; } if (tab.key === 'company') return; if (tab.key === 'production') setTutorialStage({ kind: hasStartedProductionTutorial ? 'build-facility' : 'production' }); }} symbol={tab.symbol} />)}</View>
+        <View style={styles.bottomNavigation}>{(tutorial.completedWelcome
+          ? [tabs[0], populationTab, ...tabs.slice(1, 3), salesTab, researchTab, ...tabs.slice(3)]
+          : isInventoryTutorialOpen || isInventoryTutorialMinimized
+            ? [tabs[0], tabs[1], tabs[2]]
+            : firstFacilityTutorialStep === 'inventory-transition'
+              ? [tabs[0], tabs[1], tabs[2]]
+              : tutorialStep === 5 || isFirstFacilityTutorialOpen || isProductionTutorialOpen || isBuildFacilityTutorialOpen || isConstructionTutorialOpen || isFacilityChoiceTutorialOpen || isConstructionConfirmationTutorialOpen
+                ? [tabs[0], tabs[2]]
+                : [tabs[0]]
+        ).map((tab) => (
+          <BottomNavigationItem
+            active={activeView === tab.key}
+            highlight={(tutorialStep === 5 && activeView !== 'production' && tab.key === 'production') || ((isInventoryTutorialOpen || firstFacilityTutorialStep === 'inventory-transition') && tab.key === 'inventory')}
+            icon={tab.icon}
+            key={tab.key}
+            label={tab.label}
+            onPress={() => {
+              if (!tutorial.completedWelcome && (isInventoryTutorialOpen || firstFacilityTutorialStep === 'inventory-transition') && tab.key === 'inventory') {
+                setActiveView('inventory');
+                setTutorialStage({ kind: 'inventory' });
+                return;
+              }
+              setActiveView(tab.key);
+              if (tutorial.completedWelcome) return;
+              if (isInventoryTutorialOpen) {
+                setTutorialStage({ kind: 'inventory' });
+                return;
+              }
+              if (tab.key === 'company') return;
+              if (tab.key === 'production') setTutorialStage({ kind: hasStartedProductionTutorial ? 'build-facility' : 'production' });
+            }}
+            symbol={tab.symbol}
+          />
+        ))}</View>
       </View>
-      <FacilityConstructionDialog facilities={facilities} finance={finance} inventory={inventory} isConstructionTutorial={isConstructionTutorialOpen || isFacilityChoiceTutorialOpen} isConstructionConfirmationTutorial={isConstructionConfirmationTutorialOpen || !tutorial.completedWelcome} isFacilitySelectionEnabled={isConstructionTutorialOpen || isFacilityChoiceTutorialOpen} isConstructionYardOpen={isConstructionYardOpen} market={market} onBuyMissingConstructionInputs={() => { if (pendingConstruction) buyMissingConstructionInputs(pendingConstruction.facilityType, pendingConstruction.sizeHectares); }} onCloseConstructionYard={() => dismissTutorialOrGameDialog(() => setIsConstructionYardOpen(false))} onConfirmConstruction={() => { const isFirstFacility = facilities.getAll().length === 0; if (pendingConstruction && buildFacility(pendingConstruction.facilityType, pendingConstruction.sizeHectares)) { if (isFirstFacility && !tutorial.completedWelcome) { setFirstBuiltFacilityType(pendingConstruction.facilityType); setTutorialStage({ kind: 'first-facility' }); } setPendingConstruction(null); } }} onConfirmDestruction={() => { if (pendingDestruction && sellFacility(pendingDestruction)) setPendingDestruction(null); }} onDismissConstruction={() => dismissTutorialOrGameDialog(() => setPendingConstruction(null))} onDismissDestruction={() => dismissTutorialOrGameDialog(() => setPendingConstruction(null))} onSelectConstructionSize={(sizeHectares) => setPendingConstruction((current) => current ? { ...current, sizeHectares } : current)} onSelectFacility={(facilityType) => { if (isConstructionTutorialOpen) { setTutorialStage({ kind: 'facility-choice' }); return; } setIsConstructionYardOpen(false); setPendingConstruction({ facilityType, sizeHectares: facilityType === FacilityType.Farm ? FARM_DEFAULT_SIZE_HECTARES : 1 }); if (!tutorial.completedWelcome) setTutorialStage({ kind: 'construction-confirmation' }); }} pendingConstruction={pendingConstruction} pendingDestruction={pendingDestruction} />
+      <FacilityConstructionDialog facilities={facilities} finance={finance} inventory={inventory} isConstructionTutorial={isConstructionTutorialOpen || isFacilityChoiceTutorialOpen} isConstructionConfirmationTutorial={isConstructionConfirmationTutorialOpen || !tutorial.completedWelcome} isFacilitySelectionEnabled={isConstructionTutorialOpen || isFacilityChoiceTutorialOpen} isConstructionYardOpen={isConstructionYardOpen} market={market} onBuyMissingConstructionInputs={() => { if (pendingConstruction) buyMissingConstructionInputs(pendingConstruction.facilityType, pendingConstruction.sizeHectares); }} onCloseConstructionYard={() => dismissTutorialOrGameDialog(() => setIsConstructionYardOpen(false))} onConfirmConstruction={() => { const isFirstFacility = facilities.getAll().length === 0; if (pendingConstruction && buildFacility(pendingConstruction.facilityType, pendingConstruction.sizeHectares)) { if (isFirstFacility && !tutorial.completedWelcome) { setFirstBuiltFacilityType(pendingConstruction.facilityType); setTutorialStage({ kind: 'first-facility' }); } setPendingConstruction(null); } }} onConfirmDestruction={() => { if (pendingDestruction && sellFacility(pendingDestruction)) setPendingDestruction(null); }} onDismissConstruction={() => dismissTutorialOrGameDialog(() => setPendingConstruction(null))} onDismissDestruction={() => dismissTutorialOrGameDialog(() => setPendingConstruction(null))} onSelectConstructionSize={(sizeHectares) => setPendingConstruction((current) => current ? { ...current, sizeHectares } : current)} onSelectFacility={(facilityType) => { if (isConstructionTutorialOpen) { setTutorialStage({ kind: 'facility-choice' }); return; } setIsConstructionYardOpen(false); setPendingConstruction({ facilityType, sizeHectares: getFacilityDefaultSize(facilityType) }); if (!tutorial.completedWelcome) setTutorialStage({ kind: 'construction-confirmation' }); }} pendingConstruction={pendingConstruction} pendingDestruction={pendingDestruction} />
       <PrestigeDialog currentGameTimeMs={lastProcessedAtMs} facilityConditions={facilities.getAll().map((facility) => facility.getView().facilityCondition)} isOpen={isPrestigeOpen} onClose={() => dismissTutorialOrGameDialog(() => setIsPrestigeOpen(false))} summary={prestigeSummary} />
       <CollectionDialog finance={finance} onAcceptRestructure={acceptDebtRestructure} onAcknowledge={acknowledgeCollectionNotice} />
       {!tutorial.completedWelcome && ((activeView === 'company' && !isTutorialOpen) || (activeView === 'production' && tutorialStage === null) || isInventoryTutorialMinimized) && <Portal><View style={styles.tutorialReopenControl}><Pressable accessibilityLabel="Reopen tutorial" accessibilityRole="button" onPress={reopenTutorial} style={styles.tutorialReopenButton}><Image accessibilityLabel="Simulucius" resizeMode="contain" source={SIMULUCIUS_TUTORIAL_BUTTON} style={styles.tutorialReopenCharacter} /></Pressable><IconButton accessibilityLabel="Exit tutorial" icon="close" onPress={() => { void completeWelcomeTutorial(); }} size={16} style={styles.tutorialReopenCloseButton} /></View></Portal>}

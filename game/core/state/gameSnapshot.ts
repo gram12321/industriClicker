@@ -15,6 +15,7 @@ import type { ResourceType } from '../../resources/resourceTypes';
 import { isResearchLedgerSnapshot, type ResearchLedgerSnapshot } from '../../research/research';
 import { isGrantLedgerSnapshot, type GrantLedgerSnapshot } from '../../grants/grant';
 import { RecipeName } from '../../recipes/recipeTypes';
+import type { PopulationSnapshot } from '../../population/population';
 
 export type GameTimeSnapshot = {
   /** Logical foreground time when the current company began. */
@@ -32,6 +33,7 @@ export type GameTimeSnapshot = {
  * definitions and class methods are intentionally absent.
  */
 export type GameSnapshot = {
+  population: PopulationSnapshot;
   finance: FinanceSnapshot;
   inventory: InventorySnapshot;
   resourceFlow: ReturnType<ResourceFlowLedger['toSnapshot']>;
@@ -133,6 +135,16 @@ function isInventoryEntrySnapshot(value: unknown): boolean {
     && typeof value.sourceCostPerUnit === 'number' && Number.isFinite(value.sourceCostPerUnit) && value.sourceCostPerUnit >= 0;
 }
 
+function isPopulationSnapshot(value: unknown): value is PopulationSnapshot {
+  if (!isRecord(value)) return false;
+  const currentMinuteConsumption = value.currentMinuteConsumption;
+  return typeof value.householdBalance === 'number' && Number.isFinite(value.householdBalance) && value.householdBalance >= 0
+    && typeof value.currentConsumptionGameMinute === 'number' && Number.isInteger(value.currentConsumptionGameMinute) && value.currentConsumptionGameMinute >= 0
+    && hasCurrentResourceKeys(currentMinuteConsumption)
+    && RESOURCE_TYPES.every((resourceType) => typeof currentMinuteConsumption[resourceType] === 'number'
+      && Number.isFinite(currentMinuteConsumption[resourceType]) && currentMinuteConsumption[resourceType] >= 0);
+}
+
 function isPendingStaffingChangeSnapshot(value: unknown): boolean {
   if (value === null) return true;
   if (!isRecord(value)) return false;
@@ -178,9 +190,17 @@ function isRecipeInputEffectsSnapshot(value: unknown): boolean {
     && typeof value.inputMultiplier === 'number' && Number.isFinite(value.inputMultiplier) && value.inputMultiplier > 0 && value.inputMultiplier <= 1;
 }
 
+function isRecipeOutputProgressSnapshot(value: unknown): boolean {
+  return isRecord(value) && Object.entries(value).every(([recipeName, outputs]) => isRecord(outputs)
+    && Object.values(RecipeName).includes(recipeName as RecipeName)
+    && Object.entries(outputs).every(([resourceType, progress]) => RESOURCE_TYPES.includes(resourceType as ResourceType)
+      && typeof progress === 'number' && Number.isFinite(progress) && progress >= 0));
+}
+
 /** Structural guard used by the company-scoped SQLite save adapter. */
 export function isGameSnapshot(value: unknown): value is GameSnapshot {
-  if (!isRecord(value) || !isRecord(value.finance) || !isRecord(value.inventory) || !ResourceFlowLedger.isSnapshot(value.resourceFlow)
+  if (!isRecord(value) || !isPopulationSnapshot(value.population)
+    || !isRecord(value.finance) || !isRecord(value.inventory) || !ResourceFlowLedger.isSnapshot(value.resourceFlow)
     || !isRecord(value.market) || !isRecord(value.facilities) || !isRecord(value.salesOrders)
     || !isRecord(value.achievements) || !isFacilityMaintenanceStatisticsSnapshot(value.facilityMaintenance)
     || !isRecord(value.prestige) || !isResearchLedgerSnapshot(value.research) || !isGrantLedgerSnapshot(value.grants) || !isGameTimeSnapshot(value.time)) {
@@ -246,6 +266,7 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
       && (facility.recipeInputQ === null || (typeof facility.recipeInputQ === 'number' && Number.isFinite(facility.recipeInputQ) && facility.recipeInputQ > 0))
       && (typeof facility.recipeInputSourceCost === 'number' && Number.isFinite(facility.recipeInputSourceCost) && facility.recipeInputSourceCost >= 0 || facility.recipeInputSourceCost === null)
       && isRecipeInputEffectsSnapshot(facility.recipeInputEffects)
+      && isRecipeOutputProgressSnapshot(facility.recipeOutputProgress)
       && isOptionalInputSettingsSnapshot(facility.optionalInputSettings)
        && typeof facility.qualityUpgradeLevel === 'number'
        && Number.isInteger(facility.qualityUpgradeLevel)

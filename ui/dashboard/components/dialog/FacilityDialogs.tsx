@@ -5,7 +5,7 @@ import { Button, Card, Dialog, IconButton, List, Portal, SegmentedButtons, Text,
 import { colors } from '@/theme';
 import { LOAN_COLLECTION, calculateFacilityAssetValue, type Finance } from '@/game/finance';
 import { Facility, type FacilityCollection, type FacilityType } from '@/game/facilities';
-import { calculateFacilityResourcePayment, calculateProjectedFacilityConditionEconomics, FACILITY_GROUPS, FACILITY_REPAIR_DURATION_PER_CONDITION_MS, FACILITY_REPAIR_EFFICIENCY_MULTIPLIER, FACILITY_STAFF_QUALITY_TREND_MEMORY_MINUTES, FACILITY_STAFF_TRAINING_QUALITY_PROGRESS_PER_WORKER, getFacilityConstructionCosts, getFacilityDefinition, getFacilityEfficiency, getFacilityMaxStaffWage, getFacilityRepairCost, getFacilitySizeMultiplier, getFacilitySizeOptions, getFacilityStaffTargetWage, getStaffingChangeCost, getStaffingChangeDurationMs, getStaffTrainingCost, getStaffTrainingDurationMs, getStaffingEfficiency, getStaffQualityFromProgress, getStaffQualityWagePressurePerMinute,  } from '@/game/facilities';
+import { calculateFacilityResourcePayment, calculateProjectedFacilityConditionEconomics, FACILITY_GROUPS, FACILITY_REPAIR_DURATION_PER_CONDITION_MS, FACILITY_REPAIR_EFFICIENCY_MULTIPLIER, FACILITY_STAFF_QUALITY_TREND_MEMORY_MINUTES, FACILITY_STAFF_TRAINING_QUALITY_PROGRESS_PER_WORKER, getFacilityConstructionCosts, getFacilityDefinition, getFacilityEfficiency, getFacilityMaxStaffWage, getFacilityRepairCost, getFacilitySizeDefinition, getFacilitySizeMultiplier, getFacilitySizeOptions, getFacilityStaffTargetWage, getStaffingChangeCost, getStaffingChangeDurationMs, getStaffTrainingCost, getStaffTrainingDurationMs, getStaffingEfficiency, getStaffQualityFromProgress, getStaffQualityWagePressurePerMinute,  } from '@/game/facilities';
 import type { Inventory } from '@/game/inventory';
 import type { Market } from '@/game/market';
 import { ResourceType } from '@/game/resources';
@@ -1145,6 +1145,7 @@ function ConfirmConstrution({
   }
 
   const definition = getFacilityDefinition(facilityType);
+  const sizeDefinition = getFacilitySizeDefinition(facilityType);
   const sizeOptions = getFacilitySizeOptions(facilityType);
   const constructionCosts = getFacilityConstructionCosts(facilityType, definition, sizeHectares);
   const sizeMultiplier = getFacilitySizeMultiplier(facilityType, sizeHectares);
@@ -1177,9 +1178,9 @@ function ConfirmConstrution({
               Purchase the land, supply the Construction Materials, and install the Industrial Machines before the facility is added to your company.
             </Text>
             {sizeOptions.length > 1 && !isConstructionTutorial && !isConstructionConfirmationTutorial && <>
-              <Text variant="titleMedium" style={styles.dialogSectionHeading}>Farm size</Text>
+              <Text variant="titleMedium" style={styles.dialogSectionHeading}>{sizeDefinition?.label ?? 'Size'}</Text>
               <SegmentedButtons
-                buttons={sizeOptions.map((size) => ({ value: String(size), label: `${size} ha` }))}
+                buttons={sizeOptions.map((size) => ({ value: String(size), label: `${size}${sizeDefinition?.unit ? ` ${sizeDefinition.unit}` : ''}` }))}
                 onValueChange={(value) => onSelectConstructionSize(Number(value))}
                 value={String(sizeHectares)}
               />
