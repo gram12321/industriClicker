@@ -248,12 +248,15 @@ export const SALES_RESOURCE_PROFILES: Readonly<Record<ResourceType, { domain: Sa
   minerals: { domain: 'raw-materials', standardOrderLot: 100 },
   gold: { domain: 'raw-materials', standardOrderLot: 1 },
   timber: { domain: 'raw-materials', standardOrderLot: 50 },
+  leather: { domain: 'raw-materials', standardOrderLot: 10 },
 
   // Industrial inputs
   steel: { domain: 'industrial-inputs', standardOrderLot: 40 },
   chemicals: { domain: 'industrial-inputs', standardOrderLot: 25 },
   fertilizer: { domain: 'industrial-inputs', standardOrderLot: 10 },
   plastic: { domain: 'industrial-inputs', standardOrderLot: 30 },
+  planks: { domain: 'industrial-inputs', standardOrderLot: 25 },
+  furniture: { domain: 'industrial-inputs', standardOrderLot: 5 },
   wool: { domain: 'industrial-inputs', standardOrderLot: 25 },
 
   // Construction materials

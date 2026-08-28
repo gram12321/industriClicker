@@ -926,6 +926,7 @@ export const useGameStore = create<GameState>((set, get) => {
           productionMaxQ: calculateProductionMaxQ(resourceFlow.getLifetimeFacilityOutput(output.resourceType)),
           staffMaxQ: facilityView.staffQuality,
           outputBonusQ: (output.outputBonusQ ?? 0) + inputEffects.qualityBoost,
+          outputQualityMultiplier: output.outputQualityMultiplier,
         }), (facility, recipe) => calculateFacilityProductionMaintenanceCost(facility, recipe, market!));
         if (outputs.length > 0) {
           producedOutput = true;

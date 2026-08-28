@@ -327,6 +327,14 @@ describe('facility staffing changes', () => {
 });
 
 describe('advanceAllFacilityProduction', () => {
+  it('consumes at most one mutually exclusive furniture finishing input', () => {
+    const facility = new Facility('timber-works-1', FacilityType.TimberWorks);
+    const recipe = getRecipe(RecipeName.AssembleFurniture);
+    const plan = getFacilityRecipeInputPlan(recipe, 1, [ResourceType.Leather, ResourceType.Wool]);
+
+    expect(plan.optionalInputs.map((input) => input.resourceType)).toEqual([ResourceType.Leather]);
+  });
+
   it('runs no-input forestry outputs independently while retaining land-size scaling', () => {
     const facilities = new FacilityCollection();
     facilities.build(FacilityType.Forestry, 5);
@@ -338,6 +346,7 @@ describe('advanceAllFacilityProduction', () => {
     expect(facility.getView().recipeOutputProgress[RecipeName.ForestManagement]).toEqual({
       [ResourceType.Meat]: 0.1,
       [ResourceType.Timber]: 0.1,
+      [ResourceType.Leather]: 0.1,
     });
 
     const firstOutputs = advanceAllFacilityProduction(facilities, inventory, () => 0.1);
@@ -345,6 +354,7 @@ describe('advanceAllFacilityProduction', () => {
     expect(facility.getView().recipeOutputProgress[RecipeName.ForestManagement]).toEqual({
       [ResourceType.Meat]: 0,
       [ResourceType.Timber]: 0.2,
+      [ResourceType.Leather]: 0.2,
     });
 
     advanceAllFacilityProduction(facilities, inventory, () => 0.1);

@@ -38,6 +38,9 @@ export enum RecipeName {
   CoalPower = 'coal-power',
   SolarPower = 'solar-power',
   ForestManagement = 'forest-management',
+  MillTimber = 'mill-timber',
+  AssembleFurniture = 'assemble-furniture',
+  ProduceSyntheticLeather = 'produce-synthetic-leather',
 }
 
 export type RecipeInput = {
@@ -45,6 +48,8 @@ export type RecipeInput = {
   amount: number;
   /** Optional inputs never stall a recipe and are consumed only when enabled and available. */
   optional?: boolean;
+  /** Optional inputs sharing a group are mutually exclusive; at most one is consumed per cycle. */
+  optionalGroup?: string;
   /** Effects applied when this optional input is consumed for a cycle. */
   effects?: RecipeInputEffects;
 };
@@ -65,6 +70,8 @@ export type RecipeOutput = {
   requiredWork?: number;
   /** Quality added after normal production ceilings are resolved. */
   outputBonusQ?: number;
+  /** Multiplies quality after the normal ceiling and additive bonuses are applied. */
+  outputQualityMultiplier?: number;
 };
 
 export type Recipe = {

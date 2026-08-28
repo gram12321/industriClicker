@@ -209,6 +209,7 @@ export function calculateCurrentFacilityProductionEconomics(
       productionMaxQ: getProductionMaxQ(resourceType),
       staffMaxQ: facility.staffQuality,
       outputBonusQ: (output.outputBonusQ ?? 0) + (capturedInputEffects?.qualityBoost ?? availableInputPlan.effects.qualityBoost),
+      outputQualityMultiplier: output.outputQualityMultiplier,
     }).outputQ;
   };
   const staffWagePerMinute = calculateFacilityStaffWagePerMinute(facility.assignedWorkers, facility.staffWagePerWorkerPerMinute);
@@ -404,8 +405,8 @@ export function calculateProjectedFacilityQualityUpgradeNetGainPerMinute(
 
   return recipe.outputs.reduce((total, output) => {
     const productionMaxQ = productionMaxQForResource(output.resourceType);
-    const currentQuality = calculateOutputQuality({ researchMaxQ: researchMaxQForResource(output.resourceType), weightedInputQ, upgradeMaxQ: currentLimit, productionMaxQ, staffMaxQ, outputBonusQ: (output.outputBonusQ ?? 0) + (inputEffects?.qualityBoost ?? 0) }).outputQ;
-    const nextQuality = calculateOutputQuality({ researchMaxQ: researchMaxQForResource(output.resourceType), weightedInputQ, upgradeMaxQ: nextLimit, productionMaxQ, staffMaxQ, outputBonusQ: (output.outputBonusQ ?? 0) + (inputEffects?.qualityBoost ?? 0) }).outputQ;
+  const currentQuality = calculateOutputQuality({ researchMaxQ: researchMaxQForResource(output.resourceType), weightedInputQ, upgradeMaxQ: currentLimit, productionMaxQ, staffMaxQ, outputBonusQ: (output.outputBonusQ ?? 0) + (inputEffects?.qualityBoost ?? 0), outputQualityMultiplier: output.outputQualityMultiplier }).outputQ;
+  const nextQuality = calculateOutputQuality({ researchMaxQ: researchMaxQForResource(output.resourceType), weightedInputQ, upgradeMaxQ: nextLimit, productionMaxQ, staffMaxQ, outputBonusQ: (output.outputBonusQ ?? 0) + (inputEffects?.qualityBoost ?? 0), outputQualityMultiplier: output.outputQualityMultiplier }).outputQ;
     const unitsPerMinute = output.amount * view.sizeMultiplier * view.outputMultiplier * (inputEffects?.outputMultiplier ?? 1) * effectiveWorkPerMinute / (hasIndependentOutputProgress(recipe) ? getFacilityRecipeOutputRequiredWork(recipe, output, view.sizeMultiplier) : recipe.requiredWork * view.sizeMultiplier);
     return total + unitsPerMinute * (market.getLocalSalePrice(output.resourceType, nextQuality) - market.getLocalSalePrice(output.resourceType, currentQuality));
   }, 0);

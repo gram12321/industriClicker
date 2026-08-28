@@ -47,7 +47,15 @@ export function getFacilityRecipeInputs(recipe: Recipe, sizeMultiplier = 1): Rec
 
 function getOptionalResourceSet(recipe: Recipe, enabledOptionalInputs?: readonly ResourceType[]): Set<ResourceType> {
   const enabled = enabledOptionalInputs ? new Set(enabledOptionalInputs) : null;
-  return new Set(recipe.inputs.filter((input) => input.optional && (!enabled || enabled.has(input.resourceType))).map((input) => input.resourceType));
+  const selectedGroups = new Set<string>();
+  const selected = new Set<ResourceType>();
+  for (const input of recipe.inputs) {
+    if (!input.optional || (enabled && !enabled.has(input.resourceType))) continue;
+    if (input.optionalGroup && selectedGroups.has(input.optionalGroup)) continue;
+    selected.add(input.resourceType);
+    if (input.optionalGroup) selectedGroups.add(input.optionalGroup);
+  }
+  return selected;
 }
 
 export function getRecipeInputEffects(recipe: Recipe, enabledOptionalInputs?: readonly ResourceType[]): Required<RecipeInputEffects> {
@@ -224,7 +232,7 @@ export function advanceAllFacilityProduction(
             const productionMaintenanceCost = Math.max(0, getProductionMaintenanceCost?.(facility.getView(), activeRecipe) ?? 0) * maintenanceFraction;
             const outputSourceCostPerUnit = amount > 0 ? productionMaintenanceCost / amount : 0;
             const qualityBreakdown = resolveOutputQuality?.(facilityView, output, null, facilityView.upgradeMaxQ, inputEffects)
-              ?? calculateOutputQuality({ weightedInputQ: null, researchMaxQ: 1, upgradeMaxQ: facilityView.upgradeMaxQ, outputBonusQ: output.outputBonusQ ?? 0 });
+              ?? calculateOutputQuality({ weightedInputQ: null, researchMaxQ: 1, upgradeMaxQ: facilityView.upgradeMaxQ, outputBonusQ: output.outputBonusQ ?? 0, outputQualityMultiplier: output.outputQualityMultiplier });
             inventory.add(output.resourceType, amount, qualityBreakdown.outputQ, outputSourceCostPerUnit);
             outputs.push({ facilityId: facilityView.id, facilityType: facilityView.facilityType, recipeName: activeRecipe.name, resourceType: output.resourceType, amount, quality: qualityBreakdown.outputQ, sourceCostPerUnit: outputSourceCostPerUnit });
             facility.applyConditionLoss(getRecipeProductionConditionLoss(activeRecipe) * maintenanceFraction);
@@ -275,7 +283,7 @@ export function advanceAllFacilityProduction(
             const amount = output.amount * facilityView.outputMultiplier * (facility.getView().recipeInputEffects?.outputMultiplier ?? 1);
             const inputEffects = facility.getView().recipeInputEffects ?? DEFAULT_INPUT_EFFECTS;
             const qualityBreakdown = resolveOutputQuality?.(facilityView, output, facility.getView().recipeInputQ, facilityView.upgradeMaxQ, inputEffects)
-              ?? calculateOutputQuality({ weightedInputQ: facility.getView().recipeInputQ, researchMaxQ: 1, upgradeMaxQ: facilityView.upgradeMaxQ, outputBonusQ: (output.outputBonusQ ?? 0) + inputEffects.qualityBoost });
+              ?? calculateOutputQuality({ weightedInputQ: facility.getView().recipeInputQ, researchMaxQ: 1, upgradeMaxQ: facilityView.upgradeMaxQ, outputBonusQ: (output.outputBonusQ ?? 0) + inputEffects.qualityBoost, outputQualityMultiplier: output.outputQualityMultiplier });
             inventory.add(output.resourceType, amount, qualityBreakdown.outputQ, outputSourceCostPerUnit);
             outputs.push({ facilityId: facilityView.id, facilityType: facilityView.facilityType, recipeName: recipe.name, resourceType: output.resourceType, amount, quality: qualityBreakdown.outputQ, sourceCostPerUnit: outputSourceCostPerUnit });
           }

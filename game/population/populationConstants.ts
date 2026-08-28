@@ -25,8 +25,8 @@ export const POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE: Readonly<
  *
  * These are provisional virtual-basket quantities, not shared physical units.
  * Each resource is a relative share of its domain total above. Food is
- * diversified; Water and Electricity cover direct utility use; Wool is a
- * deliberately small direct manufacturing good. The current non-zero raw and
+ * diversified; Water and Electricity cover direct utility use; Wool, Planks,
+ * Leather, and Furniture are deliberately small direct manufacturing goods. The current non-zero raw and
  * construction entries are implementation probes and can be rebalanced later.
  */
 export const POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE: Readonly<Record<ResourceType, number>> = {
@@ -55,6 +55,7 @@ export const POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE: Readonly<Record<
   [ResourceType.Clay]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE['raw-resources'] * 0.4,
   [ResourceType.Stone]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE['raw-resources'] * 0.2,
   [ResourceType.Timber]: 0,
+  [ResourceType.Leather]: 0,
 
   // [Construction]
   [ResourceType.Bricks]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.construction * 0.2,
@@ -65,11 +66,13 @@ export const POPULATION_BASE_CONSUMPTION_PER_PERSON_PER_MINUTE: Readonly<Record<
   // [Manufacturing]
   [ResourceType.Steel]: 0,
   [ResourceType.ElectricCircuits]: 0,
-  [ResourceType.Chemicals]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0.0625,
-  [ResourceType.Fertilizer]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0.625,
+  [ResourceType.Chemicals]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0.05,
+  [ResourceType.Fertilizer]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0.55,
   [ResourceType.Plastic]: 0,
   [ResourceType.Silicon]: 0,
   [ResourceType.AdvancedComponents]: 0,
   [ResourceType.IndustrialMachines]: 0,
-  [ResourceType.Wool]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0.3125,
+  [ResourceType.Planks]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0.05,
+  [ResourceType.Furniture]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0.15,
+  [ResourceType.Wool]: POPULATION_BASE_DOMAIN_CONSUMPTION_PER_PERSON_PER_MINUTE.manufacturing * 0.25,
 };

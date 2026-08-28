@@ -20,6 +20,8 @@ export type OutputQualityBreakdown = QualityLimits & {
   maxQ: number;
   /** Recipe-specific quality added after the normal production ceiling. */
   outputBonusQ: number;
+  /** Multiplicative adjustment applied after the normal ceiling and bonuses. */
+  outputQualityMultiplier: number;
   outputQ: number;
 };
 
@@ -88,7 +90,7 @@ export function calculateInputMaxQ(weightedInputQ: number | null): number {
 }
 
 /** Applies the applicable quality ceilings to one facility output. */
-export function calculateOutputQuality(limits: Partial<QualityLimits> & { weightedInputQ?: number | null; outputBonusQ?: number }): OutputQualityBreakdown {
+export function calculateOutputQuality(limits: Partial<QualityLimits> & { weightedInputQ?: number | null; outputBonusQ?: number; outputQualityMultiplier?: number }): OutputQualityBreakdown {
   const inputMaxQ = limits.inputMaxQ ?? calculateInputMaxQ(limits.weightedInputQ ?? null);
   const researchCandidate = limits.researchMaxQ ?? QUALITY_NUMERIC_CEILING;
   const upgradeCandidate = limits.upgradeMaxQ ?? QUALITY_NUMERIC_CEILING;
@@ -100,5 +102,6 @@ export function calculateOutputQuality(limits: Partial<QualityLimits> & { weight
   const staffMaxQ = Number.isFinite(staffCandidate) && staffCandidate > 0 ? staffCandidate : QUALITY_NUMERIC_CEILING;
   const maxQ = Math.min(researchMaxQ, ...(Number.isFinite(inputMaxQ) ? [inputMaxQ] : []), upgradeMaxQ, productionMaxQ, staffMaxQ, QUALITY_NUMERIC_CEILING);
   const outputBonusQ = finiteNonNegative(limits.outputBonusQ ?? 0);
-  return { inputMaxQ, researchMaxQ, upgradeMaxQ, productionMaxQ, staffMaxQ, maxQ, outputBonusQ, outputQ: maxQ + outputBonusQ };
+  const outputQualityMultiplier = Number.isFinite(limits.outputQualityMultiplier) && (limits.outputQualityMultiplier ?? 0) > 0 ? limits.outputQualityMultiplier as number : 1;
+  return { inputMaxQ, researchMaxQ, upgradeMaxQ, productionMaxQ, staffMaxQ, maxQ, outputBonusQ, outputQualityMultiplier, outputQ: (maxQ + outputBonusQ) * outputQualityMultiplier };
 }

@@ -75,6 +75,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     outputs: [
       { resourceType: ResourceType.Meat, amount: 0.5 },
       { resourceType: ResourceType.Milk, amount: 1.25 },
+      { resourceType: ResourceType.Leather, amount: 0.05 },
       { resourceType: ResourceType.Fertilizer, amount: 0.1 },
     ],
     requiredWork: 0.6125,
@@ -340,6 +341,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Cement, amount: 1 },
       { resourceType: ResourceType.Chemicals, amount: 0.1 },
       { resourceType: ResourceType.Plastic, amount: 0.2 },
+      { resourceType: ResourceType.Planks, amount: 0.5 },
       { resourceType: ResourceType.Electricity, amount: 2 },
     ],
     outputs: [{ resourceType: ResourceType.ConstructionMaterials, amount: 8 }],
@@ -421,9 +423,44 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
     outputs: [
       { resourceType: ResourceType.Meat, amount: 0.25, requiredWork: 0.2 },
       { resourceType: ResourceType.Timber, amount: 1, requiredWork: 0.4 },
+      { resourceType: ResourceType.Leather, amount: 0.03, requiredWork: 0.6 },
     ],
     requiredWork: 0.4,
     conditionWearMultiplier: 0.7,
+  },
+  [RecipeName.MillTimber]: {
+    name: RecipeName.MillTimber,
+    inputs: [
+      { resourceType: ResourceType.Timber, amount: 2 },
+      { resourceType: ResourceType.Electricity, amount: 1 },
+    ],
+    outputs: [{ resourceType: ResourceType.Planks, amount: 4 }],
+    requiredWork: 0.6,
+    conditionWearMultiplier: 1,
+  },
+  [RecipeName.AssembleFurniture]: {
+    name: RecipeName.AssembleFurniture,
+    inputs: [
+      { resourceType: ResourceType.Planks, amount: 2 },
+      { resourceType: ResourceType.Electricity, amount: 1.5 },
+      { resourceType: ResourceType.Leather, amount: 0.25, optional: true, optionalGroup: 'furniture-finish' },
+      { resourceType: ResourceType.Wool, amount: 0.35, optional: true, optionalGroup: 'furniture-finish' },
+    ],
+    outputs: [{ resourceType: ResourceType.Furniture, amount: 1 }],
+    requiredWork: 1.2,
+    conditionWearMultiplier: 1.1,
+  },
+  [RecipeName.ProduceSyntheticLeather]: {
+    name: RecipeName.ProduceSyntheticLeather,
+    inputs: [
+      { resourceType: ResourceType.Plastic, amount: 1.5 },
+      { resourceType: ResourceType.Chemicals, amount: 0.5 },
+      { resourceType: ResourceType.Water, amount: 0.5 },
+      { resourceType: ResourceType.Electricity, amount: 1 },
+    ],
+    outputs: [{ resourceType: ResourceType.Leather, amount: 1, outputQualityMultiplier: 0.5 }],
+    requiredWork: 0.8,
+    conditionWearMultiplier: 1.05,
   },
 };
 
@@ -464,7 +501,10 @@ export const RECIPE_DISPLAY_NAMES: Readonly<Record<RecipeName, string>> = {
   [RecipeName.ElectricPumping]: 'Electric Pumping',
   [RecipeName.CoalPower]: 'Coal Power',
   [RecipeName.SolarPower]: 'Solar Power',
-  [RecipeName.ForestManagement]: 'Forest Management',
+  [RecipeName.ForestManagement]: 'Forest & Wildlife Management',
+  [RecipeName.MillTimber]: 'Mill Timber',
+  [RecipeName.AssembleFurniture]: 'Assemble Furniture',
+  [RecipeName.ProduceSyntheticLeather]: 'Produce Synthetic Leather',
 };
 
 export function getRecipeDisplayName(recipeName: RecipeName): string {

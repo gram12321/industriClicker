@@ -1,7 +1,7 @@
 import { ALL_RECIPES, RecipeName, type Recipe } from '@/game/recipes';
 import { FacilityType } from './facilityTypes';
 
-export const FACILITY_TYPES = [FacilityType.Farm, FacilityType.Forestry, FacilityType.AnimalFarm, FacilityType.Bakery, FacilityType.SmallUtilityWorks, FacilityType.Mine, FacilityType.Quarry, FacilityType.IndustrialProcessingFactory, FacilityType.ChemicalPlant, FacilityType.ElectronicsFactory, FacilityType.AssemblyPlant, FacilityType.ConstructionFactory, FacilityType.WaterWell, FacilityType.SolarPlant, FacilityType.CoalPowerPlant] as const;
+export const FACILITY_TYPES = [FacilityType.Farm, FacilityType.Forestry, FacilityType.TimberWorks, FacilityType.AnimalFarm, FacilityType.Bakery, FacilityType.SmallUtilityWorks, FacilityType.Mine, FacilityType.Quarry, FacilityType.IndustrialProcessingFactory, FacilityType.ChemicalPlant, FacilityType.ElectronicsFactory, FacilityType.AssemblyPlant, FacilityType.ConstructionFactory, FacilityType.WaterWell, FacilityType.SolarPlant, FacilityType.CoalPowerPlant] as const;
 export type FacilityGroup = 'agriculture' | 'extraction' | 'manufacturing' | 'utilities';
 
 export type FacilitySizeDefinition = {
@@ -24,7 +24,7 @@ const LAND_SIZE_DEFINITION: FacilitySizeDefinition = {
 export const FACILITY_GROUPS: ReadonlyArray<{ id: FacilityGroup; label: string; facilities: readonly FacilityType[] }> = [
   { id: 'agriculture', label: 'Agriculture', facilities: [FacilityType.AnimalFarm, FacilityType.Farm, FacilityType.Forestry, FacilityType.Bakery] },
   { id: 'extraction', label: 'Extraction', facilities: [FacilityType.Mine, FacilityType.Quarry] },
-  { id: 'manufacturing', label: 'Manufacturing', facilities: [FacilityType.AssemblyPlant, FacilityType.ChemicalPlant, FacilityType.ConstructionFactory, FacilityType.ElectronicsFactory, FacilityType.IndustrialProcessingFactory] },
+  { id: 'manufacturing', label: 'Manufacturing', facilities: [FacilityType.AssemblyPlant, FacilityType.ChemicalPlant, FacilityType.ConstructionFactory, FacilityType.ElectronicsFactory, FacilityType.IndustrialProcessingFactory, FacilityType.TimberWorks] },
   { id: 'utilities', label: 'Utilities', facilities: [FacilityType.CoalPowerPlant, FacilityType.SmallUtilityWorks, FacilityType.SolarPlant, FacilityType.WaterWell] },
 ];
 export const FACILITY_UPGRADE_COST_GROWTH = 1.5;
@@ -87,6 +87,7 @@ export const FACILITY_PRODUCTION_ORDER = [
   FacilityType.SmallUtilityWorks,
   FacilityType.Farm,
   FacilityType.Forestry,
+  FacilityType.TimberWorks,
   FacilityType.AnimalFarm,
   FacilityType.Bakery,
   FacilityType.Mine,
@@ -185,6 +186,17 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     recipes: [ALL_RECIPES[RecipeName.ForestManagement]],
     size: LAND_SIZE_DEFINITION,
   },
+  [FacilityType.TimberWorks]: {
+    type: FacilityType.TimberWorks,
+    name: 'Timber Works',
+    icon: 'saw-blade',
+    landCost: 75,
+    constructionMaterialsCost: 60,
+    industrialMachinesCost: 8,
+    upgradeCost: 220,
+    baseWorkers: 5,
+    recipes: [ALL_RECIPES[RecipeName.MillTimber], ALL_RECIPES[RecipeName.AssembleFurniture]],
+  },
   [FacilityType.AnimalFarm]: {
     type: FacilityType.AnimalFarm,
     name: 'Animal Farm',
@@ -260,7 +272,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     industrialMachinesCost: 20,
     upgradeCost: 350,
     baseWorkers: 7,
-    recipes: [ALL_RECIPES[RecipeName.ProduceChemicals], ALL_RECIPES[RecipeName.SynthesizeFertilizer], ALL_RECIPES[RecipeName.ProducePlastic]],
+    recipes: [ALL_RECIPES[RecipeName.ProduceChemicals], ALL_RECIPES[RecipeName.SynthesizeFertilizer], ALL_RECIPES[RecipeName.ProducePlastic], ALL_RECIPES[RecipeName.ProduceSyntheticLeather]],
   },
   [FacilityType.ElectronicsFactory]: {
     type: FacilityType.ElectronicsFactory,

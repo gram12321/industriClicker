@@ -37,6 +37,9 @@ export const RESOURCE_ICONS: Readonly<Record<ResourceType, string>> = {
   [ResourceType.MeatPie]: '🥧',
   [ResourceType.Milk]: '🥛',
   [ResourceType.Timber]: '🪵',
+  [ResourceType.Planks]: '🪵',
+  [ResourceType.Leather]: '🧤',
+  [ResourceType.Furniture]: '🪑',
   [ResourceType.Wool]: '🧶',
 };
 
@@ -192,5 +195,8 @@ export const RECIPE_ICONS: Readonly<Record<RecipeName, string>> = {
   [RecipeName.ElectricPumping]: '🌀',
   [RecipeName.CoalPower]: '🔥',
   [RecipeName.ForestManagement]: '🌲',
+  [RecipeName.MillTimber]: '🪵',
+  [RecipeName.AssembleFurniture]: '🪑',
+  [RecipeName.ProduceSyntheticLeather]: '🧤',
   [RecipeName.SolarPower]: '☀️',
 };

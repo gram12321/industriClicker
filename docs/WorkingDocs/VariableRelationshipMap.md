@@ -13,8 +13,11 @@ This is the authority for concrete variables, dependencies, commands, time effec
 | Grain | Farm: Grow Grain | 1 Water, 1 Electricity, 0.05 Fertilizer |
 | Sugar | Farm: Grow Sugar | 3 Water, 0.08 Fertilizer |
 | Fruit | Farm: Grow Fruit | 2 Water, 0.06 Fertilizer |
-| Meat | Animal Farm: Raise Cattle / Sheep / Chicken; Forestry: Forest Management | 3 / 2 / 1 Grain, 2 / 1.5 / 1 Water, 1.25 / 1 / 0.75 Electricity / None |
-| Timber | Forestry: Forest Management | None |
+| Meat | Animal Farm: Raise Cattle / Sheep / Chicken; Forestry: Forest & Wildlife Management | 3 / 2 / 1 Grain, 2 / 1.5 / 1 Water, 1.25 / 1 / 0.75 Electricity / None |
+| Timber | Forestry: Forest & Wildlife Management | None |
+| Leather | Animal Farm: Raise Cattle; Forestry: Forest & Wildlife Management; Chemical Plant: Produce Synthetic Leather (output Q × 0.5) | animal inputs / None / 1.5 Plastic, 0.5 Chemicals, 0.5 Water, 1 Electricity |
+| Planks | Timber Works: Mill Timber; Construction Factory: Produce Construction Materials | 2 Timber, 1 Electricity / 0.5 Planks as construction input |
+| Furniture | Timber Works: Assemble Furniture | 2 Planks, 1.5 Electricity, optional Leather or Wool (choose one) |
 | Milk | Animal Farm: Raise Cattle | 3 Grain, 2 Water, 1.25 Electricity |
 | Wool | Animal Farm: Raise Sheep | 2 Grain, 1.5 Water, 1 Electricity |
 | Eggs | Animal Farm: Raise Chicken | 1 Grain, 1 Water, 0.75 Electricity |
@@ -40,7 +43,7 @@ This is the authority for concrete variables, dependencies, commands, time effec
 | Bricks | Construction Factory: Produce Bricks | 2 Clay, 2 Sand, 1 Water, 3 Electricity |
 | Cement | Construction Factory: Produce Cement | 3 Stone, 1 Sand, 1 Clay, 1 Minerals, 1 Water, 5 Electricity |
 | Reinforced Concrete | Construction Factory: Produce Reinforced Concrete | 2 Cement, 3 Sand, 2 Stone, 2 Steel, 0.5 Minerals, 0.25 Chemicals, 2 Water, 2 Electricity |
-| Construction Materials | Construction Factory: Produce Construction Materials | 2 Bricks, 1 Reinforced Concrete, 1 Steel, 1 Sand, 1 Cement, 0.1 Chemicals, 0.2 Plastic, 2 Electricity |
+| Construction Materials | Construction Factory: Produce Construction Materials | 2 Bricks, 1 Reinforced Concrete, 1 Steel, 1 Sand, 1 Cement, 0.1 Chemicals, 0.2 Plastic, 0.5 Planks, 2 Electricity |
 
 ```mermaid
 flowchart LR
@@ -214,7 +217,9 @@ flowchart LR
 | Facility | Consumes | Produces |
 |---|---|---|
 | Farm | Water, Electricity, Fertilizer | Grain, Sugar, Fruit |
-| Animal Farm | Grain, Water, Electricity | Meat, Milk, Wool, Eggs, Fertilizer |
+| Animal Farm | Grain, Water, Electricity | Meat, Milk, Wool, Eggs, Leather, Fertilizer |
+| Forestry | None | Timber, Meat, Leather (independent output progress) |
+| Timber Works | Timber, Planks, Electricity, optional Leather or Wool | Planks, Furniture |
 | Bakery | Grain, Eggs, Fruit, Milk, Meat, Water, Electricity | Bread, Cake (Bake Premium Cake adds Q1), Meat Pie |
 | Small Utility Works | None | Water, Electricity |
 | Water Well | Electricity (electric mode) | Water |
@@ -223,7 +228,7 @@ flowchart LR
 | Mine | Water, Electricity, Chemicals | Coal, Iron, Copper, Gold |
 | Quarry | Water, Electricity | Sand, Clay, Stone, Minerals |
 | Industrial Processing Factory | Iron, Coal, Copper, Silicon, Plastic, Water, Electricity | Steel, Electric Circuits |
-| Chemical Plant | Minerals, Water, Electricity, Chemicals | Chemicals, Fertilizer, Plastic |
+| Chemical Plant | Minerals, Water, Electricity, Chemicals, Plastic | Chemicals, Fertilizer, Plastic, Leather (synthetic, Q × 0.5) |
 | Electronics Factory | Minerals, Sand, Electric Circuits, Gold, Water, Electricity | Silicon, Advanced Components |
 | Assembly Plant | Steel, Electric Circuits, Advanced Components, Water, Electricity | Industrial Machines |
 | Construction Factory | Clay, Sand, Stone, Steel, Minerals, Chemicals, Plastic, Water, Electricity, Bricks, Cement, Reinforced Concrete | Bricks, Cement, Reinforced Concrete, Construction Materials |

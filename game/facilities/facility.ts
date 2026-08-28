@@ -489,7 +489,14 @@ export class Facility {
     const input = getRecipe(recipeName).inputs.find((candidate) => candidate.resourceType === resourceType && candidate.optional);
     if (!input) return false;
     const configured = new Set(this.optionalInputSettings[recipeName] ?? recipe.inputs.filter((candidate) => candidate.optional).map((candidate) => candidate.resourceType));
-    if (enabled) configured.add(resourceType); else configured.delete(resourceType);
+    if (enabled) {
+      if (input.optionalGroup) {
+        for (const candidate of recipe.inputs) {
+          if (candidate.optional && candidate.optionalGroup === input.optionalGroup) configured.delete(candidate.resourceType);
+        }
+      }
+      configured.add(resourceType);
+    } else configured.delete(resourceType);
     this.optionalInputSettings[recipeName] = [...configured];
     return true;
   }
