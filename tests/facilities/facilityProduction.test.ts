@@ -43,7 +43,9 @@ describe('calculateFacilityEffectiveWork', () => {
     const { facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
 
     const view = facility.getView();
-    expect(calculateFacilityEffectiveWork(view, 1)).toBeCloseTo(1 + 0.2 * view.staffingEfficiency);
+    expect(calculateFacilityEffectiveWork(view, 1)).toBeCloseTo(
+      (1 + 0.1 * view.assignedWorkers) * view.staffingEfficiency * view.conditionEfficiency,
+    );
   });
 
   it('scales direct work with the available workforce when understaffed', () => {
@@ -65,9 +67,9 @@ describe('calculateFacilityEffectiveWork', () => {
     const secondOverstaffedView = facility.getView();
     const secondOverstaffedWork = calculateFacilityEffectiveWork(facility.getView(), 1);
 
-    expect(firstOverstaffedWork).toBeCloseTo(1 + 0.3 * firstOverstaffedView.staffingEfficiency);
+    expect(firstOverstaffedWork).toBeCloseTo((1 + 0.1 * firstOverstaffedView.assignedWorkers) * firstOverstaffedView.staffingEfficiency * firstOverstaffedView.conditionEfficiency);
     expect(firstOverstaffedWork).toBeGreaterThan(fullyStaffedWork);
-    expect(secondOverstaffedWork).toBeCloseTo(1 + 0.4 * secondOverstaffedView.staffingEfficiency);
+    expect(secondOverstaffedWork).toBeCloseTo((1 + 0.1 * secondOverstaffedView.assignedWorkers) * secondOverstaffedView.staffingEfficiency * secondOverstaffedView.conditionEfficiency);
     expect(secondOverstaffedView.staffingEfficiency - firstOverstaffedView.staffingEfficiency).toBeLessThan(firstOverstaffedView.staffingEfficiency - 1);
   });
 
@@ -86,10 +88,32 @@ describe('calculateFacilityEffectiveWork', () => {
     expect(calculateFacilityEffectiveWork(view, 1, 1.5)).toBeCloseTo(expectedWork);
   });
 
-  it('keeps base work when no workers are available', () => {
+  it('stops work when no workers are available', () => {
     const { facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
     facility.setAssignedWorkers(0);
-    expect(calculateFacilityEffectiveWork(facility.getView(), 1)).toBe(1);
+    expect(calculateFacilityEffectiveWork(facility.getView(), 1)).toBe(0);
+  });
+
+  it('scales base and staff work with staffing efficiency', () => {
+    const { facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    facility.setAssignedWorkers(1);
+    const view = facility.getView();
+
+    expect(calculateFacilityEffectiveWork(view, 1)).toBeCloseTo(
+      (1 + 0.1 * view.assignedWorkers) * view.staffingEfficiency * view.conditionEfficiency,
+    );
+  });
+
+  it('does not add inventory output when staffing efficiency is zero', () => {
+    const { facilities, facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
+    facility.setAssignedWorkers(0);
+    const inventory = new Inventory();
+    addRecipeInputs(inventory, RecipeName.GrowGrain, 1);
+
+    const outputs = advanceAllFacilityProduction(facilities, inventory, (view) => calculateFacilityEffectiveWork(view, 1));
+
+    expect(outputs).toHaveLength(0);
+    expect(inventory.getAmount(ResourceType.Grain)).toBe(0);
   });
 
   it('gains more staff experience from higher-work production cycles', () => {

@@ -245,6 +245,16 @@ describe('market sales', () => {
     expect(useGameStore.getState().finance.getBalance()).toBeCloseTo(balanceBefore + 10 * expectedUnitPrice);
   });
 
+  it('sells all available inventory when the requested bulk amount is larger', () => {
+    const state = useGameStore.getState();
+    const snapshot = createStartingGameSnapshot(Date.now());
+    snapshot.inventory.entries[ResourceType.Grain] = { quantity: 10, quality: 1, sourceCostPerUnit: 0 };
+    state.restoreSnapshot(snapshot);
+
+    expect(state.sellMarketResource(ResourceType.Grain, 1_000)).toBe(true);
+    expect(useGameStore.getState().inventory.getAmount(ResourceType.Grain)).toBe(0);
+  });
+
   it('allows autosell when its inventory-quality price meets the threshold', () => {
     const state = useGameStore.getState();
     const snapshot = createStartingGameSnapshot(Date.now());

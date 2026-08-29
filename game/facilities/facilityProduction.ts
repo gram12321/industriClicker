@@ -148,12 +148,15 @@ export function calculateFacilityEffectiveWork(
   if (!Number.isFinite(baseWork) || baseWork <= 0) return 0;
 
   const availableWorkers = Math.max(0, facility.assignedWorkers - (facility.staffTraining?.workers ?? 0));
+  const staffingEfficiency = Math.max(0, facility.staffingEfficiency);
   const staffWork = baseWork
     * availableWorkers
     * FACILITY_STAFF_WORK_PER_WORKER_PER_MINUTE
-    * facility.staffingEfficiency;
+    * staffingEfficiency;
 
-  return (baseWork * Math.max(1, facility.sizeMultiplier) + staffWork)
+  // Base facility work is also subject to staffing. Otherwise an empty or
+  // fully ineffective facility continues producing at its baseline speed.
+  return (baseWork * Math.max(1, facility.sizeMultiplier) * staffingEfficiency + staffWork)
     * facility.conditionEfficiency
     * facility.speedUpgradeWorkSpeedMultiplier
     * recipeResearchWorkSpeedMultiplier;
@@ -182,6 +185,7 @@ export function getFacilityProductionStatus(facility: FacilityView, inventory: I
   const recipeName = facility.activeRecipeName;
   if (!recipeName) return 'not-started';
   if (!facility.isActive) return 'paused';
+  if (facility.facilityEfficiency <= 0) return 'paused';
 
   return (facility.recipeProgress[recipeName] ?? 0) === 0 && getFacilityMissingInputs(recipeName, inventory, facility.sizeMultiplier, facility.optionalInputSettings[recipeName]).length > 0
     ? 'missing-inputs'

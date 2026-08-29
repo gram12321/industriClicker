@@ -384,11 +384,14 @@ export const useGameStore = create<GameState>((set, get) => {
     const market = get().market.clone();
     const inventory = get().inventory.clone();
     const finance = get().finance.clone();
-    if (!inventory.has(resourceType, amount)) return false;
+    const sellAmount = Number.isFinite(amount)
+      ? Math.min(Math.max(0, amount), inventory.getAmount(resourceType))
+      : 0;
+    if (sellAmount <= 0) return false;
     const quality = inventory.getQuality(resourceType);
-    const trade = market.sellToLocal(resourceType, amount, quality);
+    const trade = market.sellToLocal(resourceType, sellAmount, quality);
     const total = trade.unitPrice * trade.amount;
-    if (!trade.success || !inventory.remove(resourceType, amount)
+    if (!trade.success || !inventory.remove(resourceType, sellAmount)
       || !finance.applyTransaction({ amount: total, description: `Sold ${trade.amount} ${resourceType} to local market`, detailLines: [`Unit price: €${trade.unitPrice.toFixed(2)}`, `Quality: Q${quality.toFixed(2)}`], kind: 'operating', source: 'market-sale', occurredAtGameTimeMs: get().lastProcessedAtMs })) return false;
     const resourceFlow = get().resourceFlow.clone();
     resourceFlow.record('market-sell', resourceType, -trade.amount, get().lastProcessedAtMs);
