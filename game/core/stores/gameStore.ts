@@ -1,6 +1,6 @@
 import { Finance, LOAN_COLLECTION, buildFinanceStatementData, calculateAssets, calculateFacilityAssetValue, calculateLoanSearchEstimate, generateLoanOffers, getEconomyStaffWageMultiplier, LENDER_TYPES, refreshLoanOfferAvailability, type LoanOffer, type LoanSearchCriteria } from '@/game/finance';
 import { Inventory, ResourceFlowLedger } from '@/game/inventory';
-import { FACILITIES, FacilityCollection, FacilityMaintenanceStatistics, FacilityType, advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateFacilityProductionMaintenanceCost, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_REPAIR_DURATION_PER_CONDITION_MS, getFacilityConstructionCosts, getFacilityDefaultSize, getFacilityDefinition, getFacilityMissingInputs, getFacilityMaterialQuantityForUnits, getMissingFacilityMaterials, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, getStaffingChangeCost, getStaffingChangeDurationMs, getStaffTrainingCost, getStaffTrainingDurationMs, isValidFacilitySize, type FacilityUpgradeKind } from '@/game/facilities';
+import { FACILITIES, FACILITY_MAX_INFRASTRUCTURE_LEVEL, FacilityCollection, FacilityMaintenanceStatistics, FacilityType, advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateFacilityProductionMaintenanceCost, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_REPAIR_DURATION_PER_CONDITION_MS, getFacilityConstructionCosts, getFacilityDefaultSize, getFacilityDefinition, getFacilityMissingInputs, getFacilityMaterialQuantityForUnits, getMissingFacilityMaterials, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, getStaffingChangeCost, getStaffingChangeDurationMs, getStaffTrainingCost, getStaffTrainingDurationMs, isValidFacilitySize, type FacilityUpgradeKind } from '@/game/facilities';
 import { calculateOutputQuality, calculateProductionMaxQ } from '@/game/quality';
 import { getRecipe, type RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
@@ -675,11 +675,18 @@ export const useGameStore = create<GameState>((set, get) => {
     }
 
     const facilityView = facility.getView();
-    const currentLevel = upgradeKind === 'speed'
-      ? facilityView.speedUpgradeLevel
-      : upgradeKind === 'output' ? facilityView.outputUpgradeLevel
-        : upgradeKind === 'condition' ? facilityView.conditionDecayUpgradeLevel
-          : facilityView.qualityUpgradeLevel;
+    const currentLevel = upgradeKind === 'infrastructure'
+      ? facilityView.infrastructureLevel
+      : upgradeKind === 'machinery'
+        ? facilityView.machineryLevel
+        : upgradeKind === 'speed'
+          ? facilityView.speedUpgradeLevel
+          : upgradeKind === 'output' ? facilityView.outputUpgradeLevel
+            : upgradeKind === 'condition' ? facilityView.conditionDecayUpgradeLevel
+              : facilityView.qualityUpgradeLevel;
+    if (upgradeKind === 'infrastructure' && facilityView.infrastructureLevel >= FACILITY_MAX_INFRASTRUCTURE_LEVEL) return false;
+    if (upgradeKind === 'machinery' && facilityView.machineryLevel >= facilityView.infrastructureLevel) return false;
+    if (upgradeKind !== 'infrastructure' && upgradeKind !== 'machinery' && facilityView.availableUpgradePoints <= 0) return false;
     const definition = getFacilityDefinition(facility.facilityType);
     const sizeMultiplier = facilityView.sizeMultiplier;
     const costLevel = upgradeKind === 'quality' ? Math.max(0, currentLevel - 1) : currentLevel;
@@ -708,7 +715,11 @@ export const useGameStore = create<GameState>((set, get) => {
     const constructionMaterialsQuantity = getFacilityMaterialQuantityForUnits(inventory, ResourceType.ConstructionMaterials, constructionMaterialsCost);
     const industrialMachinesQuantity = getFacilityMaterialQuantityForUnits(inventory, ResourceType.IndustrialMachines, industrialMachinesCost);
 
-    if (upgradeKind === 'speed') {
+    if (upgradeKind === 'infrastructure') {
+      facility.upgradeInfrastructure();
+    } else if (upgradeKind === 'machinery') {
+      facility.upgradeMachinery();
+    } else if (upgradeKind === 'speed') {
       facility.upgradeSpeed();
     } else if (upgradeKind === 'output') {
       facility.upgradeOutput();
@@ -719,7 +730,7 @@ export const useGameStore = create<GameState>((set, get) => {
     }
 
     if ((missingInputPurchaseCost > 0 && !finance.applyTransaction({ amount: -missingInputPurchaseCost, description: `Bought missing upgrade inputs for ${facilityView.displayName}`, detailLines: trades.map(({ resourceType, trade }) => `${trade.amount} ${resourceType} at €${trade.unitPrice.toFixed(2)} each`), kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: get().lastProcessedAtMs }))
-      || !finance.applyTransaction({ amount: -cost, description: `${upgradeKind === 'speed' ? 'Speed' : upgradeKind === 'output' ? 'Output' : upgradeKind === 'condition' ? 'Condition decay' : 'Quality'} upgrade for ${facilityView.displayName}`, detailLines: [`Level ${currentLevel + 1}`, `Construction materials committed: ${constructionMaterialsCost}`, `Industrial machines installed: ${industrialMachinesCost}`], facilityAccounting: { facilityId, classification: 'upgrade', historicalValue: upgradeInvestment }, kind: 'investing', source: 'facility-upgrade', occurredAtGameTimeMs: get().lastProcessedAtMs })
+      || !finance.applyTransaction({ amount: -cost, description: `${upgradeKind === 'infrastructure' ? 'Infrastructure' : upgradeKind === 'machinery' ? 'Machinery' : upgradeKind === 'speed' ? 'Speed' : upgradeKind === 'output' ? 'Output' : upgradeKind === 'condition' ? 'Condition decay' : 'Quality'} upgrade for ${facilityView.displayName}`, detailLines: [`Level ${currentLevel + 1}`, `Construction materials committed: ${constructionMaterialsCost}`, `Industrial machines installed: ${industrialMachinesCost}`], facilityAccounting: { facilityId, classification: 'upgrade', historicalValue: upgradeInvestment }, kind: 'investing', source: 'facility-upgrade', occurredAtGameTimeMs: get().lastProcessedAtMs })
       || !inventory.remove(ResourceType.ConstructionMaterials, constructionMaterialsQuantity)
       || !inventory.remove(ResourceType.IndustrialMachines, industrialMachinesQuantity)) {
       return false;

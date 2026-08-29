@@ -13,6 +13,8 @@ import {
   calculateProjectedFacilityUpgradeNetGainPerMinute,
   calculateProjectedFacilityQualityUpgradeNetGainPerMinute,
   FACILITY_GROUPS,
+  FACILITY_INFRASTRUCTURE_WORKER_CAPACITY_GROWTH,
+  FACILITY_MAX_INFRASTRUCTURE_LEVEL,
   FACILITY_STAFF_QUALITY_TREND_MEMORY_MINUTES,
   FacilityType,
   getConditionDecayMultiplier,
@@ -264,7 +266,7 @@ function ProductionViewContent({
       const activeProductionEconomics = activeRecipe ? calculateCurrentFacilityProductionEconomics(facilityView, activeRecipe, market, inventory, getRecipeResearchWorkSpeedMultiplier(activeRecipe.name, completedResearchProjectIds), (resourceType) => getResourceResearchMaxQ(resourceType, completedResearchProjectIds), (resourceType) => calculateProductionMaxQ(producedByResource[resourceType])) : null;
       const effectiveWorkPerMinute = activeProductionEconomics?.effectiveWorkPerMinute ?? 0;
       const productionStatus = getFacilityProductionStatus(facilityView, inventory);
-      const { assignedWorkers, conditionDecayMultiplier, conditionDecayUpgradeLevel, facilityEfficiency, facilityCondition, outputMultiplier, outputUpgradeLevel, overstaffingConditionDecayMultiplier, sizeHectares, sizeMultiplier, staffQuality, staffQualityTrend, staffQualityWagePressurePerMinute, staffQualityWageTrend, staffWageTargetPerWorkerPerMinute, pendingRepair, pendingStaffingChange, staffTraining, upgradeMaxQ, qualityUpgradeLevel, requiredWorkers, speedUpgradeLevel, speedUpgradeWorkSpeedMultiplier } = facilityView;
+      const { assignedWorkers, availableUpgradePoints, conditionDecayMultiplier, conditionDecayUpgradeLevel, facilityEfficiency, facilityCondition, infrastructureLevel, machineryLevel, maximumWorkers, outputMultiplier, outputUpgradeLevel, overstaffingConditionDecayMultiplier, sizeHectares, sizeMultiplier, staffQuality, staffQualityTrend, staffQualityWagePressurePerMinute, staffQualityWageTrend, staffWageTargetPerWorkerPerMinute, pendingRepair, pendingStaffingChange, staffTraining, upgradeMaxQ, qualityUpgradeLevel, requiredWorkers, speedUpgradeLevel, speedUpgradeWorkSpeedMultiplier } = facilityView;
       const sizeDefinition = getFacilitySizeDefinition(facilityView.facilityType);
       const totalConditionDecayMultiplier = conditionDecayMultiplier * overstaffingConditionDecayMultiplier;
       const pendingStaffingSeconds = pendingStaffingChange ? Math.max(0, pendingStaffingChange.completesAtGameTimeMs - currentGameTimeMs) / 1_000 : 0;
@@ -287,10 +289,20 @@ function ProductionViewContent({
       const outputUpgradePayment = calculateFacilityResourcePayment(finance, inventory, market, outputUpgradeCost, outputUpgradeConstructionMaterialsCost, outputUpgradeIndustrialMachinesCost);
       const conditionDecayUpgradePayment = calculateFacilityResourcePayment(finance, inventory, market, conditionDecayUpgradeCost, conditionDecayUpgradeConstructionMaterialsCost, conditionDecayUpgradeIndustrialMachinesCost);
       const qualityUpgradePayment = calculateFacilityResourcePayment(finance, inventory, market, qualityUpgradeCost, qualityUpgradeConstructionMaterialsCost, qualityUpgradeIndustrialMachinesCost);
+      const infrastructureCost = getFacilityUpgradeCost(definition.upgradeCost, infrastructureLevel, sizeMultiplier);
+      const machineryCost = getFacilityUpgradeCost(definition.upgradeCost, machineryLevel, sizeMultiplier);
+      const infrastructureMaterialsCost = getFacilityUpgradeResourceCost(definition.constructionMaterialsCost, infrastructureLevel, sizeMultiplier);
+      const machineryMaterialsCost = getFacilityUpgradeResourceCost(definition.constructionMaterialsCost, machineryLevel, sizeMultiplier);
+      const infrastructureMachinesCost = getFacilityUpgradeResourceCost(definition.industrialMachinesCost, infrastructureLevel, sizeMultiplier);
+      const machineryMachinesCost = getFacilityUpgradeResourceCost(definition.industrialMachinesCost, machineryLevel, sizeMultiplier);
+      const infrastructurePayment = calculateFacilityResourcePayment(finance, inventory, market, infrastructureCost, infrastructureMaterialsCost, infrastructureMachinesCost);
+      const machineryPayment = calculateFacilityResourcePayment(finance, inventory, market, machineryCost, machineryMaterialsCost, machineryMachinesCost);
       const speedNextEffect = `Next: ${formatPercent(getSpeedUpgradeWorkSpeedMultiplier(speedUpgradeLevel + 1) / speedUpgradeWorkSpeedMultiplier - 1, { decimals: 1 })} speed`;
       const outputNextEffect = `Next: ${formatPercent(getOutputUpgradeMultiplier(outputUpgradeLevel + 1) / outputMultiplier - 1, { decimals: 1 })} output`;
       const conditionNextEffect = `Next: ${formatPercent(1 - getConditionDecayMultiplier(conditionDecayUpgradeLevel + 1) / conditionDecayMultiplier, { decimals: 1 })} less decay`;
       const qualityNextEffect = `Next: Q${formatNumber(calculateUpgradeMaxQ(qualityUpgradeLevel + 1), { decimals: 2, forceDecimals: true })} output limit`;
+      const infrastructureNextEffect = `Next: ${formatNumber(Math.ceil(getFacilityDefinition(facilityType).baseWorkers * sizeMultiplier * Math.pow(FACILITY_INFRASTRUCTURE_WORKER_CAPACITY_GROWTH, infrastructureLevel + 1)))} maximum workers`;
+      const machineryNextEffect = 'Next: +1 specialization point';
       const activeInputPlan = activeProductionEconomics?.availableInputPlan ?? null;
       const qualityInputQ = activeProductionEconomics?.inputQ ?? null;
       const getActiveOutputQuality = activeProductionEconomics?.getOutputQuality;
@@ -408,16 +420,22 @@ function ProductionViewContent({
           {activeDetailTab === 'upgrades' && <View style={styles.facilityUpgradesSection}>
           <View style={styles.facilityUpgradeHeader}><TooltipMaterialIcon color={colors.primary} label="Upgrades" name={APP_ICONS.upgrade} size={16} /><Text style={styles.constructionYardRecipeLabel}>Upgrades</Text></View>
             <View style={styles.facilityUpgradeSummary}>
+              <FacilityMetric icon={APP_ICONS.staffing} label="Workers" value={`${formatNumber(assignedWorkers)}/${formatNumber(maximumWorkers)}`} />
+              <FacilityMetric icon={APP_ICONS.upgrade} label="Upgrade points" value={formatNumber(availableUpgradePoints)} />
               <FacilityMetric icon={APP_ICONS.speed} label={`x${formatNumber(speedUpgradeWorkSpeedMultiplier, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })}`} />
               <FacilityMetric icon={APP_ICONS.output} label={`x${formatNumber(outputMultiplier, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })}`} />
               <FacilityMetric icon={APP_ICONS.durability} label={`x${formatNumber(conditionDecayMultiplier, { decimals: 2, forceDecimals: true, adaptiveNearOne: false })}`} />
               <FacilityMetric icon={APP_ICONS.quality} label={`Q${formatNumber(upgradeMaxQ, { decimals: 2, forceDecimals: true })}`} />
             </View>
-            <View style={styles.facilityUpgradeControls}>
-              <FacilityUpgradeControl canAfford={speedUpgradePayment.canAfford} cashCost={speedUpgradePayment.cashCost} constructionMaterialsCost={speedUpgradeConstructionMaterialsCost} euroCost={speedUpgradeCost} industrialMachinesCost={speedUpgradeIndustrialMachinesCost} icon={APP_ICONS.speed} label="Speed" level={speedUpgradeLevel} nextEffect={speedNextEffect} nextNetGain={projectedSpeedNetGain} onPress={() => upgradeFacility(facilityId, 'speed')} />
-              <FacilityUpgradeControl canAfford={outputUpgradePayment.canAfford} cashCost={outputUpgradePayment.cashCost} constructionMaterialsCost={outputUpgradeConstructionMaterialsCost} euroCost={outputUpgradeCost} industrialMachinesCost={outputUpgradeIndustrialMachinesCost} icon={APP_ICONS.output} label="Output" level={outputUpgradeLevel} nextEffect={outputNextEffect} nextNetGain={projectedOutputNetGain} onPress={() => upgradeFacility(facilityId, 'output')} />
-              <FacilityUpgradeControl canAfford={conditionDecayUpgradePayment.canAfford} cashCost={conditionDecayUpgradePayment.cashCost} constructionMaterialsCost={conditionDecayUpgradeConstructionMaterialsCost} euroCost={conditionDecayUpgradeCost} industrialMachinesCost={conditionDecayUpgradeIndustrialMachinesCost} icon={APP_ICONS.durability} label="Durability" level={conditionDecayUpgradeLevel} nextEffect={conditionNextEffect} nextNetGain={projectedConditionNetGain} onPress={() => upgradeFacility(facilityId, 'condition')} />
-              <FacilityUpgradeControl canAfford={qualityUpgradePayment.canAfford} cashCost={qualityUpgradePayment.cashCost} constructionMaterialsCost={qualityUpgradeConstructionMaterialsCost} euroCost={qualityUpgradeCost} industrialMachinesCost={qualityUpgradeIndustrialMachinesCost} icon={APP_ICONS.quality} label="Quality" level={qualityUpgradeLevel} nextEffect={`${qualityNextEffect} · actual +Q${formatNumber(qualityUpgradeActualGain, { decimals: 2, forceDecimals: true })}`} nextNetGain={qualityUpgradeNetGain} onPress={() => upgradeFacility(facilityId, 'quality')} />
+            <View style={styles.facilityUpgradePrerequisites}>
+              <View style={styles.facilityUpgradePrerequisite}><FacilityUpgradeControl canAfford={infrastructurePayment.canAfford && infrastructureLevel < FACILITY_MAX_INFRASTRUCTURE_LEVEL} cashCost={infrastructurePayment.cashCost} constructionMaterialsCost={infrastructureMaterialsCost} euroCost={infrastructureCost} industrialMachinesCost={infrastructureMachinesCost} icon={APP_ICONS.add} label="Infrastructure" level={infrastructureLevel} nextEffect={infrastructureNextEffect} onPress={() => upgradeFacility(facilityId, 'infrastructure')} /></View>
+              <View style={styles.facilityUpgradePrerequisite}><FacilityUpgradeControl canAfford={machineryPayment.canAfford && machineryLevel < infrastructureLevel} cashCost={machineryPayment.cashCost} constructionMaterialsCost={machineryMaterialsCost} euroCost={machineryCost} industrialMachinesCost={machineryMachinesCost} icon={APP_ICONS.upgrade} label="Machinery" level={machineryLevel} nextEffect={machineryNextEffect} onPress={() => upgradeFacility(facilityId, 'machinery')} /></View>
+            </View>
+            <View style={styles.facilityUpgradeSpecialtyControls}>
+              <FacilityUpgradeControl canAfford={speedUpgradePayment.canAfford && availableUpgradePoints > 0} cashCost={speedUpgradePayment.cashCost} constructionMaterialsCost={speedUpgradeConstructionMaterialsCost} euroCost={speedUpgradeCost} industrialMachinesCost={speedUpgradeIndustrialMachinesCost} icon={APP_ICONS.speed} label="Speed" level={speedUpgradeLevel} nextEffect={speedNextEffect} nextNetGain={projectedSpeedNetGain} onPress={() => upgradeFacility(facilityId, 'speed')} />
+              <FacilityUpgradeControl canAfford={outputUpgradePayment.canAfford && availableUpgradePoints > 0} cashCost={outputUpgradePayment.cashCost} constructionMaterialsCost={outputUpgradeConstructionMaterialsCost} euroCost={outputUpgradeCost} industrialMachinesCost={outputUpgradeIndustrialMachinesCost} icon={APP_ICONS.output} label="Efficiency" level={outputUpgradeLevel} nextEffect={outputNextEffect} nextNetGain={projectedOutputNetGain} onPress={() => upgradeFacility(facilityId, 'output')} />
+              <FacilityUpgradeControl canAfford={conditionDecayUpgradePayment.canAfford && availableUpgradePoints > 0} cashCost={conditionDecayUpgradePayment.cashCost} constructionMaterialsCost={conditionDecayUpgradeConstructionMaterialsCost} euroCost={conditionDecayUpgradeCost} industrialMachinesCost={conditionDecayUpgradeIndustrialMachinesCost} icon={APP_ICONS.durability} label="Durability" level={conditionDecayUpgradeLevel} nextEffect={conditionNextEffect} nextNetGain={projectedConditionNetGain} onPress={() => upgradeFacility(facilityId, 'condition')} />
+              <FacilityUpgradeControl canAfford={qualityUpgradePayment.canAfford && availableUpgradePoints > 0} cashCost={qualityUpgradePayment.cashCost} constructionMaterialsCost={qualityUpgradeConstructionMaterialsCost} euroCost={qualityUpgradeCost} industrialMachinesCost={qualityUpgradeIndustrialMachinesCost} icon={APP_ICONS.quality} label="Quality" level={qualityUpgradeLevel} nextEffect={`${qualityNextEffect} · actual +Q${formatNumber(qualityUpgradeActualGain, { decimals: 2, forceDecimals: true })}`} nextNetGain={qualityUpgradeNetGain} onPress={() => upgradeFacility(facilityId, 'quality')} />
             </View>
           </View>}
           {activeDetailTab === 'finance' && <View style={styles.facilityUpgradesSection}>
@@ -458,8 +476,8 @@ function ProductionViewContent({
   </ScrollView>;
 }
 
-function FacilityMetric({ color = colors.primary, icon, label, value }: { color?: string; icon: string; label: string; value?: string }) {
-  return <View style={styles.facilityMetric}><TooltipMaterialIcon color={colors.muted} label={label.trim() || 'Facility metric'} name={icon} size={13} /><Text style={[styles.facilityMetricText, value !== undefined && { color }]}>{value ?? label}</Text></View>;
+function FacilityMetric({ color = colors.primary, icon, iconOnly = false, label, value }: { color?: string; icon: string; iconOnly?: boolean; label: string; value?: string }) {
+  return <View accessibilityLabel={label} style={styles.facilityMetric}><TooltipMaterialIcon color={colors.muted} label={label.trim() || 'Facility metric'} name={icon} size={13} />{!iconOnly && <Text style={[styles.facilityMetricText, value !== undefined && { color }]}>{value ?? label}</Text>}</View>;
 }
 
 function formatStaffQualityTrendArrow(trend: 'rising' | 'falling' | 'steady'): string {

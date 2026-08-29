@@ -18,7 +18,7 @@ import { advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculate
 import { calculateOutputQuality, calculateProductionMaxQ } from '@/game/quality';
 import { Market } from '@/game/market';
 import { FacilityType } from '@/game/facilities/facilityTypes';
-import { getStaffTrainingDurationMs } from '@/game/facilities/facilityUpgrades';
+import { getFacilityMaximumWorkers, getFacilityUpgradePoints, getStaffTrainingDurationMs } from '@/game/facilities/facilityUpgrades';
 
 function createActiveFacility(facilityType: FacilityType, recipeName: RecipeName) {
   const facilities = new FacilityCollection();
@@ -39,6 +39,12 @@ function addRecipeInputs(inventory: Inventory, recipeName: RecipeName, cycleCoun
 }
 
 describe('calculateFacilityEffectiveWork', () => {
+  it('grows infrastructure capacity exponentially and machinery grants points', () => {
+    expect(getFacilityMaximumWorkers(4, 0)).toBe(4);
+    expect(getFacilityMaximumWorkers(4, 2)).toBe(9);
+    expect(getFacilityUpgradePoints(3)).toBe(3);
+  });
+
   it('adds the fully staffed workforce contribution to base work', () => {
     const { facility } = createActiveFacility(FacilityType.Farm, RecipeName.GrowGrain);
 

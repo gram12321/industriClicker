@@ -62,7 +62,7 @@ export function createAchievementEvaluationContext(input: {
     facilityCount: facilityList.length,
     totalUpgradeLevels: facilityList.reduce((total, facility) => {
       const facilityView = facility.getView();
-      return total + facilityView.speedUpgradeLevel + facilityView.outputUpgradeLevel + facilityView.conditionDecayUpgradeLevel;
+      return total + facilityView.infrastructureLevel + facilityView.machineryLevel + facilityView.spentUpgradePoints;
     }, 0),
     repairedCondition: input.facilityMaintenance.getRepairedCondition(),
     largestRepair: input.facilityMaintenance.getLargestRepair(),

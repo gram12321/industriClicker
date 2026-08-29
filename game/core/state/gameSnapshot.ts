@@ -2,7 +2,8 @@ import { type FinanceSnapshot } from '../../finance/finance';
 import { type InventorySnapshot } from '../../inventory/inventory';
 import { ResourceFlowLedger } from '../../inventory/resourceFlow';
 import { type FacilityCollectionSnapshot } from '../../facilities/facilityCollection';
-import { getFacilityMaxStaffWage, isValidFacilitySize } from '../../facilities/facilityConstants';
+import { FACILITY_MAX_INFRASTRUCTURE_LEVEL, getFacilityDefinition, getFacilityMaxStaffWage, getFacilitySizeMultiplier, isValidFacilitySize } from '../../facilities/facilityConstants';
+import { getFacilityMaximumWorkers, getFacilityUpgradePoints } from '../../facilities/facilityUpgrades';
 import { FacilityType } from '../../facilities/facilityTypes';
 import { isFacilityMaintenanceStatisticsSnapshot, type FacilityMaintenanceStatisticsSnapshot } from '../../facilities/facilityMaintenanceStatistics';
 import { type SalesOrdersSnapshot } from '../../sales/salesOrders';
@@ -267,6 +268,28 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
        && typeof facility.qualityUpgradeLevel === 'number'
        && Number.isInteger(facility.qualityUpgradeLevel)
        && facility.qualityUpgradeLevel >= 1
+       && typeof facility.infrastructureLevel === 'number'
+       && Number.isInteger(facility.infrastructureLevel)
+       && facility.infrastructureLevel >= 0
+       && facility.infrastructureLevel <= FACILITY_MAX_INFRASTRUCTURE_LEVEL
+       && typeof facility.machineryLevel === 'number'
+       && Number.isInteger(facility.machineryLevel)
+       && facility.machineryLevel >= 0
+       && facility.machineryLevel <= facility.infrastructureLevel
+       && typeof facility.speedUpgradeLevel === 'number'
+       && Number.isInteger(facility.speedUpgradeLevel)
+       && facility.speedUpgradeLevel >= 0
+       && typeof facility.outputUpgradeLevel === 'number'
+       && Number.isInteger(facility.outputUpgradeLevel)
+       && facility.outputUpgradeLevel >= 0
+       && typeof facility.conditionDecayUpgradeLevel === 'number'
+       && Number.isInteger(facility.conditionDecayUpgradeLevel)
+       && facility.conditionDecayUpgradeLevel >= 0
+       && facility.speedUpgradeLevel + facility.outputUpgradeLevel + facility.conditionDecayUpgradeLevel + facility.qualityUpgradeLevel - 1 <= getFacilityUpgradePoints(facility.machineryLevel)
+       && typeof facility.assignedWorkers === 'number'
+       && Number.isInteger(facility.assignedWorkers)
+       && facility.assignedWorkers >= 0
+       && facility.assignedWorkers <= getFacilityMaximumWorkers(getFacilityDefinition(facility.facilityType as FacilityType).baseWorkers * getFacilitySizeMultiplier(facility.facilityType as FacilityType, facility.sizeHectares), facility.infrastructureLevel)
        && isFacilityStaffSnapshot(facility))
     && facilitySnapshots.every((facility) => isRecord(facility) && financeTransactions.some((transaction) => isRecord(transaction)
       && isRecord(transaction.facilityAccounting)

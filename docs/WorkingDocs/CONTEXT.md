@@ -24,11 +24,11 @@ Canonical shared names only. Product direction is in [design.md](design.md), rul
 | Facility | Numbered player-owned production unit. Current types: Farm, Forestry, Timber Works, Animal Farm, Bakery, Small Utility Works, Mine, Quarry, Industrial Processing Factory, Chemical Plant, Electronics Factory, Assembly Plant, Construction Factory, Water Well, Solar Plant, and Coal Power Plant. |
 | Land footprint | Immutable Farm or Forestry construction size in hectares. The default footprint is 5 ha; larger supported footprints scale construction basis, staffing, recipe batch, and production work. |
 | Facility condition | Persisted 0–1 wear state affecting facility efficiency. |
-| Assigned workers / required workers | Facility staff count / calculated staffing target; each assigned worker receives the configured staff wage. Workers in training are temporarily unavailable for production and experience. |
+| Assigned workers / required workers | Facility staff count / calculated staffing target; infrastructure raises the allowed worker capacity exponentially, while each spent machinery point adds one worker to the staffing target. Workers in training are temporarily unavailable for production and experience. |
 | Staff Quality | Facility knowledge level shared by the assigned staff group; training raises it, wage payment drives it over time, and firing removes the fired workers' proportional pooled knowledge share. |
 | Facility maintenance statistics | Lifetime repaired condition, largest repair, and repair-value facts owned by Facilities. |
 | Repair threshold / target | Auto-repair trigger and selected post-repair condition. |
-| Speed / output / condition / quality upgrade | Independent facility upgrade tracks; construction resources are Construction Materials and Industrial Machines. |
+| Infrastructure / machinery / specialty upgrades | Infrastructure raises maximum workers; machinery grants one spendable point per level; points buy Speed, Production Efficiency, Quality, or Durability. Construction resources are Construction Materials and Industrial Machines. |
 | Euro | Company currency. |
 | Finance | Company balance, classified ledger, debt, credit, and derived statements. |
 | Finance transaction | Signed cash movement with source, accounting kind, detail lines, and foreground logical timestamp. |

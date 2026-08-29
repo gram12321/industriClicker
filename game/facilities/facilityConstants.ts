@@ -30,11 +30,16 @@ export const FACILITY_GROUPS: ReadonlyArray<{ id: FacilityGroup; label: string; 
 export const FACILITY_UPGRADE_COST_GROWTH = 1.5;
 /** Fraction of a facility's construction resource requirement used by its first upgrade level. */
 export const FACILITY_UPGRADE_RESOURCE_COST_RATE = 0.2;
-export const FACILITY_SPEED_MAXIMUM_BONUS = 0.8;
+/** Infrastructure capacity grows exponentially so specialization requires deliberate expansion. */
+export const FACILITY_INFRASTRUCTURE_WORKER_CAPACITY_GROWTH = 1.5;
+export const FACILITY_MAX_INFRASTRUCTURE_LEVEL = 100;
+export const FACILITY_MACHINERY_POINTS_PER_LEVEL = 1;
+/** Speed and output caps are intentionally much larger than the original curves. */
+export const FACILITY_SPEED_MAXIMUM_BONUS = 8;
 export const FACILITY_SPEED_BONUS_RATE = 0.22;
-export const FACILITY_OUTPUT_MAXIMUM_BONUS = 1.5;
+export const FACILITY_OUTPUT_MAXIMUM_BONUS = 15;
 export const FACILITY_OUTPUT_BONUS_RATE = 0.18;
-export const FACILITY_CONDITION_DECAY_MAX_REDUCTION = 0.75;
+export const FACILITY_CONDITION_DECAY_MAX_REDUCTION = 0.9;
 export const FACILITY_CONDITION_DECAY_REDUCTION_RATE = 0.18;
 export const FACILITY_WORKER_REQUIREMENT_GROWTH = 1.15;
 export const FACILITY_UNDERSTAFFING_EXPONENT = 1.6;
@@ -75,11 +80,11 @@ export const FACILITY_STAFF_TRAINING_QUALITY_PROGRESS_PER_WORKER = 0.25;
 /** Additional work contributed by each required worker per foreground minute. */
 export const FACILITY_STAFF_WORK_PER_WORKER_PER_MINUTE = 0.1;
 /** Condition lost by every constructed facility per foreground minute. */
-export const FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE = 1 / 1_200;
+export const FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE = 1 / 400;
 /** Additional condition lost for each completed recipe work unit. */
-export const FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT = 1 / 1_200;
+export const FACILITY_PRODUCTION_CONDITION_LOSS_PER_WORK_UNIT = 1 / 400;
 /** Fixed work-equivalent condition loss for every completed production cycle. */
-export const FACILITY_PRODUCTION_CONDITION_LOSS_PER_CYCLE = 0.05 / 1_200;
+export const FACILITY_PRODUCTION_CONDITION_LOSS_PER_CYCLE = 0.15 / 1_200;
 /** Fraction of each facility construction input required to restore one point of condition. */
 export const FACILITY_REPAIR_MATERIAL_COST_RATE = 0.45;
 /** Fixed order keeps production deterministic and runs utility producers first. */
@@ -194,7 +199,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     constructionMaterialsCost: 60,
     industrialMachinesCost: 8,
     upgradeCost: 220,
-    baseWorkers: 5,
+    baseWorkers: 3,
     recipes: [ALL_RECIPES[RecipeName.MillTimber], ALL_RECIPES[RecipeName.AssembleFurniture]],
   },
   [FacilityType.AnimalFarm]: {
@@ -238,7 +243,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     constructionMaterialsCost: 5,
     industrialMachinesCost: 4,
     upgradeCost: 80,
-    baseWorkers: 5,
+    baseWorkers: 3,
     recipes: [ALL_RECIPES[RecipeName.MineIron], ALL_RECIPES[RecipeName.MineCoal], ALL_RECIPES[RecipeName.MineCopper], ALL_RECIPES[RecipeName.MineGold]],
   },
   [FacilityType.Quarry]: {
@@ -260,7 +265,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     constructionMaterialsCost: 50,
     industrialMachinesCost: 8,
     upgradeCost: 200,
-    baseWorkers: 6,
+    baseWorkers: 4,
     recipes: [ALL_RECIPES[RecipeName.ProduceSteel], ALL_RECIPES[RecipeName.ProduceElectricCircuits]],
   },
   [FacilityType.ChemicalPlant]: {
@@ -271,7 +276,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     constructionMaterialsCost: 100,
     industrialMachinesCost: 20,
     upgradeCost: 350,
-    baseWorkers: 7,
+    baseWorkers: 4,
     recipes: [ALL_RECIPES[RecipeName.ProduceChemicals], ALL_RECIPES[RecipeName.SynthesizeFertilizer], ALL_RECIPES[RecipeName.ProducePlastic], ALL_RECIPES[RecipeName.ProduceSyntheticLeather], ALL_RECIPES[RecipeName.ProduceHouseholdCleaningProducts], ALL_RECIPES[RecipeName.ProducePaintHomeCoatings], ALL_RECIPES[RecipeName.ProduceGardenSupplies]],
   },
   [FacilityType.ElectronicsFactory]: {
@@ -282,7 +287,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     constructionMaterialsCost: 150,
     industrialMachinesCost: 18,
     upgradeCost: 400,
-    baseWorkers: 6,
+    baseWorkers: 4,
     recipes: [ALL_RECIPES[RecipeName.ProduceSilicon], ALL_RECIPES[RecipeName.ProduceAdvancedComponents], ALL_RECIPES[RecipeName.ProduceDisplayPanels], ALL_RECIPES[RecipeName.ProducePersonalElectronics]],
   },
   [FacilityType.AssemblyPlant]: {
@@ -293,7 +298,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     constructionMaterialsCost: 200,
     industrialMachinesCost: 30,
     upgradeCost: 600,
-    baseWorkers: 12,
+    baseWorkers: 5,
     recipes: [ALL_RECIPES[RecipeName.AssembleIndustrialMachines], ALL_RECIPES[RecipeName.AssembleHouseholdAppliances]],
   },
   [FacilityType.ConstructionFactory]: {
@@ -304,7 +309,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     constructionMaterialsCost: 100,
     industrialMachinesCost: 10,
     upgradeCost: 300,
-    baseWorkers: 8,
+    baseWorkers: 4,
     recipes: [ALL_RECIPES[RecipeName.ProduceBricks], ALL_RECIPES[RecipeName.ProduceCement], ALL_RECIPES[RecipeName.ProduceReinforcedConcrete], ALL_RECIPES[RecipeName.ProduceConstructionMaterials]],
   },
   [FacilityType.WaterWell]: {
@@ -337,7 +342,7 @@ export const FACILITIES: Readonly<Record<FacilityType, FacilityDefinition>> = {
     constructionMaterialsCost: 80,
     industrialMachinesCost: 35,
     upgradeCost: 500,
-    baseWorkers: 9,
+    baseWorkers: 5,
     recipes: [ALL_RECIPES[RecipeName.CoalPower]],
   },
 };

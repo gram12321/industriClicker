@@ -4,7 +4,7 @@ import { calculateAsymmetricalScaler01 } from '@/game/core/math/scaling';
 import { calculateProgressFromQuality, calculateUpgradeMaxQ } from '@/game/quality';
 import { FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_INITIAL_STAFF_QUALITY, FACILITY_REPAIR_EFFICIENCY_MULTIPLIER, FACILITY_STAFF_QUALITY_EXPERIENCE_PROGRESS_PER_WORK, FACILITY_STAFF_QUALITY_TREND_DECAY_RATE, FACILITY_STAFF_QUALITY_TREND_MEMORY_MINUTES, FACILITY_STAFF_TRAINING_QUALITY_PROGRESS_PER_WORKER, getFacilityDefaultSize, getFacilityDefinition, getFacilityMaxStaffWage, getFacilitySizeMultiplier, isValidFacilitySize } from './facilityConstants';
 import { FacilityType } from './facilityTypes';
-import { getConditionDecayMultiplier, getFacilityConditionEfficiency, getFacilityEfficiency, getFacilityStaffTargetWage, getOutputUpgradeMultiplier, getOverstaffingConditionDecayMultiplier, getRequiredWorkers, getSpeedUpgradeWorkSpeedMultiplier, getStaffingEfficiency, getStaffQualityFromProgress, getStaffQualityWagePressurePerMinute, getStaffQualityWageProgressChangePerMinute, getWageEfficiency } from './facilityUpgrades';
+import { getConditionDecayMultiplier, getFacilityConditionEfficiency, getFacilityEfficiency, getFacilityMaximumWorkers, getFacilityStaffTargetWage, getFacilityUpgradePoints, getOutputUpgradeMultiplier, getOverstaffingConditionDecayMultiplier, getRequiredWorkers, getSpeedUpgradeWorkSpeedMultiplier, getStaffingEfficiency, getStaffQualityFromProgress, getStaffQualityWagePressurePerMinute, getStaffQualityWageProgressChangePerMinute, getWageEfficiency } from './facilityUpgrades';
 
 /** Plain data used by the game snapshot and Expo SQLite adapter. */
 export type FacilitySnapshot = {
@@ -22,10 +22,12 @@ export type FacilitySnapshot = {
   recipeInputEffects: Required<RecipeInputEffects> | null;
   optionalInputSettings: Partial<Record<RecipeName, ResourceType[]>>;
   qualityUpgradeLevel: number;
-  speedUpgradeLevel?: number;
-  outputUpgradeLevel?: number;
-  conditionDecayUpgradeLevel?: number;
-  assignedWorkers?: number;
+  infrastructureLevel: number;
+  machineryLevel: number;
+  speedUpgradeLevel: number;
+  outputUpgradeLevel: number;
+  conditionDecayUpgradeLevel: number;
+  assignedWorkers: number;
   staffQualityProgress: number;
   staffQualityTrend: 'rising' | 'falling' | 'steady';
   pendingStaffingChange: { targetWorkers: number; initialWorkers: number; startedAtGameTimeMs: number; completesAtGameTimeMs: number } | null;
@@ -56,6 +58,12 @@ export type FacilityView = {
   recipeInputEffects: Required<RecipeInputEffects> | null;
   optionalInputSettings: Partial<Record<RecipeName, ResourceType[]>>;
   qualityUpgradeLevel: number;
+  infrastructureLevel: number;
+  machineryLevel: number;
+  maximumWorkers: number;
+  upgradePoints: number;
+  spentUpgradePoints: number;
+  availableUpgradePoints: number;
   upgradeMaxQ: number;
   speedUpgradeLevel: number;
   outputUpgradeLevel: number;
@@ -99,6 +107,8 @@ export class Facility {
   private recipeInputEffects: Required<RecipeInputEffects> | null = null;
   private optionalInputSettings: Partial<Record<RecipeName, ResourceType[]>> = {};
   private qualityUpgradeLevel = 1;
+  private infrastructureLevel = 0;
+  private machineryLevel = 0;
   private speedUpgradeLevel = 0;
   private outputUpgradeLevel = 0;
   private conditionDecayUpgradeLevel = 0;
@@ -137,6 +147,9 @@ export class Facility {
 
   getView(): FacilityView {
     const requiredWorkers = this.calculateRequiredWorkers();
+    const maximumWorkers = this.calculateMaximumWorkers();
+    const upgradePoints = getFacilityUpgradePoints(this.machineryLevel);
+    const spentUpgradePoints = this.calculateSpentUpgradePoints();
     const staffQuality = getStaffQualityFromProgress(this.staffQualityProgress);
     const targetWage = getFacilityStaffTargetWage(staffQuality, this.staffWageBaseMultiplier);
     const staffQualityWageTrend = this.assignedWorkers <= 0
@@ -167,6 +180,12 @@ export class Facility {
       recipeInputEffects: this.recipeInputEffects ? { ...this.recipeInputEffects } : null,
       optionalInputSettings: Object.fromEntries(Object.entries(this.optionalInputSettings).map(([recipeName, resources]) => [recipeName, [...(resources ?? [])]])),
       qualityUpgradeLevel: this.qualityUpgradeLevel,
+      infrastructureLevel: this.infrastructureLevel,
+      machineryLevel: this.machineryLevel,
+      maximumWorkers,
+      upgradePoints,
+      spentUpgradePoints,
+      availableUpgradePoints: Math.max(0, upgradePoints - spentUpgradePoints),
       upgradeMaxQ: calculateUpgradeMaxQ(this.qualityUpgradeLevel),
       speedUpgradeLevel: this.speedUpgradeLevel,
       outputUpgradeLevel: this.outputUpgradeLevel,
@@ -198,15 +217,20 @@ export class Facility {
   }
 
   private calculateRequiredWorkers(): number {
-    return Math.ceil(getRequiredWorkers(
-      getFacilityDefinition(this.facilityType).baseWorkers,
-      this.speedUpgradeLevel,
-      this.outputUpgradeLevel,
-    ) * getFacilitySizeMultiplier(this.facilityType, this.sizeHectares));
+    const baseWorkers = getFacilityDefinition(this.facilityType).baseWorkers * getFacilitySizeMultiplier(this.facilityType, this.sizeHectares);
+    return Math.ceil(baseWorkers + this.calculateSpentUpgradePoints());
+  }
+
+  private calculateMaximumWorkers(): number {
+    return getFacilityMaximumWorkers(getFacilityDefinition(this.facilityType).baseWorkers * getFacilitySizeMultiplier(this.facilityType, this.sizeHectares), this.infrastructureLevel);
+  }
+
+  private calculateSpentUpgradePoints(): number {
+    return this.speedUpgradeLevel + this.outputUpgradeLevel + this.conditionDecayUpgradeLevel + Math.max(0, this.qualityUpgradeLevel - 1);
   }
 
   setAssignedWorkers(workerCount: number): boolean {
-    if (!Number.isInteger(workerCount) || workerCount < 0) {
+    if (!Number.isInteger(workerCount) || workerCount < 0 || workerCount > this.calculateMaximumWorkers()) {
       return false;
     }
 
@@ -216,6 +240,14 @@ export class Facility {
 
   upgradeSpeed(): void {
     this.speedUpgradeLevel += 1;
+  }
+
+  upgradeInfrastructure(): void {
+    this.infrastructureLevel += 1;
+  }
+
+  upgradeMachinery(): void {
+    this.machineryLevel += 1;
   }
 
   upgradeOutput(): void {
@@ -242,7 +274,7 @@ export class Facility {
   }
 
   scheduleStaffingChange(targetWorkers: number, startedAtGameTimeMs: number, completesAtGameTimeMs: number): boolean {
-    if (!Number.isInteger(targetWorkers) || targetWorkers < 0 || !Number.isFinite(startedAtGameTimeMs) || startedAtGameTimeMs < 0 || !Number.isFinite(completesAtGameTimeMs) || completesAtGameTimeMs <= startedAtGameTimeMs || this.pendingStaffingChange || this.staffTraining) return false;
+    if (!Number.isInteger(targetWorkers) || targetWorkers < 0 || targetWorkers > this.calculateMaximumWorkers() || !Number.isFinite(startedAtGameTimeMs) || startedAtGameTimeMs < 0 || !Number.isFinite(completesAtGameTimeMs) || completesAtGameTimeMs <= startedAtGameTimeMs || this.pendingStaffingChange || this.staffTraining) return false;
     this.pendingStaffingChange = { targetWorkers, initialWorkers: this.assignedWorkers, startedAtGameTimeMs, completesAtGameTimeMs };
     return true;
   }
@@ -517,6 +549,8 @@ export class Facility {
       recipeInputEffects: this.recipeInputEffects ? { ...this.recipeInputEffects } : null,
       optionalInputSettings: Object.fromEntries(Object.entries(this.optionalInputSettings).map(([recipeName, resources]) => [recipeName, [...(resources ?? [])]])),
       qualityUpgradeLevel: this.qualityUpgradeLevel,
+      infrastructureLevel: this.infrastructureLevel,
+      machineryLevel: this.machineryLevel,
       speedUpgradeLevel: this.speedUpgradeLevel,
       outputUpgradeLevel: this.outputUpgradeLevel,
       conditionDecayUpgradeLevel: this.conditionDecayUpgradeLevel,
@@ -567,10 +601,12 @@ export class Facility {
       if (Array.isArray(resources)) this.optionalInputSettings[recipeName as RecipeName] = [...resources];
     }
     this.qualityUpgradeLevel = isValidUpgradeLevel(snapshot.qualityUpgradeLevel) ? Math.max(1, snapshot.qualityUpgradeLevel) : 1;
+    this.infrastructureLevel = isValidUpgradeLevel(snapshot.infrastructureLevel) ? snapshot.infrastructureLevel : 0;
+    this.machineryLevel = isValidUpgradeLevel(snapshot.machineryLevel) ? snapshot.machineryLevel : 0;
     this.speedUpgradeLevel = isValidUpgradeLevel(snapshot.speedUpgradeLevel) ? snapshot.speedUpgradeLevel : 0;
     this.outputUpgradeLevel = isValidUpgradeLevel(snapshot.outputUpgradeLevel) ? snapshot.outputUpgradeLevel : 0;
     this.conditionDecayUpgradeLevel = isValidUpgradeLevel(snapshot.conditionDecayUpgradeLevel) ? snapshot.conditionDecayUpgradeLevel : 0;
-    this.assignedWorkers = isValidWorkerCount(snapshot.assignedWorkers)
+    this.assignedWorkers = isValidWorkerCount(snapshot.assignedWorkers) && snapshot.assignedWorkers <= this.calculateMaximumWorkers()
       ? snapshot.assignedWorkers
       : this.calculateRequiredWorkers();
     this.staffQualityProgress = isValidQualityProgress(snapshot.staffQualityProgress)

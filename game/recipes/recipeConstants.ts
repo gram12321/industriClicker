@@ -17,7 +17,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Fertilizer, amount: 0.025, optional: true, effects: FARM_FERTILIZER_EFFECTS },
     ],
     outputs: [{ resourceType: ResourceType.Grain, amount: 2 }],
-    requiredWork: 0.06,
+    requiredWork: 0.180000,
     conditionWearMultiplier: 0.75,
   },
   [RecipeName.BakeBread]: {
@@ -28,21 +28,21 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 1 },
     ],
     outputs: [{ resourceType: ResourceType.Bread, amount: 4.5 }],
-    requiredWork: 0.26,
+    requiredWork: 0.971892,
     conditionWearMultiplier: 0.9,
   },
   [RecipeName.ProduceWater]: {
     name: RecipeName.ProduceWater,
     inputs: [],
     outputs: [{ resourceType: ResourceType.Water, amount: 2 }],
-    requiredWork: 0.073,
+    requiredWork: 0.225538,
     conditionWearMultiplier: 0.5,
   },
   [RecipeName.ProduceElectricity]: {
     name: RecipeName.ProduceElectricity,
     inputs: [],
     outputs: [{ resourceType: ResourceType.Electricity, amount: 2 }],
-    requiredWork: 0.11,
+    requiredWork: 0.361410,
     conditionWearMultiplier: 0.8,
   },
   [RecipeName.GrowSugar]: {
@@ -52,7 +52,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Fertilizer, amount: 0.04, optional: true, effects: FARM_FERTILIZER_EFFECTS },
     ],
     outputs: [{ resourceType: ResourceType.Sugar, amount: 2 }],
-    requiredWork: 0.1,
+    requiredWork: 0.323891,
     conditionWearMultiplier: 0.8,
   },
   [RecipeName.GrowFruit]: {
@@ -62,7 +62,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Fertilizer, amount: 0.03, optional: true, effects: FARM_FERTILIZER_EFFECTS },
     ],
     outputs: [{ resourceType: ResourceType.Fruit, amount: 2 }],
-    requiredWork: 0.16,
+    requiredWork: 0.556079,
     conditionWearMultiplier: 0.8,
   },
   [RecipeName.RaiseCattle]: {
@@ -78,7 +78,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Leather, amount: 0.05 },
       { resourceType: ResourceType.Fertilizer, amount: 0.1 },
     ],
-    requiredWork: 0.6125,
+    requiredWork: 2.603578,
     conditionWearMultiplier: 1.32,
   },
   [RecipeName.RaiseSheep]: {
@@ -93,7 +93,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Wool, amount: 0.5 },
       { resourceType: ResourceType.Fertilizer, amount: 0.05 },
     ],
-    requiredWork: 0.4375,
+    requiredWork: 1.768167,
     conditionWearMultiplier: 1.11,
   },
   [RecipeName.RaiseChicken]: {
@@ -108,7 +108,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Eggs, amount: 1.25 },
       { resourceType: ResourceType.Fertilizer, amount: 0.025 },
     ],
-    requiredWork: 0.35,
+    requiredWork: 1.367971,
     conditionWearMultiplier: 0.91,
   },
   [RecipeName.MineIron]: {
@@ -119,7 +119,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Chemicals, amount: 0.1 },
     ],
     outputs: [{ resourceType: ResourceType.Iron, amount: 1.25 }],
-    requiredWork: 0.267,
+    requiredWork: 1.002043,
     conditionWearMultiplier: 1.1,
   },
   [RecipeName.MineCoal]: {
@@ -129,7 +129,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 2 },
     ],
     outputs: [{ resourceType: ResourceType.Coal, amount: 2.5 }],
-    requiredWork: 0.2,
+    requiredWork: 0.718759,
     conditionWearMultiplier: 1,
   },
   [RecipeName.MineCopper]: {
@@ -140,7 +140,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Chemicals, amount: 0.1 },
     ],
     outputs: [{ resourceType: ResourceType.Copper, amount: 1.25 }],
-    requiredWork: 0.333,
+    requiredWork: 1.291842,
     conditionWearMultiplier: 1.2,
   },
   [RecipeName.QuarrySand]: {
@@ -150,7 +150,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 1 },
     ],
     outputs: [{ resourceType: ResourceType.Sand, amount: 3 }],
-    requiredWork: 0.107,
+    requiredWork: 0.350098,
     conditionWearMultiplier: 0.6,
   },
   [RecipeName.QuarryClay]: {
@@ -160,7 +160,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 1 },
     ],
     outputs: [{ resourceType: ResourceType.Clay, amount: 2 }],
-    requiredWork: 0.16,
+    requiredWork: 0.556079,
     conditionWearMultiplier: 0.7,
   },
   [RecipeName.QuarryStone]: {
@@ -170,7 +170,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 4 },
     ],
     outputs: [{ resourceType: ResourceType.Stone, amount: 3 }],
-    requiredWork: 0.213,
+    requiredWork: 0.772743,
     conditionWearMultiplier: 0.8,
   },
   [RecipeName.QuarryMinerals]: {
@@ -180,7 +180,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 2 },
     ],
     outputs: [{ resourceType: ResourceType.Minerals, amount: 3 }],
-    requiredWork: 0.16,
+    requiredWork: 0.556079,
     conditionWearMultiplier: 0.7,
   },
   [RecipeName.MineGold]: {
@@ -190,7 +190,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 8 },
     ],
     outputs: [{ resourceType: ResourceType.Gold, amount: 0.2 }],
-    requiredWork: 0.667,
+    requiredWork: 2.871728,
     conditionWearMultiplier: 1.4,
   },
   [RecipeName.ProduceSteel]: {
@@ -202,7 +202,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 6 },
     ],
     outputs: [{ resourceType: ResourceType.Steel, amount: 6 }],
-    requiredWork: 1.1,
+    requiredWork: 5.105052,
     conditionWearMultiplier: 1.2,
   },
   [RecipeName.ProduceElectricCircuits]: {
@@ -215,7 +215,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 4 },
     ],
     outputs: [{ resourceType: ResourceType.ElectricCircuits, amount: 5 }],
-    requiredWork: 1.65,
+    requiredWork: 8.137764,
     conditionWearMultiplier: 1.4,
   },
   [RecipeName.ProduceChemicals]: {
@@ -226,7 +226,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 4 },
     ],
     outputs: [{ resourceType: ResourceType.Chemicals, amount: 4 }],
-    requiredWork: 2.5,
+    requiredWork: 13.122893,
     conditionWearMultiplier: 1.4,
   },
   [RecipeName.SynthesizeFertilizer]: {
@@ -238,7 +238,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 1.6 },
     ],
     outputs: [{ resourceType: ResourceType.Fertilizer, amount: 4 }],
-    requiredWork: 1.334,
+    requiredWork: 6.372763,
     conditionWearMultiplier: 1.3,
   },
   [RecipeName.ProducePlastic]: {
@@ -249,7 +249,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 3 },
     ],
     outputs: [{ resourceType: ResourceType.Plastic, amount: 4 }],
-    requiredWork: 1.667,
+    requiredWork: 8.234259,
     conditionWearMultiplier: 1.2,
   },
   [RecipeName.ProduceSilicon]: {
@@ -260,7 +260,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 5 },
     ],
     outputs: [{ resourceType: ResourceType.Silicon, amount: 2 }],
-    requiredWork: 2.017,
+    requiredWork: 10.252041,
     conditionWearMultiplier: 1.3,
   },
   [RecipeName.ProduceAdvancedComponents]: {
@@ -273,7 +273,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 4 },
     ],
     outputs: [{ resourceType: ResourceType.AdvancedComponents, amount: 3 }],
-    requiredWork: 3.025,
+    requiredWork: 16.339274,
     conditionWearMultiplier: 1.5,
   },
   [RecipeName.AssembleIndustrialMachines]: {
@@ -286,7 +286,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 6 },
     ],
     outputs: [{ resourceType: ResourceType.IndustrialMachines, amount: 6 }],
-    requiredWork: 5.95,
+    requiredWork: 35.570755,
     conditionWearMultiplier: 1.7,
   },
   [RecipeName.ProduceBricks]: {
@@ -298,7 +298,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 3 },
     ],
     outputs: [{ resourceType: ResourceType.Bricks, amount: 16 }],
-    requiredWork: 0.65,
+    requiredWork: 2.787719,
     conditionWearMultiplier: 0.75,
   },
   [RecipeName.ProduceCement]: {
@@ -312,7 +312,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 5 },
     ],
     outputs: [{ resourceType: ResourceType.Cement, amount: 10 }],
-    requiredWork: 1.083,
+    requiredWork: 5.014427,
     conditionWearMultiplier: 1,
   },
   [RecipeName.ProduceReinforcedConcrete]: {
@@ -328,7 +328,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 2 },
     ],
     outputs: [{ resourceType: ResourceType.ReinforcedConcrete, amount: 7 }],
-    requiredWork: 2.6,
+    requiredWork: 13.728337,
     conditionWearMultiplier: 1.3,
   },
   [RecipeName.ProduceConstructionMaterials]: {
@@ -346,7 +346,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 2 },
     ],
     outputs: [{ resourceType: ResourceType.ConstructionMaterials, amount: 8 }],
-    requiredWork: 5.2,
+    requiredWork: 30.465086,
     conditionWearMultiplier: 1.5,
   },
   [RecipeName.BakeCake]: {
@@ -358,7 +358,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Water, amount: 2 },
     ],
     outputs: [{ resourceType: ResourceType.Cake, amount: 4 }],
-    requiredWork: 0.39,
+    requiredWork: 1.549255,
     conditionWearMultiplier: 1,
   },
   [RecipeName.BakePremiumCake]: {
@@ -372,7 +372,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Water, amount: 2 },
     ],
     outputs: [{ resourceType: ResourceType.Cake, amount: 4, outputBonusQ: QUALITY_PREMIUM_CAKE_OUTPUT_BONUS }],
-    requiredWork: 0.52,
+    requiredWork: 2.156763,
     conditionWearMultiplier: 1.1,
   },
   [RecipeName.BakeMeatPie]: {
@@ -384,21 +384,21 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 4 },
     ],
     outputs: [{ resourceType: ResourceType.MeatPie, amount: 16 }],
-    requiredWork: 1.3,
+    requiredWork: 6.186335,
     conditionWearMultiplier: 1.2,
   },
   [RecipeName.ManualPumping]: {
     name: RecipeName.ManualPumping,
     inputs: [],
     outputs: [{ resourceType: ResourceType.Water, amount: 2 }],
-    requiredWork: 0.073,
+    requiredWork: 0.225538,
     conditionWearMultiplier: 0.5,
   },
   [RecipeName.ElectricPumping]: {
     name: RecipeName.ElectricPumping,
     inputs: [{ resourceType: ResourceType.Electricity, amount: 0.5 }],
     outputs: [{ resourceType: ResourceType.Water, amount: 12 }],
-    requiredWork: 0.12,
+    requiredWork: 0.399445,
     conditionWearMultiplier: 0.75,
   },
   [RecipeName.CoalPower]: {
@@ -408,25 +408,25 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Water, amount: 1 },
     ],
     outputs: [{ resourceType: ResourceType.Electricity, amount: 21 }],
-    requiredWork: 0.467,
+    requiredWork: 1.905956,
     conditionWearMultiplier: 1.1,
   },
   [RecipeName.SolarPower]: {
     name: RecipeName.SolarPower,
     inputs: [],
     outputs: [{ resourceType: ResourceType.Electricity, amount: 4.5 }],
-    requiredWork: 0.933,
+    requiredWork: 4.224375,
     conditionWearMultiplier: 0.8,
   },
   [RecipeName.ForestManagement]: {
     name: RecipeName.ForestManagement,
     inputs: [],
     outputs: [
-      { resourceType: ResourceType.Meat, amount: 0.25, requiredWork: 0.2 },
-      { resourceType: ResourceType.Timber, amount: 1, requiredWork: 0.4 },
-      { resourceType: ResourceType.Leather, amount: 0.03, requiredWork: 0.6 },
+      { resourceType: ResourceType.Meat, amount: 0.25, requiredWork: 0.718759 },
+      { resourceType: ResourceType.Timber, amount: 1, requiredWork: 1.595025 },
+      { resourceType: ResourceType.Leather, amount: 0.03, requiredWork: 2.542568 },
     ],
-    requiredWork: 0.4,
+    requiredWork: 1.595025,
     conditionWearMultiplier: 0.7,
   },
   [RecipeName.MillTimber]: {
@@ -436,7 +436,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 1 },
     ],
     outputs: [{ resourceType: ResourceType.Planks, amount: 4 }],
-    requiredWork: 0.6,
+    requiredWork: 2.542568,
     conditionWearMultiplier: 1,
   },
   [RecipeName.AssembleFurniture]: {
@@ -448,7 +448,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Wool, amount: 0.35, optional: true, optionalGroup: 'furniture-finish' },
     ],
     outputs: [{ resourceType: ResourceType.Furniture, amount: 1 }],
-    requiredWork: 1.2,
+    requiredWork: 5.642311,
     conditionWearMultiplier: 1.1,
   },
   [RecipeName.ProduceSyntheticLeather]: {
@@ -460,7 +460,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 1 },
     ],
     outputs: [{ resourceType: ResourceType.Leather, amount: 1, outputQualityMultiplier: 0.5 }],
-    requiredWork: 0.8,
+    requiredWork: 3.539583,
     conditionWearMultiplier: 1.05,
   },
   [RecipeName.ProduceHouseholdCleaningProducts]: {
@@ -472,7 +472,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 2 },
     ],
     outputs: [{ resourceType: ResourceType.HouseholdCleaningProducts, amount: 4 }],
-    requiredWork: 1.1,
+    requiredWork: 5.105052,
     conditionWearMultiplier: 1.1,
   },
   [RecipeName.ProducePaintHomeCoatings]: {
@@ -485,7 +485,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 2 },
     ],
     outputs: [{ resourceType: ResourceType.PaintHomeCoatings, amount: 4 }],
-    requiredWork: 1.3,
+    requiredWork: 6.186335,
     conditionWearMultiplier: 1.15,
   },
   [RecipeName.ProduceGardenSupplies]: {
@@ -497,7 +497,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 1.5 },
     ],
     outputs: [{ resourceType: ResourceType.GardenSupplies, amount: 3 }],
-    requiredWork: 0.9,
+    requiredWork: 4.053008,
     conditionWearMultiplier: 1,
   },
   [RecipeName.ProduceDisplayPanels]: {
@@ -511,7 +511,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 3 },
     ],
     outputs: [{ resourceType: ResourceType.DisplayPanels, amount: 1 }],
-    requiredWork: 1.8,
+    requiredWork: 8.994188,
     conditionWearMultiplier: 1.35,
   },
   [RecipeName.ProducePersonalElectronics]: {
@@ -526,7 +526,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 2 },
     ],
     outputs: [{ resourceType: ResourceType.PersonalElectronics, amount: 1 }],
-    requiredWork: 2.2,
+    requiredWork: 11.328819,
     conditionWearMultiplier: 1.4,
   },
   [RecipeName.AssembleHouseholdAppliances]: {
@@ -541,7 +541,7 @@ export const ALL_RECIPES: Readonly<Record<RecipeName, Recipe>> = {
       { resourceType: ResourceType.Electricity, amount: 3 },
     ],
     outputs: [{ resourceType: ResourceType.HouseholdAppliances, amount: 1 }],
-    requiredWork: 2.8,
+    requiredWork: 14.949625,
     conditionWearMultiplier: 1.5,
   },
 };

@@ -488,10 +488,7 @@ export function FacilityStaffWageDialog({
   const [selectedWage, setSelectedWage] = useState(facilityView.staffWagePerWorkerPerMinute);
   const [wageInput, setWageInput] = useState(String(facilityView.staffWagePerWorkerPerMinute));
   const [staffingActionMessage, setStaffingActionMessage] = useState<string | null>(null);
-  const initialWorkerSliderMax = Math.max(facilityView.requiredWorkers, 1) * 10;
-  const workerSliderMax = facilityView.assignedWorkers > initialWorkerSliderMax
-    ? facilityView.assignedWorkers * 10
-    : initialWorkerSliderMax;
+  const workerSliderMax = Math.max(facilityView.maximumWorkers, facilityView.assignedWorkers, 1);
   const wageSliderMax = getFacilityMaxStaffWage(facilityView.staffWageTargetPerWorkerPerMinute);
   const totalWagePerMinute = selectedWage * selectedWorkers;
   const projectedFacility = activeRecipe ? Facility.fromSnapshot(facility.toSnapshot()) : null;
