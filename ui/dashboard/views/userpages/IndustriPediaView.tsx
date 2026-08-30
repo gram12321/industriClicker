@@ -445,19 +445,38 @@ const FACILITY_CONDITION_REFERENCE = [
 ] as const;
 
 function RecipesSection() {
+  const [expandedFacilities, setExpandedFacilities] = useState<Set<string>>(new Set());
+
+  const toggleFacility = (facilityType: string) => {
+    setExpandedFacilities((current) => {
+      const next = new Set(current);
+      if (next.has(facilityType)) {
+        next.delete(facilityType);
+      } else {
+        next.add(facilityType);
+      }
+      return next;
+    });
+  };
+
   return <>
     <SectionHeading eyebrow="RECIPES" title="Production recipes" subtitle="Inputs are paid at the start of each cycle. A facility pauses when the required inputs are unavailable." />
     {FACILITY_GROUPS.map((group) => <View key={group.id} style={localStyles.catalogueGroup}><Text style={styles.cardKicker}>{group.label}</Text>{group.facilities.map((facilityType) => {
       const facility = getFacilityDefinition(facilityType);
       const recipes = [...facility.recipes].sort((left, right) => formatRecipeName(left).localeCompare(formatRecipeName(right)));
-      return <Card key={facilityType} mode="contained" style={styles.featureCard}><Card.Content><Text style={localStyles.catalogueGroupTitle}>{facility.name}</Text><List.Section>
-        {recipes.map((recipe) => <List.Item
-          description={<View><RecipeResourceSummary recipe={recipe} /><WorkMetric value={formatNumber(recipe.requiredWork, { smartDecimals: true })} /></View>}
-          key={recipe.name}
-          left={() => <TooltipTextIcon label={formatRecipeName(recipe)}>{RECIPE_ICONS[recipe.name]}</TooltipTextIcon>}
-          title={formatRecipeName(recipe)}
-        />)}
-      </List.Section></Card.Content></Card>;
+      const expanded = expandedFacilities.has(facilityType);
+      return <Card key={facilityType} mode="contained" style={styles.featureCard}><Card.Content style={localStyles.accordionCardContent}>
+        <List.Accordion expanded={expanded} onPress={() => toggleFacility(facilityType)} title={facility.name} left={(props) => <List.Icon {...props} icon={facility.icon} />}>
+          <List.Section>
+            {recipes.map((recipe) => <List.Item
+              description={<View><RecipeResourceSummary recipe={recipe} /><WorkMetric value={formatNumber(recipe.requiredWork, { smartDecimals: true })} /></View>}
+              key={recipe.name}
+              left={() => <TooltipTextIcon label={formatRecipeName(recipe)}>{RECIPE_ICONS[recipe.name]}</TooltipTextIcon>}
+              title={formatRecipeName(recipe)}
+            />)}
+          </List.Section>
+        </List.Accordion>
+      </Card.Content></Card>;
     })}</View>)}
   </>;
 }

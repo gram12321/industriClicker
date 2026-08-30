@@ -22,7 +22,7 @@ const LAND_SIZE_DEFINITION: FacilitySizeDefinition = {
 
 /** Player-facing facility groupings shared by Pedia and other catalogues; each group is alphabetized by display name. */
 export const FACILITY_GROUPS: ReadonlyArray<{ id: FacilityGroup; label: string; facilities: readonly FacilityType[] }> = [
-  { id: 'agriculture', label: 'Agriculture', facilities: [FacilityType.AnimalFarm, FacilityType.Farm, FacilityType.Forestry, FacilityType.Bakery] },
+  { id: 'agriculture', label: 'Agriculture', facilities: [FacilityType.AnimalFarm, FacilityType.Bakery, FacilityType.Farm, FacilityType.Forestry] },
   { id: 'extraction', label: 'Extraction', facilities: [FacilityType.Mine, FacilityType.Quarry] },
   { id: 'manufacturing', label: 'Manufacturing', facilities: [FacilityType.AssemblyPlant, FacilityType.ChemicalPlant, FacilityType.ConstructionFactory, FacilityType.ElectronicsFactory, FacilityType.IndustrialProcessingFactory, FacilityType.TimberWorks] },
   { id: 'utilities', label: 'Utilities', facilities: [FacilityType.CoalPowerPlant, FacilityType.SmallUtilityWorks, FacilityType.SolarPlant, FacilityType.WaterWell] },
@@ -30,6 +30,14 @@ export const FACILITY_GROUPS: ReadonlyArray<{ id: FacilityGroup; label: string; 
 export const FACILITY_UPGRADE_COST_GROWTH = 1.5;
 /** Fraction of a facility's construction resource requirement used by its first upgrade level. */
 export const FACILITY_UPGRADE_RESOURCE_COST_RATE = 0.2;
+/** Infrastructure upgrades are primarily built from Construction Materials. */
+export const FACILITY_INFRASTRUCTURE_CONSTRUCTION_MATERIAL_COST_RATE = 0.2;
+export const FACILITY_INFRASTRUCTURE_INDUSTRIAL_MACHINE_COST_RATE = 0.02;
+/** Machinery upgrades are primarily built from Industrial Machines. */
+export const FACILITY_MACHINERY_CONSTRUCTION_MATERIAL_COST_RATE = 0.02;
+export const FACILITY_MACHINERY_INDUSTRIAL_MACHINE_COST_RATE = 0.2;
+/** Specialization upgrades split their two primary construction inputs evenly. */
+export const FACILITY_SPECIALIZATION_RESOURCE_COST_RATE = 0.1;
 /** Infrastructure capacity grows exponentially so specialization requires deliberate expansion. */
 export const FACILITY_INFRASTRUCTURE_WORKER_CAPACITY_GROWTH = 1.5;
 export const FACILITY_MAX_INFRASTRUCTURE_LEVEL = 100;

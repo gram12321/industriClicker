@@ -1,6 +1,6 @@
 import { Finance, LOAN_COLLECTION, buildFinanceStatementData, calculateAssets, calculateFacilityAssetValue, calculateLoanSearchEstimate, generateLoanOffers, getEconomyStaffWageMultiplier, LENDER_TYPES, refreshLoanOfferAvailability, type LoanOffer, type LoanSearchCriteria } from '@/game/finance';
 import { Inventory, ResourceFlowLedger } from '@/game/inventory';
-import { FACILITIES, FACILITY_MAX_INFRASTRUCTURE_LEVEL, FacilityCollection, FacilityMaintenanceStatistics, FacilityType, advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateFacilityProductionMaintenanceCost, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_REPAIR_DURATION_PER_CONDITION_MS, getFacilityConstructionCosts, getFacilityDefaultSize, getFacilityDefinition, getFacilityMissingInputs, getFacilityMaterialQuantityForUnits, getMissingFacilityMaterials, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceCost, getStaffingChangeCost, getStaffingChangeDurationMs, getStaffTrainingCost, getStaffTrainingDurationMs, isValidFacilitySize, type FacilityUpgradeKind } from '@/game/facilities';
+import { FACILITIES, FACILITY_MAX_INFRASTRUCTURE_LEVEL, FacilityCollection, FacilityMaintenanceStatistics, FacilityType, advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateFacilityProductionMaintenanceCost, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_REPAIR_DURATION_PER_CONDITION_MS, getFacilityConstructionCosts, getFacilityDefaultSize, getFacilityDefinition, getFacilityMissingInputs, getFacilityMaterialQuantityForUnits, getMissingFacilityMaterials, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceRequirements, getStaffingChangeCost, getStaffingChangeDurationMs, getStaffTrainingCost, getStaffTrainingDurationMs, isValidFacilitySize, type FacilityUpgradeKind } from '@/game/facilities';
 import { calculateOutputQuality, calculateProductionMaxQ } from '@/game/quality';
 import { getRecipe, type RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
@@ -690,16 +690,10 @@ export const useGameStore = create<GameState>((set, get) => {
     const definition = getFacilityDefinition(facility.facilityType);
     const sizeMultiplier = facilityView.sizeMultiplier;
     const costLevel = upgradeKind === 'quality' ? Math.max(0, currentLevel - 1) : currentLevel;
-    const cost = getFacilityUpgradeCost(definition.upgradeCost, costLevel, sizeMultiplier);
-    const constructionMaterialsCost = getFacilityUpgradeResourceCost(definition.constructionMaterialsCost, costLevel, sizeMultiplier);
-    const industrialMachinesCost = getFacilityUpgradeResourceCost(definition.industrialMachinesCost, costLevel, sizeMultiplier);
-    const upgradeInvestment = cost
-      + constructionMaterialsCost * market.getLocalPrice(ResourceType.ConstructionMaterials)
-      + industrialMachinesCost * market.getLocalPrice(ResourceType.IndustrialMachines);
-    const missingInputs = getMissingFacilityMaterials(inventory, [
-      { resourceType: ResourceType.ConstructionMaterials, requiredUnits: constructionMaterialsCost },
-      { resourceType: ResourceType.IndustrialMachines, requiredUnits: industrialMachinesCost },
-    ]);
+    const cost = upgradeKind === 'speed' || upgradeKind === 'output' || upgradeKind === 'condition' ? 0 : getFacilityUpgradeCost(definition.upgradeCost, costLevel, sizeMultiplier);
+    const resourceRequirements = getFacilityUpgradeResourceRequirements(definition, upgradeKind, costLevel, sizeMultiplier);
+    const upgradeInvestment = cost + resourceRequirements.reduce((total, requirement) => total + requirement.requiredUnits * market.getLocalPrice(requirement.resourceType), 0);
+    const missingInputs = getMissingFacilityMaterials(inventory, resourceRequirements);
     const trades = missingInputs.map((input) => {
       const probe = market.getLocalBuyQuote(input.resourceType, Math.min(input.missingUnits, 1));
       const amount = probe.success ? input.missingUnits / probe.quality : input.missingUnits;
@@ -712,8 +706,7 @@ export const useGameStore = create<GameState>((set, get) => {
       || trades.some(({ resourceType, trade }) => !inventory.add(resourceType, trade.amount, trade.quality, trade.unitPrice))) {
       return false;
     }
-    const constructionMaterialsQuantity = getFacilityMaterialQuantityForUnits(inventory, ResourceType.ConstructionMaterials, constructionMaterialsCost);
-    const industrialMachinesQuantity = getFacilityMaterialQuantityForUnits(inventory, ResourceType.IndustrialMachines, industrialMachinesCost);
+    const materialQuantities = resourceRequirements.map(({ resourceType, requiredUnits }) => ({ resourceType, quantity: getFacilityMaterialQuantityForUnits(inventory, resourceType, requiredUnits) }));
 
     if (upgradeKind === 'infrastructure') {
       facility.upgradeInfrastructure();
@@ -730,9 +723,8 @@ export const useGameStore = create<GameState>((set, get) => {
     }
 
     if ((missingInputPurchaseCost > 0 && !finance.applyTransaction({ amount: -missingInputPurchaseCost, description: `Bought missing upgrade inputs for ${facilityView.displayName}`, detailLines: trades.map(({ resourceType, trade }) => `${trade.amount} ${resourceType} at €${trade.unitPrice.toFixed(2)} each`), kind: 'operating', source: 'market-purchase', occurredAtGameTimeMs: get().lastProcessedAtMs }))
-      || !finance.applyTransaction({ amount: -cost, description: `${upgradeKind === 'infrastructure' ? 'Infrastructure' : upgradeKind === 'machinery' ? 'Machinery' : upgradeKind === 'speed' ? 'Speed' : upgradeKind === 'output' ? 'Output' : upgradeKind === 'condition' ? 'Condition decay' : 'Quality'} upgrade for ${facilityView.displayName}`, detailLines: [`Level ${currentLevel + 1}`, `Construction materials committed: ${constructionMaterialsCost}`, `Industrial machines installed: ${industrialMachinesCost}`], facilityAccounting: { facilityId, classification: 'upgrade', historicalValue: upgradeInvestment }, kind: 'investing', source: 'facility-upgrade', occurredAtGameTimeMs: get().lastProcessedAtMs })
-      || !inventory.remove(ResourceType.ConstructionMaterials, constructionMaterialsQuantity)
-      || !inventory.remove(ResourceType.IndustrialMachines, industrialMachinesQuantity)) {
+      || (cost > 0 && !finance.applyTransaction({ amount: -cost, description: `${upgradeKind === 'infrastructure' ? 'Infrastructure' : upgradeKind === 'machinery' ? 'Machinery' : upgradeKind === 'speed' ? 'Speed' : upgradeKind === 'output' ? 'Output' : upgradeKind === 'condition' ? 'Condition decay' : 'Quality'} upgrade for ${facilityView.displayName}`, detailLines: [`Level ${currentLevel + 1}`, ...resourceRequirements.map(({ resourceType, requiredUnits }) => `${resourceType} committed: ${requiredUnits}`)], facilityAccounting: { facilityId, classification: 'upgrade', historicalValue: upgradeInvestment }, kind: 'investing', source: 'facility-upgrade', occurredAtGameTimeMs: get().lastProcessedAtMs }))
+      || materialQuantities.some(({ resourceType, quantity }) => !inventory.remove(resourceType, quantity))) {
       return false;
     }
 
@@ -755,8 +747,7 @@ export const useGameStore = create<GameState>((set, get) => {
     });
     const resourceFlow = get().resourceFlow.clone();
     for (const { resourceType, trade } of trades) resourceFlow.record('market-buy', resourceType, trade.amount, get().lastProcessedAtMs);
-    resourceFlow.record('facility-spending', ResourceType.ConstructionMaterials, -constructionMaterialsQuantity, get().lastProcessedAtMs);
-    resourceFlow.record('facility-spending', ResourceType.IndustrialMachines, -industrialMachinesQuantity, get().lastProcessedAtMs);
+    for (const { resourceType, quantity } of materialQuantities) resourceFlow.record('facility-spending', resourceType, -quantity, get().lastProcessedAtMs);
     set({ facilities, market, finance, resourceFlow, ...achievementResult });
     return true;
   },

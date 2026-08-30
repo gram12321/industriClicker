@@ -7,6 +7,7 @@ import type { Recipe, RecipeInputEffects } from '@/game/recipes';
 import { ResourceType } from '@/game/resources';
 import { calculateOutputQuality, calculateUpgradeMaxQ } from '@/game/quality';
 import { Facility, type FacilityView } from './facility';
+import { getMissingFacilityMaterials, type FacilityMaterialRequirements } from './facilityCommandService';
 import {
   FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE,
   FACILITY_REPAIR_MATERIAL_COST_RATE,
@@ -32,25 +33,21 @@ export function calculateFacilityResourcePayment(
   cashBaseCost: number,
   constructionMaterialsCost: number,
   industrialMachinesCost: number,
+  additionalRequirements: FacilityMaterialRequirements = [],
 ): FacilityResourcePayment {
-  const missingConstructionMaterials = Math.max(
-    0,
-    constructionMaterialsCost - inventory.getAmount(ResourceType.ConstructionMaterials),
-  );
-  const missingIndustrialMachines = Math.max(
-    0,
-    industrialMachinesCost - inventory.getAmount(ResourceType.IndustrialMachines),
-  );
-  const missingConstructionMaterialsQuote = missingConstructionMaterials > 0 ? market.getLocalBuyQuote(ResourceType.ConstructionMaterials, missingConstructionMaterials) : null;
-  const missingIndustrialMachinesQuote = missingIndustrialMachines > 0 ? market.getLocalBuyQuote(ResourceType.IndustrialMachines, missingIndustrialMachines) : null;
-  const missingInputPurchaseCost = (missingConstructionMaterialsQuote === null ? 0 : missingConstructionMaterialsQuote.success ? missingConstructionMaterialsQuote.unitPrice * missingConstructionMaterialsQuote.amount : Number.POSITIVE_INFINITY)
-    + (missingIndustrialMachinesQuote === null ? 0 : missingIndustrialMachinesQuote.success ? missingIndustrialMachinesQuote.unitPrice * missingIndustrialMachinesQuote.amount : Number.POSITIVE_INFINITY);
+  const requirements = [
+    { resourceType: ResourceType.ConstructionMaterials, requiredUnits: constructionMaterialsCost },
+    { resourceType: ResourceType.IndustrialMachines, requiredUnits: industrialMachinesCost },
+    ...additionalRequirements,
+  ];
+  const missingInputs = getMissingFacilityMaterials(inventory, requirements);
+  const quotes = missingInputs.map((input) => ({ input, quote: market.getLocalBuyQuote(input.resourceType, input.missingUnits) }));
+  const missingInputPurchaseCost = quotes.reduce((total, { quote }) => total + (quote.success ? quote.unitPrice * quote.amount : Number.POSITIVE_INFINITY), 0);
   const cashCost = cashBaseCost + missingInputPurchaseCost;
 
   return {
     canAfford:
-      (missingConstructionMaterialsQuote === null || missingConstructionMaterialsQuote.success)
-      && (missingIndustrialMachinesQuote === null || missingIndustrialMachinesQuote.success)
+      quotes.every(({ quote }) => quote.success)
       && finance.canAfford(cashCost),
     cashCost,
   };

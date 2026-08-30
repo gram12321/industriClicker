@@ -1,8 +1,18 @@
 import { calculateAsymmetricalScaler01, calculateDiminishingBonus, calculateExponentialScaler01, calculatePowerPenalty, scaleExponential } from '../core/math/scaling';
 import { calculateQualityFromProgress } from '@/game/quality';
-import { FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_CONDITION_DECAY_MAX_REDUCTION, FACILITY_CONDITION_DECAY_REDUCTION_RATE, FACILITY_FIRE_COST_WAGE_MINUTES, FACILITY_FIRE_DURATION_PER_WORKER_MS, FACILITY_INFRASTRUCTURE_WORKER_CAPACITY_GROWTH, FACILITY_INITIAL_STAFF_QUALITY, FACILITY_HIRE_COST_WAGE_MINUTES, FACILITY_HIRE_DURATION_PER_WORKER_MS, FACILITY_MACHINERY_POINTS_PER_LEVEL, FACILITY_MAX_INFRASTRUCTURE_LEVEL, FACILITY_MINIMUM_STAFFING_EFFICIENCY, FACILITY_OUTPUT_BONUS_RATE, FACILITY_OUTPUT_MAXIMUM_BONUS, FACILITY_OVERSTAFFING_BONUS_RATE, FACILITY_OVERSTAFFING_CONDITION_DECAY_GROWTH, FACILITY_OVERSTAFFING_MAXIMUM_BONUS, FACILITY_REPAIR_MATERIAL_COST_RATE, FACILITY_SPEED_BONUS_RATE, FACILITY_SPEED_MAXIMUM_BONUS, FACILITY_STAFFING_BATCH_EXPONENT, FACILITY_STAFF_QUALITY_WAGE_GAIN_PER_MINUTE, FACILITY_STAFF_QUALITY_WAGE_LOSS_PER_MINUTE, FACILITY_STAFF_TRAINING_COST_WAGE_MINUTES, FACILITY_STAFF_TRAINING_DURATION_PER_WORKER_MS, FACILITY_UNDERSTAFFING_EXPONENT, FACILITY_UPGRADE_COST_GROWTH, FACILITY_UPGRADE_RESOURCE_COST_RATE, FACILITY_WORKER_REQUIREMENT_GROWTH } from './facilityConstants';
+import { FACILITY_BASE_STAFF_WAGE_PER_WORKER_PER_MINUTE, FACILITY_CONDITION_DECAY_MAX_REDUCTION, FACILITY_CONDITION_DECAY_REDUCTION_RATE, FACILITY_FIRE_COST_WAGE_MINUTES, FACILITY_FIRE_DURATION_PER_WORKER_MS, FACILITY_INFRASTRUCTURE_CONSTRUCTION_MATERIAL_COST_RATE, FACILITY_INFRASTRUCTURE_INDUSTRIAL_MACHINE_COST_RATE, FACILITY_INFRASTRUCTURE_WORKER_CAPACITY_GROWTH, FACILITY_INITIAL_STAFF_QUALITY, FACILITY_HIRE_COST_WAGE_MINUTES, FACILITY_HIRE_DURATION_PER_WORKER_MS, FACILITY_MACHINERY_CONSTRUCTION_MATERIAL_COST_RATE, FACILITY_MACHINERY_INDUSTRIAL_MACHINE_COST_RATE, FACILITY_MACHINERY_POINTS_PER_LEVEL, FACILITY_MAX_INFRASTRUCTURE_LEVEL, FACILITY_MINIMUM_STAFFING_EFFICIENCY, FACILITY_OUTPUT_BONUS_RATE, FACILITY_OUTPUT_MAXIMUM_BONUS, FACILITY_OVERSTAFFING_BONUS_RATE, FACILITY_OVERSTAFFING_CONDITION_DECAY_GROWTH, FACILITY_OVERSTAFFING_MAXIMUM_BONUS, FACILITY_REPAIR_MATERIAL_COST_RATE, FACILITY_SPECIALIZATION_RESOURCE_COST_RATE, FACILITY_SPEED_BONUS_RATE, FACILITY_SPEED_MAXIMUM_BONUS, FACILITY_STAFFING_BATCH_EXPONENT, FACILITY_STAFF_QUALITY_WAGE_GAIN_PER_MINUTE, FACILITY_STAFF_QUALITY_WAGE_LOSS_PER_MINUTE, FACILITY_STAFF_TRAINING_COST_WAGE_MINUTES, FACILITY_STAFF_TRAINING_DURATION_PER_WORKER_MS, FACILITY_UNDERSTAFFING_EXPONENT, FACILITY_UPGRADE_COST_GROWTH, FACILITY_UPGRADE_RESOURCE_COST_RATE, FACILITY_WORKER_REQUIREMENT_GROWTH, type FacilityDefinition } from './facilityConstants';
+import { ResourceType } from '@/game/resources';
 
 export type FacilityUpgradeKind = 'infrastructure' | 'machinery' | 'speed' | 'output' | 'condition' | 'quality';
+
+const ADDITIONAL_UPGRADE_RESOURCES: Record<FacilityUpgradeKind, readonly ResourceType[]> = {
+  infrastructure: [ResourceType.Furniture, ResourceType.Bricks, ResourceType.Cement, ResourceType.Steel, ResourceType.Timber],
+  machinery: [ResourceType.AdvancedComponents, ResourceType.Iron, ResourceType.Steel],
+  speed: [ResourceType.DisplayPanels, ResourceType.ElectricCircuits, ResourceType.Plastic],
+  output: [ResourceType.Coal, ResourceType.AdvancedComponents, ResourceType.Chemicals],
+  condition: [ResourceType.ReinforcedConcrete, ResourceType.Steel],
+  quality: [ResourceType.Gold, ResourceType.Minerals, ResourceType.AdvancedComponents, ResourceType.ElectricCircuits],
+};
 
 export function getFacilityMaximumWorkers(baseWorkers: number, infrastructureLevel: number): number {
   return Math.ceil(Math.max(0, baseWorkers) * Math.pow(FACILITY_INFRASTRUCTURE_WORKER_CAPACITY_GROWTH, Math.min(FACILITY_MAX_INFRASTRUCTURE_LEVEL, Math.max(0, Math.floor(infrastructureLevel)))));
@@ -18,8 +28,19 @@ export function getFacilityUpgradeCost(constructionCost: number, currentLevel: n
 }
 
 /** Construction Materials or Industrial Machines required for the next upgrade level. */
-export function getFacilityUpgradeResourceCost(constructionResourceCost: number, currentLevel: number, sizeMultiplier = 1): number {
-  return scaleExponential(Math.max(0, constructionResourceCost) * FACILITY_UPGRADE_RESOURCE_COST_RATE * Math.max(1, sizeMultiplier), currentLevel, FACILITY_UPGRADE_COST_GROWTH);
+export function getFacilityUpgradeResourceCost(constructionResourceCost: number, currentLevel: number, sizeMultiplier = 1, resourceCostRate = FACILITY_UPGRADE_RESOURCE_COST_RATE): number {
+  return scaleExponential(Math.max(0, constructionResourceCost) * resourceCostRate * Math.max(1, sizeMultiplier), currentLevel, FACILITY_UPGRADE_COST_GROWTH);
+}
+
+export function getFacilityUpgradeResourceRequirements(definition: FacilityDefinition, upgradeKind: FacilityUpgradeKind, currentLevel: number, sizeMultiplier = 1) {
+  const primaryRate = upgradeKind === 'infrastructure' ? FACILITY_INFRASTRUCTURE_CONSTRUCTION_MATERIAL_COST_RATE : upgradeKind === 'machinery' ? FACILITY_MACHINERY_CONSTRUCTION_MATERIAL_COST_RATE : FACILITY_SPECIALIZATION_RESOURCE_COST_RATE;
+  const machineRate = upgradeKind === 'infrastructure' ? FACILITY_INFRASTRUCTURE_INDUSTRIAL_MACHINE_COST_RATE : upgradeKind === 'machinery' ? FACILITY_MACHINERY_INDUSTRIAL_MACHINE_COST_RATE : FACILITY_SPECIALIZATION_RESOURCE_COST_RATE;
+  const combinedConstructionBaseline = definition.constructionMaterialsCost + definition.industrialMachinesCost;
+  return [
+    { resourceType: ResourceType.ConstructionMaterials, requiredUnits: getFacilityUpgradeResourceCost(definition.constructionMaterialsCost, currentLevel, sizeMultiplier, primaryRate) },
+    { resourceType: ResourceType.IndustrialMachines, requiredUnits: getFacilityUpgradeResourceCost(definition.industrialMachinesCost, currentLevel, sizeMultiplier, machineRate) },
+    ...ADDITIONAL_UPGRADE_RESOURCES[upgradeKind].map((resourceType) => ({ resourceType, requiredUnits: getFacilityUpgradeResourceCost(combinedConstructionBaseline, currentLevel, sizeMultiplier, FACILITY_SPECIALIZATION_RESOURCE_COST_RATE) })),
+  ];
 }
 
 /** Total paid cost for all completed levels in one facility upgrade track. */

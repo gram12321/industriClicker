@@ -393,9 +393,22 @@ describe('facility construction inputs', () => {
     state.setAdminBalance(10_000);
     state.setInventoryAmount(ResourceType.ConstructionMaterials, 0);
     state.setInventoryAmount(ResourceType.IndustrialMachines, 0);
+    state.setInventoryAmount(ResourceType.DisplayPanels, 10);
+    state.setInventoryAmount(ResourceType.ElectricCircuits, 10);
+    state.setInventoryAmount(ResourceType.Plastic, 10);
+    state.setInventoryAmount(ResourceType.Furniture, 10);
+    state.setInventoryAmount(ResourceType.Bricks, 10);
+    state.setInventoryAmount(ResourceType.Cement, 10);
+    state.setInventoryAmount(ResourceType.Steel, 10);
+    state.setInventoryAmount(ResourceType.Timber, 10);
+    state.setInventoryAmount(ResourceType.AdvancedComponents, 10);
+    state.setInventoryAmount(ResourceType.Iron, 10);
+    expect(state.upgradeFacility('farm-1', 'infrastructure')).toBe(true);
+    expect(state.upgradeFacility('farm-1', 'machinery')).toBe(true);
     expect(state.upgradeFacility('farm-1', 'speed')).toBe(true);
-    expect(useGameStore.getState().inventory.getAmount(ResourceType.ConstructionMaterials)).toBe(0);
-    expect(useGameStore.getState().inventory.getAmount(ResourceType.IndustrialMachines)).toBe(0);
+    expect(useGameStore.getState().inventory.getAmount(ResourceType.DisplayPanels)).toBeLessThan(10);
+    expect(useGameStore.getState().inventory.getAmount(ResourceType.ElectricCircuits)).toBeLessThan(10);
+    expect(useGameStore.getState().inventory.getAmount(ResourceType.Plastic)).toBeLessThan(10);
   });
 
   it('automatically buys and consumes all three repair inputs', () => {
