@@ -1,6 +1,6 @@
 import { Finance, LOAN_COLLECTION, buildFinanceStatementData, calculateAssets, calculateFacilityAssetValue, calculateLoanSearchEstimate, generateLoanOffers, getEconomyStaffWageMultiplier, LENDER_TYPES, refreshLoanOfferAvailability, type LoanOffer, type LoanSearchCriteria } from '@/game/finance';
 import { Inventory, ResourceFlowLedger } from '@/game/inventory';
-import { FACILITIES, FACILITY_MAX_INFRASTRUCTURE_LEVEL, FacilityCollection, FacilityMaintenanceStatistics, FacilityType, advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateFacilityProductionMaintenanceCost, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_REPAIR_DURATION_PER_CONDITION_MS, getFacilityConstructionCosts, getFacilityDefaultSize, getFacilityDefinition, getFacilityMissingInputs, getFacilityMaterialQuantityForUnits, getMissingFacilityMaterials, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceRequirements, getStaffingChangeCost, getStaffingChangeDurationMs, getStaffTrainingCost, getStaffTrainingDurationMs, isValidFacilitySize, type FacilityUpgradeKind } from '@/game/facilities';
+import { FACILITIES, FACILITY_MAX_INFRASTRUCTURE_LEVEL, FacilityCollection, FacilityMaintenanceStatistics, FacilityType, advanceAllFacilityProduction, calculateFacilityEffectiveWork, calculateFacilityProductionMaintenanceCost, FACILITY_PASSIVE_CONDITION_LOSS_PER_MINUTE, FACILITY_REPAIR_DURATION_PER_CONDITION_MS, getFacilityConstructionCosts, getFacilityDefaultSize, getFacilityDefinition, getFacilityMissingInputs, getFacilityMaterialQuantityForUnits, getFacilityMarketMaterialQuantityForUnits, getMissingFacilityMaterials, getFacilityProductionCycleInputs, getFacilityRepairCost, getFacilityUpgradeCost, getFacilityUpgradeResourceRequirements, getStaffingChangeCost, getStaffingChangeDurationMs, getStaffTrainingCost, getStaffTrainingDurationMs, isValidFacilitySize, type FacilityUpgradeKind } from '@/game/facilities';
 import { calculateOutputQuality, calculateProductionMaxQ } from '@/game/quality';
 import { getRecipe, type RecipeName } from '@/game/recipes';
 import { RESOURCE_TYPES, ResourceType } from '@/game/resources';
@@ -695,8 +695,7 @@ export const useGameStore = create<GameState>((set, get) => {
     const upgradeInvestment = cost + resourceRequirements.reduce((total, requirement) => total + requirement.requiredUnits * market.getLocalPrice(requirement.resourceType), 0);
     const missingInputs = getMissingFacilityMaterials(inventory, resourceRequirements);
     const trades = missingInputs.map((input) => {
-      const probe = market.getLocalBuyQuote(input.resourceType, Math.min(input.missingUnits, 1));
-      const amount = probe.success ? input.missingUnits / probe.quality : input.missingUnits;
+      const amount = getFacilityMarketMaterialQuantityForUnits(market, input.resourceType, input.missingUnits);
       return { ...input, amount, trade: market.buyFromLocal(input.resourceType, amount) };
     });
     const missingInputPurchaseCost = trades.reduce((total, { trade }) => total + trade.amount * trade.unitPrice, 0);

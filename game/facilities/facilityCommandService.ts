@@ -1,4 +1,5 @@
 import type { Inventory } from '@/game/inventory';
+import type { Market } from '@/game/market';
 import { calculateQualityValueMultiplier } from '@/game/quality';
 import { ResourceType } from '@/game/resources';
 
@@ -19,4 +20,9 @@ export function getMissingFacilityMaterials(inventory: Inventory, requirements: 
 /** Converts construction-value units into the physical quantity to consume from inventory. */
 export function getFacilityMaterialQuantityForUnits(inventory: Inventory, resourceType: ResourceType, requiredUnits: number): number {
   return Math.max(0, requiredUnits) / calculateQualityValueMultiplier(inventory.getQuality(resourceType));
+}
+
+/** Converts required material value into physical market units at the market's current quality. */
+export function getFacilityMarketMaterialQuantityForUnits(market: Market, resourceType: ResourceType, requiredUnits: number): number {
+  return Math.max(0, requiredUnits) / calculateQualityValueMultiplier(market.getLocalEntry(resourceType).quality);
 }
